@@ -53,4 +53,5 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 - No `Co-Authored-By` or `Claude-Session` trailers.
 - Prototype stage: work on a local branch, one concern per commit, and tidy it (amend, squash, reword) before it goes anywhere. When a feature is complete, fast-forward `master` to the branch and push `master` directly; the pre-push hook (`.githooks/`, enabled by `npm ci`) runs `npm run check` and `npm test` first. No pull requests for now.
+- The Claude artifact «Jornales de pastoreo» is a separate copy and does not update itself. After pushing to `master` a change that shows on the page, republish it from the repository files with the `Artifact` tool (`index.html`, `css/`, `src/` and `vendor/`, removing files that no longer exist); find its URL with the `list` action. Docs and test changes do not need it.
 - `master` is published as it is (GitHub Pages), so never rewrite it once pushed. A branch nobody else has pulled can be rewritten freely.
