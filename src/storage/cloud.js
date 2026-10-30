@@ -5,8 +5,7 @@
  */
 
 import { closeTemplates, scrollChipsNextPaint, select, templatesOpen } from '../app.js';
-import { bundleFromSpanish, normalizeOffer } from '../legacy.js';
-import { DEF_CFG } from '../offer.js';
+import { bundleFromSpanish, ingestSaved } from '../legacy.js';
 import { KEY, myOffers, onSave, state, store } from '../state.js';
 import { fillSettings, paintCloud } from '../views/settings.js';
 import { backupText } from './bundle.js';
@@ -84,8 +83,9 @@ export async function startCloud() {
       const notUploaded = store.get(KEY.uploaded, false)
         ? []
         : myOffers().filter((o) => !saved.offers.some((x) => x.id === o.id));
-      state.offers = [...saved.offers.map(normalizeOffer), ...notUploaded];
-      state.config = { ...DEF_CFG, ...(saved.cfg || {}) };
+      const account = ingestSaved(saved, { fallbackCfg: state.config });
+      state.offers = [...account.offers, ...notUploaded];
+      state.config = account.cfg;
       store.set(KEY.offers, state.offers);
       store.set(KEY.cfg, state.config);
       store.set(KEY.ts, notUploaded.length ? Date.now() : Number(saved.ts));

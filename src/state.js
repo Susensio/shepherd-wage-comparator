@@ -1,6 +1,6 @@
 /** The app's state: offers, the active one, settings and preferences, and saving them in the browser. */
 
-import { cfgFromSpanish, extractYourData, normalizeOffer, offerFromSpanish, renameKeys, SPANISH } from './legacy.js';
+import { extractYourData, ingestSaved, normalizeOffer, offerFromSpanish, renameKeys, SPANISH } from './legacy.js';
 import { calc } from './model/calc.js';
 import { DEF_CFG, makeOffer, YOUR_DATA } from './offer.js';
 import { UNITS } from './units.js';
@@ -90,18 +90,15 @@ export function saveFolds() {
 
 /** Reads everything saved in this browser, converting older formats. */
 export function load() {
-  const savedCfg = cfgFromSpanish(store.get(KEY.cfg, {}));
-  const config = { ...DEF_CFG, ...savedCfg };
-  // Older defaults: 31.5 % was the general scheme (shepherds are in the agricultural one) and 6.5 % the old worker rate
-  if (config.ssEmp === 31.5) config.ssEmp = DEF_CFG.ssEmp;
-  if (config.ssPct === 6.5) config.ssPct = DEF_CFG.ssPct;
-
   const savedOffers = store.get(KEY.offers, null);
   const firstRun = !Array.isArray(savedOffers);
-  let offers = firstRun ? [] : savedOffers.map(normalizeOffer);
-  // Meal, car and rent prices used to live in each offer
-  const migrate = !firstRun && savedCfg.fuelUse === undefined;
-  extractYourData(offers, config, migrate, YOUR_DATA);
+  const ingested = ingestSaved(
+    { offers: firstRun ? [] : savedOffers, cfg: store.get(KEY.cfg, null) },
+    { fallbackCfg: DEF_CFG },
+  );
+  const config = ingested.cfg;
+  let offers = ingested.offers;
+  const migrate = !firstRun && ingested.migrated;
   // Older versions kept the offer being edited apart
   const draft = offerFromSpanish(store.get(KEY.legacyDraft, null));
   if (draft?.id && offers.some((x) => x.id === draft.id))

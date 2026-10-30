@@ -1,8 +1,8 @@
 /** Backups: downloading or copying one, and adding the offers of one you saved. */
 
 import { closeTemplates, select } from '../app.js';
-import { bundleFromSpanish, extractYourData, normalizeOffer } from '../legacy.js';
-import { DEF_CFG, makeOffer, YOUR_DATA } from '../offer.js';
+import { bundleFromSpanish, ingestSaved } from '../legacy.js';
+import { makeOffer } from '../offer.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
 import { fillSettings, paintBackup } from '../views/settings.js';
@@ -66,13 +66,10 @@ export function loadBackup(content, msg) {
     state.placeholderId = null;
     closeTemplates();
   }
-  const cfg = saved.cfg ? { ...DEF_CFG, ...saved.cfg } : { ...state.config };
-  // An old backup kept prices in each offer: start from your current data
-  const migrate = !saved.cfg || saved.cfg.fuelUse === undefined;
-  if (migrate) for (const k in YOUR_DATA) cfg[k] = state.config[k];
+  const { offers, cfg, migrated } = ingestSaved(saved, { fallbackCfg: state.config });
   let added = 0;
   let alreadyHad = 0;
-  for (const o of extractYourData(saved.offers.map(normalizeOffer), cfg, migrate, YOUR_DATA)) {
+  for (const o of offers) {
     if (state.offers.some((x) => x.id === o.id)) alreadyHad++;
     else {
       state.offers.push(o);
@@ -80,7 +77,7 @@ export function loadBackup(content, msg) {
     }
   }
   if (!state.offers.length) state.offers = [makeOffer()];
-  if (!hadOffers && (saved.cfg || migrate)) {
+  if (!hadOffers && (saved.cfg || migrated)) {
     state.config = cfg;
     saveConfig();
     fillSettings();

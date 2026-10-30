@@ -4,7 +4,7 @@
  */
 
 import { num } from './format.js';
-import { DEF_OFFER, MEALS } from './offer.js';
+import { DEF_CFG, DEF_OFFER, MEALS, YOUR_DATA } from './offer.js';
 
 /** Spanish-era names (until October 2026) → today's. */
 export const SPANISH = {
@@ -205,4 +205,22 @@ export function extractYourData(offers, cfg, migrate, yourData) {
     if (o.rentValue !== '' && (o.housing !== 'yes' || num(o.rentValue) === num(cfg.rentValue))) o.rentValue = '';
   }
   return offers;
+}
+
+/**
+ * `{ offers, cfg, migrated }` from a saved bundle of any age (browser, backup or account), converted to today's
+ * format. `migrated` is the one definition of an old save: no settings, or settings from before «Tus datos»
+ * (`fuelUse`). `fallbackCfg` (the caller's current settings) is the base when the bundle has none, and supplies
+ * the «Tus datos» it lacks. The input is not touched.
+ */
+export function ingestSaved(data, { fallbackCfg }) {
+  const saved = bundleFromSpanish(data);
+  const migrated = !saved.cfg || saved.cfg.fuelUse === undefined;
+  const cfg = saved.cfg ? { ...DEF_CFG, ...saved.cfg } : { ...fallbackCfg };
+  // Older defaults: 31.5 % was the general scheme (shepherds are in the agricultural one) and 6.5 % the old worker rate
+  if (cfg.ssEmp === 31.5) cfg.ssEmp = DEF_CFG.ssEmp;
+  if (cfg.ssPct === 6.5) cfg.ssPct = DEF_CFG.ssPct;
+  if (migrated) for (const k in YOUR_DATA) if (saved.cfg?.[k] === undefined) cfg[k] = fallbackCfg[k];
+  const offers = extractYourData((saved.offers ?? []).map(normalizeOffer), cfg, migrated, YOUR_DATA);
+  return { offers, cfg, migrated };
 }
