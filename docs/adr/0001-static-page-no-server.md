@@ -1,6 +1,6 @@
 # ADR-0001: Keep offers in the browser, with optional Claude-account sync, instead of running a server
 
-Status: Accepted
+Status: Superseded by [ADR-0006](0006-supabase-accounts-per-user-sharing.md)
 Date: 2026-10-30
 
 ## Context
