@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "check": "biome ci . && tsc",
     "format": "biome check --write .",
     "test": "npm run test:unit && npm run test:e2e",

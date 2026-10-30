@@ -1,0 +1,18 @@
+#!/bin/sh
+# Runs the checks before master is published (GitHub Pages serves it as it is). Other branches are not checked.
+# Enabled by `npm ci` through the `prepare` script, which points core.hooksPath here.
+
+publishing=
+while read -r _ _ remote_ref _; do
+  [ "$remote_ref" = refs/heads/master ] && publishing=1
+done
+[ -n "$publishing" ] || exit 0
+
+if [ ! -d node_modules ]; then
+  echo "pre-push: run 'npm ci' and 'npx playwright install chromium' first." >&2
+  exit 1
+fi
+npm run check </dev/null && npm test </dev/null || {
+  echo "pre-push: checks failed, master was not pushed." >&2
+  exit 1
+}
