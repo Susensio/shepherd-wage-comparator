@@ -1,0 +1,9 @@
+# Synced to the repository by the Settings app (https://github.com/probot/settings).
+repository:
+  description: Single-page tool for shepherds in Spain to compare job offers against the legal minimum wage, rest days and overtime
+  homepage: https://susensio.github.io/shepherd-wage-comparator/
+  topics: shepherds, livestock, labor-rights, minimum-wage, spain, single-page-app
+  has_issues: true
+  has_wiki: false
+  has_projects: false
+  delete_branch_on_merge: true
