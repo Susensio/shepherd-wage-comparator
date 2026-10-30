@@ -12,10 +12,9 @@ No preview deploy: work stays on the branch and `master` is not touched until th
    Deleting the published artifact, after exporting a backup from it, is the owner's call.
 3. Done (storage key now `cj.ofertas2`, old data not read): refactor the offer to `{ id, terms, mine }` across `offer.js`, `model/`, `views/`, `saved.js`, the fixtures and the tests.
 4. Done (switch in Comparar only, not in the result view): a terms-only calculation (neutral `mine`) in `model/`, and a way to show it for own offers.
-5. Project created: `https://etvrgexvjviavulflcqr.supabase.co`. A Supabase access token is stored as the environment secret `SUPABASE_ACCESS_TOKEN` (visible only to sessions started after it was added).
-   Next, through the management API (`https://api.supabase.com/v1/projects/etvrgexvjviavulflcqr/...`): run `supabase/schema.sql`, set the site and redirect URLs (GitHub Pages and `http://localhost:8000`), fetch the anon key into `src/storage/account-config.js`, and check the RLS rules against the real database.
-   Owner: the Google OAuth client (Google Cloud Console, redirect URI `https://etvrgexvjviavulflcqr.supabase.co/auth/v1/callback`), its ID and secret entered in Supabase under Google provider. Revoke the access token when done.
-6. Done, RLS tested offline with PGlite, not yet against a real project: `supabase/schema.sql`:
+5. Done, through the management API: `supabase/schema.sql` run on `https://etvrgexvjviavulflcqr.supabase.co`; auth site URL `https://susensio.github.io/shepherd-wage-comparator/`, redirect URLs that and `http://localhost:8000`; the project URL and publishable key in `src/storage/account-config.js`; the RLS rules of `test/unit/rls.test.js` checked against the real database (test users in one transaction, rolled back).
+   Owner: the Google OAuth client (Google Cloud Console, redirect URI `https://etvrgexvjviavulflcqr.supabase.co/auth/v1/callback`), its ID and secret entered in Supabase under Google provider; then a first real sign-in. Revoke the access token `SUPABASE_ACCESS_TOKEN` and remove the environment secret.
+6. Done, RLS tested offline with PGlite and once against the real project: `supabase/schema.sql`:
    - `profiles(user_id, name, email, phone, …, sharing)`, readable by readers only for sharing users;
    - `settings(user_id, cfg)`, owner only;
    - `offers(id uuid, user_id, terms jsonb, schema_version, updated_at)`, owner, plus readers when the owner shares;
