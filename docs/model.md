@@ -10,6 +10,12 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 - Whatever the employer's terms alone decide (schedule, legal minimum, the questions in `offer.js`) takes `terms`; only the car, the other expenses, the rent and the IRPF choice read `mine`.
 - `vacationAuto` (vacation set for a short contract, not by the user) sits in `terms` with `vacation`.
 
+## Terms-only figures
+
+- `calcTermsOnly` (`model/calc.js`) calculates an offer from `terms` alone, with `termsOnly` (`offer.js`): a neutral `mine` (no car, so no trips, km or fuel; no other expenses; no rent override; automatic IRPF) and IRPF as if nothing else was earned that year (`others` 0, no other offers). It works from `{ id, terms }`, which is how other people's offers are calculated (ADR-0007).
+- The rest of the settings are kept: what housing and meals are worth, Social Security rates, the unemployment switch. They value the terms; they say nothing about the worker's life. The km rate the employer pays is in `terms` but is paid per km driven at work, so with no km it is zero.
+- These figures say what the job pays, not what it is worth to any one worker, so they leave out costs that differ between workers. The Comparar tab can show them for own offers (the «Solo condiciones» switch).
+
 ## What is owed
 
 - Counted per item (salary, overnight bonus, vacation) and month by month. A surplus in one item does not cover a shortfall in another (ADR-0004).

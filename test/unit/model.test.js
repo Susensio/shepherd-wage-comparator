@@ -3,12 +3,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { num } from '../../src/format.js';
 import { MIN_WAGE } from '../../src/law.js';
-import { calc } from '../../src/model/calc.js';
+import { calc, calcTermsOnly } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { payrollMonths } from '../../src/model/time.js';
-import { DEF_CFG, parseDate } from '../../src/offer.js';
+import { DEF_CFG, DEF_MINE, parseDate } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/saved.js';
 import { incomeOf } from '../../src/units.js';
 import { offerOf } from './flat-offer.js';
@@ -182,4 +183,50 @@ test('the payslips add up to the gross', () => {
       `payslips (${o.mine.name})`,
     );
   }
+});
+
+// Functions (netOf…) are dropped, so two results compare by their figures
+const figuresOf = (r) => JSON.stringify(r);
+
+test('terms-only figures ignore every own field, and work from the terms alone', () => {
+  const garbled = {
+    name: 'x',
+    rentValue: 900,
+    car: 'own',
+    commute: 'daily',
+    tripsHome: 4,
+    kmHome: 300,
+    kmWorkPerDay: 50,
+    expenses: 400,
+    irpfMode: 'manual',
+    irpfManual: 30,
+  };
+  for (const o of offers) {
+    const expected = figuresOf(calcTermsOnly({ id: o.id, terms: o.terms }, { cfg }));
+    assert.equal(figuresOf(calcTermsOnly(o, { cfg })), expected, o.mine.name);
+    assert.equal(
+      figuresOf(calcTermsOnly({ ...o, mine: { ...o.mine, ...garbled, name: o.mine.name } }, { cfg })),
+      expected,
+    );
+  }
+});
+
+test('terms-only figures with no other earnings equal the normal ones for an offer with neutral own figures', () => {
+  const neutral = { ...DEF_MINE, car: 'noCar', commute: 'liveIn' };
+  for (const o of offers) {
+    const own = { ...o, mine: { ...neutral, name: o.mine.name } };
+    const plain = calc(own, { cfg: { ...cfg, others: 0 }, alone: true });
+    assert.equal(figuresOf(calcTermsOnly(own, { cfg })), figuresOf(plain), o.mine.name);
+    assert.equal(plain.car.cost, 0);
+    assert.equal(plain.car.km, 0);
+  }
+});
+
+test('terms-only drops what depends on the worker: travel, expenses and other earnings', () => {
+  const o = offers.find((x) => num(x.mine.kmHome) > 0 || num(x.mine.expenses) > 0);
+  assert.ok(o, 'a sample offer with own travel or expenses');
+  const full = calc(o, { cfg, offers });
+  const bare = calcTermsOnly(o, { cfg });
+  assert.equal(bare.car.cost, 0);
+  assert.ok(full.car.cost > 0 || num(o.mine.expenses) > 0);
 });

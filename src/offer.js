@@ -55,6 +55,15 @@ export const DEF_MINE = {
   irpfManual: 2,
 };
 
+/** Own figures that cost nothing: no car (so no trips, km or fuel), no expenses, automatic IRPF. */
+const NEUTRAL_MINE = { ...DEF_MINE, car: 'noCar', commute: 'liveIn' };
+
+/** The offer judged on its terms alone: the same terms with neutral own figures. Works from `{ id, terms }`. Keeps the name. */
+export const termsOnly = (offer) => ({
+  ...offer,
+  mine: { ...NEUTRAL_MINE, name: offer.mine?.name ?? '' },
+});
+
 /** The side of an offer a field lives on: `offer.mine` or `offer.terms`. */
 export const sideOf = (offer, field) => (field in DEF_MINE ? offer.mine : offer.terms);
 

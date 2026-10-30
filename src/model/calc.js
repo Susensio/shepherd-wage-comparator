@@ -13,6 +13,7 @@ import {
   isComplete,
   rentPerMonth,
   spanOf,
+  termsOnly,
   vacationPaid,
   workedOffers,
 } from '../offer.js';
@@ -236,3 +237,12 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
             : null,
   };
 }
+
+/**
+ * The figures of an offer from its terms alone: neutral own figures, and IRPF as if nothing else was earned that year
+ * (no other offers, `others` 0). The rest of the settings (what housing and meals are worth, Social Security,
+ * unemployment) are kept: they value the terms, they do not describe the worker's life.
+ * @param {object} offer at least `{ id, terms }`
+ * @param {{cfg: object}} ctx
+ */
+export const calcTermsOnly = (offer, { cfg }) => calc(termsOnly(offer), { cfg: { ...cfg, others: 0 }, alone: true });
