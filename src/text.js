@@ -4,7 +4,7 @@ import { f1, fCount, fDays, fE, fN, fTyped, joinAnd, lowerFirst, num } from './f
 import { LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, mealsGiven, mealsList } from './offer.js';
-import { failuresOf, H_MAX, LAW_SHORT } from './rights.js';
+import { failuresOf, H_MAX, isFullyUnpaid, isWorthCounting, LAW_SHORT } from './rights.js';
 import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
 /** What `missing()` can report, as the sentence names it. */
@@ -82,20 +82,24 @@ export const unitPhrase = (unit, r) => (unit === 'total' ? `en los ${fN(r.time.n
 
 /** What the employer does not pay of the minimum, for «Para negociar»: salary, overnight bonus or vacation. */
 export const minimumShortText = (r) =>
-  (r.noContract ? r.debt.salary > 1 : r.min.salary - r.pay.salary > 1)
+  (r.noContract ? isWorthCounting(r.debt.salary) : isWorthCounting(r.min.salary - r.pay.salary))
     ? 'por pagarte por debajo del mínimo'
-    : r.debt.salary > 1
+    : isWorthCounting(r.debt.salary)
       ? 'por no pagarte el plus de pernocta'
       : 'por no pagarte las vacaciones';
 
 /** The extra days and the overtime per week you are not paid for; if none is paid, all of them. */
 export function unpaidTime(r) {
   const x = r.extra;
-  const days = r.savings.days > 1 ? (x.daysUnpaid >= x.daysValue - 1 ? r.extraDays.extra : x.daysUnpaidCount) : 0;
+  const days = isWorthCounting(r.savings.days)
+    ? isFullyUnpaid(x.daysUnpaid, x.daysValue)
+      ? r.extraDays.extra
+      : x.daysUnpaidCount
+    : 0;
   const week = hoursWeek(x);
   const hours =
-    week.restDays * (x.daysValue > 0 && r.savings.days > 1 ? x.daysUnpaid / x.daysValue : 0) +
-    week.beyond * (x.overtimeValue > 0 && r.savings.overtime > 1 ? x.overtimeUnpaid / x.overtimeValue : 0);
+    week.restDays * (x.daysValue > 0 && isWorthCounting(r.savings.days) ? x.daysUnpaid / x.daysValue : 0) +
+    week.beyond * (x.overtimeValue > 0 && isWorthCounting(r.savings.overtime) ? x.overtimeUnpaid / x.overtimeValue : 0);
   return { days, hours: hours >= 0.5 ? hours : 0 };
 }
 
@@ -104,17 +108,17 @@ export function legalLine(o, r) {
   const failures = failuresOf(o, r);
   if (!failures) return null;
   const x = r.extra;
-  const status = (unpaid, value) => (unpaid >= value - 1 ? 'sin pagar' : 'mal pagadas');
+  const status = (unpaid, value) => (isFullyUnpaid(unpaid, value) ? 'sin pagar' : 'mal pagadas');
   const time = [
-    r.savings.days > 1 && `jornadas de más ${status(x.daysUnpaid, x.daysValue)}`,
-    r.savings.overtime > 1 && `horas extra ${status(x.overtimeUnpaid, x.overtimeValue)}`,
+    isWorthCounting(r.savings.days) && `jornadas de más ${status(x.daysUnpaid, x.daysValue)}`,
+    isWorthCounting(r.savings.overtime) && `horas extra ${status(x.overtimeUnpaid, x.overtimeValue)}`,
   ]
     .filter(Boolean)
     .join(' y ');
   if (failures.length)
     return {
       status: 'bad',
-      text: `✘ No cumple: ${joinAnd(failures.map((t) => LAW_SHORT[t] || t))}${time ? ` · ${time}` : ''}`,
+      text: `✘ No cumple: ${joinAnd(failures.map((id) => LAW_SHORT[id]))}${time ? ` · ${time}` : ''}`,
     };
   return time
     ? { status: 'warn', text: `! Cumple lo básico, pero ${time}` }
@@ -133,7 +137,7 @@ export function cardText(o, r) {
     [savings.minimum, minimumShortText(r)],
     [savings.days, 'por las jornadas de más'],
     [savings.overtime, 'por las horas extra (estimado)'],
-  ].filter(([value]) => value > 1);
+  ].filter(([value]) => isWorthCounting(value));
   return [
     o.name || 'Oferta',
     `${s.time} → ${fN(r.time.daysWorked)} días trabajados`,
@@ -184,11 +188,11 @@ export function claimText(o, r) {
     add(
       `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (SMI ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(r.cfg.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
     );
-    if (r.debt.vacation > 1)
+    if (isWorthCounting(r.debt.vacation))
       add(
         `Vacaciones sin pagar (${fDays(r.time.vacationDays)}): ${fE(r.debt.vacation)} brutos, unos ${fNet(r.debt.vacation)} netos (Estatuto, art. 38).`,
       );
-    if (r.debt.salary > 1) add(`Lo que se paga no llega al mínimo: faltan ${fE(r.debt.salary)} brutos.`);
+    if (isWorthCounting(r.debt.salary)) add(`Lo que se paga no llega al mínimo: faltan ${fE(r.debt.salary)} brutos.`);
   } else {
     add(
       `Tipo de contrato: ${contractOf(o).phrase}. Nómina bruta en todo el contrato: ${fE(r.pay.gross)} (unos ${fE(r.pay.net)} netos).`,
@@ -204,18 +208,18 @@ export function claimText(o, r) {
     if (r.min.vacation > 0)
       add(`- Vacaciones (${fDays(r.time.vacationDays)}; Estatuto, art. 38): ${fE(r.min.vacation)}.`);
     const { salary, overnight, vacation } = r.debt.parts;
-    if (r.debt.total > 1) {
+    if (isWorthCounting(r.debt.total)) {
       const parts = [
-        salary > 1 && ['de salario', salary],
-        overnight > 1 && ['de plus de pernocta', overnight],
-        vacation > 1 && ['de vacaciones', vacation],
+        isWorthCounting(salary) && ['de salario', salary],
+        isWorthCounting(overnight) && ['de plus de pernocta', overnight],
+        isWorthCounting(vacation) && ['de vacaciones', vacation],
       ].filter(Boolean);
       add(
         `En nómina faltan ${fE(r.debt.total)} brutos ${parts.length === 1 ? parts[0][0] : `(${joinAnd(parts.map(([t, v]) => `${fE(v)} ${t}`))})`}. Lo que sobra en un concepto no compensa lo que falta en otro.`,
       );
       if (cash > 0)
         add(
-          r.debt.owed > 1
+          isWorthCounting(r.debt.owed)
             ? `Se pagan además ${fE(cash)} sin declarar, que no cotizan. Contándolos, siguen faltando ${fE(r.debt.owed)} brutos, unos ${fNet(r.debt.owed)} netos.`
             : `Se pagan además ${fE(cash)} sin declarar: cubren esa falta, pero no cotizan (menos paro y menos jubilación).`,
         );
@@ -241,8 +245,8 @@ export function claimText(o, r) {
     const paid = x.daysValue - x.daysUnpaid;
     add(
       `Cada una, una jornada normal de ${f1(x.workday)} h al salario mínimo (${fE(x.dayValue, 2)}${r.min.overnight > 0.5 ? ', con el plus de pernocta' : ''}); lo que pasa de ahí va en las horas extra. Valen ${fE(x.daysValue)} brutos.${
-        x.daysUnpaid > 1
-          ? ` ${paid > 1 ? `Lo que se paga por encima del mínimo${cash > 0 ? ', contando lo cobrado en negro,' : ''} cubre ${fE(paid)}; s` : 'S'}in pagar: ${fE(x.daysUnpaid)} brutos, unos ${fNet(x.daysUnpaid)} netos.`
+        isWorthCounting(x.daysUnpaid)
+          ? ` ${isWorthCounting(paid) ? `Lo que se paga por encima del mínimo${cash > 0 ? ', contando lo cobrado en negro,' : ''} cubre ${fE(paid)}; s` : 'S'}in pagar: ${fE(x.daysUnpaid)} brutos, unos ${fNet(x.daysUnpaid)} netos.`
           : ' Lo que se paga por encima del mínimo las cubre.'
       }`,
     );
@@ -254,7 +258,7 @@ export function claimText(o, r) {
       `Jornadas de ${fTyped(o.hoursPerDay)} h: ${f1(Math.max(0, num(o.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (40 h semanales; Estatuto, art. 34), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
     );
     add(
-      `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${x.overtimeUnpaid > 1 ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (Estatuto, art. 35).`,
+      `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${isWorthCounting(x.overtimeUnpaid) ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (Estatuto, art. 35).`,
     );
     if (r.time.hoursPerWeek > H_MAX || num(o.hoursPerDay) > LAW.maxDayHours)
       add(

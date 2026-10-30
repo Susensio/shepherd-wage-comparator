@@ -34,8 +34,8 @@ const cashText = (r) =>
 function legalShort(o, r) {
   const failures = failuresOf(o, r);
   if (!failures) return nothing;
-  const others = failures.filter((t) => t !== 'Jornada');
-  if (others.length) return html`<span class="bad">✘ ${joinAnd(others.map((t) => LAW_SHORT[t] || t))}</span>`;
+  const others = failures.filter((id) => id !== 'hours');
+  if (others.length) return html`<span class="bad">✘ ${joinAnd(others.map((id) => LAW_SHORT[id]))}</span>`;
   return failures.length ? nothing : html`<span class="ok">✔ cumple</span>`;
 }
 

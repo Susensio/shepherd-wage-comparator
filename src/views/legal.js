@@ -234,27 +234,26 @@ function extraTimeCards(r) {
 }
 
 const RIGHT_ICON = { true: ['ok', '✔'], false: ['bad', '✘'], warn: ['warn', '!'], null: ['off', 'i'] };
-const WARN_TEXT = { Jornada: 'las horas extra se tienen que pagar', Vacaciones: 'las vacaciones se tienen que librar' };
+const WARN_TEXT = { hours: 'las horas extra se tienen que pagar', vacation: 'las vacaciones se tienen que librar' };
 
 /** «¿Es legal?» */
 export function legalSection(o, r, money) {
   const rights = rightsOf(o, r, money.unit);
   if (!rights) return nothing;
-  const failures = rights.filter((x) => x.status === false).map((x) => x.title);
-  const warnings = rights.filter((x) => x.status === 'warn').map((x) => x.title);
-  const passed = rights.filter((x) => x.status === true).map((x) => x.title);
+  const failures = rights.filter((x) => x.status === false);
+  const warnings = rights.filter((x) => x.status === 'warn');
+  const passed = rights.filter((x) => x.status === true);
   const headline = r.noContract
     ? 'Sin contrato no es legal'
     : failures.length
       ? 'Esta oferta no cumple la ley'
       : warnings.length
-        ? `Cumple lo básico, pero ${joinAnd(warnings.map((t) => WARN_TEXT[t] || t.toLowerCase()))}`
+        ? `Cumple lo básico, pero ${joinAnd(warnings.map((x) => WARN_TEXT[x.id] || x.title.toLowerCase()))}`
         : 'Esta oferta cumple lo básico';
-  const sourceOf = (title) =>
-    title === 'Salario mínimo' ? { url: r.wage.url, label: r.wage.decree } : LAW_SOURCE[title];
-  const item = ({ status, title, text }) => {
+  const sourceOf = (id) => (id === 'salary' ? { url: r.wage.url, label: r.wage.decree } : LAW_SOURCE[id]);
+  const item = ({ id, status, title, text }) => {
     const [cls, icon] = RIGHT_ICON[status];
-    const source = sourceOf(title);
+    const source = sourceOf(id);
     return html`<li class="law"><span class="ic ${cls}" aria-hidden="true">${icon}</span><div><b>${title}</b><span>${text}${
       source ? html` <a class="lawlink" href=${source.url} target="_blank" rel="noopener">${source.label}</a>` : nothing
     }</span></div></li>`;
@@ -262,14 +261,14 @@ export function legalSection(o, r, money) {
   return html`<section class="legal" id="secLegal" aria-label="¿Es legal esta oferta?">
     <h3 class="q">¿Es legal?</h3>
     <p class="verdict ${failures.length ? 'bad' : warnings.length ? 'warn' : 'ok'}">${headline}</p>
-    ${failures.length ? html`<p class="failures">${failures.map((t) => html`<span>✘ ${capitalize(LAW_SHORT[t] || t)}</span>`)}</p>` : ''}
+    ${failures.length ? html`<p class="failures">${failures.map((x) => html`<span>✘ ${capitalize(LAW_SHORT[x.id] || x.title)}</span>`)}</p>` : ''}
     ${owedCard(o, r, money)}
     ${extraTimeCards(r)}
     <details class="plg" data-fold="laws"><summary>Lo que dice la ley</summary><ul class="laws">${rights
       .filter((x) => x.status !== true)
       .map(
         item,
-      )}</ul>${passed.length ? html`<p class="hint">✔ Cumple: ${joinAnd(passed.map((t) => t.toLowerCase()))}.</p>` : nothing}</details>
+      )}</ul>${passed.length ? html`<p class="hint">✔ Cumple: ${joinAnd(passed.map((x) => x.title.toLowerCase()))}.</p>` : nothing}</details>
     <p class="hint">Dónde reclamar (sindicato, Inspección de Trabajo): <button type="button" class="linkbtn" data-action="tab" data-tab="laws">en «Leyes»</button>.</p>
   </section>`;
 }

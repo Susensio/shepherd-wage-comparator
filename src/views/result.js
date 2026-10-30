@@ -48,14 +48,14 @@ function pills(o, r) {
   const hoursPerWeek = r.time.hoursPerWeek;
   const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
   const explain = explanations(o, r);
-  const statusOf = Object.fromEntries((rightsOf(o, r) || []).map((right) => [right.title, right.status]));
-  const color = (title, fallback) =>
-    title in statusOf
-      ? statusOf[title] === true
+  const statusOf = Object.fromEntries((rightsOf(o, r) || []).map((right) => [right.id, right.status]));
+  const color = (id, fallback) =>
+    id in statusOf
+      ? statusOf[id] === true
         ? 'ok'
-        : statusOf[title] === false
+        : statusOf[id] === false
           ? 'bad'
-          : statusOf[title] === 'warn'
+          : statusOf[id] === 'warn'
             ? 'warn'
             : ''
       : fallback;
@@ -81,7 +81,7 @@ function pills(o, r) {
   list.push({
     icon: 'clock',
     text: `${fTyped(o.hoursPerDay)}\u00a0h/día · ${fN(hoursPerWeek)}\u00a0h/semana`,
-    status: color('Jornada', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
+    status: color('hours', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
     tip: `Trabajas unas ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` Te salen ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.hoursPerDay) > LAW.maxDayHours ? ' Pasas del límite legal.' : ''}`,
   });
   list.push({
@@ -90,7 +90,7 @@ function pills(o, r) {
       r.time.daysOffMonth < 0.05
         ? 'Sin libranzas'
         : `Libras ${fTyped(o.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.daysOffUnit] || 'al mes'}`,
-    status: color('Descanso semanal', r.rest.short < 1 ? 'ok' : 'warn'),
+    status: color('rest', r.rest.short < 1 ? 'ok' : 'warn'),
     tip: `Por ley te corresponden al menos ${fN(LAW.weeklyRest, 1)} días de descanso por semana (unos ${fN((LAW.weeklyRest * DAYS_PER_MONTH) / 7, 1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.${r.rest.short >= 1 ? ` Con esta oferta trabajas unos ${fN(r.rest.short)} días ${overTxt} que deberían ser de descanso.` : ' Esta oferta lo cumple.'}`,
   });
   // Stable sort: within each colour, contract and money first
