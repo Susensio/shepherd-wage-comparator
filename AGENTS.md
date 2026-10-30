@@ -41,17 +41,19 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Checking changes
 
-- `npm run check` (Biome and types), then `npm test`: the unit tests in Node (`test/unit/`), then the page in headless Chromium with Playwright Test (`test/e2e/`; first time: `npx playwright install chromium`). CI runs the same on every push and keeps the traces of failed tests.
+- `npm run check`, then `npm test` (unit tests in Node, then the page in headless Chromium; first time: `npx playwright install chromium`). CI runs the same on every push and keeps the traces of failed tests.
+- Never commit real user data: the sample offers in `test/fixtures/` are anonymised (names like «Puerto A», amounts multiplied by 1.05).
 - Pure calculations go in unit tests. Browser tests are for what needs the page: what it shows, the flows, loading saved data.
 - The page is mobile-first: look at it at 375 px wide, in light and dark mode.
 
 ## Records
 
 - `docs/adr/`: numbered records of settled choices between alternatives. In English. The main agent writes them.
+- `docs/model.md`: how an offer's figures are calculated, rule by rule. In English. Update it with any change to `model/`.
 - `docs/BACKLOG.md`: open ideas and defects nobody is working on yet. In English. The main agent writes it.
 
 ## Commits
 
 - No `Co-Authored-By` or `Claude-Session` trailers.
-- Prototype stage: work on a local branch, one concern per commit, and tidy it (amend, squash, reword) before it goes anywhere. When a feature is complete, run `npm run check` and `npm test`, fast-forward `master` to the branch and push `master` directly. No pull requests for now.
+- Prototype stage: work on a local branch, one concern per commit, and tidy it (amend, squash, reword) before it goes anywhere. When a feature is complete, fast-forward `master` to the branch and push `master` directly; the pre-push hook (`.githooks/`, enabled by `npm ci`) runs `npm run check` and `npm test` first. No pull requests for now.
 - `master` is published as it is (GitHub Pages), so never rewrite it once pushed. A branch nobody else has pulled can be rewritten freely.
