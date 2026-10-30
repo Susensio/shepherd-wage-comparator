@@ -19,6 +19,11 @@ const unitPicker = (unit) =>
     (u) => html`<label><input type="radio" name="cmpUnit" value=${u} .checked=${u === unit}>${UNITS[u].pick}</label>`,
   )}</div></div>`;
 
+/** Switch to the figures of the offers' terms alone, as they would be for anyone. */
+const termsOnlySwitch = (on) =>
+  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on}>Solo las condiciones de la oferta</label>
+    <p class="hint">${on ? 'Se calcula sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.' : 'Sin tus desplazamientos ni gastos.'}</p></div>`;
+
 /** How much of what you receive is cash: all on payroll, part, or all in cash. */
 const cashText = (r) =>
   r.cash.total <= 0.5
@@ -195,9 +200,10 @@ function hoursView(list) {
  * Comparar: the ranking in the chosen unit (tap a row to see the offer), the best at each thing and the weekly hours.
  * @param {{o: object, r: object}[]} all your offers with their figures
  * @param {string} unit
+ * @param {boolean} termsOnly show the figures of the terms alone
  * @returns {{picker: unknown, body: unknown}}
  */
-export function compareView(all, unit) {
+export function compareView(all, unit, termsOnly) {
   const U = UNITS[unit];
   // Without a duration there is no total: those go last
   const sortValue = (r) => {
@@ -248,7 +254,7 @@ export function compareView(all, unit) {
     : html`<div class="cmp-mode"><span>Toca una oferta para verla.</span><button type="button" class="sm" data-action="startPair">Comparar dos</button></div>`;
   return {
     picker: unitPicker(unit),
-    body: html`${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
+    body: html`${termsOnlySwitch(termsOnly)}${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${headToHead(list)}${hoursView(list)}`,
   };

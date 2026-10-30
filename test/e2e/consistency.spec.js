@@ -103,3 +103,21 @@ for (const offer of sample.offers) {
     expect([...(await page.evaluate(ledgerProblems)), ...(await page.evaluate(invariantProblems))]).toEqual([]);
   });
 }
+
+// The terms-only figures, laid out by the result view, add up the same way
+for (const offer of sample.offers) {
+  test(`${offer.mine.name} adds up from its terms alone`, async ({ loaded: page }) => {
+    await page.evaluate((id) => app.select(id), offer.id);
+    test.skip((await page.locator('#result .empty').count()) > 0, 'offer with missing data');
+    await page.evaluate(async () => {
+      const { render } = await import('lit-html');
+      const { resultView } = await import('./src/views/result.js');
+      const { calcTermsOnly } = await import('./src/model/calc.js');
+      const { termsOnly } = await import('./src/offer.js');
+      const o = app.active();
+      render(resultView(termsOnly(o), calcTermsOnly(o, { cfg: app.state.config })), document.querySelector('#result'));
+      for (const d of document.querySelectorAll('#result details')) d.open = true;
+    });
+    expect(await page.evaluate(ledgerProblems)).toEqual([]);
+  });
+}

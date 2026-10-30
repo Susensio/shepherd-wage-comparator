@@ -2553,3 +2553,20 @@ details.plg > summary .stat.dt b {
   border-bottom: 0;
   font-weight: 700;
 }
+
+.terms-only label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.terms-only input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+.terms-only .hint {
+  margin: 2px 0 0 26px;
+}

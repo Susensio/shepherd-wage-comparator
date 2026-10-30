@@ -44,6 +44,8 @@ export const state = {
   config: { ...DEF_CFG },
   /** The Comparar unit: per hour is the fairest between different workdays. */
   cmpUnit: 'hour',
+  /** Comparar shows the figures of the terms alone (not saved: a way of looking). */
+  termsOnly: false,
   /** Named collapsibles (data-fold) and whether they are open. */
   folds: /** @type {Record<string, boolean>} */ ({}),
 };

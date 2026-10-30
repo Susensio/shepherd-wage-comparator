@@ -86,6 +86,18 @@ test('head to head', async ({ loaded: page }) => {
   await expect(page.locator('#pairBlk')).toHaveCount(0);
 });
 
+test('Comparar can show the terms alone, without your travel and expenses', async ({ loaded: page }) => {
+  await page.click('.tabs [data-tab=compare]');
+  const rows = () => page.locator('#cmpBlk .lr .v').allTextContents();
+  const full = await rows();
+  await page.check('input[name=termsOnly]');
+  await expect(page.locator('.terms-only .hint')).toContainText('IRPF');
+  expect(await page.evaluate(() => app.state.termsOnly)).toBe(true);
+  expect(await rows()).not.toEqual(full);
+  await page.uncheck('input[name=termsOnly]');
+  expect(await rows()).toEqual(full);
+});
+
 test('settings apply to every offer', async ({ page }) => {
   await page.locator('.tcard').first().click();
   await page.click('.tabs [data-tab=settings]');

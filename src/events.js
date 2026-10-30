@@ -369,6 +369,10 @@ export function setUpEvents() {
   });
   document.addEventListener('change', (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
+    if (el.name === 'termsOnly') {
+      state.termsOnly = el.checked;
+      paintAll();
+    }
     if (el.name !== 'cmpUnit') return;
     state.cmpUnit = el.value;
     saveCmpUnit();

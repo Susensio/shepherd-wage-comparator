@@ -5,6 +5,7 @@
 
 import { render } from 'lit-html';
 import { joinAnd } from './format.js';
+import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
 import { MISSING_TEXT } from './text.js';
@@ -84,9 +85,13 @@ export function markMissing() {
   $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
 }
 
+/** Each offer with its figures: full, or from its terms alone when that switch is on. */
+const compared = () =>
+  myOffers().map((o) => ({ o, r: state.termsOnly ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
+
 function paintCompare() {
-  const all = myOffers().map((o) => ({ o, r: calcOffer(o) }));
-  const { picker, body } = compareView(all, state.cmpUnit);
+  const all = compared();
+  const { picker, body } = compareView(all, state.cmpUnit, state.termsOnly);
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
   restoreFolds($('#cmpBlk'));
@@ -94,7 +99,7 @@ function paintCompare() {
 }
 
 /** «Cuándo»: what you are paid over time and each year's summary. Only with dated offers. */
-function paintTimeline(all = myOffers().map((o) => ({ o, r: calcOffer(o) }))) {
+function paintTimeline(all = compared()) {
   const dated = all.some(({ o }) => o.terms.start);
   $('#tlBlk').hidden = !dated;
   render(dated ? trendView(all, state.cmpUnit, $('#cmpBlk').clientWidth) : '', $('#trend'));
