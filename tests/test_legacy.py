@@ -2,6 +2,8 @@
 
 import json
 
+from conftest import LOAD_SAMPLE
+
 
 def spanish_storage(sample_es):
     first = sample_es["ofertas"][1]["id"]
@@ -17,9 +19,10 @@ localStorage.setItem('cj.copia',JSON.stringify({{fecha:Date.now(),firma:'x'}}));
 
 def test_browser_storage(open_page, sample, sample_es, errors):
     page = open_page(spanish_storage(sample_es))
-    state = page.evaluate("""({tab:document.querySelector('.tabs [aria-selected=true]').dataset.tab, unit:cmpUnit,
-        offers:offers.map(o=>({id:o.id,name:o.name,contract:o.contract,vacation:o.vacation,duration:o.duration})),
-        cfg:config.fuelUse, folds:{time:folds.time,workings:folds.workings,owed:folds.owed}, backup:$('#backupStatus').textContent})""")
+    state = page.evaluate("""({tab:document.querySelector('.tabs [aria-selected=true]').dataset.tab, unit:app.state.cmpUnit,
+        offers:app.state.offers.map(o=>({id:o.id,name:o.name,contract:o.contract,vacation:o.vacation,duration:o.duration})),
+        cfg:app.state.config.fuelUse, folds:{time:app.state.folds.time,workings:app.state.folds.workings,owed:app.state.folds.owed},
+        backup:document.querySelector('#backupStatus').textContent})""")
     assert state["tab"] == "compare"
     assert state["unit"] == "month"
     expected = [{k: o.get(k) for k in ("id", "name", "contract", "vacation", "duration")} for o in sample["offers"]]
@@ -35,10 +38,10 @@ def test_same_figures_as_english_data(open_page, sample, sample_es, errors):
     old = open_page(spanish_storage(sample_es))
     old.click(".tabs [data-tab=offers]")
     new = open_page()
-    new.evaluate("d=>{closeTpl(); offers=d.offers.map(norm); config={...DEF_CFG,...d.cfg}; saveCfg(); select(offers[0].id)}", sample)
+    new.evaluate(LOAD_SAMPLE, sample)
     for offer in sample["offers"]:
         for p in (old, new):
-            p.evaluate(f"select('{offer['id']}')")
+            p.evaluate(f"app.select('{offer['id']}')")
             p.evaluate("document.querySelectorAll('#result details').forEach(d=>d.open=true)")
         assert old.inner_text("#result") == new.inner_text("#result"), offer["name"]
     assert not errors
@@ -46,7 +49,8 @@ def test_same_figures_as_english_data(open_page, sample, sample_es, errors):
 
 def test_backup_file(page, sample_es, errors):
     result = page.evaluate(
-        "t=>{const m=document.createElement('p'); const ok=loadBackup(t,m); return [ok,m.textContent,offers.map(o=>o.contract)]}",
+        """async t=>{const {loadBackup}=await import('./src/storage/backup.js'), m=document.createElement('p');
+        const ok=loadBackup(t,m); return [ok,m.textContent,app.state.offers.map(o=>o.contract)]}""",
         json.dumps(sample_es),
     )
     assert result[0] is True
@@ -61,9 +65,9 @@ def test_cloud_document(open_page, sample_es, errors):
 window.claude={{use:n=>Promise.resolve(n==='user'?{{id:async()=>'u1'}}:n==='db'?{{doc:()=>({{get:async()=>({{exists:true,data:()=>DOC}}),set:async d=>{{window.__set=d}}}})}}:null)}};"""
     page = open_page(stub)
     page.wait_for_timeout(300)
-    assert page.evaluate("offers.length") == 8
-    assert page.evaluate("inCloud")
-    page.evaluate("active.name='Cambiada'; persist()")
+    assert page.evaluate("app.state.offers.length") == 8
+    assert page.evaluate("app.state.inCloud")
+    page.evaluate("async()=>{app.active().name='Cambiada'; (await import('./src/state.js')).saveOffers()}")
     page.wait_for_timeout(1800)
     saved = page.evaluate("window.__set")
     assert saved and "offers" in saved and "ofertas" not in saved

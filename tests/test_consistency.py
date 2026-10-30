@@ -25,21 +25,24 @@ LEDGERS = r"""()=>{
 }"""
 
 # Model invariants, and the same figure where it appears twice.
-INVARIANTS = r"""()=>{
-  const o=active, r=calc(o), A=r.savings, dX=extraDaysOf(r), out=[], weeks=(r.noDuration?DM:r.natDays-r.vacationTaken)/7, close=(a,b,t=1)=>Math.abs(a-b)<=t;
-  if(!close(r.tmHours, r.tmDays*r.tmWorkday+r.tmHoursOver,0.5)) out.push('extra hours ≠ extra days × workday + overtime');
-  if(!close(r.tmHoursNorm+r.tmHours, r.hours,0.5)) out.push('normal + extra hours ≠ hours worked');
+INVARIANTS = r"""async()=>{
+  const {monthlyPayslips}=await import('./src/model/payslips.js');
+  const o=app.active(), r=app.calcOffer(o), t=r.time, x=r.extra, dX=r.extraDays, out=[], close=(a,b,tol=1)=>Math.abs(a-b)<=tol;
+  const weeks=(t.noDuration?365/12:t.natDays-t.vacationTaken)/7;
+  if(!close(x.hours, x.days*x.workday+x.overtime,0.5)) out.push('extra hours ≠ extra days × workday + overtime');
+  if(!close(x.normalHours+x.hours, t.hours,0.5)) out.push('normal + extra hours ≠ hours worked');
   if(dX.worked>dX.due&&!close(dX.worked-dX.due, dX.extra,0.11)) out.push('worked − due ≠ extra days');
-  if(!close(r.tmWorkDaysWeek*r.tmHoursDay, r.hoursPerWeek,1.2)) out.push(`week in the bar ${(r.tmWorkDaysWeek*r.tmHoursDay).toFixed(1)} h ≠ hours per week ${r.hoursPerWeek.toFixed(1)} h`);
-  if(A.overtimeWeek>0.5&&!close(A.overtimeWeek*weeks, r.tmHoursOver, Math.max(3,r.tmHoursOver*0.08))) out.push('overtime per week × weeks ≠ total overtime');
-  const emp=1+config.ssEmp/100; if(A.days>1&&!close(A.days,A.daysUnpaid*emp)) out.push('extra-days savings ≠ unpaid × employer rate');
+  if(!close(x.workDaysWeek*x.hoursPerDay, t.hoursPerWeek,1.2)) out.push(`week in the bar ${(x.workDaysWeek*x.hoursPerDay).toFixed(1)} h ≠ hours per week ${t.hoursPerWeek.toFixed(1)} h`);
+  if(x.overtimePerWeek>0.5&&!close(x.overtimePerWeek*weeks, x.overtime, Math.max(3,x.overtime*0.08))) out.push('overtime per week × weeks ≠ total overtime');
+  const emp=1+r.cfg.ssEmp/100; if(r.savings.days>1&&!close(r.savings.days,x.daysUnpaid*emp)) out.push('extra-days savings ≠ unpaid × employer rate');
+  const onPayroll=r.pay.net+r.employer.severance;
   const legend=document.querySelector('#secSeason .rc-legend');
-  if(legend&&!r.noContract){ const b=[...legend.querySelectorAll('b')].map(x=>parseFloat(x.textContent.replace(/\./g,'').replace(',','.')));
-    if(Math.abs(b[0]-r.netTotal-r.severancePay)>2) out.push(`season end: on payroll ${b[0]} ≠ net payroll ${Math.round(r.netTotal+r.severancePay)}`) }
-  if(o.start&&!r.noContract&&!o.offerOnly){ const N=monthlyPayslips(o,r), sum=N.reduce((s,x)=>s+x.net,0);
-    if(N.length&&Math.abs(sum-r.netTotal-r.severancePay)>3) out.push(`payslip simulator: net sum ${sum.toFixed(0)} ≠ net payroll ${r.netTotal.toFixed(0)}`) }
-  const pill=[...document.querySelectorAll('#result .pill')].map(x=>x.textContent).find(t=>/h\/semana/.test(t));
-  if(pill&&Math.abs(parseFloat(pill.split('·')[1])-r.hoursPerWeek)>0.6) out.push(`pill «${pill}» ≠ ${r.hoursPerWeek.toFixed(1)} h`);
+  if(legend&&!r.noContract){ const b=[...legend.querySelectorAll('b')].map(e=>parseFloat(e.textContent.replace(/\./g,'').replace(',','.')));
+    if(Math.abs(b[0]-onPayroll)>2) out.push(`season end: on payroll ${b[0]} ≠ net payroll ${Math.round(onPayroll)}`) }
+  if(o.start&&!r.noContract&&!o.offerOnly){ const N=monthlyPayslips(o,r,r.cfg), sum=N.reduce((s,p)=>s+p.net,0);
+    if(N.length&&Math.abs(sum-onPayroll)>3) out.push(`payslip simulator: net sum ${sum.toFixed(0)} ≠ net payroll ${onPayroll.toFixed(0)}`) }
+  const pill=[...document.querySelectorAll('#result .pill')].map(e=>e.textContent).find(s=>/h\/semana/.test(s));
+  if(pill&&Math.abs(parseFloat(pill.split('·')[1])-t.hoursPerWeek)>0.6) out.push(`pill «${pill}» ≠ ${t.hoursPerWeek.toFixed(1)} h`);
   return out;
 }"""
 
@@ -51,7 +54,7 @@ def offer_ids(sample):
 @pytest.mark.parametrize("index", range(8))
 def test_offer_adds_up(loaded, sample, errors, index):
     offer = sample["offers"][index]
-    loaded.evaluate(f"select('{offer['id']}')")
+    loaded.evaluate(f"app.select('{offer['id']}')")
     if loaded.locator("#result .empty").count():
         pytest.skip("offer with missing data")
     loaded.evaluate("document.querySelectorAll('#result details').forEach(d=>d.open=true)")
