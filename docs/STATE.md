@@ -11,7 +11,7 @@ No preview deploy: work stays on the branch and `master` is not touched until th
 2. Done: retire the artifact: delete `storage/cloud.js`, the cloud status in Ajustes, the `window.claude` paths, and the artifact paragraphs in `AGENTS.md` and `README.md`.
    Deleting the published artifact, after exporting a backup from it, is the owner's call.
 3. Done (storage key now `cj.ofertas2`, old data not read): refactor the offer to `{ id, terms, mine }` across `offer.js`, `model/`, `views/`, `saved.js`, the fixtures and the tests.
-4. A terms-only calculation (neutral `mine`) in `model/`, and a way to show it for own offers.
+4. Done (switch in Comparar only, not in the result view): a terms-only calculation (neutral `mine`) in `model/`, and a way to show it for own offers.
 5. Owner: create the Supabase project (EU region), enable Google login with redirect URLs for GitHub Pages and `http://localhost:8000`, and hand over the project URL and anon key.
 6. Done, RLS tested offline with PGlite, not yet against a real project: `supabase/schema.sql`:
    - `profiles(user_id, name, email, phone, …, sharing)`, readable by readers only for sharing users;
