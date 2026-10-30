@@ -276,14 +276,6 @@ export function createAccount({
       );
     },
 
-    /** Deletes the offers (with their own figures), settings and profile in the account; the browser keeps its copy. */
-    async deleteMyData() {
-      stop();
-      unwrap(await client.from('offers').delete().eq('user_id', user?.id));
-      unwrap(await client.from('settings').delete().eq('user_id', user?.id));
-      unwrap(await client.from('profiles').delete().eq('user_id', user?.id));
-    },
-
     /** Deletes the account itself, with everything in it, and signs out. */
     async deleteAccount() {
       stop();

@@ -469,27 +469,6 @@ describe('other users and the profile', () => {
     assert.equal(data.profiles.find((p) => p.user_id === OTHER).phone, '600');
   });
 
-  test('deleting my data removes my rows only', async () => {
-    const t = tables();
-    t.offers.push({ id: id(5), user_id: OTHER, terms: {} });
-    const { account, data, state, calls } = setUp({ tables: t });
-    await account.connect();
-    await account.deleteMyData();
-    assert.deepEqual(
-      data.offers.map((o) => o.id),
-      [id(5)],
-    );
-    assert.deepEqual(
-      data.profiles.map((p) => p.user_id),
-      [OTHER],
-    );
-    // the browser keeps its copy and nothing is written afterwards
-    assert.equal(state.offers.length, 1);
-    const before = calls.length;
-    await account.flush();
-    assert.equal(calls.length, before);
-  });
-
   test('deleting the account calls the server function and signs out', async () => {
     const { account, fake } = setUp({ tables: tables() });
     await account.connect();
