@@ -2,7 +2,7 @@
 
 - auth | Accounts, probably with Supabase, to store each user's offers on a server instead of only in the browser or the Claude account.
   Goal: aggregate data across users for joint visualisations.
-  Open: what is stored and whether it is anonymised, consent for pooling, how existing `localStorage` offers migrate in (the storage keys cannot change, see AGENTS.md).
+  Open: what is stored and whether it is anonymised, consent for pooling, how existing `localStorage` offers migrate in. With other users, conversions are owed again (ADR-0005).
 - modes | Split the app into stages of the process instead of one analysis view. Today the analysis comes first and the other tabs help with later stages.
   Not designed yet. Stages to explore: analysis (current), negotiation, signing.
 - modes | Negotiation mode: build on `views/negotiate.js` to lead a conversation with the employer.
@@ -13,3 +13,5 @@
 - paint | Every repaint recomputes `calc` for all offers, each with nested `alone` calcs for the IRPF of the others, and `paintAll` computes the active offer twice.
   Measured 2.8 ms for the 8 sample offers in Node (October 2026), so not a problem now.
   Revisit if the number of offers grows, for example once accounts bring many.
+- legacy | Remove the Spanish-era conversions in `legacy.js` (`SPANISH`, `offerFromSpanish`, `cfgFromSpanish`, the `legacy*` fields in `normalizeOffer`), their unit tests and `test/e2e/legacy.spec.js` cases, now that the owner is the only user (ADR-0005).
+  Do it before other people save offers, or not at all.
