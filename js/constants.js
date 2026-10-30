@@ -148,7 +148,7 @@ const TPL = [
    v:{contract:'seasonal',durationUnit:'months',overnight:'yes',housing:'no',commute:'liveIn'}},
   {k:'season',t:'Temporada con casa',d:'Invernada u otra zona: varios meses con casa y libranzas.',s:'Temporal · con casa · vives allí',
    v:{contract:'temporary',durationUnit:'months',overnight:'no',housing:'yes',commute:'liveIn'}},
-  {k:'harvest',t:'Campaña o jornales',d:'Unos días o semanas a jornal: esquileo, partos, días sueltos.',s:'Temporal · por días · cobras por día, en limpio · vuelves cada día',
+  {k:'harvest',t:'Campaña o jornales',d:'Unos días o semanas a jornal: esquileo, partos, días sueltos.',s:'Temporal · por días · cobras por día, neto · vuelves cada día',
    v:{contract:'temporary',durationUnit:'days',payType:'net',payUnit:'day',commute:'daily'}},
   {k:'permanent',t:'Fijo todo el año',d:'Contrato anual en una explotación. Vuelves a casa cada día.',s:'Fijo · 12 meses · cobras al mes · vuelves cada día',
    v:{contract:'permanent',durationUnit:'months',duration:12,payUnit:'month',commute:'daily'}},
