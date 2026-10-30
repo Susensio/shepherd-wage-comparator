@@ -2,16 +2,23 @@
 //
 // The seam, with no test code in the page: `src/storage/account-config.js` is served with a project set (a route),
 // and `window.supabase` is defined before the page starts, so `loadSupabase` returns the fake instead of loading the
-// bundle. Without that route the config is null and the account stays off.
+// bundle. `withoutProject` serves a null config instead, so a test of the account being off does not depend on the
+// real project in the file.
 
-/** Serves a configured project in place of the null one. */
-export const withProject = (page) =>
+/** Serves `account-config.js` with this url and key. */
+const serveConfig = (page, url, anonKey) =>
   page.route('**/src/storage/account-config.js', (route) =>
     route.fulfill({
       contentType: 'text/javascript',
-      body: "export const ACCOUNT_CONFIG = { url: 'https://fake.test', anonKey: 'fake' };",
+      body: `export const ACCOUNT_CONFIG = { url: ${JSON.stringify(url)}, anonKey: ${JSON.stringify(anonKey)} };`,
     }),
   );
+
+/** Serves a fake project in place of the real one. */
+export const withProject = (page) => serveConfig(page, 'https://fake.test', 'fake');
+
+/** Serves no project: every account feature off. */
+export const withoutProject = (page) => serveConfig(page, null, null);
 
 /**
  * Runs in the page before the app: a saved session (unless `signedOut`), the tables, and `window.supabase`. The

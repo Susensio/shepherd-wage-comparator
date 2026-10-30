@@ -1,8 +1,8 @@
 // The «Cuenta» section of Ajustes, against a fake supabase-js client: no real project is needed.
 //
-// The fake client and its seam are in fake-account.js. Without the config route the section stays hidden.
+// The fake client and its seam are in fake-account.js.
 
-import { installFake, withProject } from './fake-account.js';
+import { installFake, withoutProject, withProject } from './fake-account.js';
 import { expect, sample, test } from './fixtures.js';
 
 /** The fake's signed-in user; `installFake` runs in the page, so it repeats the literal. */
@@ -26,7 +26,8 @@ const accountRows = () => ({
   offer_mine: [{ offer_id: ACCOUNT_OFFER, mine: { name: 'De la cuenta' }, cmp: true }],
 });
 
-test('with no project configured the section is hidden', async ({ page }) => {
+test('with no project configured the section is hidden', async ({ openApp }) => {
+  const page = await openApp({ beforeLoad: withoutProject });
   await page.evaluate(() => app.showTab('settings'));
   await expect(page.locator('#account')).toBeHidden();
 });

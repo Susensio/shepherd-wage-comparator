@@ -1,7 +1,7 @@
 // Other shepherds' shared offers in Comparar and their read-only view (ADR-0006), against the fake client.
 
-import { installFake, withProject } from './fake-account.js';
-import { expect, sample, test } from './fixtures.js';
+import { installFake, withoutProject, withProject } from './fake-account.js';
+import { expect, loadOffers, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const ME = '00000000-0000-0000-0000-00000000000a';
@@ -40,7 +40,9 @@ const include = async (page) => {
   await expect(page.locator('.lr.other')).not.toHaveCount(0);
 };
 
-test('with no project configured nothing about other shepherds shows', async ({ loaded: page }) => {
+test('with no project configured nothing about other shepherds shows', async ({ openApp }) => {
+  const page = await openApp({ beforeLoad: withoutProject });
+  await loadOffers(page, sample);
   await page.evaluate(() => app.showTab('compare'));
   await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
 });
