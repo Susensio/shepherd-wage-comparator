@@ -3,10 +3,10 @@
 import { html, nothing } from 'lit-html';
 import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, joinAnd } from '../format.js';
 import { hoursWeek } from '../model/time.js';
-import { inUnit, UNITS } from '../model/units.js';
 import { endOf, parseDate } from '../offer.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
+import { inUnit, UNITS } from '../units.js';
 import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './parts.js';
 
 /** Deadline to claim: each payment, one year from when it was due (Estatuto, art. 59.2). Only with dates. */

@@ -6,8 +6,8 @@ import { html } from 'lit-html';
 import { explanations } from './explanations.js';
 import { fCount, fN, num } from './format.js';
 import { citeOf, LAW } from './law.js';
-import { moneyIn, UNITS } from './model/units.js';
 import { isShortContract } from './offer.js';
+import { moneyIn, UNITS } from './units.js';
 import { withTip } from './views/parts.js';
 
 /** Weekly-hours thresholds, with half an hour of slack for rounding. */

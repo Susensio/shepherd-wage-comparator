@@ -2,8 +2,8 @@
 
 import { cfgFromSpanish, extractYourData, normalizeOffer, offerFromSpanish, renameKeys, SPANISH } from './legacy.js';
 import { calc } from './model/calc.js';
-import { UNITS } from './model/units.js';
 import { DEF_CFG, makeOffer, YOUR_DATA } from './offer.js';
+import { UNITS } from './units.js';
 
 /** Storage keys. Do not change them: saved data would be lost. */
 export const KEY = {

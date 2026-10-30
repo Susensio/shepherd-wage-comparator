@@ -4,6 +4,9 @@ import { html, nothing } from 'lit-html';
 import { explanations } from '../explanations.js';
 import { euroDecimals, fCount, fE, fN, fTyped, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
+import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
+import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
+import { legalLine } from '../text.js';
 import {
   fUnit,
   incomeOf,
@@ -15,10 +18,7 @@ import {
   UNIT_ORDER,
   UNIT_TEXT,
   UNITS,
-} from '../model/units.js';
-import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
-import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
-import { legalLine } from '../text.js';
+} from '../units.js';
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';

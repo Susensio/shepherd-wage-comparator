@@ -3,9 +3,9 @@
 import { f1, fCount, fDays, fE, fN, fTyped, joinAnd, lowerFirst, num } from './format.js';
 import { LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
-import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './model/units.js';
 import { contractOf, datesText, mealsGiven, mealsList } from './offer.js';
 import { failuresOf, H_MAX, LAW_SHORT } from './rights.js';
+import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
 export const fSplit = (v, unit) =>

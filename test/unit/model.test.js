@@ -9,8 +9,8 @@ import { calc } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { payrollMonths } from '../../src/model/time.js';
-import { incomeOf } from '../../src/model/units.js';
 import { DEF_CFG, DEF_OFFER, parseDate } from '../../src/offer.js';
+import { incomeOf } from '../../src/units.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };

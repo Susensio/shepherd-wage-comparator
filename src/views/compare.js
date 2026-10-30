@@ -4,10 +4,10 @@ import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
-import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../model/units.js';
 import { DAYS_PER_MONTH, datesText, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { unpaidTime } from '../text.js';
+import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
 import { incomeBar, legend } from './parts.js';
 
 /** «Comparar dos»: whether it is on and which offers are picked. Not saved: every visit starts without it. */

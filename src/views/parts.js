@@ -2,7 +2,7 @@
 
 import { html, nothing, svg } from 'lit-html';
 import { capitalize, fCount, fE } from '../format.js';
-import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS } from '../model/units.js';
+import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS } from '../units.js';
 
 /** Content that explains itself when tapped (dotted underline). */
 export const withTip = (content, tip) =>

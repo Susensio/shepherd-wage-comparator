@@ -1,6 +1,6 @@
 /** Units money is shown in, and the parts of what you earn. */
 
-import { fE } from '../format.js';
+import { fE } from './format.js';
 
 /** The Comparar units: how a contract figure is divided and with how many decimals it is shown. */
 export const UNITS = {
