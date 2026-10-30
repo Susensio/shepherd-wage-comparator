@@ -25,9 +25,7 @@ export const snoozeReminder = () => store.set(KEY.backupNotice, Date.now() + 7 *
  * (not when they are saved to your account; with complete offers, changed for over a week, and not snoozed).
  */
 export function backupStatus(hasCompleteOffers) {
-  const saved = store.get(KEY.backup, null);
-  // Spanish-era record: {fecha, firma}
-  const last = saved?.fecha ? { date: saved.fecha, signature: saved.firma } : saved;
+  const last = store.get(KEY.backup, null);
   const changed = !last || last.signature !== signature();
   const pending = !last || (changed && Date.now() - last.date > 7 * DAY);
   return {

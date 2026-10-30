@@ -22,8 +22,8 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Saved data
 
-- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and in the Claude account document `data/users/<id>/estado`. All three load paths (browser, backup, Claude account) convert through `ingestSaved` in `legacy.js`.
-- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and new renames need no mapping in `legacy.js`. The existing conversions stay until someone removes them. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
+- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and in the Claude account document `data/users/<id>/estado`. All three load paths (browser, backup, Claude account) go through `ingestSaved` in `legacy.js`.
+- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
 
 ## Legal figures
 

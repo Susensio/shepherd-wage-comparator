@@ -1,8 +1,8 @@
 /** The app's state: offers, the active one, settings and preferences, and saving them in the browser. */
 
-import { extractYourData, ingestSaved, normalizeOffer, offerFromSpanish, renameKeys, SPANISH } from './legacy.js';
+import { ingestSaved } from './legacy.js';
 import { calc } from './model/calc.js';
-import { DEF_CFG, makeOffer, YOUR_DATA } from './offer.js';
+import { DEF_CFG, makeOffer } from './offer.js';
 import { UNITS } from './units.js';
 
 /** Storage keys. Do not change them: saved data would be lost. */
@@ -17,8 +17,6 @@ export const KEY = {
   ts: 'cj.ts',
   uploaded: 'cj.enCuenta',
   folds: 'cj.secs',
-  legacyFolds: 'cj.plegados',
-  legacyDraft: 'cj.draft',
 };
 
 /** localStorage, as JSON; it can be missing or full, so every access may fail quietly. */
@@ -95,29 +93,19 @@ export function saveCmpUnit() {
   store.set(KEY.cmpUnit, state.cmpUnit);
 }
 
-/** Reads everything saved in this browser, converting older formats. */
+/** Reads everything saved in this browser. */
 export function load() {
   const savedOffers = store.get(KEY.offers, null);
   const firstRun = !Array.isArray(savedOffers);
-  const ingested = ingestSaved(
+  const { cfg: config, offers: ingested } = ingestSaved(
     { offers: firstRun ? [] : savedOffers, cfg: store.get(KEY.cfg, null) },
     { fallbackCfg: DEF_CFG },
   );
-  const config = ingested.cfg;
-  let offers = ingested.offers;
-  const migrate = !firstRun && ingested.migrated;
-  // Older versions kept the offer being edited apart
-  const draft = offerFromSpanish(store.get(KEY.legacyDraft, null));
-  if (draft?.id && offers.some((x) => x.id === draft.id))
-    offers = offers.map((x) =>
-      x.id === draft.id ? { ...extractYourData([normalizeOffer(draft)], config, false, YOUR_DATA)[0], cmp: x.cmp } : x,
-    );
-  if (!offers.length) offers = [makeOffer()];
+  const offers = ingested.length ? ingested : [makeOffer()];
 
-  let activeId = store.get(KEY.active, null) || draft?.id || offers[0].id;
+  let activeId = store.get(KEY.active, null) || offers[0].id;
   if (!offers.some((x) => x.id === activeId)) activeId = offers[0].id;
   const unit = store.get(KEY.cmpUnit, 'hour');
-  const folds = { time: true, payroll: true, breakdown: true };
 
   Object.assign(state, {
     offers,
@@ -125,25 +113,7 @@ export function load() {
     firstRun,
     placeholderId: firstRun ? offers[0].id : null,
     config,
-    cmpUnit: UNITS[SPANISH.units[unit] ?? unit] ? (SPANISH.units[unit] ?? unit) : 'hour',
-    folds: {
-      ...folds,
-      ...renameKeys(store.get(KEY.legacyFolds, {}), SPANISH.folds),
-      ...renameKeys(store.get(KEY.folds, {}), SPANISH.folds),
-    },
+    cmpUnit: UNITS[unit] ? unit : 'hour',
+    folds: { time: true, payroll: true, breakdown: true, ...store.get(KEY.folds, {}) },
   });
-  if (draft) {
-    store.set(KEY.legacyDraft, null);
-    saveOffers();
-  }
-  if (migrate) {
-    saveConfig();
-    saveOffers();
-  }
 }
-
-/** The saved tab, in today's names. */
-export const savedTab = () => {
-  const tab = store.get(KEY.tab, 'offers');
-  return SPANISH.tabs[tab] ?? tab;
-};

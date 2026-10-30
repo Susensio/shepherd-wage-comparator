@@ -6,8 +6,6 @@ import { test as base, expect } from '@playwright/test';
 const read = (name) => JSON.parse(readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8'));
 /** Eight offers covering the main cases (seasonal, casual, no contract, cash, overnight…), in today's format. */
 export const sample = read('offers.json');
-/** The same offers as saved by the Spanish-era versions of the page (before October 2026). */
-export const sampleEs = read('offers_es.json');
 
 /** Loads offers and settings into the app, and shows the offer at `show`. */
 export async function loadOffers(page, data, show = 1) {

@@ -11,7 +11,7 @@ import {
 } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
-import { active, calcOffer, load, savedTab, state } from './state.js';
+import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { startCloud } from './storage/cloud.js';
 import { cardText, claimText } from './text.js';
 import { setUpTooltips } from './ui/tooltips.js';
@@ -25,7 +25,7 @@ fillLawFigures();
 restoreStaticFolds();
 setUpEvents();
 setUpTooltips();
-showTab(savedTab());
+showTab(store.get(KEY.tab, 'offers'));
 scrollChipsNextPaint();
 fillForm(active());
 fillSettings();

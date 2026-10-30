@@ -13,6 +13,4 @@
 - paint | Every repaint recomputes `calc` for all offers, each with nested `alone` calcs for the IRPF of the others, and `paintAll` computes the active offer twice.
   Measured 2.8 ms for the 8 sample offers in Node (October 2026), so not a problem now.
   Revisit if the number of offers grows, for example once accounts bring many.
-- legacy | Remove the Spanish-era conversions in `legacy.js` (`SPANISH`, `offerFromSpanish`, `cfgFromSpanish`, the `legacy*` fields in `normalizeOffer`), their unit tests and `test/e2e/legacy.spec.js` cases, now that the owner is the only user (ADR-0005).
-  Do it before other people save offers, or not at all.
 - format | `src/views/result.js` still compares `r.pay.irpf - r.pay.irpfYear > 1` directly; it is the same euro slack as `isWorthCounting` in `format.js`.

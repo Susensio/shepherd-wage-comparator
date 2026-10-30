@@ -5,7 +5,7 @@
  */
 
 import { closeTemplates, scrollChipsNextPaint, select, templatesOpen } from '../app.js';
-import { bundleFromSpanish, ingestSaved } from '../legacy.js';
+import { ingestSaved } from '../legacy.js';
 import { KEY, myOffers, onSave, state, store } from '../state.js';
 import { fillSettings, paintCloud } from '../views/settings.js';
 import { backupText } from './bundle.js';
@@ -75,7 +75,7 @@ export async function startCloud() {
     if (!id) return notSaving('sin sesión de Claude en esta página');
     const ref = db.doc(docPath(id));
     const snap = await ref.get();
-    const saved = snap.exists ? bundleFromSpanish(snap.data()) : null;
+    const saved = snap.exists ? snap.data() : null;
     const newer = (Number(saved?.ts) || 0) > store.get(KEY.ts, 0);
     if (Array.isArray(saved?.offers) && saved.offers.length && (!myOffers().length || newer)) {
       // The account's data is newer (or this browser has none): use it. If this browser never saved to the

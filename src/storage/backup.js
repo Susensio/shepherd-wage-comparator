@@ -1,7 +1,7 @@
 /** Backups: downloading or copying one, and adding the offers of one you saved. */
 
 import { closeTemplates, select } from '../app.js';
-import { bundleFromSpanish, ingestSaved } from '../legacy.js';
+import { ingestSaved } from '../legacy.js';
 import { makeOffer } from '../offer.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
@@ -54,7 +54,7 @@ export async function copyBackup(msg) {
 export function loadBackup(content, msg) {
   let saved;
   try {
-    saved = bundleFromSpanish(JSON.parse(content));
+    saved = JSON.parse(content);
     if (!Array.isArray(saved.offers)) throw new Error('no offers');
   } catch {
     msg.textContent = 'Eso no es una copia válida. Usa el archivo o el texto completo que guardaste.';
@@ -66,7 +66,7 @@ export function loadBackup(content, msg) {
     state.placeholderId = null;
     closeTemplates();
   }
-  const { offers, cfg, migrated } = ingestSaved(saved, { fallbackCfg: state.config });
+  const { offers, cfg } = ingestSaved(saved, { fallbackCfg: state.config });
   let added = 0;
   let alreadyHad = 0;
   for (const o of offers) {
@@ -77,7 +77,7 @@ export function loadBackup(content, msg) {
     }
   }
   if (!state.offers.length) state.offers = [makeOffer()];
-  if (!hadOffers && (saved.cfg || migrated)) {
+  if (!hadOffers && saved.cfg) {
     state.config = cfg;
     saveConfig();
     fillSettings();
