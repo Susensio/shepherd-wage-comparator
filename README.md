@@ -31,6 +31,6 @@ npm test                           # unit tests, then the browser tests
 npx playwright test --ui           # the browser tests, watching them run
 ```
 
-The tests cover the calculations, that every figure on the page adds up, the main flows and loading data saved by older versions.
+The tests cover the calculations, that every figure on the page adds up, the main flows and saving and loading data.
 
 The figures are estimates and are not legal advice.
