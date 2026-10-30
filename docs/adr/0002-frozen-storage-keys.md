@@ -1,6 +1,6 @@
 # ADR-0002: Freeze the storage keys and the account document path, and convert old formats on read
 
-Status: Accepted
+Status: Superseded by [ADR-0005](0005-relaxed-saved-data.md)
 Date: 2026-10-30
 
 ## Context

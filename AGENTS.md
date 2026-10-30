@@ -22,8 +22,8 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Saved data
 
-- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and in the Claude account document `data/users/<id>/estado`. Never change a storage key or the document path: people would lose their offers.
-- Renaming a saved field or value breaks existing data. If you have to, map the old name in `legacy.js`, as is done for the Spanish names used before October 2026, and add a case to `test/e2e/legacy.spec.js`. All three load paths (browser, backup, Claude account) convert through `ingestSaved` in `legacy.js`.
+- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and in the Claude account document `data/users/<id>/estado`. All three load paths (browser, backup, Claude account) convert through `ingestSaved` in `legacy.js`.
+- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and new renames need no mapping in `legacy.js`. The existing conversions stay until someone removes them. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
 
 ## Legal figures
 
