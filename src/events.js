@@ -17,7 +17,7 @@ import {
 } from './app.js';
 import { fInputValue, num } from './format.js';
 import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, isoOf, makeOffer, newId, parseDate, TEMPLATES } from './offer.js';
-import { active, calcOffer, KEY, saveConfig, state, store } from './state.js';
+import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { cardText, claimText } from './text.js';
@@ -349,7 +349,7 @@ export function setUpEvents() {
     const el = /** @type {HTMLInputElement} */ (e.target);
     if (el.name !== 'cmpUnit') return;
     state.cmpUnit = el.value;
-    store.set(KEY.cmpUnit, state.cmpUnit);
+    saveCmpUnit();
     paintAll();
   });
   // A collapsible opened without animation (keyboard, reduced motion) is remembered too

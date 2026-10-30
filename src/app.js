@@ -6,7 +6,7 @@
 import { render } from 'lit-html';
 import { joinAnd } from './format.js';
 import { defaultVacation, missing } from './offer.js';
-import { active, calcOffer, KEY, myOffers, saveOffers, state, store } from './state.js';
+import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
 import { MISSING_TEXT } from './text.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
@@ -209,7 +209,7 @@ export function showTab(tab, scrollUp) {
     $(`[data-panel=${t}]`).hidden = t !== shown;
     $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   }
-  store.set(KEY.tab, shown);
+  saveTab(shown);
   if (shown === 'settings') paintBackup();
   if (shown === 'compare') paintTimeline(); // the trend fits the width, which is only known once shown
   if (shown === 'offers') {

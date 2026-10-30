@@ -87,6 +87,13 @@ export function saveConfig() {
 export function saveFolds() {
   store.set(KEY.folds, state.folds);
 }
+/** @param {string} tab */
+export function saveTab(tab) {
+  store.set(KEY.tab, tab);
+}
+export function saveCmpUnit() {
+  store.set(KEY.cmpUnit, state.cmpUnit);
+}
 
 /** Reads everything saved in this browser, converting older formats. */
 export function load() {
