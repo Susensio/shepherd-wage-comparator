@@ -8,10 +8,12 @@ import {
   scrollChipsNextPaint,
   select,
   showTab,
+  templatesOpen,
 } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
+import { startAccount } from './storage/account.js';
 import { cardText, claimText } from './text.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
@@ -30,6 +32,17 @@ fillForm(active());
 fillSettings();
 paintAll();
 if (state.firstRun) openTemplates();
+
+// A no-op while storage/account-config.js has no project or there is no saved session.
+startAccount({
+  onReplaced() {
+    if (templatesOpen()) closeTemplates();
+    for (const o of state.offers) defaultVacation(o.terms);
+    fillSettings();
+    scrollChipsNextPaint();
+    select(state.activeId);
+  },
+}).catch(console.error);
 
 /** For tests and the console: the state and a few ways in. Not used by the page. */
 window.app = { state, active, calcOffer, select, showTab, closeTemplates, cardText, claimText };

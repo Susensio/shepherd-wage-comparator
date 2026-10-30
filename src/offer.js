@@ -41,6 +41,9 @@ export const DEF_TERMS = {
   kmRate: '',
 };
 
+/** Version of the offer shape written to the account; shared rows are read by other users' pages (ADR-0006). */
+export const SCHEMA_VERSION = 1;
+
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',
@@ -136,7 +139,7 @@ export const TEMPLATES = [
   },
 ];
 
-export const newId = () => `o${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+export const newId = () => crypto.randomUUID();
 /** A new offer: defaults, completed with the given terms and own figures. `cmp` is whether Comparar includes it. */
 export const makeOffer = (terms = {}, mine = {}) => ({
   id: newId(),
