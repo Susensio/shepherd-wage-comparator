@@ -309,7 +309,7 @@ function onSummaryClick(e) {
   toggleFold(details, !details.open);
 }
 
-/** The backup file, picked or dropped on the text box (when the file picker does not open, as in some Claude windows). */
+/** The backup file, picked or dropped on the text box. */
 function setUpBackupFile() {
   const box = $('#backupPaste');
   box.addEventListener('dragover', (e) => {

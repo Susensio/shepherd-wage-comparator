@@ -1,4 +1,4 @@
-/** Everything read from the browser, the Claude account or a backup goes through here, completed with today's defaults. */
+/** Everything read from the browser or a backup goes through here, completed with today's defaults. */
 
 import { DEF_CFG, DEF_OFFER } from './offer.js';
 

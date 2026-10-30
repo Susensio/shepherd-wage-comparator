@@ -40,32 +40,3 @@ test('a backup file', async ({ page }) => {
   expect(message).toBe('Añadidas 8 ofertas.');
   expect(names(loaded)).toEqual(names(sample.offers));
 });
-
-test('the Claude account document is read and saved back', async ({ openApp }) => {
-  const page = await openApp({
-    arg: { ...sample, ts: 9e12 },
-    init: (doc) => {
-      window.saved = null;
-      const db = {
-        doc: () => ({
-          get: async () => ({ exists: true, data: () => doc }),
-          set: async (d) => {
-            window.saved = d;
-          },
-        }),
-      };
-      const user = { id: async () => 'u1' };
-      window.claude = { use: async (name) => ({ user, db })[name] ?? null };
-    },
-  });
-  await expect.poll(() => page.evaluate(() => app.state.inCloud)).toBe(true);
-  expect(names(await page.evaluate(() => app.state.offers))).toEqual(names(sample.offers));
-  await page.evaluate(async () => {
-    app.active().name = 'Cambiada';
-    (await import('./src/state.js')).saveOffers();
-  });
-  // saving waits for a pause in the changes
-  await expect.poll(() => page.evaluate(() => window.saved), { timeout: 4000 }).not.toBeNull();
-  const saved = await page.evaluate(() => window.saved);
-  expect(saved.offers.map((o) => o.name)).toContain('Cambiada');
-});

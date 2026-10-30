@@ -12,7 +12,6 @@ import {
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
-import { startCloud } from './storage/cloud.js';
 import { cardText, claimText } from './text.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
@@ -31,7 +30,6 @@ fillForm(active());
 fillSettings();
 paintAll();
 if (state.firstRun) openTemplates();
-startCloud();
 
 /** For tests and the console: the state and a few ways in. Not used by the page. */
 window.app = { state, active, calcOffer, select, showTab, closeTemplates, cardText, claimText };

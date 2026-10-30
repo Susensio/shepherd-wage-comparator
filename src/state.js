@@ -14,8 +14,6 @@ export const KEY = {
   cfg: 'cj.cfg',
   cmpUnit: 'cj.unidadCmp',
   tab: 'cj.tab',
-  ts: 'cj.ts',
-  uploaded: 'cj.enCuenta',
   folds: 'cj.secs',
 };
 
@@ -48,9 +46,6 @@ export const state = {
   cmpUnit: 'hour',
   /** Named collapsibles (data-fold) and whether they are open. */
   folds: /** @type {Record<string, boolean>} */ ({}),
-  /** Whether your offers are being saved to your Claude account, and if not, why. Not saved. */
-  inCloud: false,
-  cloudReason: '',
 };
 
 /** The offer being shown and edited. The form edits it directly and it is saved on every change. */
@@ -60,18 +55,10 @@ export const myOffers = () => state.offers.filter((o) => o.id !== state.placehol
 /** Every figure of an offer, with your settings and your other offers. */
 export const calcOffer = (o) => calc(o, { cfg: state.config, offers: myOffers() });
 
-/** Called after every save (the Claude account sync listens). */
-const listeners = new Set();
-export const onSave = (fn) => listeners.add(fn);
-const saved = () => {
-  for (const fn of listeners) fn();
-};
-
 let persistRequested = false;
 export function saveOffers() {
   store.set(KEY.offers, state.offers);
   store.set(KEY.active, state.activeId);
-  saved();
   // Ask the browser not to delete them when short of space
   if (!persistRequested && !state.placeholderId) {
     persistRequested = true;
@@ -80,7 +67,6 @@ export function saveOffers() {
 }
 export function saveConfig() {
   store.set(KEY.cfg, state.config);
-  saved();
 }
 export function saveFolds() {
   store.set(KEY.folds, state.folds);

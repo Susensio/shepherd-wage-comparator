@@ -33,14 +33,3 @@ export function paintBackup() {
     ? 'Aún no has guardado ninguna copia.'
     : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})${status.changed ? '. Has cambiado ofertas desde entonces.' : ', con todo lo que tienes ahora.'}`;
 }
-
-/** Where your offers are saved: in your Claude account or only in this browser. */
-export function paintCloud() {
-  $('#cloudStatus').textContent = state.inCloud
-    ? 'Tus ofertas se guardan solas en tu cuenta de Claude: las tienes en cualquier dispositivo donde entres con tu sesión.'
-    : `Tus ofertas se guardan solo en este navegador${state.cloudReason ? ` (${state.cloudReason})` : ''}.`;
-  $('#backupWhy').textContent = state.inCloud
-    ? 'La copia en archivo es solo un respaldo, o para pasar tus ofertas a otra persona.'
-    : 'El navegador puede borrarlas (Safari, por ejemplo, si pasas una semana sin abrir la página). Guarda una copia de vez en cuando.';
-  paintBackup();
-}

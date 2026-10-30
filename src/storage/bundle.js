@@ -22,7 +22,7 @@ export const snoozeReminder = () => store.set(KEY.backupNotice, Date.now() + 7 *
 
 /**
  * The last backup: when, how long ago, whether your offers changed since, and whether to remind you to save one
- * (not when they are saved to your account; with complete offers, changed for over a week, and not snoozed).
+ * (with complete offers, changed for over a week, and not snoozed).
  */
 export function backupStatus(hasCompleteOffers) {
   const last = store.get(KEY.backup, null);
@@ -32,6 +32,6 @@ export function backupStatus(hasCompleteOffers) {
     last,
     days: last ? Math.floor((Date.now() - last.date) / DAY) : 0,
     changed,
-    remind: !state.inCloud && hasCompleteOffers && pending && Date.now() > store.get(KEY.backupNotice, 0),
+    remind: hasCompleteOffers && pending && Date.now() > store.get(KEY.backupNotice, 0),
   };
 }

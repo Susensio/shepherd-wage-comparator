@@ -1,5 +1,6 @@
 // The main flows, clicked through as a person would.
 
+import { readFileSync } from 'node:fs';
 import { expect, test } from './fixtures.js';
 
 async function fillOffer(page, { duration = '4', hours = '11', pay = '70' } = {}) {
@@ -97,25 +98,20 @@ test('copy the claim', async ({ loaded: page }) => {
 });
 
 test('a backup, downloaded and loaded in another browser', async ({ openApp, browser }) => {
-  // The claude.ai downloads capability, keeping what it is asked to save
-  const page = await openApp({
-    init: () => {
-      window.saved = [];
-      const downloads = { save: async (file) => window.saved.push(file) };
-      window.claude = { use: async (name) => (name === 'downloads' ? downloads : null) };
-    },
-  });
+  const page = await openApp();
   await page.locator('.tcard').first().click();
   await fillOffer(page, { hours: '10', pay: '60' });
   await expect(page.locator('#backupNotice')).toBeVisible();
-  await page.click('#backupNotice [data-action=download]');
-  await expect.poll(() => page.evaluate(() => window.saved.length)).toBe(1);
-  const [file] = await page.evaluate(() => window.saved);
-  expect(file.filename).toMatch(/\.json$/);
-  expect(JSON.parse(file.data)).toHaveProperty('offers');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#backupNotice [data-action=download]'),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.json$/);
+  const data = readFileSync(await download.path(), 'utf8');
+  expect(JSON.parse(data)).toHaveProperty('offers');
 
   const other = await openApp({ ctx: await browser.newContext() });
-  const backup = { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(file.data) };
+  const backup = { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(data) };
   await other.setInputFiles('#backupFile', backup);
   await expect(other.locator('#bkMsg2')).toHaveText(/^Añadida 1 oferta/);
   await other.setInputFiles('#backupFile', backup);

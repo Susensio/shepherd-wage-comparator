@@ -8,24 +8,19 @@ import { copyText } from '../ui/dom.js';
 import { fillSettings, paintBackup } from '../views/settings.js';
 import { backupText, markBackup } from './bundle.js';
 
-// Downloads are a capability of claude.ai; elsewhere there is none
-const downloads = window.claude?.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
-
 /** Saves a backup file; if it cannot, copies the text, or shows it to copy by hand. */
 export async function downloadBackup(msg) {
   const text = backupText();
   const filename = `jornales-copia-${new Date().toISOString().slice(0, 10)}.json`;
   try {
-    const dl = await downloads;
-    if (!dl) throw { code: 'unavailable' };
-    await dl.save({ filename, data: text });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
     markBackup();
     msg.textContent = 'Copia guardada. Para recuperarla: Ajustes, «Elegir el archivo».';
-  } catch (e) {
-    if (e?.code === 'declined') {
-      msg.textContent = '';
-      return;
-    }
+  } catch {
     const copied = await copyText(text, msg, {
       ok: 'No se pudo descargar: la copia está en el portapapeles. Pégala en una nota o mándatela por mensaje.',
       failMsg: 'No se pudo descargar ni copiar. Aquí la tienes para copiarla a mano:',
