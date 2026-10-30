@@ -1615,6 +1615,54 @@ details.fixed > summary::-webkit-details-marker {
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
 }
+.signin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--surface));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  font-size: 14px;
+}
+.signin-card[hidden] {
+  display: none;
+}
+.signin-card h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.signin-card p {
+  margin: 0;
+}
+.signin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gsi-slot {
+  min-height: 44px;
+}
+.signin-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.signin-or::before,
+.signin-or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+.signin-email {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .account-body {
   display: flex;
   flex-direction: column;

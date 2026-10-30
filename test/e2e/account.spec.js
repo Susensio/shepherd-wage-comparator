@@ -32,40 +32,105 @@ test('with no project configured the section is hidden', async ({ openApp }) => 
   await expect(page.locator('#account')).toBeHidden();
 });
 
-test('signed out: what an account gives, and the Google button', async ({ openApp }) => {
+test('signed out: what an account gives, and Google through the redirect when its script does not load', async ({
+  openApp,
+}) => {
   const page = await openAccount(openApp, { signedOut: true });
   await expect(page.locator('#account')).toBeVisible();
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
   await expect(page.locator('#accountOut')).toContainText('compartiendo las tuyas');
   await expect(page.locator('#accountIn')).toBeHidden();
-  await page.getByRole('button', { name: 'Entrar con Google' }).click();
+  await page.locator('#accountOut').getByRole('button', { name: 'Continuar con Google' }).click();
   await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
 });
 
-test.describe('first sign-in with offers only in this browser', () => {
-  const open = (openApp) =>
-    openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() }, localOffers: sample.offers });
+test.describe('the sign-in card', () => {
+  /** The page on Ofertas, signed out. */
+  const openCard = (openApp, options = {}) =>
+    openApp({
+      init: installFake,
+      arg: { signedOut: true, tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] }, ...options },
+      beforeLoad: withProject,
+    });
 
-  test('the prompt lists them and cannot be skipped', async ({ openApp }) => {
-    const page = await open(openApp);
-    await expect(page.locator('#accountPending')).toBeVisible();
-    await expect(page.locator('#pendingList li')).toHaveCount(sample.offers.length);
-    await expect(page.locator('#accountIn')).toBeHidden();
-    await expect(page.locator('#accountOut')).toBeHidden();
-    await expect(page.locator('#accountPending button')).toHaveCount(2);
+  test("heads the page, with Google's button and its account chooser", async ({ openApp }) => {
+    const page = await openCard(openApp, { google: true });
+    const card = page.locator('#signInCard');
+    await expect(card).toBeVisible();
+    await expect(card).toContainText('desde cualquier dispositivo');
+    await expect.poll(() => page.evaluate(() => window.fake.google.prompts)).toBe(1);
+    await card.getByRole('button', { name: 'Google (falso)' }).click();
+    await expect(card).toBeHidden();
+    const { idToken, google } = await page.evaluate(() => window.fake);
+    expect(idToken.token).toBe('google-jwt');
+    const hashed = await page.evaluate(async (raw) => {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+      return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }, idToken.nonce);
+    expect(hashed).toBe(google.nonce);
+    await page.evaluate(() => app.showTab('settings'));
+    await expect(page.locator('#accountWho')).toContainText('Ana Pastora');
   });
 
-  test('uploading them keeps both', async ({ openApp }) => {
+  test('signs in with a code sent by email', async ({ openApp }) => {
+    const page = await openCard(openApp);
+    const card = page.locator('#signInCard');
+    await card.getByLabel('Tu correo').fill('ana@example.com');
+    await card.getByRole('button', { name: 'Enviarme un código' }).click();
+    await expect(card).toContainText('Se ha enviado un código a ana@example.com');
+    expect(await page.evaluate(() => window.fake.otp.email)).toBe('ana@example.com');
+
+    await card.getByLabel('Código').fill('999999');
+    await card.getByRole('button', { name: 'Entrar' }).click();
+    await expect(card).toContainText('El código no vale');
+
+    await card.getByLabel('Código').fill('123456');
+    await card.getByLabel('Código').press('Enter');
+    await expect(card).toBeHidden();
+  });
+
+  test('«Continuar sin cuenta» is remembered, and Google is not reached again', async ({ openApp }) => {
+    const page = await openCard(openApp);
+    await page.getByRole('button', { name: 'Continuar sin cuenta' }).click();
+    await expect(page.locator('#signInCard')).toBeHidden();
+    const google = [];
+    page.on('request', (request) => request.url().includes('accounts.google.com') && google.push(request.url()));
+    await page.reload();
+    await page.waitForFunction(() => window.app);
+    await page.waitForTimeout(300); // the card would show once the start-up has looked for a session
+    await expect(page.locator('#signInCard')).toBeHidden();
+    expect(google).toEqual([]);
+  });
+});
+
+test.describe('first sign-in with offers only in this browser', () => {
+  const open = (openApp, options = {}) =>
+    openAccount(openApp, {
+      tables: { profiles: [{ ...PROFILE }], ...accountRows() },
+      localOffers: sample.offers,
+      ...options,
+    });
+
+  test('they are uploaded without asking, beside the account offers', async ({ openApp }) => {
     const page = await open(openApp);
-    await page.getByRole('button', { name: 'Subirlas a la cuenta' }).click();
     await expect(page.locator('#accountIn')).toBeVisible();
     await expect(page.locator('#accountPending')).toBeHidden();
     expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(sample.offers.length + 1);
     expect(await page.evaluate(() => app.state.offers.length)).toBe(sample.offers.length + 1);
   });
 
-  test('keeping only the account discards them', async ({ openApp }) => {
-    const page = await open(openApp);
+  test('a failed upload lists them; retrying keeps both', async ({ openApp }) => {
+    const page = await open(openApp, { failUpload: true });
+    await expect(page.locator('#accountPending')).toBeVisible();
+    await expect(page.locator('#pendingList li')).toHaveCount(sample.offers.length);
+    await expect(page.locator('#accountIn')).toBeHidden();
+    await page.getByRole('button', { name: 'Volver a intentarlo' }).click();
+    await expect(page.locator('#accountIn')).toBeVisible();
+    expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(sample.offers.length + 1);
+  });
+
+  test('after a failed upload, keeping only the account discards them', async ({ openApp }) => {
+    const page = await open(openApp, { failUpload: true });
     await page.getByRole('button', { name: 'Quedarme solo con las de la cuenta' }).click();
     await expect(page.locator('#accountIn')).toBeVisible();
     expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(1);
@@ -80,6 +145,8 @@ test('signed in: who, and signing out', async ({ openApp }) => {
   await expect(page.locator('#accountOut')).toBeVisible();
   await expect(page.locator('#accountIn')).toBeHidden();
   expect(await page.evaluate(() => window.fake.signedOut)).toBe(true);
+  await page.evaluate(() => app.showTab('offers'));
+  await expect(page.locator('#signInCard')).toBeHidden();
 });
 
 test('the profile is edited and saved', async ({ openApp }) => {

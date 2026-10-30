@@ -55,7 +55,7 @@ export function createAccount({
   let queue = Promise.resolve();
   /** What the account holds: fingerprint per offer id, and the settings (null: no row yet). */
   const known = { offers: new Map(), cfg: /** @type {string | null} */ (null) };
-  /** First sign-in on a browser with offers the account lacks: kept until uploaded or discarded. */
+  /** First sign-in on a browser with offers the account lacks, whose upload failed: kept until retried or discarded. */
   let pending = /** @type {{ account: { offers: any[], cfg: any }, extras: any[] } | null} */ (null);
 
   const ownOffers = () => state.offers.filter((o) => o.id !== state.placeholderId);
@@ -166,6 +166,16 @@ export function createAccount({
     return run;
   }
 
+  /** Uploads the pending offers (merge by id) and keeps them next to the account's offers. */
+  async function uploadPending() {
+    if (!pending) return;
+    const { account, extras } = pending;
+    remapIds(extras);
+    await writeOffers(extras);
+    pending = null;
+    replaceWith({ offers: [...account.offers, ...extras], cfg: account.cfg });
+  }
+
   function stop() {
     syncing = false;
     clearTimeout(timer);
@@ -177,7 +187,24 @@ export function createAccount({
     /** The signed-in user, or null. */
     currentUser: () => user,
 
-    /** Starts the Google login; the browser leaves the page and comes back signed in. */
+    /** Google's ID token, from its own button (ADR-0009), with the nonce whose hash Google signed into it. */
+    async signInWithGoogleToken(token, nonce) {
+      unwrap(await client.auth.signInWithIdToken({ provider: 'google', token, nonce }));
+    },
+
+    /** Emails a six-digit code, and a link back to this page that works in this same browser. */
+    async sendEmailCode(email) {
+      store.set(RETURNING_KEY, true);
+      unwrap(
+        await client.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } }),
+      );
+    },
+
+    async verifyEmailCode(email, code) {
+      unwrap(await client.auth.verifyOtp({ email, token: code, type: 'email' }));
+    },
+
+    /** The fallback when Google's script does not load: the browser leaves for Google and comes back signed in. */
     async signIn() {
       store.set(RETURNING_KEY, true);
       unwrap(
@@ -195,8 +222,9 @@ export function createAccount({
     },
 
     /**
-     * Reads the account and, unless this browser holds offers it lacks, makes it the browser's copy and starts saving.
-     * Returns the user (null if signed out) and the offers waiting for `uploadPending` or `discardPending`.
+     * Reads the account, uploads the offers only this browser holds if it has not synced with this user before, makes
+     * the account the browser's copy and starts saving. Returns the user (null if signed out) and, if that upload
+     * failed, the offers waiting for `uploadPending` or `discardPending`.
      */
     async connect() {
       store.set(RETURNING_KEY, null);
@@ -208,24 +236,23 @@ export function createAccount({
       const extras = ownOffers().filter((o) => !account.offers.some((x) => x.id === o.id));
       if (firstOnThisBrowser && extras.length) {
         pending = { account, extras };
-        return { user, pending: extras };
+        try {
+          await uploadPending();
+        } catch (error) {
+          onError(error);
+          return { user, pending: extras };
+        }
+        return { user, pending: [] };
       }
       replaceWith(account);
       return { user, pending: [] };
     },
 
-    /** The browser's offers that the account lacks, waiting for the user's confirmation. */
+    /** The browser's offers that the account lacks, whose upload failed. */
     pendingOffers: () => pending?.extras ?? [],
 
-    /** Uploads them (merge by id) and keeps them next to the account's offers. */
-    async uploadPending() {
-      if (!pending) return;
-      const { account, extras } = pending;
-      remapIds(extras);
-      await writeOffers(extras);
-      pending = null;
-      replaceWith({ offers: [...account.offers, ...extras], cfg: account.cfg });
-    },
+    /** Tries the upload again. */
+    uploadPending,
 
     /** Drops them: the account's copy replaces the browser's. */
     discardPending() {
@@ -340,14 +367,15 @@ function open({ config, loadBundle }) {
 export async function startAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase, onReplaced } = {}) {
   if (onReplaced) onReplacedByPage = onReplaced;
   if (!config.url || !config.anonKey) return null;
-  if (!store.get(SESSION_KEY, null) && !store.get(RETURNING_KEY, null)) return null;
+  // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
+  const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');
+  if (!store.get(SESSION_KEY, null) && !store.get(RETURNING_KEY, null) && !linkFollowed) return null;
   const account = await open({ config, loadBundle });
   return { account, ...(await account.connect()) };
 }
 
-/** The Ajustes button: loads the bundle and goes to Google. */
-export async function signInWithGoogle({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase } = {}) {
+/** The account for a sign-in button: loads the bundle on first use. */
+export function openAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase } = {}) {
   if (!config.url || !config.anonKey) throw new Error('Accounts are off: no project in account-config.js');
-  const account = await open({ config, loadBundle });
-  await account.signIn();
+  return open({ config, loadBundle });
 }

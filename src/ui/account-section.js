@@ -1,11 +1,17 @@
 /** The «Cuenta» section of Ajustes: what the person sees and does with the account (ADR-0006). */
 
+import { render } from 'lit-html';
 import { ingestShared } from '../saved.js';
-import { state } from '../state.js';
-import { signInWithGoogle, startAccount } from '../storage/account.js';
+import { state, store } from '../state.js';
+import { openAccount, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
+import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
 import { paintAccount } from '../views/settings.js';
-import { $ } from './dom.js';
+import { signInCardView, signInView } from '../views/sign-in.js';
+import { $, $$ } from './dom.js';
+
+/** Set once the sign-in card is dismissed, or after signing out: the card stays away. */
+const CARD_SKIPPED_KEY = 'cj.signInSkipped';
 
 /** @type {any} */
 let account;
@@ -16,7 +22,13 @@ const view = {
   /** @type {any[]} */ pending: [],
   message: '',
   /** @type {'share' | 'delete' | null} */ confirm: null,
+  /** The saved session has been looked at: until then the sign-in card would only flash. */
+  started: false,
+  /** @type {import('../views/sign-in.js').SignIn} */
+  signIn: { stage: 'email', email: '', busy: false, googleFailed: false, message: '' },
 };
+
+const cardShown = () => view.started && !view.user && !store.get(CARD_SKIPPED_KEY, false);
 
 /** Called when what other shepherds' offers show changes: availability, loading, result. */
 let onOthersChange = () => {};
@@ -32,8 +44,68 @@ function syncAvailability() {
 
 const paint = () => {
   paintAccount(view);
+  const card = $('#signInCard');
+  card.hidden = !cardShown();
+  render(card.hidden ? '' : signInCardView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), card);
+  render(view.user ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
   syncAvailability();
+  showSignInButtons();
 };
+
+/**
+ * Draws Google's button where a sign-in is on screen; Google's script is loaded only then (ADR-0009). Called again
+ * when Ajustes is shown.
+ */
+export function showSignInButtons({ chooser = false } = {}) {
+  const clientId = ACCOUNT_CONFIG.googleClientId;
+  if (!clientId || view.user || view.signIn.googleFailed) return;
+  const slots = /** @type {HTMLElement[]} */ ($$('.gsi-slot')).filter((slot) => slot.offsetParent);
+  if (!slots.length) return;
+  showGoogleButtons({ clientId, slots, chooser, handler: onGoogleToken }).catch((error) => {
+    console.error(error);
+    view.signIn.googleFailed = true;
+    paint();
+  });
+}
+
+/** Runs a sign-in step; its failure becomes `failure`, a line under the sign-in choices. */
+async function signInStep(failure, call) {
+  Object.assign(view.signIn, { message: '', busy: true });
+  paint();
+  try {
+    await call();
+  } catch (error) {
+    console.error(error);
+    view.signIn.message = failure;
+  }
+  view.signIn.busy = false;
+  paint();
+}
+
+/** Signed in by whatever way: read the account, upload this browser's offers, show who is in. */
+async function connect(opened) {
+  await enter({ account: opened, ...(await opened.connect()) });
+  view.signIn = { stage: 'email', email: '', busy: false, googleFailed: view.signIn.googleFailed, message: '' };
+}
+
+function onGoogleToken(token, nonce) {
+  signInStep('No se pudo entrar con Google. Inténtalo de nuevo.', async () => {
+    const opened = await openAccount();
+    await opened.signInWithGoogleToken(token, nonce);
+    await connect(opened);
+  });
+}
+
+/** Signing out or deleting the account: the card does not come back on its own. */
+function signedOut() {
+  forgetGoogleChoice();
+  store.set(CARD_SKIPPED_KEY, true);
+  Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
+}
+
+/** The value of a field in the sign-in form that holds `button`. */
+const fieldBy = (button, name) =>
+  /** @type {HTMLInputElement} */ (/** @type {HTMLFormElement} */ (button.closest('form')).elements.namedItem(name));
 
 let loadSeq = 0;
 
@@ -88,19 +160,60 @@ export async function setUpAccountSection({ onReplaced, onOthers }) {
   $('#account').hidden = false;
   paint();
   await run('No se pudo conectar con la cuenta.', async () => {
-    const started = await startAccount({ onReplaced });
-    if (started) await enter(started);
+    try {
+      const started = await startAccount({ onReplaced });
+      if (started) await enter(started);
+    } finally {
+      view.started = true;
+    }
   });
+  if (cardShown()) showSignInButtons({ chooser: true });
 }
 
 /** For the buttons, by data-action. */
 export const accountActions = {
-  accountSignIn: () => run('No se pudo iniciar sesión. Inténtalo de nuevo.', () => signInWithGoogle()),
+  accountSignIn: () =>
+    signInStep('No se pudo iniciar sesión. Inténtalo de nuevo.', async () => (await openAccount()).signIn()),
+
+  sendEmailCode(button) {
+    const input = fieldBy(button, 'signInEmail');
+    if (!input.reportValidity()) return;
+    const email = input.value.trim();
+    signInStep('No se pudo enviar el código. Revisa el correo e inténtalo de nuevo.', async () => {
+      await (await openAccount()).sendEmailCode(email);
+      Object.assign(view.signIn, { stage: 'code', email });
+    });
+  },
+
+  verifyEmailCode(button) {
+    const input = fieldBy(button, 'signInCode');
+    const code = input.value.replace(/\D/g, '');
+    if (code.length !== 6) {
+      view.signIn.message = 'El código tiene 6 cifras.';
+      paint();
+      return;
+    }
+    signInStep('El código no vale o ha caducado. Revísalo o pide otro.', async () => {
+      const opened = await openAccount();
+      await opened.verifyEmailCode(view.signIn.email, code);
+      await connect(opened);
+    });
+  },
+
+  changeSignInEmail() {
+    Object.assign(view.signIn, { stage: 'email', message: '' });
+    paint();
+  },
+
+  skipSignIn() {
+    store.set(CARD_SKIPPED_KEY, true);
+    paint();
+  },
 
   accountSignOut: () =>
     run('No se pudo cerrar la sesión.', async () => {
       await account.signOut();
-      Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
+      signedOut();
     }),
 
   uploadPending: () =>
@@ -149,7 +262,7 @@ export const accountActions = {
   confirmDeleteAccount: () =>
     run('No se pudo borrar la cuenta. Inténtalo de nuevo.', async () => {
       await account.deleteAccount();
-      Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
+      signedOut();
     }),
 };
 

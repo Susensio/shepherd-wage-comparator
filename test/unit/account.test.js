@@ -17,7 +17,7 @@ const id = (n) => `10000000-0000-0000-0000-00000000000${n}`;
 function fakeClient({ session = { user: { id: ME } }, tables = {} } = {}) {
   const data = { offers: [], offer_mine: [], settings: [], profiles: [], ...tables };
   const calls = [];
-  const fake = { failNext: false, signedOut: false, oauth: null, rpc: [] };
+  const fake = { failNext: false, signedOut: false, oauth: null, idToken: null, otp: null, verified: null, rpc: [] };
   const keyOf = { offer_mine: 'offer_id', offers: 'id', settings: 'user_id', profiles: 'user_id' };
   const matches = { eq: (a, b) => a === b, neq: (a, b) => a !== b, in: (a, list) => list.includes(a) };
 
@@ -124,6 +124,18 @@ function fakeClient({ session = { user: { id: ME } }, tables = {} } = {}) {
         fake.oauth = args;
         return { data: {}, error: null };
       },
+      async signInWithIdToken(args) {
+        fake.idToken = args;
+        return { data: {}, error: null };
+      },
+      async signInWithOtp(args) {
+        fake.otp = args;
+        return { data: {}, error: null };
+      },
+      async verifyOtp(args) {
+        fake.verified = args;
+        return { data: {}, error: args.token === '000000' ? new Error('Token has expired or is invalid') : null };
+      },
       async signOut() {
         fake.signedOut = true;
         return { error: null };
@@ -207,6 +219,30 @@ describe('nothing is loaded or called without an account', () => {
 });
 
 describe('sign in', () => {
+  test("hands Google's ID token and the raw nonce to Supabase", async () => {
+    const { account, fake } = setUp();
+    await account.signInWithGoogleToken('jwt', 'raw-nonce');
+    assert.deepEqual(fake.idToken, { provider: 'google', token: 'jwt', nonce: 'raw-nonce' });
+  });
+
+  test('emails a code with a link back to this page, and checks the code', async () => {
+    globalThis.location = { origin: 'https://example.org', pathname: '/app/' };
+    try {
+      const { account, fake, store } = setUp();
+      await account.sendEmailCode('ana@example.com');
+      assert.deepEqual(fake.otp, {
+        email: 'ana@example.com',
+        options: { emailRedirectTo: 'https://example.org/app/' },
+      });
+      assert.equal(store.get('cj.accountReturn'), true);
+      await account.verifyEmailCode('ana@example.com', '123456');
+      assert.deepEqual(fake.verified, { email: 'ana@example.com', token: '123456', type: 'email' });
+      await assert.rejects(account.verifyEmailCode('ana@example.com', '000000'), /invalid/);
+    } finally {
+      delete globalThis.location;
+    }
+  });
+
   test('goes to Google and comes back to this page', async () => {
     globalThis.location = { origin: 'https://example.org', pathname: '/app/' };
     try {
@@ -279,23 +315,10 @@ describe('first sign-in on a browser with offers', () => {
   ];
   const first = () => setUp({ synced: null, localOffers: local(), tables: accountTables(accountRow(1)) });
 
-  test('lists them and leaves the browser untouched until decided', async () => {
-    const { account, state, calls } = first();
-    const result = await account.connect();
-    assert.deepEqual(
-      result.pending.map((o) => o.id),
-      ['o1abc', id(7)],
-    );
-    assert.deepEqual(account.pendingOffers(), result.pending);
-    assert.deepEqual(ids(state), ['o1abc', id(7)]);
-    assert.deepEqual(calls, []);
-  });
-
-  test('uploads them with new uuids and keeps them beside the account offers', async () => {
+  test('uploads them without asking, with new uuids, beside the account offers', async () => {
     const { account, state, calls, data, persisted, store } = first();
     state.activeId = 'o1abc';
-    await account.connect();
-    await account.uploadPending();
+    assert.deepEqual((await account.connect()).pending, []);
 
     const after = ids(state);
     assert.equal(after.length, 3);
@@ -310,12 +333,37 @@ describe('first sign-in on a browser with offers', () => {
     assert.equal(store.get('cj.accountUser'), ME);
   });
 
-  test('discarding them takes the account copy', async () => {
-    const { account, state, calls } = first();
+  test('a failed upload lists them and leaves the browser offers in place', async () => {
+    const { account, state, fake, errors, store } = first();
+    fake.failNext = true;
+    const result = await account.connect();
+    assert.deepEqual(
+      result.pending.map((o) => o.mine.name),
+      ['Vieja', state.offers[1].mine.name],
+    );
+    assert.deepEqual(account.pendingOffers(), result.pending);
+    assert.equal(errors.length, 1);
+    assert.equal(state.offers.length, 2);
+    assert.ok(ids(state).includes(id(7)));
+    assert.notEqual(store.get('cj.accountUser'), ME);
+  });
+
+  test('after a failed upload, retrying keeps them beside the account offers', async () => {
+    const { account, state, fake, data } = first();
+    fake.failNext = true;
+    await account.connect();
+    await account.uploadPending();
+    assert.equal(state.offers.length, 3);
+    assert.deepEqual(data.offers.map((o) => o.id).sort(), ids(state).sort());
+    assert.deepEqual(account.pendingOffers(), []);
+  });
+
+  test('after a failed upload, discarding them takes the account copy', async () => {
+    const { account, state, fake } = first();
+    fake.failNext = true;
     await account.connect();
     account.discardPending();
     assert.deepEqual(ids(state), [id(1)]);
-    assert.deepEqual(calls, []);
   });
 
   test('offers already in the account are not extra', async () => {

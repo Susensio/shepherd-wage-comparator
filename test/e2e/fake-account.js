@@ -3,32 +3,80 @@
 // The seam, with no test code in the page: `src/storage/account-config.js` is served with a project set (a route),
 // and `window.supabase` is defined before the page starts, so `loadSupabase` returns the fake instead of loading the
 // bundle. `withoutProject` serves a null config instead, so a test of the account being off does not depend on the
-// real project in the file.
+// real project in the file. Google's script is never reached (the tests are offline), so its plain fallback button
+// shows, unless `installFake` gets `google` and defines a fake `window.google` first.
 
-/** Serves `account-config.js` with this url and key. */
-const serveConfig = (page, url, anonKey) =>
+/** Serves `account-config.js` with these values. */
+const serveConfig = (page, config) =>
   page.route('**/src/storage/account-config.js', (route) =>
     route.fulfill({
       contentType: 'text/javascript',
-      body: `export const ACCOUNT_CONFIG = { url: ${JSON.stringify(url)}, anonKey: ${JSON.stringify(anonKey)} };`,
+      body: `export const ACCOUNT_CONFIG = ${JSON.stringify(config)};`,
     }),
   );
 
 /** Serves a fake project in place of the real one. */
-export const withProject = (page) => serveConfig(page, 'https://fake.test', 'fake');
+export const withProject = (page) =>
+  serveConfig(page, {
+    url: 'https://fake.test',
+    anonKey: 'fake',
+    googleClientId: 'fake.apps.googleusercontent.com',
+    emailSignIn: true,
+  });
 
 /** Serves no project: every account feature off. */
-export const withoutProject = (page) => serveConfig(page, null, null);
+export const withoutProject = (page) => serveConfig(page, { url: null, anonKey: null, googleClientId: null });
 
 /**
  * Runs in the page before the app: a saved session (unless `signedOut`), the tables, and `window.supabase`. The
- * client has only what the account layer calls, over `window.fake.data`; `fake` also records oauth, rpc and sign-outs.
+ * client has only what the account layer calls, over `window.fake.data`; `fake` also records oauth, the ID token, the
+ * emailed code, rpc and sign-outs. `failUpload` fails the first offer upload; `google` adds a fake Google script whose
+ * button hands over a token, and which records its nonce and how often the account chooser was opened.
  */
-export function installFake({ signedOut, tables, localOffers, failProfile }) {
+export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google }) {
   if (!signedOut) localStorage.setItem('cj.session', '{}');
   if (localOffers) localStorage.setItem('cj.ofertas2', JSON.stringify(localOffers));
   const data = { offers: [], offer_mine: [], settings: [], profiles: [], ...tables };
-  const fake = { data, oauth: null, rpc: [], signedOut: false, sharedReads: 0 };
+  const fake = {
+    data,
+    oauth: null,
+    idToken: null,
+    otp: null,
+    rpc: [],
+    signedOut: false,
+    sharedReads: 0,
+    google: { nonce: null, prompts: 0 },
+  };
+  let session = signedOut ? null : { user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } };
+  const signIn = () => {
+    session = { user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } };
+    return { data: { session }, error: null };
+  };
+  let uploadFails = !!failUpload;
+  if (google) {
+    let callback = () => {};
+    window.google = {
+      accounts: {
+        id: {
+          initialize(options) {
+            fake.google.nonce = options.nonce;
+            callback = options.callback;
+          },
+          renderButton(slot) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Google (falso)';
+            button.onclick = () => callback({ credential: 'google-jwt' });
+            slot.append(button);
+          },
+          prompt() {
+            fake.google.prompts++;
+          },
+          disableAutoSelect() {},
+        },
+      },
+    };
+  }
   window.fake = fake;
   const keyOf = { offer_mine: 'offer_id', offers: 'id', settings: 'user_id', profiles: 'user_id' };
   const test = { eq: (a, b) => a === b, neq: (a, b) => a !== b, in: (a, list) => list.includes(a) };
@@ -73,6 +121,10 @@ export function installFake({ signedOut, tables, localOffers, failProfile }) {
       if (op === 'select' && table === 'offers' && this.filters.some(([kind]) => kind === 'neq')) fake.sharedReads++;
       const rows = data[table].filter((row) => this.filters.every(([kind, col, value]) => test[kind](row[col], value)));
       if (op === 'update' && failProfile) return { data: null, error: new Error('network') };
+      if (op === 'upsert' && table === 'offers' && uploadFails) {
+        uploadFails = false;
+        return { data: null, error: new Error('network') };
+      }
       if (op === 'upsert')
         for (const row of this.payload) {
           const at = data[table].findIndex((r) => r[keyOf[table]] === row[keyOf[table]]);
@@ -97,20 +149,24 @@ export function installFake({ signedOut, tables, localOffers, failProfile }) {
       return { data: null, error: null };
     },
     auth: {
-      getSession: async () => ({
-        data: {
-          session: signedOut
-            ? null
-            : { user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } },
-        },
-        error: null,
-      }),
+      getSession: async () => ({ data: { session }, error: null }),
+      signInWithIdToken: async (args) => {
+        fake.idToken = args;
+        return signIn();
+      },
+      signInWithOtp: async (args) => {
+        fake.otp = args;
+        return { data: {}, error: null };
+      },
+      verifyOtp: async ({ token }) =>
+        token === '123456' ? signIn() : { data: {}, error: new Error('Token has expired or is invalid') },
       signInWithOAuth: async (args) => {
         fake.oauth = args;
         return { data: {}, error: null };
       },
       signOut: async () => {
         fake.signedOut = true;
+        session = null;
         return { error: null };
       },
     },

@@ -35,6 +35,7 @@
   </div>
 
   <div class="panel" data-panel="offers">
+  <section class="signin-card" id="signInCard" aria-label="Entrar en tu cuenta" hidden></section>
   <div class="backup-notice" id="backupNotice" hidden>
     <p>Tus ofertas solo están guardadas en este navegador, que puede borrarlas. Guarda una copia por si acaso.</p>
     <div class="actions"><button type="button" class="sm pri" data-action="download">Descargar copia</button><button type="button" class="sm" data-action="snoozeBackup">Ahora no</button></div>
@@ -448,15 +449,15 @@
 
     <div id="accountOut" class="account-body" hidden>
       <p class="hint">Con una cuenta tus ofertas se guardan y las ves desde cualquier dispositivo. Si quieres, también puedes comparar tus ofertas con las de otros pastores, compartiendo las tuyas. Sin cuenta, todo sigue guardado solo en este navegador.</p>
-      <div class="actions"><button type="button" class="pri" data-action="accountSignIn">Entrar con Google</button></div>
+      <div id="accountSignIn"></div>
     </div>
 
     <div id="accountPending" class="account-body" hidden>
       <h4>Ofertas de este navegador</h4>
-      <p>Estas ofertas están en este navegador, pero no en tu cuenta. Elige qué hacer con ellas:</p>
+      <p>No se pudieron subir a tu cuenta estas ofertas de este navegador:</p>
       <ul id="pendingList"></ul>
       <div class="actions">
-        <button type="button" class="pri" data-action="uploadPending">Subirlas a la cuenta</button>
+        <button type="button" class="pri" data-action="uploadPending">Volver a intentarlo</button>
         <button type="button" data-action="discardPending">Quedarme solo con las de la cuenta</button>
       </div>
       <p class="hint">Si eliges solo las de la cuenta, las ofertas de este navegador se descartan.</p>

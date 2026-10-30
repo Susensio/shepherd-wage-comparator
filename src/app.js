@@ -9,7 +9,7 @@ import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
 import { MISSING_TEXT } from './text.js';
-import { loadOthers } from './ui/account-section.js';
+import { loadOthers, showSignInButtons } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
@@ -251,7 +251,10 @@ export function showTab(tab, scrollUp) {
     $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   }
   saveTab(shown);
-  if (shown === 'settings') paintBackup();
+  if (shown === 'settings') {
+    paintBackup();
+    showSignInButtons();
+  }
   if (shown === 'compare') {
     paintTimeline(); // the trend fits the width, which is only known once shown
     if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
