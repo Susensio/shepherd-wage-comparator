@@ -47,6 +47,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Records
 
+- `docs/adr/`: numbered records of settled choices between alternatives. In English. The main agent writes them.
 - `docs/BACKLOG.md`: open ideas and defects nobody is working on yet. In English. The main agent writes it.
 
 ## Commits
