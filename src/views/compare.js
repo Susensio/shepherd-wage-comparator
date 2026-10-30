@@ -82,9 +82,9 @@ function headToHead(list) {
   const duration = (x) =>
     x.r.time.noDuration
       ? 'sin saber'
-      : x.o.durationUnit === 'days'
-        ? `${fTyped(x.o.duration)} días`
-        : `${fTyped(x.o.duration)} ${num(x.o.duration) === 1 ? 'mes' : 'meses'}`;
+      : x.o.terms.durationUnit === 'days'
+        ? `${fTyped(x.o.terms.duration)} días`
+        : `${fTyped(x.o.terms.duration)} ${num(x.o.terms.duration) === 1 ? 'mes' : 'meses'}`;
   const orDash = (format) => (v) => (Number.isFinite(v) ? format(v) : '–');
   const perMonthOk = (x) => x.r.time.noDuration || !isUnderAMonth(x.r);
   // Blocks of [what, value, format, best: 'max', 'min' or '' (information, no winner)]
@@ -166,7 +166,7 @@ function headToHead(list) {
     return shown.length ? html`<tr class="group"><th colspan="3">${title}</th></tr>${shown}` : nothing;
   });
   const header = (x) =>
-    html`<th><button type="button" class="linkbtn" data-action="view" data-id=${x.o.id}>${x.o.name}</button></th>`;
+    html`<th><button type="button" class="linkbtn" data-action="view" data-id=${x.o.id}>${x.o.mine.name}</button></th>`;
   return html`<div class="pair" id="pairBlk"><div class="pair-head"><h4 class="sub">Cara a cara</h4><button type="button" class="linkbtn" data-action="closePair">Cerrar</button></div>
     <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -182,7 +182,7 @@ function hoursView(list) {
       const total = r.time.hoursPerWeek;
       const extra = Math.min(total, weeks > 0 ? r.extra.hours / weeks : 0);
       const normal = total - extra;
-      return html`<button type="button" class="hr" data-action="view" data-id=${o.id}><b>${o.name}</b><span class="v">${fN(total)} h</span>
+      return html`<button type="button" class="hr" data-action="view" data-id=${o.id}><b>${o.mine.name}</b><span class="v">${fN(total)} h</span>
       <span class="hbar"><i class="ok" style="left:0;width:${pct(normal)}%"></i>${
         extra >= 0.5 ? html`<i class="unpaid" style="left:${pct(normal)}%;width:${pct(extra)}%"></i>` : nothing
       }</span></button>`;
@@ -204,15 +204,15 @@ export function compareView(all, unit) {
     const v = unit === 'total' && r.time.noDuration ? Number.NaN : r.earnings[U.key];
     return Number.isFinite(v) ? v : -1e12;
   };
-  const list = all.filter(({ o }) => isComplete(o)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
+  const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
   if (list.length < 2) {
-    const incomplete = all.filter(({ o }) => !isComplete(o));
+    const incomplete = all.filter(({ o }) => !isComplete(o.terms));
     return {
       picker: nothing,
       body: html`<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
-          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.name || 'Oferta'}» le falta ${joinAnd(missing(o).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
+          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>`,
     };
   }
@@ -232,7 +232,7 @@ export function compareView(all, unit) {
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
-    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${o.name}${o.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
+    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${o.mine.name}${o.terms.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
@@ -277,7 +277,7 @@ export function trendView(all, unit, width) {
   // The legal minimum in the unit, net of the worker's Social Security only
   const minimumIn = (o, r) => {
     const cfg = r.cfg;
-    const bonus = o.overnight === 'yes' ? 1 + cfg.overnightPct / 100 : 1;
+    const bonus = o.terms.overnight === 'yes' ? 1 + cfg.overnightPct / 100 : 1;
     const annual = r.wage.annual;
     const base =
       unit === 'hour'
@@ -290,10 +290,10 @@ export function trendView(all, unit, width) {
     return base * bonus * (1 - cfg.ssPct / 100);
   };
   const points = all
-    .filter(({ o }) => o.start && isComplete(o))
+    .filter(({ o }) => o.terms.start && isComplete(o.terms))
     .map(({ o, r }) => {
       const d = U.per(r);
-      const [start, end] = spanOf(o);
+      const [start, end] = spanOf(o.terms);
       return { o, r, a: +start, b: +end + DAY_MS, m: minimumIn(o, r), y: d > 0 ? r.earnings.total / d : Number.NaN };
     })
     .filter((p) => Number.isFinite(p.y) && p.m > 0 && !(unit === 'total' && p.r.time.noDuration))
@@ -332,8 +332,8 @@ export function trendView(all, unit, width) {
           return svg`<text class="axis" x=${X((a + b) / 2)} y=${H - 6} text-anchor="middle">${y}</text>`;
         })
       : svg`<text class="axis" x=${M.l} y=${H - 6} text-anchor="start">${fDate(new Date(x0 + pad))}</text><text class="axis" x=${W - M.r} y=${H - 6} text-anchor="end">${fDate(new Date(x1 - pad - DAY_MS))}</text>`;
-  const jobs = points.filter((p) => !p.o.offerOnly);
-  const offersOnly = points.filter((p) => p.o.offerOnly);
+  const jobs = points.filter((p) => !p.o.terms.offerOnly);
+  const offersOnly = points.filter((p) => p.o.terms.offerOnly);
   const xEnd = (p) => Math.max(X(p.b - DAY_MS), X(p.a) + 3);
   const steps = jobs
     .slice(1)
@@ -348,7 +348,7 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.name} · ${datesText(p.o)}${p.o.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, SMI ${p.r.wage.year}).`;
+    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.terms.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, SMI ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que ganas ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que ganas ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
@@ -356,7 +356,7 @@ export function trendView(all, unit, width) {
         '',
       )}/>${offersOnly.map((p) => svg`<path class="offer-only" d="M${X(p.a)},${Y(p.y)}H${xEnd(p)}"/>`)}${points.map(
       (p) =>
-        svg`<text class=${p.o.offerOnly ? 'nm offer-only-t' : 'nm'} x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.name}</text>`,
+        svg`<text class=${p.o.terms.offerOnly ? 'nm offer-only-t' : 'nm'} x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
     )}${points.map(
       (p) =>
         svg`<rect class="hit" data-tip=${tip(p)} tabindex="0" role="button" x=${X(p.a) - 4} y=${Y(p.y) - 16} width=${xEnd(p) - X(p.a) + 8} height="28"/>`,
@@ -372,8 +372,9 @@ export function yearlyView(all) {
   const byYear = {};
   const worked = new Set(workedOffers(all.map((x) => x.o)));
   for (const { o, r } of all) {
-    if (!worked.has(o) || !isComplete(o) || o.durationUnit === 'unknown') continue;
-    for (const [year, share] of Object.entries(yearShares(o))) byYear[year] = [...(byYear[year] || []), { r, share }];
+    if (!worked.has(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
+    for (const [year, share] of Object.entries(yearShares(o.terms)))
+      byYear[year] = [...(byYear[year] || []), { r, share }];
   }
   const years = Object.keys(byYear).sort().reverse();
   if (!years.length) return nothing;

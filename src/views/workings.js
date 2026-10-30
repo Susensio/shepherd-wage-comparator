@@ -25,13 +25,13 @@ function timeSection(o, r) {
     row('Vacaciones que te corresponden', days(t.vacationDays), {
       sub: r.noContract
         ? 'sin contrato no te las pagan'
-        : { taken: 'las libras', paidAtEnd: 'te las pagan al acabar' }[o.vacation] ||
+        : { taken: 'las libras', paidAtEnd: 'te las pagan al acabar' }[o.terms.vacation] ||
           'no las libras ni te las pagan aparte',
     }),
-    row('Libranzas', days(t.daysOffTotal), { sub: o.holidays === 'yes' ? 'y además los festivos' : '' }),
+    row('Libranzas', days(t.daysOffTotal), { sub: o.terms.holidays === 'yes' ? 'y además los festivos' : '' }),
     row('Días trabajados', fN(t.daysWorked), { cls: 'tot' }),
     row('Horas trabajadas', `${fN(t.hours)}\u00a0h`, {
-      sub: `${fTyped(o.hoursPerDay)}\u00a0h al día · ${fN(t.hoursPerWeek)}\u00a0h a la semana`,
+      sub: `${fTyped(o.terms.hoursPerDay)}\u00a0h al día · ${fN(t.hoursPerWeek)}\u00a0h a la semana`,
     }),
   ]);
 }
@@ -109,7 +109,7 @@ function minimumSection(o, r, net) {
       unpaidRow('Te deben', debt.owed, net),
     ]);
   }
-  const vacation = min.vacation > 0.5 && o.vacation !== 'taken';
+  const vacation = min.vacation > 0.5 && o.terms.vacation !== 'taken';
   const covered = isWorthCounting(debt.total) && r.cash.total > 0;
   return section(
     'Mínimo legal, contado por meses',
@@ -163,7 +163,7 @@ function extraDaysSection(o, r, net) {
   // Where they come from: the weekly rest you do not take and the holidays you work (rounding leftovers go to rest)
   const k2 = days.extra < 10 ? 10 : 1;
   const round2 = (v) => Math.round(v * k2) / k2;
-  const holidaysWorked = round2(Math.min(days.extra, o.holidays !== 'yes' ? x.holidays : 0));
+  const holidaysWorked = round2(Math.min(days.extra, o.terms.holidays !== 'yes' ? x.holidays : 0));
   const restWorked = round2(days.extra - holidaysWorked);
   const split = holidaysWorked >= 0.5 && restWorked >= 0.5;
   const paid = Math.max(0, x.daysValue - x.daysUnpaid);

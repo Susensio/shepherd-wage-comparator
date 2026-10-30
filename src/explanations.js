@@ -15,12 +15,12 @@ export function explanations(o, r) {
     none: 'Trabajar sin contrato ni alta en la Seguridad Social es ilegal. No cotizas: no generas paro ni jubilación, y si te accidentas no estás cubierto. La responsabilidad es del ganadero, no tuya.',
   };
   return {
-    housing: `Te ponen casa.${cfg.inKind ? ` Se cuenta como ${fE(rentPerMonth(o, cfg))} al mes que te ahorras, lo que te costaría un alquiler. Lo cambias para todas en «Tus datos», o solo para esta en «Casa y comida».` : ''}`,
-    food: `Te dan ${mealsList(o)}.${cfg.inKind ? ` Te ahorras unos ${fE(foodPerDay(o, cfg))} por día trabajado. El precio de cada comida lo cambias en «Tus datos».` : ''}`,
+    housing: `Te ponen casa.${cfg.inKind ? ` Se cuenta como ${fE(rentPerMonth(o.mine, cfg))} al mes que te ahorras, lo que te costaría un alquiler. Lo cambias para todas en «Tus datos», o solo para esta en «Casa y comida».` : ''}`,
+    food: `Te dan ${mealsList(o.terms)}.${cfg.inKind ? ` Te ahorras unos ${fE(foodPerDay(o.terms, cfg))} por día trabajado. El precio de cada comida lo cambias en «Tus datos».` : ''}`,
     b: 'Lo que cobras en negro cuenta como dinero, pero no cotiza: no da paro, jubilación ni baja, ni cuenta para la indemnización.',
     allPayroll:
       'Todo lo que cobras va en nómina y cotiza: cuenta para el paro, la jubilación, la baja y la indemnización.',
     severance: `Al acabar un contrato temporal te toca una indemnización de ${severanceDays} (Estatuto de los Trabajadores, art. 49.1.c). Va en el finiquito.`,
-    contract: contract[o.contract],
+    contract: contract[o.terms.contract],
   };
 }

@@ -27,27 +27,28 @@ export const fSplit = (v, unit) =>
 
 /** One line per form section, for the folded summaries and the copied texts. */
 export function summaries(o, r) {
-  const one = num(o.duration) === 1;
+  const one = num(o.terms.duration) === 1;
   const duration =
-    o.durationUnit === 'unknown'
+    o.terms.durationUnit === 'unknown'
       ? 'Duración sin saber'
-      : !(num(o.duration) > 0)
+      : !(num(o.terms.duration) > 0)
         ? 'Duración sin poner'
-        : `${fTyped(o.duration)} ${o.durationUnit === 'days' ? (one ? 'día' : 'días') : one ? 'mes' : 'meses'}`;
-  const holidaysOff = o.holidays === 'yes';
-  const per = { week: 'a la semana', total: 'en total' }[o.daysOffUnit] || 'al mes';
+        : `${fTyped(o.terms.duration)} ${o.terms.durationUnit === 'days' ? (one ? 'día' : 'días') : one ? 'mes' : 'meses'}`;
+  const holidaysOff = o.terms.holidays === 'yes';
+  const per = { week: 'a la semana', total: 'en total' }[o.terms.daysOffUnit] || 'al mes';
   const daysOff =
-    num(o.daysOff) > 0
-      ? `libra ${fTyped(o.daysOff)} ${per}${holidaysOff ? ' y los festivos' : ''}`
+    num(o.terms.daysOff) > 0
+      ? `libra ${fTyped(o.terms.daysOff)} ${per}${holidaysOff ? ' y los festivos' : ''}`
       : holidaysOff
         ? 'libra los festivos'
         : 'sin libranzas';
   const vacation =
     { taken: 'vacaciones disfrutadas', paidAtEnd: 'vacaciones pagadas aparte', included: 'vacaciones incluidas' }[
-      o.vacation
+      o.terms.vacation
     ] || 'vacaciones sin poner';
-  const extraPays = !['year', 'total'].includes(o.payUnit) && o.extraPays === 'separate' ? ' · 2 pagas extra' : '';
-  const meals = mealsGiven(o).length ? `te dan ${mealsList(o)}` : 'sin comida';
+  const extraPays =
+    !['year', 'total'].includes(o.terms.payUnit) && o.terms.extraPays === 'separate' ? ' · 2 pagas extra' : '';
+  const meals = mealsGiven(o.terms).length ? `te dan ${mealsList(o.terms)}` : 'sin comida';
   const km = r.car.km;
   const carKm =
     km > 0
@@ -55,25 +56,25 @@ export function summaries(o, r) {
       : '';
   const split = r.split;
   return {
-    time: `${datesText(o) ? `${datesText(o)} · ` : o.year ? `${o.year} · ` : ''}${duration} · ${daysOff} · ${num(o.hoursPerDay) > 0 ? `${fTyped(o.hoursPerDay)}\u00a0h/día` : 'horas sin poner'}`,
+    time: `${datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : ''}${duration} · ${daysOff} · ${num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner'}`,
     payroll:
-      o.contract === 'none'
+      o.terms.contract === 'none'
         ? 'Sin contrato: todo en mano'
-        : o.payrollMin
+        : o.terms.payrollMin
           ? `El mínimo · ${vacation}`
-          : num(o.payAmount) > 0
-            ? `${fTyped(o.payAmount)} ${UNIT_TEXT[o.payUnit]} ${o.payType === 'net' ? 'neto' : 'bruto'}${extraPays} · ${vacation}`
+          : num(o.terms.payAmount) > 0
+            ? `${fTyped(o.terms.payAmount)} ${UNIT_TEXT[o.terms.payUnit]} ${o.terms.payType === 'net' ? 'neto' : 'bruto'}${extraPays} · ${vacation}`
             : 'Nada en nómina',
     b: split
       ? split.cash > 0.5
         ? `El resto hasta ${fSplit(split.agreed, split.unit)}: ~${fSplit(split.cash, split.unit)}`
         : 'Nada'
-      : num(o.cashAmount) > 0
-        ? `${fTyped(o.cashAmount)} ${UNIT_TEXT[o.cashUnit]}`
+      : num(o.terms.cashAmount) > 0
+        ? `${fTyped(o.terms.cashAmount)} ${UNIT_TEXT[o.terms.cashUnit]}`
         : 'Nada',
-    housing: `${o.overnight === 'yes' ? 'Duermes en borda · ' : ''}${o.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
-    car: o.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
-    others: `${num(o.expenses) > 0 ? `Gastos ${fE(num(o.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.irpfMode === 'manual' ? `${fN(num(o.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
+    housing: `${o.terms.overnight === 'yes' ? 'Duermes en borda · ' : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
+    car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
+    others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
 }
 
@@ -139,7 +140,7 @@ export function cardText(o, r) {
     [savings.overtime, 'por las horas extra (estimado)'],
   ].filter(([value]) => isWorthCounting(value));
   return [
-    o.name || 'Oferta',
+    o.mine.name || 'Oferta',
     `${s.time} → ${fN(r.time.daysWorked)} días trabajados`,
     `Nómina: ${s.payroll}`,
     r.cash.total > 0 ? `En negro: ${lowerFirst(s.b)}` : '',
@@ -173,7 +174,7 @@ export function claimText(o, r) {
   const lines = [];
   const add = (...l) => lines.push(...l);
 
-  add(`Oferta: ${o.name || 'sin nombre'}`);
+  add(`Oferta: ${o.mine.name || 'sin nombre'}`);
   add(`Condiciones: ${s.time}. ${s.payroll}.${cash > 0 ? ` En negro: ${lowerFirst(s.b)}.` : ''} ${s.housing}.`);
   add(
     `Días trabajados: ${fN(r.time.daysWorked)} · Horas: ${fN(r.time.hours)} (${fN(r.time.hoursPerWeek)}\u00a0h a la semana).`,
@@ -195,7 +196,7 @@ export function claimText(o, r) {
     if (isWorthCounting(r.debt.salary)) add(`Lo que se paga no llega al mínimo: faltan ${fE(r.debt.salary)} brutos.`);
   } else {
     add(
-      `Tipo de contrato: ${contractOf(o).phrase}. Nómina bruta en todo el contrato: ${fE(r.pay.gross)} (unos ${fE(r.pay.net)} netos).`,
+      `Tipo de contrato: ${contractOf(o.terms).phrase}. Nómina bruta en todo el contrato: ${fE(r.pay.gross)} (unos ${fE(r.pay.net)} netos).`,
     );
     add(`Mínimo en todo el contrato, contado por meses: ${fE(r.min.total)} brutos.`);
     add(
@@ -235,7 +236,7 @@ export function claimText(o, r) {
       add(
         `Descanso semanal: ${fN(r.time.daysOffTotal)} días libres frente a un mínimo de ${fN(r.rest.legal)} (día y medio por semana; Estatuto, art. 37.1).`,
       );
-    if (o.holidays !== 'yes' && x.holidays >= 0.5)
+    if (o.terms.holidays !== 'yes' && x.holidays >= 0.5)
       add(
         `Festivos trabajados: ${Math.round(x.holidays) <= 1 ? 'uno' : `unos ${fN(x.holidays)}`} (Estatuto, art. 37.2).`,
       );
@@ -255,12 +256,12 @@ export function claimText(o, r) {
   if (x.overtime >= 0.5) {
     add('', 'HORAS EXTRA (ESTIMACIÓN)');
     add(
-      `Jornadas de ${fTyped(o.hoursPerDay)} h: ${f1(Math.max(0, num(o.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (40 h semanales; Estatuto, art. 34), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
+      `Jornadas de ${fTyped(o.terms.hoursPerDay)} h: ${f1(Math.max(0, num(o.terms.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (40 h semanales; Estatuto, art. 34), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
     );
     add(
       `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${isWorthCounting(x.overtimeUnpaid) ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (Estatuto, art. 35).`,
     );
-    if (r.time.hoursPerWeek > H_MAX || num(o.hoursPerDay) > LAW.maxDayHours)
+    if (r.time.hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours)
       add(
         `Se supera el máximo de la ganadería: ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día (RD 1561/1995, art. 5).`,
       );

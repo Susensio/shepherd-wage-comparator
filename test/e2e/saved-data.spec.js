@@ -2,14 +2,15 @@
 
 import { expect, sample, test } from './fixtures.js';
 
-const names = (offers) => offers.map(({ id, name, contract, duration }) => ({ id, name, contract, duration }));
+const names = (offers) =>
+  offers.map(({ id, mine, terms }) => ({ id, name: mine.name, contract: terms.contract, duration: terms.duration }));
 
 test('browser storage', async ({ openApp }) => {
   const page = await openApp({
     arg: sample,
     init: (saved) => {
       const set = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-      set('cj.ofertas', saved.offers);
+      set('cj.ofertas2', saved.offers);
       set('cj.cfg', saved.cfg);
       set('cj.active', saved.offers[1].id);
       set('cj.unidadCmp', 'month');
@@ -39,4 +40,21 @@ test('a backup file', async ({ page }) => {
   expect(ok).toBe(true);
   expect(message).toBe('Añadidas 8 ofertas.');
   expect(names(loaded)).toEqual(names(sample.offers));
+});
+
+test('offers saved in the old flat shape do not break the page', async ({ openApp }) => {
+  const page = await openApp({
+    init: () => {
+      localStorage.setItem('cj.ofertas', JSON.stringify([{ id: 'x', name: 'Vieja', payAmount: 1000 }]));
+      localStorage.setItem('cj.ofertas2', JSON.stringify([{ id: 'x', name: 'Vieja', payAmount: 1000 }]));
+    },
+  });
+  expect(await page.evaluate(() => app.state.offers.length)).toBe(1);
+  const message = await page.evaluate(async () => {
+    const { loadBackup } = await import('./src/storage/backup.js');
+    const msg = document.createElement('p');
+    loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Vieja' }] }), msg);
+    return msg.textContent;
+  });
+  expect(message).toBe('Añadidas 0 ofertas.');
 });

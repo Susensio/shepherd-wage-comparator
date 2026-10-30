@@ -4,17 +4,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
-import { DEF_CFG, DEF_OFFER } from '../../src/offer.js';
+import { DEF_CFG } from '../../src/offer.js';
 import { failuresOf, rightsOf } from '../../src/rights.js';
-import { normalizeOffer } from '../../src/saved.js';
 import { legalLine, unpaidTime } from '../../src/text.js';
+import { offerOf } from './flat-offer.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };
 
 // A permanent full-time contract at exactly the 2026 minimum wage, with days off and holidays taken
 const BASE = {
-  ...DEF_OFFER,
   id: 't',
   name: 't',
   start: '2026-01-01',
@@ -36,7 +35,7 @@ const BASE = {
   overnight: 'no',
 };
 const build = (changes = {}) => {
-  const o = normalizeOffer({ ...BASE, ...changes });
+  const o = offerOf({ ...BASE, ...changes });
   return { o, r: calc(o, { cfg, alone: true }) };
 };
 /** Status of each right, by id. */

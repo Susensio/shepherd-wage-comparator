@@ -7,10 +7,10 @@ import { endOf, parseDate } from '../offer.js';
  * contract's); the vacation not taken and the severance go in the last one, the final settlement.
  * Contributions at the settings' rates.
  */
-export function monthlyPayslips(o, r, cfg) {
-  const end = endOf(o);
-  if (!o.start || !end || r.pay.gross <= 0) return [];
-  const start = parseDate(o.start);
+export function monthlyPayslips(terms, r, cfg) {
+  const end = endOf(terms);
+  if (!terms.start || !end || r.pay.gross <= 0) return [];
+  const start = parseDate(terms.start);
   const months = [];
   for (let y = start.getFullYear(), m = start.getMonth(); new Date(y, m, 1) <= end; m++) {
     const first = new Date(y, m, 1);

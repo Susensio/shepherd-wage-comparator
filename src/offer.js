@@ -7,11 +7,10 @@ import { LAW, SOCIAL_SECURITY, ssTotal } from './law.js';
 export const DAYS_PER_MONTH = 365 / 12;
 
 /**
- * A new offer. What you are told in the offer (duration, hours, days off, pay) starts empty;
- * your own figures (meal prices, car, rent) are in the settings.
+ * What the employer offers: the only part of an offer that is ever shared. What you are told in the offer (duration,
+ * hours, days off, pay) starts empty.
  */
-export const DEF_OFFER = {
-  name: '',
+export const DEF_TERMS = {
   start: '',
   year: '',
   duration: '',
@@ -35,21 +34,29 @@ export const DEF_OFFER = {
   totalUnit: 'month', // day · month · total
   overnight: 'no',
   housing: 'no',
-  rentValue: '', // empty: the one in the settings
   mealBreakfast: false,
   mealSnack: false,
   mealLunch: false,
   mealDinner: false,
+  kmRate: '',
+};
+
+/** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
+export const DEF_MINE = {
+  name: '',
+  rentValue: '', // empty: the one in the settings
   car: 'own', // own · noCar
   commute: 'daily', // daily · liveIn
   tripsHome: '',
   kmHome: '',
   kmWorkPerDay: '',
-  kmRate: '',
   expenses: '',
   irpfMode: 'auto', // auto · manual
   irpfManual: 2,
 };
+
+/** The side of an offer a field lives on: `offer.mine` or `offer.terms`. */
+export const sideOf = (offer, field) => (field in DEF_MINE ? offer.mine : offer.terms);
 
 /** Your own figures, the same for every offer («Tus datos»). */
 export const YOUR_DATA = {
@@ -82,42 +89,52 @@ export const CONTRACTS = {
   permanent: { stat: 'Fijo', phrase: 'fijo', pill: 'Contrato fijo' },
   none: { stat: 'Sin contrato', phrase: 'sin contrato ni alta', pill: 'Sin contrato' },
 };
-export const contractOf = (o) => CONTRACTS[o.contract] || CONTRACTS.temporary;
+export const contractOf = (terms) => CONTRACTS[terms.contract] || CONTRACTS.temporary;
 
-/** Templates to start an offer: what they set and how they are described. */
+/** Templates to start an offer: the terms and own figures they set, and how they are described. */
 export const TEMPLATES = [
   {
     id: 'summer',
     title: 'Puerto',
     text: 'Verano en el monte. Duermes en la borda; bajas cuando libras.',
     sets: 'Fijo discontinuo · duermes en borda · vives allí',
-    values: { contract: 'seasonal', durationUnit: 'months', overnight: 'yes', housing: 'no', commute: 'liveIn' },
+    terms: { contract: 'seasonal', durationUnit: 'months', overnight: 'yes', housing: 'no' },
+    mine: { commute: 'liveIn' },
   },
   {
     id: 'season',
     title: 'Temporada con casa',
     text: 'Invernada u otra zona: varios meses con casa y libranzas.',
     sets: 'Temporal · con casa · vives allí',
-    values: { contract: 'temporary', durationUnit: 'months', overnight: 'no', housing: 'yes', commute: 'liveIn' },
+    terms: { contract: 'temporary', durationUnit: 'months', overnight: 'no', housing: 'yes' },
+    mine: { commute: 'liveIn' },
   },
   {
     id: 'harvest',
     title: 'Campaña o jornales',
     text: 'Unos días o semanas a jornal: esquileo, partos, días sueltos.',
     sets: 'Temporal · por días · cobras por día, neto · vuelves cada día',
-    values: { contract: 'temporary', durationUnit: 'days', payType: 'net', payUnit: 'day', commute: 'daily' },
+    terms: { contract: 'temporary', durationUnit: 'days', payType: 'net', payUnit: 'day' },
+    mine: { commute: 'daily' },
   },
   {
     id: 'permanent',
     title: 'Fijo todo el año',
     text: 'Contrato anual en una explotación. Vuelves a casa cada día.',
     sets: 'Fijo · 12 meses · cobras al mes · vuelves cada día',
-    values: { contract: 'permanent', durationUnit: 'months', duration: 12, payUnit: 'month', commute: 'daily' },
+    terms: { contract: 'permanent', durationUnit: 'months', duration: 12, payUnit: 'month' },
+    mine: { commute: 'daily' },
   },
 ];
 
 export const newId = () => `o${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
-export const makeOffer = (values = {}) => ({ ...DEF_OFFER, id: newId(), name: 'Oferta 1', cmp: true, ...values });
+/** A new offer: defaults, completed with the given terms and own figures. `cmp` is whether Comparar includes it. */
+export const makeOffer = (terms = {}, mine = {}) => ({
+  id: newId(),
+  terms: { ...DEF_TERMS, ...terms },
+  mine: { ...DEF_MINE, name: 'Oferta 1', ...mine },
+  cmp: true,
+});
 
 /* --- Meals and housing --- */
 
@@ -131,63 +148,63 @@ export const MEALS = [
   ['mealLunch', 'comida', 4],
   ['mealDinner', 'cena', 4],
 ];
-export const mealsGiven = (o) => MEALS.filter(([field]) => o[field]);
+export const mealsGiven = (terms) => MEALS.filter(([field]) => terms[field]);
 /** What you save per day on food: the prices of the meals you are given. */
-export const foodPerDay = (o, cfg) => mealsGiven(o).reduce((sum, [field]) => sum + num(cfg[`${field}P`]), 0);
+export const foodPerDay = (terms, cfg) => mealsGiven(terms).reduce((sum, [field]) => sum + num(cfg[`${field}P`]), 0);
 /** Rent you save with housing: the one in the settings, unless the offer sets another for its area. */
-export const rentPerMonth = (o, cfg) =>
-  o.rentValue === '' || o.rentValue == null ? num(cfg.rentValue) : num(o.rentValue);
-export const mealsList = (o) => {
-  const names = mealsGiven(o).map(([, name]) => name);
+export const rentPerMonth = (mine, cfg) =>
+  mine.rentValue === '' || mine.rentValue == null ? num(cfg.rentValue) : num(mine.rentValue);
+export const mealsList = (terms) => {
+  const names = mealsGiven(terms).map(([, name]) => name);
   return names.length === MEALS.length ? 'todas las comidas' : joinAnd(names);
 };
 
 /* --- Questions about an offer --- */
 
 /** The cash part is worked out from the agreed total (only with a contract). */
-export const fromTotal = (o) => o.cashMode === 'total' && o.contract !== 'none';
+export const fromTotal = (terms) => terms.cashMode === 'total' && terms.contract !== 'none';
 /** Vacation you do not take and are paid for, at the end or inside the daily wage. */
-export const vacationPaid = (o) => o.vacation === 'paidAtEnd' || o.vacation === 'included';
+export const vacationPaid = (terms) => terms.vacation === 'paidAtEnd' || terms.vacation === 'included';
 /** A month or less: there is no time to take vacation, it is normally paid in the final settlement. */
-export const isShortContract = (o) =>
-  o.durationUnit === 'days'
-    ? num(o.duration) > 0 && num(o.duration) <= 31
-    : o.durationUnit === 'months' && num(o.duration) > 0 && num(o.duration) <= 1;
+export const isShortContract = (terms) =>
+  terms.durationUnit === 'days'
+    ? num(terms.duration) > 0 && num(terms.duration) <= 31
+    : terms.durationUnit === 'months' && num(terms.duration) > 0 && num(terms.duration) <= 1;
 
 /** For short contracts with nothing said about vacation, it is set to «paid at the end»; undone if it stops being short. */
-export function defaultVacation(o) {
-  if (o.contract === 'none') return false;
-  if (!o.vacation && isShortContract(o)) {
-    o.vacation = 'paidAtEnd';
-    o.vacationAuto = true;
+export function defaultVacation(terms) {
+  if (terms.contract === 'none') return false;
+  if (!terms.vacation && isShortContract(terms)) {
+    terms.vacation = 'paidAtEnd';
+    terms.vacationAuto = true;
     return true;
   }
-  if (o.vacationAuto && !isShortContract(o)) {
-    o.vacation = '';
-    delete o.vacationAuto;
+  if (terms.vacationAuto && !isShortContract(terms)) {
+    terms.vacation = '';
+    delete terms.vacationAuto;
     return true;
   }
   return false;
 }
 
 /** Ids of what is still missing to give figures. */
-export function missing(o) {
-  const noContract = o.contract === 'none';
+export function missing(terms) {
+  const noContract = terms.contract === 'none';
   const pay = noContract
-    ? !(num(o.cashAmount) > 0) && 'cashInHand'
-    : fromTotal(o)
-      ? !(num(o.totalAmount) > 0) && 'agreedTotal'
-      : !(o.payrollMin || num(o.payAmount) > 0 || num(o.cashAmount) > 0) && 'pay';
+    ? !(num(terms.cashAmount) > 0) && 'cashInHand'
+    : fromTotal(terms)
+      ? !(num(terms.totalAmount) > 0) && 'agreedTotal'
+      : !(terms.payrollMin || num(terms.payAmount) > 0 || num(terms.cashAmount) > 0) && 'pay';
   return [
-    o.durationUnit !== 'unknown' && !(num(o.duration) > 0) && 'duration',
-    !(num(o.hoursPerDay) > 0) && 'hoursPerDay',
+    terms.durationUnit !== 'unknown' && !(num(terms.duration) > 0) && 'duration',
+    !(num(terms.hoursPerDay) > 0) && 'hoursPerDay',
     pay,
-    !noContract && !o.vacation && 'vacation',
+    !noContract && !terms.vacation && 'vacation',
   ].filter(Boolean);
 }
 
 /** Nothing is missing to give figures. */
-export const isComplete = (o) => missing(o).length === 0;
+export const isComplete = (terms) => missing(terms).length === 0;
 
 /* --- Dates --- */
 
@@ -203,14 +220,15 @@ export const isoOf = (date) =>
     : '';
 
 /** The year an offer starts: that of its start date; without a date, the one it had set or the current one. */
-export const actualYear = (o) => Number(o.start ? o.start.slice(0, 4) : o.year || new Date().getFullYear());
+export const actualYear = (terms) =>
+  Number(terms.start ? terms.start.slice(0, 4) : terms.year || new Date().getFullYear());
 
 /** Last day of the contract: the start plus the duration. null without a date or a duration. */
-export function endOf(o) {
-  if (!o.start || o.durationUnit === 'unknown' || !(num(o.duration) > 0)) return null;
-  const end = parseDate(o.start);
-  const n = num(o.duration);
-  if (o.durationUnit === 'days') {
+export function endOf(terms) {
+  if (!terms.start || terms.durationUnit === 'unknown' || !(num(terms.duration) > 0)) return null;
+  const end = parseDate(terms.start);
+  const n = num(terms.duration);
+  if (terms.durationUnit === 'days') {
     end.setDate(end.getDate() + Math.round(n) - 1);
     return end;
   }
@@ -232,16 +250,16 @@ export function endOf(o) {
 }
 
 /** What an offer takes up in the calendar: [start, end]. Without a duration, only the first day. */
-export const spanOf = (o) => {
-  const start = parseDate(o.start);
-  return [start, endOf(o) || start];
+export const spanOf = (terms) => {
+  const start = parseDate(terms.start);
+  return [start, endOf(terms) || start];
 };
 
 /** «1–30 nov 2025», «15 jun – 30 sep 2026», «desde el 1 jun 2026». '' without a date. */
-export function datesText(o) {
-  if (!o.start) return '';
-  const start = parseDate(o.start);
-  const end = endOf(o);
+export function datesText(terms) {
+  if (!terms.start) return '';
+  const start = parseDate(terms.start);
+  const end = endOf(terms);
   if (!end) return `desde el ${fDate(start)}`;
   if (start.getFullYear() !== end.getFullYear()) return `${fDate(start)} – ${fDate(end)}`;
   if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${fDate(end)}`;
@@ -249,15 +267,15 @@ export function datesText(o) {
 }
 
 /** Offers that count as work done or to do: dated and not «just an offer». */
-export const workedOffers = (offers) => offers.filter((o) => o.start && !o.offerOnly);
+export const workedOffers = (offers) => offers.filter((o) => o.terms.start && !o.terms.offerOnly);
 
 /** Other worked offers whose dates overlap this one. */
-export function overlapsOf(o, offers) {
-  if (!o.start || o.offerOnly) return [];
-  const [start, end] = spanOf(o);
+export function overlapsOf(offer, offers) {
+  if (!offer.terms.start || offer.terms.offerOnly) return [];
+  const [start, end] = spanOf(offer.terms);
   return workedOffers(offers).filter((p) => {
-    if (p.id === o.id) return false;
-    const [b, e] = spanOf(p);
+    if (p.id === offer.id) return false;
+    const [b, e] = spanOf(p.terms);
     return b <= end && e >= start;
   });
 }

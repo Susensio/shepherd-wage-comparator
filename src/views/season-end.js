@@ -97,9 +97,9 @@ function simulator(o, r, months) {
 
 /** «Final de campaña». */
 export function seasonEndSection(o, r) {
-  const end = endOf(o);
-  if (!o.start || o.offerOnly || r.time.noDuration || !end) return nothing;
-  const months = monthlyPayslips(o, r, r.cfg);
+  const end = endOf(o.terms);
+  if (!o.terms.start || o.terms.offerOnly || r.time.noDuration || !end) return nothing;
+  const months = monthlyPayslips(o.terms, r, r.cfg);
   const payroll = months.reduce((sum, x) => sum + x.net, 0);
   const cash = r.cash.total;
   const total = payroll + cash;
@@ -113,7 +113,7 @@ export function seasonEndSection(o, r) {
     .filter(Boolean)
     .join(' · ');
   return html`<section class="season-end" id="secSeason" aria-label="Final de campaña"><h3 class="q">Final de campaña</h3>
-    <div class="received">${figureCard(fE(total), 'Total cobrado', `del ${fDate(parseDate(o.start))} al ${fDate(end)}`, '')}${
+    <div class="received">${figureCard(fE(total), 'Total cobrado', `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`, '')}${
       cash > 0.5 && payroll > 0.5
         ? html`<div class="rc-bar" aria-hidden="true"><i style="flex:${1 - cashShare}"></i><i class="b" style="flex:${cashShare}"></i></div>`
         : nothing

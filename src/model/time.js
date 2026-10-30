@@ -25,29 +25,29 @@ export function payrollMonths(start, days) {
 
 /**
  * Duration, days worked and off, hours.
- * @param {object} o the offer
+ * @param {object} terms the offer's terms
  * @param {object} cfg the settings
  */
-export function schedule(o, cfg) {
-  const noDuration = o.durationUnit === 'unknown';
-  const days = o.durationUnit === 'days' ? Math.max(0, num(o.duration)) : 0;
+export function schedule(terms, cfg) {
+  const noDuration = terms.durationUnit === 'unknown';
+  const days = terms.durationUnit === 'days' ? Math.max(0, num(terms.duration)) : 0;
   // In days and with a start date, months are counted as on the payslip: whole calendar months and the days left over
   // at 1/30 of a month (21 jun – 30 sep: 3 months and 10 days = 3.33). Without a date, with an average month.
   const months = noDuration
     ? 1
-    : o.durationUnit === 'days'
-      ? o.start && days > 0
-        ? payrollMonths(parseDate(o.start), days)
+    : terms.durationUnit === 'days'
+      ? terms.start && days > 0
+        ? payrollMonths(parseDate(terms.start), days)
         : days / DAYS_PER_MONTH
-      : Math.max(0, num(o.duration));
-  const natDays = o.durationUnit === 'days' && !noDuration ? days : months * DAYS_PER_MONTH;
-  const hoursPerDay = Math.max(0, num(o.hoursPerDay));
+      : Math.max(0, num(terms.duration));
+  const natDays = terms.durationUnit === 'days' && !noDuration ? days : months * DAYS_PER_MONTH;
+  const hoursPerDay = Math.max(0, num(terms.hoursPerDay));
   // Vacation: 2.5 days per month, rounded to whole days, as on payslips (8.33 → 8)
   const vacationDays = Math.round((num(cfg.vacationDaysPerYear) * months) / 12);
-  const vacationTaken = o.vacation === 'taken' ? vacationDays : 0;
+  const vacationTaken = terms.vacation === 'taken' ? vacationDays : 0;
   // Share of days you work. «En total»: days off over the whole contract, vacation aside
-  const off = Math.max(0, num(o.daysOff));
-  const unit = noDuration && o.daysOffUnit === 'total' ? 'month' : o.daysOffUnit;
+  const off = Math.max(0, num(terms.daysOff));
+  const unit = noDuration && terms.daysOffUnit === 'total' ? 'month' : terms.daysOffUnit;
   const daysLeft = Math.max(0, natDays - vacationTaken);
   const workFrac =
     unit === 'week'
@@ -58,7 +58,7 @@ export function schedule(o, cfg) {
           : 0
         : clamp((DAYS_PER_MONTH - off) / DAYS_PER_MONTH, 0, 1);
   // Public holidays taken off, on top of the days off
-  const holidaysOff = o.holidays === 'yes' ? (LAW.holidaysPerYear * months) / 12 : 0;
+  const holidaysOff = terms.holidays === 'yes' ? (LAW.holidaysPerYear * months) / 12 : 0;
   // Whole days when there is a duration: days off per month are an average, but nobody works half a day (91.9 → 92)
   const daysExact = Math.max(0, (natDays - vacationTaken - holidaysOff) * workFrac);
   const daysWorked = noDuration ? daysExact : Math.round(daysExact);

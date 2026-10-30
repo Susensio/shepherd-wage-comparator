@@ -78,7 +78,7 @@ const MISSING_FIELD = {
 /** Marks in the form what is missing to see the result, once you have asked to see it. */
 export function markMissing() {
   const o = active();
-  const shortfall = ui.askedToSee === o.id ? missing(o) : [];
+  const shortfall = ui.askedToSee === o.id ? missing(o.terms) : [];
   for (const [what, selector] of Object.entries(MISSING_FIELD))
     $(selector).closest('.fld').classList.toggle('missing', shortfall.includes(what));
   $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
@@ -95,7 +95,7 @@ function paintCompare() {
 
 /** «Cuándo»: what you are paid over time and each year's summary. Only with dated offers. */
 function paintTimeline(all = myOffers().map((o) => ({ o, r: calcOffer(o) }))) {
-  const dated = all.some(({ o }) => o.start);
+  const dated = all.some(({ o }) => o.terms.start);
   $('#tlBlk').hidden = !dated;
   render(dated ? trendView(all, state.cmpUnit, $('#cmpBlk').clientWidth) : '', $('#trend'));
   render(dated ? yearlyView(all) : '', $('#yearly'));
@@ -126,7 +126,7 @@ export function commit() {
 export function select(id) {
   state.activeId = id;
   const o = active();
-  defaultVacation(o);
+  defaultVacation(o.terms);
   saveOffers();
   fillForm(o);
   paintAll();
@@ -170,7 +170,7 @@ export function closeTemplates() {
  */
 export function done(fromTop) {
   const o = active();
-  const shortfall = missing(o);
+  const shortfall = missing(o.terms);
   const results = $('#results');
   if (!shortfall.length) {
     ui.askedToSee = null;

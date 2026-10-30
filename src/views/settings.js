@@ -26,7 +26,7 @@ export function fillSettings(skip) {
 
 /** The backup reminder above the offers, and the backup status in Ajustes. */
 export function paintBackup() {
-  const status = backupStatus(myOffers().some((o) => isComplete(o)));
+  const status = backupStatus(myOffers().some((o) => isComplete(o.terms)));
   $('#backupNotice').hidden = !status.remind;
   const { last, days } = status;
   $('#backupStatus').textContent = !last

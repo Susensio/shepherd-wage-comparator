@@ -4,13 +4,13 @@ import { html, nothing } from 'lit-html';
 import { isComplete, TEMPLATES } from '../offer.js';
 
 /** Your offers in order: latest start first; those without a date at the end, in the order you made them. */
-const sorted = (offers) => [...offers].sort((a, b) => (b.start || '').localeCompare(a.start || ''));
+const sorted = (offers) => [...offers].sort((a, b) => (b.terms.start || '').localeCompare(a.terms.start || ''));
 
 export const chipsView = (offers, activeId) =>
   sorted(offers).map((o) => {
-    const incomplete = !isComplete(o);
+    const incomplete = !isComplete(o.terms);
     return html`<button type="button" class=${incomplete ? 'chip incomplete' : 'chip'} data-action="choose" data-id=${o.id} aria-current=${String(o.id === activeId)} title=${incomplete ? 'Le faltan datos' : nothing}>
-    <span class="cn">${o.name || 'Sin nombre'}</span></button>`;
+    <span class="cn">${o.mine.name || 'Sin nombre'}</span></button>`;
   });
 
 export const templatesView = () =>

@@ -8,9 +8,10 @@ import { calc } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { payrollMonths } from '../../src/model/time.js';
-import { DEF_CFG, DEF_OFFER, parseDate } from '../../src/offer.js';
+import { DEF_CFG, parseDate } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/saved.js';
 import { incomeOf } from '../../src/units.js';
+import { offerOf } from './flat-offer.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };
@@ -22,7 +23,6 @@ const near = (actual, expected, tolerance, what) =>
 
 // A permanent full-time contract at exactly the 2026 minimum wage, 14 payments, with days off and holidays taken
 const BASE = {
-  ...DEF_OFFER,
   id: 't',
   name: 't',
   start: '2026-01-01',
@@ -43,7 +43,7 @@ const BASE = {
   kmHome: 0,
   overnight: 'no',
 };
-const figures = (changes = {}) => calc(normalizeOffer({ ...BASE, ...changes }), { cfg, alone: true });
+const figures = (changes = {}) => calc(offerOf({ ...BASE, ...changes }), { cfg, alone: true });
 
 test('the minimum wage, in 14 payments, complies', () => {
   const r = figures();
@@ -96,9 +96,9 @@ test('vacation included in the daily wage, or paid at the end', () => {
 test('every sample offer adds up', () => {
   for (const o of offers) {
     const r = calc(o, { cfg, offers });
-    near(incomeOf(r) - r.expenses.total, r.earnings.total, 0.01, `breakdown = total (${o.name})`);
+    near(incomeOf(r) - r.expenses.total, r.earnings.total, 0.01, `breakdown = total (${o.mine.name})`);
     if (!r.time.noDuration)
-      near(r.earnings.perMonth * r.time.months, r.earnings.total, 0.01, `per month × months (${o.name})`);
+      near(r.earnings.perMonth * r.time.months, r.earnings.total, 0.01, `per month × months (${o.mine.name})`);
   }
 });
 
@@ -171,15 +171,15 @@ test('months as on the payslip: 102 days from 21 June are 3 months and 10 days',
 
 test('the payslips add up to the gross', () => {
   for (const o of offers) {
-    if (!o.start || o.offerOnly) continue;
+    if (!o.terms.start || o.terms.offerOnly) continue;
     const r = calc(o, { cfg, offers });
-    const payslips = monthlyPayslips(o, r, cfg);
+    const payslips = monthlyPayslips(o.terms, r, cfg);
     if (!payslips.length) continue;
     near(
       payslips.reduce((sum, x) => sum + x.gross, 0),
       r.pay.gross,
       0.5,
-      `payslips (${o.name})`,
+      `payslips (${o.mine.name})`,
     );
   }
 });

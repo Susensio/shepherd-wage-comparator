@@ -11,9 +11,9 @@ import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './part
 
 /** Deadline to claim: each payment, one year from when it was due (Estatuto, art. 59.2). Only with dates. */
 function claimDeadline(o, debt) {
-  const end = endOf(o);
-  if (!o.start || !isWorthCounting(debt) || !end) return nothing;
-  const start = parseDate(o.start);
+  const end = endOf(o.terms);
+  if (!o.terms.start || !isWorthCounting(debt) || !end) return nothing;
+  const start = parseDate(o.terms.start);
   const last = new Date(end);
   const firstPay = new Date(start.getFullYear(), start.getMonth() + 1, 0); // the first payment, at the end of the first month
   if (firstPay > last) firstPay.setTime(last.getTime());
@@ -39,7 +39,7 @@ function owedReasons(o, r, money) {
     isWorthCounting(salary) && [`el salario mínimo${r.min.casual ? ' de temporero' : ''}`, salary],
     isWorthCounting(overnight) && [`el plus de pernocta (${fN(r.cfg.overnightPct)} %)`, overnight],
     isWorthCounting(vacation) && [
-      o.vacation === 'paidAtEnd' ? 'parte de las vacaciones' : 'las vacaciones, que no caben en el jornal',
+      o.terms.vacation === 'paidAtEnd' ? 'parte de las vacaciones' : 'las vacaciones, que no caben en el jornal',
       vacation,
     ],
   ].filter(Boolean);

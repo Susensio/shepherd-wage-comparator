@@ -65,11 +65,16 @@ function pills(o, r) {
       r.extra.overtimePerWeek >= 0.5 && `unas ${fN(r.extra.over40PerWeek)}\u00a0h a la semana por encima de 40`,
     ].filter(Boolean),
   );
-  const daysOff = num(o.daysOff);
+  const daysOff = num(o.terms.daysOff);
   const cashPct = r.cash.share * 100;
   const list = [];
   if (explain.contract)
-    list.push({ icon: 'doc', text: contractOf(o).pill, status: r.noContract ? 'bad' : 'ok', tip: explain.contract });
+    list.push({
+      icon: 'doc',
+      text: contractOf(o.terms).pill,
+      status: r.noContract ? 'bad' : 'ok',
+      tip: explain.contract,
+    });
   if (!r.noContract)
     list.push(
       r.cash.total <= 0.5
@@ -80,16 +85,16 @@ function pills(o, r) {
     );
   list.push({
     icon: 'clock',
-    text: `${fTyped(o.hoursPerDay)}\u00a0h/día · ${fN(hoursPerWeek)}\u00a0h/semana`,
+    text: `${fTyped(o.terms.hoursPerDay)}\u00a0h/día · ${fN(hoursPerWeek)}\u00a0h/semana`,
     status: color('hours', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
-    tip: `Trabajas unas ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` Te salen ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.hoursPerDay) > LAW.maxDayHours ? ' Pasas del límite legal.' : ''}`,
+    tip: `Trabajas unas ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` Te salen ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours ? ' Pasas del límite legal.' : ''}`,
   });
   list.push({
     icon: 'cal',
     text:
       r.time.daysOffMonth < 0.05
         ? 'Sin libranzas'
-        : `Libras ${fTyped(o.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.daysOffUnit] || 'al mes'}`,
+        : `Libras ${fTyped(o.terms.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.terms.daysOffUnit] || 'al mes'}`,
     status: color('rest', r.rest.short < 1 ? 'ok' : 'warn'),
     tip: `Por ley te corresponden al menos ${fN(LAW.weeklyRest, 1)} días de descanso por semana (unos ${fN((LAW.weeklyRest * DAYS_PER_MONTH) / 7, 1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.${r.rest.short >= 1 ? ` Con esta oferta trabajas unos ${fN(r.rest.short)} días ${overTxt} que deberían ser de descanso.` : ' Esta oferta lo cumple.'}`,
   });
@@ -128,17 +133,17 @@ function breakdown(o, r, unit) {
     ...explanations(o, r),
     payroll: payrollTip,
     vacationPay:
-      o.vacation === 'included'
+      o.terms.vacation === 'included'
         ? `Los ${vacationDays} días de vacaciones que no disfrutas van dentro de lo que te pagan: unos ${fE(p.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`
         : `Los ${vacationDays} días de vacaciones que no disfrutas te los pagan al acabar: unos ${fE(p.vacationPay)} netos, aquí repartidos entre lo que trabajas.`,
     unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. Lo cobras cuando juntes ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que trabajas. Se puede quitar en «Supuestos del cálculo».`,
   };
   const trip =
-    o.commute === 'daily'
+    o.mine.commute === 'daily'
       ? 'Vas y vuelves cada día trabajado'
-      : `Subes al empezar y bajas al acabar${num(o.tripsHome) > 0 ? `, y bajas a casa ${fTyped(o.tripsHome)} ${num(o.tripsHome) === 1 ? 'vez' : 'veces'} al mes` : ''}`;
+      : `Subes al empezar y bajas al acabar${num(o.mine.tripsHome) > 0 ? `, y bajas a casa ${fTyped(o.mine.tripsHome)} ${num(o.mine.tripsHome) === 1 ? 'vez' : 'veces'} al mes` : ''}`;
   const fuelPerKm = (num(cfg.fuelUse) / 100) * num(cfg.fuelPrice);
-  const carTip = `${fN(r.car.km)}\u00a0km ${r.time.noDuration ? 'al mes' : 'en todo el contrato'}. ${o.car === 'noCar' ? '' : `${trip}: ${fN(num(o.kmHome))}\u00a0km de ida y otros tantos de vuelta.`}${o.car === 'own' && num(o.kmWorkPerDay) > 0 ? ` Más ${fN(num(o.kmWorkPerDay))}\u00a0km por día trabajado moviéndote con tu coche.` : ''} Cada km: ${fE(fuelPerKm, 2)} de gasolina (${fN(num(cfg.fuelUse), 1)} l/100 km a ${fE(num(cfg.fuelPrice), 2)}/l) + ${fE(num(cfg.wear), 2)} de desgaste. Tu coche se cambia en «Tus datos».`;
+  const carTip = `${fN(r.car.km)}\u00a0km ${r.time.noDuration ? 'al mes' : 'en todo el contrato'}. ${o.mine.car === 'noCar' ? '' : `${trip}: ${fN(num(o.mine.kmHome))}\u00a0km de ida y otros tantos de vuelta.`}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ` Más ${fN(num(o.mine.kmWorkPerDay))}\u00a0km por día trabajado moviéndote con tu coche.` : ''} Cada km: ${fE(fuelPerKm, 2)} de gasolina (${fN(num(cfg.fuelUse), 1)} l/100 km a ${fE(num(cfg.fuelPrice), 2)}/l) + ${fE(num(cfg.wear), 2)} de desgaste. Tu coche se cambia en «Tus datos».`;
 
   // Rows that round to 0 € in this unit are not shown
   const shows = (x) => inUnit(x, r, unit) >= (unit === 'hour' ? 0.005 : 0.5);
@@ -178,13 +183,13 @@ function breakdown(o, r, unit) {
 
 /** The whole result of an offer, or what is still missing to show it. */
 export function resultView(o, r) {
-  const shortfall = missing(o);
+  const shortfall = missing(o.terms);
   if (shortfall.length)
     return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. <button type="button" class="linkbtn" data-action="complete">Ponerlo</button></p>`;
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
   const { earnTip, html: breakdownView } = breakdown(o, r, unit);
-  const year = actualYear(o);
+  const year = actualYear(o.terms);
   const line = legalLine(o, r);
   return html`${
     year !== r.year

@@ -5,11 +5,11 @@ import { DEF_CFG, makeOffer } from './offer.js';
 import { ingestSaved } from './saved.js';
 import { UNITS } from './units.js';
 
-/** Storage keys. Do not change them: saved data would be lost. */
+/** Storage keys. Changing one abandons what was saved under it; `offers` was renamed for the terms/mine shape (ADR-0007). */
 export const KEY = {
   backup: 'cj.copia',
   backupNotice: 'cj.copiaAviso',
-  offers: 'cj.ofertas',
+  offers: 'cj.ofertas2',
   active: 'cj.active',
   cfg: 'cj.cfg',
   cmpUnit: 'cj.unidadCmp',

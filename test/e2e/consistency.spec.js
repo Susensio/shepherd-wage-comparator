@@ -79,8 +79,8 @@ async function invariantProblems() {
     if (Math.abs(shown - onPayroll) > 2)
       problems.push(`season end: on payroll ${shown} ≠ net payroll ${Math.round(onPayroll)}`);
   }
-  if (o.start && !r.noContract && !o.offerOnly) {
-    const payslips = monthlyPayslips(o, r, r.cfg);
+  if (o.terms.start && !r.noContract && !o.terms.offerOnly) {
+    const payslips = monthlyPayslips(o.terms, r, r.cfg);
     const net = payslips.reduce((sum, p) => sum + p.net, 0);
     if (payslips.length && Math.abs(net - onPayroll) > 3)
       problems.push(`payslip simulator: net sum ${net.toFixed(0)} ≠ net payroll ${onPayroll.toFixed(0)}`);
@@ -94,7 +94,7 @@ async function invariantProblems() {
 }
 
 for (const offer of sample.offers) {
-  test(`${offer.name} adds up`, async ({ loaded: page }) => {
+  test(`${offer.mine.name} adds up`, async ({ loaded: page }) => {
     await page.evaluate((id) => app.select(id), offer.id);
     test.skip((await page.locator('#result .empty').count()) > 0, 'offer with missing data');
     await page.evaluate(() => {

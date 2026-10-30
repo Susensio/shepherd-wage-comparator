@@ -5,9 +5,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
-import { DEF_CFG, DEF_OFFER } from '../../src/offer.js';
+import { DEF_CFG } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/saved.js';
 import { cardText, claimText, summaries } from '../../src/text.js';
+import { offerOf } from './flat-offer.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };
@@ -16,8 +17,7 @@ const resultOf = (o) => calc(o, { cfg, offers });
 const byId = (id) => offers.find((o) => o.id === id);
 
 // A permanent full-time contract at exactly the 2026 minimum wage, as in rights.test.js
-const COMPLIANT = normalizeOffer({
-  ...DEF_OFFER,
+const COMPLIANT = offerOf({
   id: 't',
   name: 'Cumplidora',
   start: '2026-01-01',
@@ -46,9 +46,9 @@ const noBrokenValues = (text, what) => {
 test('no sample offer prints NaN or undefined in any text', () => {
   for (const o of offers) {
     const r = resultOf(o);
-    noBrokenValues(cardText(o, r), `card of ${o.name}`);
-    noBrokenValues(claimText(o, r), `claim of ${o.name}`);
-    noBrokenValues(JSON.stringify(summaries(o, r)), `summaries of ${o.name}`);
+    noBrokenValues(cardText(o, r), `card of ${o.mine.name}`);
+    noBrokenValues(claimText(o, r), `claim of ${o.mine.name}`);
+    noBrokenValues(JSON.stringify(summaries(o, r)), `summaries of ${o.mine.name}`);
   }
 });
 
@@ -70,10 +70,10 @@ test('summaries: a no-contract offer says everything is paid in hand', () => {
 test('card: starts with the offer name and shows the verdict line', () => {
   for (const o of offers) {
     const lines = cardText(o, resultOf(o)).split('\n');
-    assert.equal(lines[0], o.name);
+    assert.equal(lines[0], o.mine.name);
     assert.ok(
       lines.some((l) => l.startsWith('✘ No cumple: ')),
-      `verdict of ${o.name}`,
+      `verdict of ${o.mine.name}`,
     );
   }
 });
@@ -89,7 +89,7 @@ test('card: a negotiation lever appears exactly when the employer saves somethin
   for (const o of offers) {
     const r = resultOf(o);
     const card = cardText(o, r);
-    assert.equal(card.includes('Para negociar'), r.savings.total > 1, o.name);
+    assert.equal(card.includes('Para negociar'), r.savings.total > 1, o.mine.name);
   }
   const card = cardText(byId('o1'), resultOf(byId('o1')));
   assert.match(card, /Para negociar, el ganadero se ahorra al mes: .* por pagarte en negro/);

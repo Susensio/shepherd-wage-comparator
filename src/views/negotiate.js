@@ -18,7 +18,9 @@ function costDetails(o, r) {
     vacation && [
       'Vacaciones',
       vacation,
-      o.vacation === 'included' ? 'la parte del jornal que son vacaciones' : 'las que no libras, pagadas al acabar',
+      o.terms.vacation === 'included'
+        ? 'la parte del jornal que son vacaciones'
+        : 'las que no libras, pagadas al acabar',
     ],
     r.employer.ss > 0.5 && [
       'Seguridad Social que paga la empresa',

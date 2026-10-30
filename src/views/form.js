@@ -6,61 +6,73 @@
 import { html, render } from 'lit-html';
 import { fCount, fE, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import { actualYear, contractOf, endOf, foodPerDay, fromTotal, isoOf, mealsGiven, overlapsOf } from '../offer.js';
+import {
+  actualYear,
+  contractOf,
+  endOf,
+  foodPerDay,
+  fromTotal,
+  isoOf,
+  mealsGiven,
+  overlapsOf,
+  sideOf,
+} from '../offer.js';
 import { fSplit, summaries } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
 import { fadeIn } from '../ui/motion.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
-  withDuration: (o) => o.durationUnit !== 'unknown',
-  withDate: (o) => !!o.start,
-  hasExtraPays: (o) => !o.payrollMin && !['year', 'total'].includes(o.payUnit),
-  fixedPayroll: (o) => !o.payrollMin,
-  cashByTotal: (o) => fromTotal(o),
-  cashByAmount: (o) => !fromTotal(o),
-  overnight: (o) => o.overnight === 'yes',
-  showRent: (o) => o.housing === 'yes',
-  showMeals: (o) => mealsGiven(o).length > 0,
-  mealBreakfast: (o) => !!o.mealBreakfast,
-  mealSnack: (o) => !!o.mealSnack,
-  mealLunch: (o) => !!o.mealLunch,
-  mealDinner: (o) => !!o.mealDinner,
-  trips: (o) => o.car !== 'noCar',
-  tripsHome: (o) => o.car !== 'noCar' && o.commute === 'liveIn',
-  ownCar: (o) => o.car === 'own',
-  noCar: (o) => o.car === 'noCar',
-  kmRate: (o) => o.car === 'own' && num(o.kmWorkPerDay) > 0,
-  irpfManual: (o) => o.irpfMode === 'manual',
-  withContract: (o) => o.contract !== 'none',
-  noContract: (o) => o.contract === 'none',
+  withDuration: (o) => o.terms.durationUnit !== 'unknown',
+  withDate: (o) => !!o.terms.start,
+  hasExtraPays: (o) => !o.terms.payrollMin && !['year', 'total'].includes(o.terms.payUnit),
+  fixedPayroll: (o) => !o.terms.payrollMin,
+  cashByTotal: (o) => fromTotal(o.terms),
+  cashByAmount: (o) => !fromTotal(o.terms),
+  overnight: (o) => o.terms.overnight === 'yes',
+  showRent: (o) => o.terms.housing === 'yes',
+  showMeals: (o) => mealsGiven(o.terms).length > 0,
+  mealBreakfast: (o) => !!o.terms.mealBreakfast,
+  mealSnack: (o) => !!o.terms.mealSnack,
+  mealLunch: (o) => !!o.terms.mealLunch,
+  mealDinner: (o) => !!o.terms.mealDinner,
+  trips: (o) => o.mine.car !== 'noCar',
+  tripsHome: (o) => o.mine.car !== 'noCar' && o.mine.commute === 'liveIn',
+  ownCar: (o) => o.mine.car === 'own',
+  noCar: (o) => o.mine.car === 'noCar',
+  kmRate: (o) => o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0,
+  irpfManual: (o) => o.mine.irpfMode === 'manual',
+  withContract: (o) => o.terms.contract !== 'none',
+  noContract: (o) => o.terms.contract === 'none',
 };
 
 export const form = () => /** @type {HTMLFormElement} */ ($('#f'));
 
 /** The end date is always start + duration, never saved, so the two cannot disagree. Not while you type in it. */
-export function paintEnd(o) {
+export function paintEnd(terms) {
   const end = /** @type {HTMLInputElement} */ ($('#end'));
-  if (end && document.activeElement !== end) end.value = isoOf(endOf(o));
+  if (end && document.activeElement !== end) end.value = isoOf(endOf(terms));
 }
 
 /** Puts the offer's values in the form. */
 export function fillForm(o) {
-  paintEnd(o);
+  paintEnd(o.terms);
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
     if (!el.name) continue;
-    if (el.type === 'radio') el.checked = String(o[el.name]) === el.value;
-    else if (el.type === 'date') el.value = o[el.name] || '';
-    else if (el.type === 'checkbox') el.checked = !!o[el.name];
+    const side = sideOf(o, el.name);
+    if (el.type === 'radio') el.checked = String(side[el.name]) === el.value;
+    else if (el.type === 'date') el.value = side[el.name] || '';
+    else if (el.type === 'checkbox') el.checked = !!side[el.name];
     else if (el.type === 'text')
-      el.value = el.name === 'name' ? o.name || '' : o[el.name] === '' ? '' : fInputValue(num(o[el.name]), 0, 2);
+      el.value =
+        el.name === 'name' ? side.name || '' : side[el.name] === '' ? '' : fInputValue(num(side[el.name]), 0, 2);
   }
 }
 
 /** The vacation radios, after the vacation was set for you. */
 export function fillVacation(o) {
   for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[name=vacation]')))
-    el.checked = el.value === o.vacation;
+    el.checked = el.value === o.terms.vacation;
 }
 
 /** Shows only the fields that apply. With `animate`, those that appear fade in (only when you touch the form). */
@@ -80,27 +92,27 @@ const text = (selector, value) => {
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
   const cfg = r.cfg;
-  if (o.payrollMin && o.contract !== 'none') {
+  if (o.terms.payrollMin && o.terms.contract !== 'none') {
     const monthly = r.min.salary / r.time.months;
     return `En nómina, el mínimo${r.min.casual ? ` de temporero (el contrato dura ${LAW.casualMaxDays} días o menos)` : ''}: unos ${fE(monthly)} brutos al mes, ${fE(monthly * r.netFactor)} netos.`;
   }
-  if (!(num(o.payAmount) > 0)) return '';
-  const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.payUnit];
+  if (!(num(o.terms.payAmount) > 0)) return '';
+  const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.terms.payUnit];
   const withholding =
-    o.irpfMode === 'manual'
+    o.mine.irpfMode === 'manual'
       ? ''
-      : o.contract === 'temporary' && r.pay.irpfPct * 100 < LAW.irpf.withholding + 0.05
+      : o.terms.contract === 'temporary' && r.pay.irpfPct * 100 < LAW.irpf.withholding + 0.05
         ? ' (la mínima de los eventuales agrarios)'
         : '';
   const rates = `${fN(cfg.ssPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
   const refund = r.pay.irpf - r.pay.irpfYear;
   return [
-    o.payType === 'net'
+    o.terms.payType === 'net'
       ? `Unos ${fE(r.pay.entered.gross)} brutos${per}: ${rates}.`
       : `Unos ${fE(r.pay.entered.net)} netos${per}: ${rates}.`,
     isWorthCounting(refund) ? ` En la renta te devolverían unos ${fE(refund)} (no contado).` : '',
-    o.payUnit === 'day' ? ' El jornal en nómina cubre también vacaciones y festivos librados.' : '',
-    o.payUnit === 'total' && o.vacation === 'paidAtEnd'
+    o.terms.payUnit === 'day' ? ' El jornal en nómina cubre también vacaciones y festivos librados.' : '',
+    o.terms.payUnit === 'total' && o.terms.vacation === 'paidAtEnd'
       ? ' Pon lo que cobraste sin las vacaciones: las vacaciones pagadas se suman aparte.'
       : '',
   ].join('');
@@ -123,30 +135,30 @@ function daysOffHint(o, r) {
   const t = r.time;
   if (t.months <= 0) return '';
   const hours = `Son unas ${fN(t.hoursPerWeek)}\u00a0h a la semana.`;
-  if (o.daysOffUnit === 'total' && !t.noDuration) {
-    const more = [o.holidays === 'yes' && 'los festivos', t.vacationTaken > 0 && 'las vacaciones']
+  if (o.terms.daysOffUnit === 'total' && !t.noDuration) {
+    const more = [o.terms.holidays === 'yes' && 'los festivos', t.vacationTaken > 0 && 'las vacaciones']
       .filter(Boolean)
       .map((x, i) => `${i ? ' y ' : ', más '}${x}`)
       .join('');
     return `En todo el contrato trabajas unos ${fN(t.daysWorked)} días y libras ${fCount(t.daysOffTotal)}${more}. ${hours}`;
   }
-  return `Trabajas unos ${fN(t.workedPerMonth)} días al mes y libras ${fCount(t.daysOffMonth)}${o.holidays === 'yes' ? ', más los festivos' : ''}. ${hours}`;
+  return `Trabajas unos ${fN(t.workedPerMonth)} días al mes y libras ${fCount(t.daysOffMonth)}${o.terms.holidays === 'yes' ? ', más los festivos' : ''}. ${hours}`;
 }
 
 function carHint(o, r) {
-  if (o.car === 'noCar') return 'Sin coche propio: no se cuentan gasolina ni desgaste.';
+  if (o.mine.car === 'noCar') return 'Sin coche propio: no se cuentan gasolina ni desgaste.';
   if (!(r.car.km > 0)) return '';
   const trips = {
     daily: 'ida y vuelta cada día trabajado',
-    liveIn: `al empezar y al acabar${num(o.tripsHome) > 0 ? ', y cuando bajas a casa' : ''}`,
-  }[o.commute];
-  return `Con tu coche: unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes (${trips}${o.car === 'own' && num(o.kmWorkPerDay) > 0 ? ', más lo que mueves trabajando' : ''}). Consumo y gasolina, en «Tus datos».`;
+    liveIn: `al empezar y al acabar${num(o.mine.tripsHome) > 0 ? ', y cuando bajas a casa' : ''}`,
+  }[o.mine.commute];
+  return `Con tu coche: unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes (${trips}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ', más lo que mueves trabajando' : ''}). Consumo y gasolina, en «Tus datos».`;
 }
 
 function yearHint(o, r) {
-  const year = actualYear(o);
+  const year = actualYear(o.terms);
   const w = r.wage;
-  return `${o.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está en la página: se usa el de ${r.year}. ` : ''}Salario mínimo de ${r.year}: ${fE(w.annual)} al año (${fE(w.annual / 14)} en 14 pagas), o ${fE(w.casual, 2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${w.decree}).`;
+  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está en la página: se usa el de ${r.year}. ` : ''}Salario mínimo de ${r.year}: ${fE(w.annual)} al año (${fE(w.annual / 14)} en 14 pagas), o ${fE(w.casual, 2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${w.decree}).`;
 }
 
 /**
@@ -161,7 +173,7 @@ export function paintForm(o, r, offers, animate) {
   applyShow(o, animate);
   text(
     '#vacationHint',
-    o.vacationAuto && o.vacation === 'paidAtEnd'
+    o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd'
       ? 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.'
       : '',
   );
@@ -173,7 +185,7 @@ export function paintForm(o, r, offers, animate) {
       ['En negro', s.b],
       ['Casa y comida', s.housing],
       ['Coche', s.car],
-      ['Contrato', contractOf(o).stat],
+      ['Contrato', contractOf(o.terms).stat],
     ].map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`),
     $('#editInfo'),
   );
@@ -183,10 +195,10 @@ export function paintForm(o, r, offers, animate) {
   }
   text('#payHint', payHint(o, r));
   text('#cashAuto', cashHint(r));
-  const food = foodPerDay(o, cfg);
+  const food = foodPerDay(o.terms, cfg);
   text(
     '#mealsHint',
-    mealsGiven(o).length
+    mealsGiven(o.terms).length
       ? `Te ahorras ${fE(food, food % 1 ? 2 : 0)} por día trabajado. Los precios, en «Tus datos».`
       : '',
   );
@@ -200,7 +212,7 @@ export function paintForm(o, r, offers, animate) {
   text(
     '#overlapHint',
     overlaps.length
-      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.name}»`))}. Si una solo era una oferta que no trabajaste, márcalo en ella: así no se suman las dos en el año ni en el IRPF.`
+      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.mine.name}»`))}. Si una solo era una oferta que no trabajaste, márcalo en ella: así no se suman las dos en el año ni en el IRPF.`
       : '',
   );
   text('#daysOffHint', daysOffHint(o, r));

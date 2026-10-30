@@ -19,7 +19,7 @@ import { fillLawFigures } from './views/law-figures.js';
 import { fillSettings } from './views/settings.js';
 
 load();
-for (const o of state.offers) defaultVacation(o);
+for (const o of state.offers) defaultVacation(o.terms);
 fillLawFigures();
 restoreStaticFolds();
 setUpEvents();

@@ -21,9 +21,9 @@ import { bisect, unemploymentBenefit } from './tax.js';
 import { extraDaysRounded, extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
 
 /** Which share of an offer falls in each year, by days: {2025: 0.4, 2026: 0.6}. Without dates, all in its year. */
-export function yearShares(o) {
-  if (!o.start || !endOf(o)) return { [actualYear(o)]: 1 };
-  const [start, end] = spanOf(o);
+export function yearShares(terms) {
+  if (!terms.start || !endOf(terms)) return { [actualYear(terms)]: 1 };
+  const [start, end] = spanOf(terms);
   const days = (+end - +start) / 864e5 + 1;
   const shares = {};
   for (let y = start.getFullYear(); y <= end.getFullYear(); y++) {
@@ -38,12 +38,12 @@ export function yearShares(o) {
  * For IRPF: for each year the offer touches, its share of the gross and what your other worked offers earn on payroll
  * that year (also split by days). The others are calculated on their own, to avoid going round in circles.
  */
-function othersInYear(o, { cfg, offers }) {
-  const shares = yearShares(o);
-  const others = o.start
+function othersInYear(offer, { cfg, offers }) {
+  const shares = yearShares(offer.terms);
+  const others = offer.terms.start
     ? workedOffers(offers)
-        .filter((p) => p.id !== o.id && isComplete(p))
-        .map((p) => ({ gross: calc(p, { cfg, offers, alone: true }).pay.gross, shares: yearShares(p) }))
+        .filter((p) => p.id !== offer.id && isComplete(p.terms))
+        .map((p) => ({ gross: calc(p, { cfg, offers, alone: true }).pay.gross, shares: yearShares(p.terms) }))
     : [];
   const years = Object.keys(shares);
   const perYear = Object.entries(shares).map(([year, share]) => ({
@@ -68,35 +68,36 @@ const ALL_CASH_SHARE = 0.995;
  * @param {{cfg: object, offers?: object[], alone?: boolean}} ctx settings; your other offers (for IRPF) unless `alone`
  */
 export function calc(offer, { cfg, offers = [], alone = false }) {
-  const wage = minWageOf(actualYear(offer));
+  const { mine } = offer;
+  const wage = minWageOf(actualYear(offer.terms));
   const others = alone
     ? { shares: [{ share: 1, others: 0, deduction: wage.ded }], gross: 0, count: 0, years: [String(wage.year)] }
     : othersInYear(offer, { cfg, offers });
   const ctx = { cfg, wage, irpfShares: others.shares };
 
   // Without a contract there is no payroll and no paid vacation: everything is cash, against a temporary contract's minimum
-  const { offer: effective, split } = effectiveOffer(offer, ctx, schedule);
+  const { terms: effective, split } = effectiveOffer(offer.terms, mine, ctx, schedule);
   const noContract = effective.contract === 'none';
-  const o = noContract
+  const t = noContract
     ? { ...effective, payAmount: 0, vacation: 'included', extraPays: 'included', contract: 'temporary' }
     : effective;
 
-  const time = schedule(o, cfg);
-  const pay = payroll(o, ctx, time);
-  const car = travel(o, time, cfg);
-  const min = legalMinimum(o, ctx, time);
+  const time = schedule(t, cfg);
+  const pay = payroll(t, mine, ctx, time);
+  const car = travel(t, mine, time, cfg);
+  const min = legalMinimum(t, ctx, time);
   const { months, natDays, daysWorked, hours, noDuration } = time;
 
   // Cash, housing and food, expenses
-  const cashAmount = num(o.cashAmount);
+  const cashAmount = num(t.cashAmount);
   const cash =
-    o.cashUnit === 'month' ? cashAmount * months : o.cashUnit === 'day' ? cashAmount * daysWorked : cashAmount;
-  const housing = cfg.inKind && o.housing === 'yes' ? rentPerMonth(o, cfg) * months : 0;
-  const food = cfg.inKind ? foodPerDay(o, cfg) * daysWorked : 0;
-  const otherExpenses = num(o.expenses) * months;
+    t.cashUnit === 'month' ? cashAmount * months : t.cashUnit === 'day' ? cashAmount * daysWorked : cashAmount;
+  const housing = cfg.inKind && t.housing === 'yes' ? rentPerMonth(mine, cfg) * months : 0;
+  const food = cfg.inKind ? foodPerDay(t, cfg) * daysWorked : 0;
+  const otherExpenses = num(mine.expenses) * months;
 
   // Unemployment benefit you generate; and the gross that would bring the cash part net, on payroll
-  const contribDays = pay.gross > 0 ? natDays + (vacationPaid(o) ? time.vacationDays : 0) : 0;
+  const contribDays = pay.gross > 0 ? natDays + (vacationPaid(t) ? time.vacationDays : 0) : 0;
   const benefit = unemploymentBenefit(pay.gross, contribDays);
   const netPayroll = pay.netOf(pay.gross);
   const cashGrossEq = cash > 0 ? bisect((x) => pay.netOf(pay.gross + x) - netPayroll, cash, cash, cash * 3, 50) : 0;
@@ -104,7 +105,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const employerRate = 1 + cfg.ssEmp / 100;
   const salaryPerDay = natDays > 0 ? pay.salary / natDays : 0;
   const severance =
-    !noDuration && o.contract === 'temporary' ? (salaryPerDay * LAW.severanceDaysPerYear * natDays) / 365 : 0;
+    !noDuration && t.contract === 'temporary' ? (salaryPerDay * LAW.severanceDaysPerYear * natDays) / 365 : 0;
 
   // What you earn: the unemployment benefit counts as your money (it can be switched off): it is what cash does not give
   const parts = {
@@ -123,7 +124,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
 
   // What you are owed, counted by months: what is missing in each item separately (a surplus in one does not cover another)
   let debtSalary = Math.max(0, min.salary + min.overnight - pay.salary);
-  let debtVacation = o.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
+  let debtVacation = t.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
   let minNetNoContract = 0;
   if (noContract) {
     // What you are paid in cash against the minimum wage with bonus, through the same net↔gross factor as the rest

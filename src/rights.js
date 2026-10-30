@@ -52,7 +52,7 @@ export function rightsOf(o, r, unit = 'month') {
   const netWithTip = (x) => withTip(money.net(x), `${money.figure(x)} brutos en nómina`);
   const per = UNITS[unit].short;
   const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
-  const hoursPerDay = num(o.hoursPerDay);
+  const hoursPerDay = num(o.terms.hoursPerDay);
   const hoursPerWeek = r.time.hoursPerWeek;
   const vacationDays = fCount(r.time.vacationDays);
   const pct = fN(r.cfg.overnightPct);
@@ -66,7 +66,7 @@ export function rightsOf(o, r, unit = 'month') {
       'salary',
       !isWorthCounting(r.debt.salary),
       'Salario mínimo',
-      `Te pagan ${money.figure(r.cash.total)} en mano ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.overnight === 'yes' ? ', con el plus por dormir en el monte' : ''}.`,
+      `Te pagan ${money.figure(r.cash.total)} en mano ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus por dormir en el monte' : ''}.`,
     );
     if (isWorthCounting(r.min.vacation))
       add(
@@ -82,7 +82,7 @@ export function rightsOf(o, r, unit = 'month') {
       'Salario mínimo',
       html`Te pagan ${netWithTip(r.pay.salary)} netos ${per}; el mínimo es ${netWithTip(r.min.salary)}.`,
     );
-    if (o.overnight === 'yes') {
+    if (o.terms.overnight === 'yes') {
       const short = r.min.salary + r.min.overnight - r.pay.salary;
       const title = 'Plus por dormir en el monte';
       if (!salaryOk)
@@ -113,14 +113,14 @@ export function rightsOf(o, r, unit = 'month') {
         '¿Duermes en el monte?',
         `Si duermes fuera por pastoreo (borda, cabaña), el convenio te da al menos un ${pct}\u00a0% más de salario. Márcalo en «Casa y comida».`,
       );
-    const mayBePaid = r.time.noDuration || isShortContract(o);
+    const mayBePaid = r.time.noDuration || isShortContract(o.terms);
     const onlyIfShort = mayBePaid
       ? ''
       : ' Pero solo se pueden pagar en vez de disfrutar si el contrato acaba antes de poder librarlas: en un contrato así de largo, tienes derecho a librarlas.';
     const paid = r.pay.vacationPay >= r.min.vacation - 1;
-    if (o.vacation === 'taken')
+    if (o.terms.vacation === 'taken')
       add('vacation', true, 'Vacaciones', `Libras los ${vacationDays} días que te corresponden, cobrando.`);
-    else if (o.vacation === 'paidAtEnd')
+    else if (o.terms.vacation === 'paidAtEnd')
       paid
         ? add(
             'vacation',
@@ -183,7 +183,7 @@ export function rightsOf(o, r, unit = 'month') {
     );
 
   const holidays = (LAW.holidaysPerYear * r.time.months) / 12;
-  if (o.holidays !== 'yes' && !r.time.noDuration && holidays >= 0.5)
+  if (o.terms.holidays !== 'yes' && !r.time.noDuration && holidays >= 0.5)
     add(
       'holidays',
       null,

@@ -16,7 +16,17 @@ import {
   templatesOpen,
 } from './app.js';
 import { fInputValue, num } from './format.js';
-import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, isoOf, makeOffer, newId, parseDate, TEMPLATES } from './offer.js';
+import {
+  DAYS_PER_MONTH,
+  DEF_CFG,
+  defaultVacation,
+  isoOf,
+  makeOffer,
+  newId,
+  parseDate,
+  sideOf,
+  TEMPLATES,
+} from './offer.js';
 import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
@@ -36,21 +46,24 @@ import { fillSettings, paintBackup } from './views/settings.js';
  * duration. Returns whether something changed.
  */
 function endDateTyped(value) {
-  const o = active();
+  const { terms } = active();
   if (!value) return false;
   const end = parseDate(value);
-  if (o.start) {
-    const days = Math.round((+end - +parseDate(o.start)) / 864e5) + 1;
+  if (terms.start) {
+    const days = Math.round((+end - +parseDate(terms.start)) / 864e5) + 1;
     if (days < 1) return false;
-    o.duration = days;
-    o.durationUnit = 'days';
+    terms.duration = days;
+    terms.durationUnit = 'days';
     return true;
   }
-  if (num(o.duration) > 0 && o.durationUnit !== 'unknown') {
-    const days = o.durationUnit === 'days' ? Math.round(num(o.duration)) : Math.round(num(o.duration) * DAYS_PER_MONTH);
+  if (num(terms.duration) > 0 && terms.durationUnit !== 'unknown') {
+    const days =
+      terms.durationUnit === 'days'
+        ? Math.round(num(terms.duration))
+        : Math.round(num(terms.duration) * DAYS_PER_MONTH);
     const start = new Date(end);
     start.setDate(start.getDate() - days + 1);
-    o.start = isoOf(start);
+    terms.start = isoOf(start);
     return true;
   }
   return false;
@@ -59,39 +72,43 @@ function endDateTyped(value) {
 function onFormInput(e) {
   const el = /** @type {HTMLInputElement} */ (e.target);
   const o = active();
+  const { terms } = o;
   if (el.id === 'end') {
     if (!endDateTyped(el.value)) return;
     animateNextPaint();
-    defaultVacation(o);
+    defaultVacation(terms);
     fillForm(o);
     commit();
     return;
   }
   if (!el.name) return;
+  const side = sideOf(o, el.name);
   if (el.type === 'radio' && el.name === 'durationUnit') {
     // Changing the unit converts the duration: 4 months ↔ 122 days
-    if (el.checked && el.value !== o.durationUnit && el.value !== 'unknown' && o.durationUnit !== 'unknown') {
-      const v = num(o.duration);
-      o.duration = el.value === 'days' ? Math.round(v * DAYS_PER_MONTH) : Math.round((v / DAYS_PER_MONTH) * 10) / 10;
-      /** @type {HTMLInputElement} */ ($('#duration')).value = fInputValue(o.duration, o.duration % 1 ? 1 : 0);
+    if (el.checked && el.value !== terms.durationUnit && el.value !== 'unknown' && terms.durationUnit !== 'unknown') {
+      const v = num(terms.duration);
+      terms.duration =
+        el.value === 'days' ? Math.round(v * DAYS_PER_MONTH) : Math.round((v / DAYS_PER_MONTH) * 10) / 10;
+      /** @type {HTMLInputElement} */ ($('#duration')).value = fInputValue(terms.duration, terms.duration % 1 ? 1 : 0);
     }
-    if (el.checked) o.durationUnit = el.value;
+    if (el.checked) terms.durationUnit = el.value;
   } else if (el.type === 'radio') {
-    if (el.checked) o[el.name] = el.value;
-  } else if (el.type === 'checkbox') o[el.name] = el.checked;
-  else if (el.type === 'date') o[el.name] = el.value;
-  else if (el.name === 'name') o.name = el.value;
+    if (el.checked) side[el.name] = el.value;
+  } else if (el.type === 'checkbox') side[el.name] = el.checked;
+  else if (el.type === 'date') side[el.name] = el.value;
+  else if (el.name === 'name') side.name = el.value;
   else if (el.name === 'rentValue' && el.value.trim() === '')
-    o.rentValue = ''; // empty: the one in «Tus datos»
-  else o[el.name] = num(el.value);
+    side.rentValue = ''; // empty: the one in «Tus datos»
+  else side[el.name] = num(el.value);
   animateNextPaint();
-  if (el.name === 'vacation') delete o.vacationAuto;
+  if (el.name === 'vacation') delete terms.vacationAuto;
   if (el.name === 'cashMode' && el.value === 'total') {
-    if (!(num(o.totalAmount) > 0)) o.totalUnit = ['day', 'month'].includes(o.payUnit) ? o.payUnit : 'month';
+    if (!(num(terms.totalAmount) > 0))
+      terms.totalUnit = ['day', 'month'].includes(terms.payUnit) ? terms.payUnit : 'month';
     fillForm(o);
   }
-  if (defaultVacation(o)) fillVacation(o);
-  if (['start', 'duration', 'durationUnit'].includes(el.name)) paintEnd(o);
+  if (defaultVacation(terms)) fillVacation(o);
+  if (['start', 'duration', 'durationUnit'].includes(el.name)) paintEnd(terms);
   commit();
 }
 
@@ -99,9 +116,9 @@ function onFormInput(e) {
 function onFormFocusOut(e) {
   const el = /** @type {HTMLInputElement} */ (e.target);
   const o = active();
-  if (el.name !== 'name' || o.name.trim()) return;
-  o.name = `Oferta ${state.offers.indexOf(o) + 1}`;
-  el.value = o.name;
+  if (el.name !== 'name' || o.mine.name.trim()) return;
+  o.mine.name = `Oferta ${state.offers.indexOf(o) + 1}`;
+  el.value = o.mine.name;
   commit();
 }
 
@@ -125,7 +142,7 @@ function onSettingsInput(e) {
 /** A new offer's name, not repeating one you have. */
 function uniqueName(base) {
   let name = base;
-  for (let i = 2; state.offers.some((o) => o.name === name); i++) name = `${base} ${i}`;
+  for (let i = 2; state.offers.some((o) => o.mine.name === name); i++) name = `${base} ${i}`;
   return name;
 }
 
@@ -207,7 +224,7 @@ const ACTIONS = {
   },
   template(b) {
     const template = TEMPLATES.find((t) => t.id === b.dataset.template);
-    const o = makeOffer({ ...template?.values, name: uniqueName(template?.title || 'Oferta') });
+    const o = makeOffer(template?.terms, { ...template?.mine, name: uniqueName(template?.title || 'Oferta') });
     if (state.placeholderId && state.offers.length === 1 && state.offers[0].id === state.placeholderId)
       state.offers = [];
     state.placeholderId = null;
@@ -224,13 +241,18 @@ const ACTIONS = {
   },
   duplicate() {
     const o = active();
-    const copy = { ...o, id: newId(), name: `${o.name} (copia)`, cmp: true };
+    const copy = {
+      ...structuredClone(o),
+      id: newId(),
+      cmp: true,
+    };
+    copy.mine.name = `${o.mine.name} (copia)`;
     state.offers.splice(state.offers.indexOf(o) + 1, 0, copy);
     select(copy.id);
   },
   deleteOffer() {
     const o = active();
-    if (!deleteButton.confirm(`¿Borrar «${o.name}»? Toca otra vez`)) return;
+    if (!deleteButton.confirm(`¿Borrar «${o.mine.name}»? Toca otra vez`)) return;
     const i = state.offers.indexOf(o);
     state.offers.splice(i, 1);
     if (!state.offers.length) {

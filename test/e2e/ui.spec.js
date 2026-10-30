@@ -10,7 +10,7 @@ async function fillOffer(page, { duration = '4', hours = '11', pay = '70' } = {}
   await page.fill('#payAmount', pay);
 }
 
-const offerNames = (page) => page.evaluate(() => app.state.offers.map((o) => o.name));
+const offerNames = (page) => page.evaluate(() => app.state.offers.map((o) => o.mine.name));
 
 test('a new offer from a template', async ({ page }) => {
   await page.locator('.tcard').first().click();
@@ -19,6 +19,21 @@ test('a new offer from a template', async ({ page }) => {
   // Changing the unit converts the duration: 4 months are 122 days
   await page.check('input[name=durationUnit][value=days]');
   await expect(page.locator('#duration')).toHaveValue('122');
+});
+
+test('each field is written to its own side of the offer', async ({ page }) => {
+  await page.locator('.tcard').first().click();
+  await fillOffer(page);
+  await page.fill('#name', 'Mía');
+  await page.locator('[data-fold=car] > summary').click();
+  await page.fill('#kmHome', '30');
+  await page.locator('[data-fold=housing] > summary').click();
+  await page.check('input[name=housing][value=yes]');
+  const offer = await page.evaluate(() => app.active());
+  expect(offer.mine).toMatchObject({ name: 'Mía', kmHome: 30 });
+  expect(offer.terms).toMatchObject({ duration: 4, payAmount: 70, housing: 'yes' });
+  expect(offer.terms).not.toHaveProperty('kmHome');
+  expect(offer.mine).not.toHaveProperty('payAmount');
 });
 
 test('the end date sets the duration', async ({ page }) => {
