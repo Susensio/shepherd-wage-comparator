@@ -9,12 +9,13 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test test/unit/*.test.js",
     "test:e2e": "playwright test",
-    "vendor": "cp node_modules/lit-html/lit-html.js node_modules/lit-html/LICENSE vendor/lit-html/"
+    "vendor": "cp node_modules/lit-html/lit-html.js node_modules/lit-html/LICENSE vendor/lit-html/ && mkdir -p vendor/supabase && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js node_modules/@supabase/supabase-js/LICENSE vendor/supabase/"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@electric-sql/pglite": "^0.5.13",
     "@playwright/test": "1.56.0",
+    "@supabase/supabase-js": "2.118.0",
     "lit-html": "3.3.1",
     "typescript": "5.9.2"
   }
