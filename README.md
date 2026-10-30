@@ -18,26 +18,7 @@ node test/serve.js
 
 and open http://localhost:8000. Any static server works (`python3 -m http.server` too).
 
-```
-index.html        the static markup: the form, the Leyes tab, Ajustes
-css/styles.css
-src/
-  law.js          every legal and tax figure, with its source
-  offer.js        what an offer is: defaults, templates, dates
-  model/          the calculations (calc.js), with no DOM
-  rights.js       right by right, whether an offer complies
-  text.js         summaries and the texts people copy
-  views/          lit-html templates for each part of the page
-  ui/             DOM helpers, motion, tooltips, folds
-  storage/        backups and the Claude account
-  app.js          paints everything from the state
-  events.js       what each button and field does
-  main.js         startup
-vendor/lit-html/  lit-html, as published (BSD-3-Clause)
-test/unit/        the model and the legal data, in Node (node --test)
-test/e2e/         the page in headless Chromium (Playwright Test)
-test/fixtures/    sample offers, today's format and the Spanish-era one
-```
+`index.html` holds the static markup and `src/` the code, with the calculations in `src/model/` and every legal figure in `src/law.js`. `vendor/` has lit-html as published (BSD-3-Clause). Unit tests are in `test/unit/`, browser tests in `test/e2e/`.
 
 ## Development
 

@@ -11,10 +11,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 - No build step. `index.html` holds the static markup and loads `src/main.js` as an ES module; an import map points `lit-html` at `vendor/lit-html/lit-html.js`. Because of the modules, the page has to be served over http (`node test/serve.js`); it does not open from `file://`.
 - lit-html is the only library, copied from npm into `vendor/` (`npm run vendor` after changing its version in `package.json`). Use it for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
-- Layers, each only importing from the ones before it:
-  - `format.js`, `law.js` → `offer.js` → `legacy.js` → `model/` (`calc()`: every figure of an offer, grouped by subject; no DOM) → `rights.js`, `explanations.js`, `text.js` (words, no DOM; some come as lit templates with tap-to-explain tips, from `views/parts.js`).
-  - `views/` turn an offer and its figures into templates. `form.js` and `settings.js` fill the static markup instead.
-  - `state.js` (the state and `localStorage`), `ui/`, `app.js` (paints everything), `storage/` (backups, the Claude account), `events.js` (every `data-action` button and field), `main.js` (startup).
+- Layers, each only importing from the ones before it: law and offer data → `model/` (every figure of an offer, no DOM) → words (`rights.js`, `text.js`, no DOM) → `views/` (templates) → state, `ui/`, `app.js`, `events.js`, `main.js`. `views/form.js` and `views/settings.js` fill the static markup instead of returning templates.
 - `window.app` exposes the state and a few functions for tests and the console. Tests can also `await import('./src/…')` from the page.
 - The same files are published as a Claude artifact. Saving to the user's Claude account (`storage/cloud.js`, `window.claude`) only works there; elsewhere everything stays in the browser.
 
@@ -49,7 +46,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Records
 
 - `docs/adr/`: numbered records of settled choices between alternatives. In English. The main agent writes them.
-- `docs/model.md`: how an offer's figures are calculated, rule by rule. In English. Update it with any change to `model/`.
+- `docs/model.md`: what the model's figures mean, and the rules that cross files. In English.
 - `docs/BACKLOG.md`: open ideas and defects nobody is working on yet. In English. The main agent writes it.
 
 ## Commits
