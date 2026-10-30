@@ -187,6 +187,21 @@ describe('writes for someone else', () => {
   });
 });
 
+describe('delete_my_account', () => {
+  test('anon cannot call it', async () => {
+    await assert.rejects(as('anon', 'select delete_my_account()'), /permission denied/);
+  });
+
+  test('a user removes only their own account and rows', async () => {
+    await as('dan', 'select delete_my_account()');
+    assert.deepEqual(await column(null, `select id from auth.users where id = '${ID.dan}'`), []);
+    assert.deepEqual(await column(null, `select id from offers where user_id = '${ID.dan}'`), []);
+    assert.deepEqual(await column(null, `select user_id from profiles where user_id = '${ID.dan}'`), []);
+    assert.deepEqual(await column(null, `select id from auth.users where id = '${ID.ana}'`), [ID.ana]);
+    assert.deepEqual(await column(null, `select id from offers where id = '${OFFER.ana}'`), [OFFER.ana]);
+  });
+});
+
 describe('account deletion', () => {
   test('removes every row of the user', async () => {
     await as(null, 'delete from auth.users where id = $1', [ID.ben]);

@@ -27,8 +27,10 @@ create index if not exists offers_user_id_idx on public.offers (user_id);
 
 create table if not exists public.offer_mine (
   offer_id uuid primary key references public.offers (id) on delete cascade,
-  mine jsonb not null default '{}'
+  mine jsonb not null default '{}',
+  cmp boolean not null default true
 );
+alter table public.offer_mine add column if not exists cmp boolean not null default true;
 
 -- Helpers read around RLS (security definer) so the policies below do not recurse.
 
@@ -78,6 +80,16 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Account deletion: auth.users cannot be deleted from the client; the cascades remove every row of the user.
+create or replace function public.delete_my_account()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from auth.users where id = auth.uid();
+$$;
+
 -- Privileges: nothing for anon, tables for signed-in users, RLS narrows them.
 
 alter table public.profiles enable row level security;
@@ -88,8 +100,9 @@ alter table public.offer_mine enable row level security;
 revoke all on public.profiles, public.settings, public.offers, public.offer_mine from public, anon;
 grant select, insert, update, delete on public.profiles, public.settings, public.offers, public.offer_mine to authenticated;
 
-revoke all on function public.can_read(), public.is_sharing(uuid), public.handle_new_user() from public, anon, authenticated;
-grant execute on function public.can_read(), public.is_sharing(uuid) to authenticated;
+revoke all on function public.can_read(), public.is_sharing(uuid), public.handle_new_user(), public.delete_my_account()
+  from public, anon, authenticated;
+grant execute on function public.can_read(), public.is_sharing(uuid), public.delete_my_account() to authenticated;
 
 -- Policies
 
