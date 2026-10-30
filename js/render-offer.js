@@ -27,7 +27,7 @@ function columns(D,r){
 function breakdownHTML(o,r,D){
   const {u,inUnit:cu}=D;
   const fuelPerKm=num(config.fuelUse)/100*num(config.fuelPrice);
-  const earnTip=`Nómina neta${r.comp.vacationPay>0.5?' + vacaciones pagadas':''}${r.B>0?' + lo que cobras en negro':''}${r.comp.housing>0.5||r.comp.food>0.5?' + lo que te ahorras en casa y comida':''}${r.comp.km>0.5?' + los km que te pagan':''}${r.comp.severance>0.5?' + la indemnización':''}${r.comp.unemployment>0.5?' + el paro que generas':''}${r.expenses>0.5?' − tus gastos de coche y otros':''}, ${({hour:'repartido entre las horas que trabajas',day:'repartido entre los días que trabajas',month:'repartido entre los meses del contrato',total:'en todo el contrato'})[u]}.${r.comp.unemployment>0.5?' El paro lo cobras al juntar 360 días cotizados.':config.unemployment===false?' No incluye el paro.':''}`;
+  const earnTip=`Nómina neta${r.comp.vacationPay>0.5?' + vacaciones pagadas':''}${r.B>0?' + lo que cobras en negro':''}${r.comp.housing>0.5||r.comp.food>0.5?' + lo que te ahorras en casa y comida':''}${r.comp.km>0.5?' + los km que te pagan':''}${r.comp.severance>0.5?' + la indemnización':''}${r.comp.unemployment>0.5?' + el paro que generas':''}${r.expenses>0.5?' − tus gastos de coche y otros':''}, ${({hour:'repartido entre las horas que trabajas',day:'repartido entre los días que trabajas',month:'repartido entre los meses del contrato',total:'en todo el contrato'})[u]}.${r.comp.unemployment>0.5?` El paro lo cobras al juntar ${LAW.unemployment.minDaysContributed} días cotizados.`:config.unemployment===false?' No incluye el paro.':''}`;
   // From gross to net payroll, shown when tapping «Nómina neta» (without paid vacation, which has its own row)
   const netPay=r.comp.base+r.comp.extraPays, grossPay=netPay/(r.fac||1);
   const netPayTip=[
@@ -39,7 +39,7 @@ function breakdownHTML(o,r,D){
   ].filter(Boolean).join('\n');
   const TIP={...explanations(o,r),payroll:netPayTip,
     vacationPay:o.vacation==='included'?`Los ${fCount(r.vacationDays)} días de vacaciones que no disfrutas van dentro de lo que te pagan: unos ${fE(r.comp.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`:`Los ${fCount(r.vacationDays)} días de vacaciones que no disfrutas te los pagan al acabar: unos ${fE(r.comp.vacationPay)} netos, aquí repartidos entre lo que trabajas.`,
-    unemployment:`Esta oferta cotiza ${fN(r.contrib)} días y genera unos ${fN(r.unemploymentDays)} días de paro. Lo cobras cuando juntes 360 días cotizados; aquí va repartido entre lo que trabajas. Se puede quitar en «Supuestos del cálculo».`};
+    unemployment:`Esta oferta cotiza ${fN(r.contrib)} días y genera unos ${fN(r.unemploymentDays)} días de paro. Lo cobras cuando juntes ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que trabajas. Se puede quitar en «Supuestos del cálculo».`};
   const tripTxt=o.commute==='daily'?'Vas y vuelves cada día trabajado':`Subes al empezar y bajas al acabar${num(o.tripsHome)>0?`, y bajas a casa ${fInput(o.tripsHome)} ${num(o.tripsHome)===1?'vez':'veces'} al mes`:''}`;
   const carTip=`${fN(r.km)} km ${r.noDuration?'al mes':'en todo el contrato'}. ${o.car==='noCar'?'':`${tripTxt}: ${fN(num(o.kmHome))} km de ida y otros tantos de vuelta.`}${o.car==='own'&&num(o.kmWorkPerDay)>0?` Más ${fN(num(o.kmWorkPerDay))} km por día trabajado moviéndote con tu coche.`:''} Cada km: ${fE(fuelPerKm,2)} de gasolina (${fN(num(config.fuelUse),1)} l/100 km a ${fE(num(config.fuelPrice),2)}/l) + ${fE(num(config.wear),2)} de desgaste. Tu coche se cambia en «Tus datos».`;
   const shows=x=>conv(x,r,u)>=(u==='hour'?0.005:0.5); // do not show rows that round to 0 € in this unit
@@ -128,7 +128,7 @@ function costHTML(o,r,D){
     r.ssEmployer>0.5&&['Seguridad Social que paga la empresa',r.ssEmployer,`aprox. ${fN(config.ssEmp,1)} % del bruto`],
     r.B>0&&[r.noContract?'En mano, sin contrato':'En negro',r.B,''],
     r.kmPaid>0.5&&['Kilometraje que te paga',r.kmPaid,''],
-    r.severancePay>0.5&&['Indemnización por fin de contrato',r.severancePay,'12 días por año trabajado']].filter(Boolean);
+    r.severancePay>0.5&&['Indemnización por fin de contrato',r.severancePay,`${LAW.severanceDaysPerYear} días por año trabajado`]].filter(Boolean);
   return `<details class="plg" data-fold="cost"><summary>Cuánto le cuestas</summary><p class="hint">Por día trabajado y ${C.other==='month'?'al mes':'en todo el contrato'}.</p>
   <div class="rows">
     ${row('',C.header,{cls:'hd'})}
@@ -176,7 +176,7 @@ function lawsOf(o,r,D){
       return A.overtimeUnpaid>1&&!r.noContract
         ?[false,'Jornada',`${what} ${A.overtimeUnpaid>=A.overtimeValue-1?'No te las pagan':`Te pagan solo una parte: quedan sin pagar unas ${fN(A.overtimeUnpaidWeek)} a la semana`}. Las horas extra se pagan al menos como una hora normal, o se devuelven en descanso.`]
         :['warn','Jornada',`${what} Se pagan o se devuelven en descanso.`]})(r.savings)
-    :[false,'Jornada',`${fN(hs)} h a la semana${hPerDay>LAW.maxDayHours?` y ${fN(hPerDay)} h al día`:''}: pasas del límite de la ganadería (60 h a la semana y 12 h al día).`]);
+    :[false,'Jornada',`${fN(hs)} h a la semana${hPerDay>LAW.maxDayHours?` y ${fN(hPerDay)} h al día`:''}: pasas del límite de la ganadería (${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día).`]);
   if(o.holidays!=='yes'&&!r.noDuration&&LAW.holidaysPerYear*r.months/12>=0.5) L.push([null,'Festivos',`Trabajas los festivos, ${(n=>n<1.5?'uno':`unos ${fN(n)}`)(LAW.holidaysPerYear*r.months/12)} en este contrato. Se pagan aparte o se compensan con descanso${r.savings.daysValue>0&&extraDaysOf(r).extra>=1?': ya van contados en las jornadas de más':''}.`]);
   return L;
 }
@@ -341,13 +341,13 @@ function owedReasons(o,r,D){
 
 /** Where the law says it, to link from each right. */
 const LAW_SOURCE={
-  'Plus por dormir en el monte':['https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf','Convenio, art. 29'],
-  '¿Duermes en el monte?':['https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf','Convenio, art. 29'],
-  'Vacaciones':['https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a38','Estatuto, art. 38'],
-  'Descanso semanal':['https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a37','Estatuto, art. 37'],
-  'Festivos':['https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a37','Estatuto, art. 37.2'],
-  'Jornada':['https://www.boe.es/eli/es/rd/1995/09/21/1561/con#a5','RD 1561/1995, art. 5'],
-  'Contrato y alta':['https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a8','Estatuto, art. 8'],
+  'Plus por dormir en el monte':citeOf('agreement',29),
+  '¿Duermes en el monte?':citeOf('agreement',29),
+  'Vacaciones':citeOf('et',38),
+  'Descanso semanal':citeOf('et',37),
+  'Festivos':citeOf('et','37.2'),
+  'Jornada':citeOf('rd1561',5),
+  'Contrato y alta':citeOf('et',8),
 };
 /** Short names of what is breached, for the pills and summary lines. */
 const LAW_SHORT={'Contrato y alta':'sin contrato','Salario mínimo':'salario','Plus por dormir en el monte':'pernocta','Vacaciones':'vacaciones','Descanso semanal':'descanso','Jornada':'jornada'};
@@ -428,8 +428,9 @@ function seasonEndHTML(o,r){
   const monthShort=d=>{const t=d.toLocaleDateString('es-ES',{month:'short'}).replace('.','');return t[0].toUpperCase()+t.slice(1)};
   const k=N.length?clamp(payslipMonthSel[o.id]??N.length-1,0,N.length-1):0, x=N[k];
   const e2=v=>fN(v,2), pct=v=>`${fN(v,2)} %`;
-  const workerRates=Math.abs(config.ssPct-6.43)<0.005?[['Contingencias comunes',4.70],['Desempleo',1.58],['MEI',0.15]]:[['Seguridad Social',config.ssPct]];
-  const employerRates=Math.abs(config.ssEmp-30.25)<0.005?[['Contingencias comunes',21.20],['Desempleo',5.50],['Accidentes de trabajo',3.30],['Formación profesional',0.15],['Fogasa',0.10]]:[['Seguridad Social',config.ssEmp]];
+  // item by item when the rates are the default ones; otherwise, a single line with yours
+  const workerRates=Math.abs(config.ssPct-ssTotal(SOCIAL_SECURITY.worker))<0.005?SOCIAL_SECURITY.worker:[['Seguridad Social',config.ssPct]];
+  const employerRates=Math.abs(config.ssEmp-ssTotal(SOCIAL_SECURITY.employer))<0.005?SOCIAL_SECURITY.employer:[['Seguridad Social',config.ssEmp]];
   const vacationDay=r.vacationDays>0?r.vacationPayGross/r.vacationDays:0;
   // All payslips go in the same table and only the chosen month's is visible: the other rows are collapsed
   // (visibility:collapse), but they count towards column widths, so they do not change from one month to the next.
@@ -443,7 +444,7 @@ function seasonEndHTML(o,r){
         <tr${cl(m,'base')}><th>Base de cotización</th><td class="det">${e2(x.gross)}</td><td></td><td></td></tr>
         ${workerRates.map(([c,p])=>fil(m,c,pct(p),null,x.gross*p/100)).join('')}
         ${fil(m,'IRPF',pct(r.irpfPct*100),null,x.irpf)}
-        ${x.severance>0.5?fil(m,'Indemnización','12 días por año',x.severance,null):''}`).join('')}
+        ${x.severance>0.5?fil(m,'Indemnización',`${LAW.severanceDaysPerYear} días por año`,x.severance,null):''}`).join('')}
       </tbody>
       <tfoot>${N.map((x,m)=>`<tr${cl(m,'tt')}><th>Totales</th><td></td><td>${e2(x.gross+x.severance)}</td><td>${e2(x.contrib+x.irpf)}</td></tr>
         <tr${cl(m,'net')}><th colspan="3">Neto a percibir</th><td>${e2(x.net)}</td></tr>`).join('')}</tfoot></table>
@@ -482,13 +483,13 @@ function workingsHTML(o,r){
     row(`− Seguridad Social (${fN(config.ssPct,1)} %)`,fT(r.ss)),
     row(`− Retención de IRPF (${fN(r.irpfPct*100,1)} %)`,fT(r.irpf)),
     row('= Nómina neta',fT(r.netTotal),{cls:r.severancePay>0.5?'strong':'tot'}),
-    r.severancePay>0.5&&row('+ Indemnización por fin de contrato',fT(r.severancePay),{sub:'12 días por año trabajado, en el finiquito'}),
+    r.severancePay>0.5&&row('+ Indemnización por fin de contrato',fT(r.severancePay),{sub:`${LAW.severanceDaysPerYear} días por año trabajado, en el finiquito`}),
     r.severancePay>0.5&&row('= Cobrado en nómina',fT(r.netTotal+r.severancePay),{cls:'tot',sub:'como en «Final de campaña»'}),
   ],`${r.othersIncome.years.length>1?`El contrato pasa de un año a otro: para el IRPF, su sueldo se reparte por días entre ${joinAnd(r.othersIncome.years)}. `:''}${r.othersIncome.n?`Para el IRPF se suman también ${fT(r.othersIncome.gross)} brutos de ${r.othersIncome.n===1?'tu otra oferta trabajada':`tus otras ${r.othersIncome.n} ofertas trabajadas`} en ${r.othersIncome.years.length>1?'esos años':'ese año'}. `:''}IRPF de esta oferta en el año, con la deducción para sueldos cerca del SMI: ${fT(r.irpfYear)}.${r.irpf-r.irpfYear>1?` En la renta te devolverían unos ${fT(r.irpf-r.irpfYear)}; no se suma a lo que ganas.`:''}`));
   // What you earn
   out.push(sec('Lo que ganas',[
     row('Total que ganas',fT(r.total),{cls:'tot'}),
-  ],`Repartido: ÷ ${hh(r.hours)} = ${fE(r.perHour,2)}/h · ÷ ${fN(r.daysWorked)} días = ${fE(r.perDay)}/día${r.noDuration?'':` · ÷ ${fN(r.months,1)} meses = ${fE(r.perMonth)}/mes`}.${r.comp.unemployment>0.5?` El paro: ${fN(r.contrib)} días cotizados dan unos ${fN(r.unemploymentDays)} días de prestación; solo se cobra al llegar a 360 días cotizados en 6 años.`:''}`));
+  ],`Repartido: ÷ ${hh(r.hours)} = ${fE(r.perHour,2)}/h · ÷ ${fN(r.daysWorked)} días = ${fE(r.perDay)}/día${r.noDuration?'':` · ÷ ${fN(r.months,1)} meses = ${fE(r.perMonth)}/mes`}.${r.comp.unemployment>0.5?` El paro: ${fN(r.contrib)} días cotizados dan unos ${fN(r.unemploymentDays)} días de prestación; solo se cobra al llegar a ${LAW.unemployment.minDaysContributed} días cotizados en ${LAW.unemployment.windowYears} años.`:''}`));
   // Legal minimum, by item: a surplus in one does not cover a shortfall in another, so the subtraction is done for each
   if(r.minBy.month>0&&r.daysWorked>0){
     const sm=r.minSalary+r.overnightPay, f=1-config.ssPct/100;

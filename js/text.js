@@ -30,11 +30,11 @@ function explanations(o,r){
     food: `Te dan ${mealsListTxt(o)}.${config.inKind?` Te ahorras unos ${fE(foodPerDay(o))} por día trabajado. El precio de cada comida lo cambias en «Tus datos».`:''}`,
     b: 'Lo que cobras en negro cuenta como dinero, pero no cotiza: no da paro, jubilación ni baja, ni cuenta para la indemnización.',
     allPayroll: 'Todo lo que cobras va en nómina y cotiza: cuenta para el paro, la jubilación, la baja y la indemnización.',
-    severance: 'Al acabar un contrato temporal te toca una indemnización de 12 días de salario por año trabajado (Estatuto de los Trabajadores, art. 49.1.c). Va en el finiquito.',
+    severance: `Al acabar un contrato temporal te toca una indemnización de ${LAW.severanceDaysPerYear} días de salario por año trabajado (Estatuto de los Trabajadores, art. 49.1.c). Va en el finiquito.`,
     contract: {
-      temporary:`Contrato por temporada. Al acabar te toca una indemnización de 12 días de salario por año trabajado${r.severancePay>0.5?`: unos ${fE(r.severancePay)} brutos`:''}.${r.casual?` Como dura 120 días o menos, el mínimo es el de temporero: ${fE(r.smiEv,2)} por jornada.`:''}`,
+      temporary:`Contrato por temporada. Al acabar te toca una indemnización de ${LAW.severanceDaysPerYear} días de salario por año trabajado${r.severancePay>0.5?`: unos ${fE(r.severancePay)} brutos`:''}.${r.casual?` Como dura ${LAW.casualMaxDays} días o menos, el mínimo es el de temporero: ${fE(r.smiEv,2)} por jornada.`:''}`,
       seasonal:'Trabajas por temporadas, pero el contrato sigue entre una y otra: la empresa tiene que volver a llamarte cada campaña, en el orden que marque el convenio. Al acabar cada temporada no hay indemnización, y entre campañas puedes cobrar el paro si tienes cotizado lo suficiente. Si no te llaman, es un despido.',
-      permanent:'Contrato indefinido todo el año. Si te despiden sin causa justificada te corresponden 33 días de salario por año trabajado.',
+      permanent:`Contrato indefinido todo el año. Si te despiden sin causa justificada te corresponden ${LAW.dismissalDaysPerYear} días de salario por año trabajado.`,
       none:'Trabajar sin contrato ni alta en la Seguridad Social es ilegal. No cotizas: no generas paro ni jubilación, y si te accidentas no estás cubierto. La responsabilidad es del ganadero, no tuya.',
     }[o.contract],
   };
@@ -63,11 +63,11 @@ function card(o,r){
   const E=Object.fromEntries((lawsOf(o,r,money(r,'month'))||[]).map(x=>[x[1],x[0]]));
   const est=(t,def)=>t in E?(E[t]===true?'ok':E[t]===false?'bad':E[t]==='warn'?'warn':''):def;
   p.push(pill('clock',`${fInput(o.hoursPerDay)}\u00a0h/día · ${fN(hs)}\u00a0h/semana`, est('Jornada',hs<=H_ORDINARY?'ok':'warn'),
-    `Trabajas unas ${fN(hs)}\u00a0h a la semana. La jornada ordinaria son 40 h. En ganadería puede alargarse hasta 60 h a la semana y 12 h al día, pero lo que pasa de 40 son horas extra: se pagan o se devuelven en descanso.`
+    `Trabajas unas ${fN(hs)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.`
     +(t=>t?` Te salen ${t}.`:'')(joinAnd([extraDaysOf(r).extra>=1&&r.savings.daysValue>0&&`unos ${fCount(extraDaysOf(r).extra)} días de más ${overTxt}`,r.savings.overtimeWeek>=0.5&&`unas ${fN(r.savings.over40Week)}\u00a0h a la semana por encima de 40`].filter(Boolean)))+(hs>H_MAX||hPerDay>LAW.maxDayHours?' Pasas del límite legal.':'')));
   const nl=num(o.daysOff), daysOffTxt=`Libras ${fInput(o.daysOff)} ${nl===1?'día':'días'} ${{week:'a la semana',total:'en total'}[o.daysOffUnit]||'al mes'}`;
   p.push(pill('cal',r.daysOffMonth<0.05?'Sin libranzas':daysOffTxt, est('Descanso semanal',r.restShort<1?'ok':'warn'),
-    `Por ley te corresponden al menos 1,5 días de descanso por semana (unos ${fN(LAW.weeklyRest*DM/7,1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta 4 semanas.`
+    `Por ley te corresponden al menos ${fN(LAW.weeklyRest,1)} días de descanso por semana (unos ${fN(LAW.weeklyRest*DM/7,1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.`
     +(r.restShort>=1?` Con esta oferta trabajas unos ${fN(r.restShort)} días ${overTxt} que deberían ser de descanso.`:' Esta oferta lo cumple.')));
   if(X.contract) p.push(pill('doc',contract(o).pillLabel,r.noContract?'bad':'ok',X.contract));
   const pct=r.cashShare*100;
@@ -99,7 +99,7 @@ function cardText(o,r){
     (A=>[A.daysValue>0&&extraDaysOf(r).extra>=1&&`Jornadas de más: ${fCount(extraDaysOf(r).extra)} en el contrato`,r.tmHoursOver>=0.5&&`Horas extra: unas ${fN(A.over40Week)} a la semana por encima de 40 (estimado)`].filter(Boolean).join(' · '))(r.savings),
     (A=>(D=>{const L=[[A.b,r.noContract?'por no hacerte contrato':'por pagarte en negro'],[A.min,minimumShortTxt(r)],[A.days,'por las jornadas de más'],[A.extra,'por las horas extra (estimado)']].filter(x=>x[0]>1);
       return L.length?`Para negociar, el ganadero se ahorra ${unitPhrase(D,r)}: ${joinAnd(L.map(([v,t])=>`${D.inUnit(v)} ${t}`))}`:''})(money(r,offerUnit(o,r))))(employerSavings(r)),
-    r.unemploymentDays>0?`Genera ~${fN(r.unemploymentDays)} días de paro (se cobran al llegar a 360 días cotizados en 6 años)`:'No genera paro',
+    r.unemploymentDays>0?`Genera ~${fN(r.unemploymentDays)} días de paro (se cobran al llegar a ${LAW.unemployment.minDaysContributed} días cotizados en ${LAW.unemployment.windowYears} años)`:'No genera paro',
   ].filter(Boolean).join('\n');
 }
 
@@ -120,7 +120,7 @@ function claimText(o,r){
   } else {
     L.push(`Tipo de contrato: ${contract(o).phrase}. Nómina bruta en todo el contrato: ${fE(r.grossTotal)} (unos ${fE(r.netTotal)} netos).`);
     L.push(`Mínimo en todo el contrato, contado por meses: ${fE(r.minBy.month)} brutos.`);
-    L.push(`- SMI ${r.year} (${r.smiRd})${r.casual?`, ${fE(r.smiEv,2)} por jornada (contratos temporales de 120 días o menos)`:`, ${fE(r.smiA)} al año para 40 h semanales`}: ${fE(r.minSalary)}.`);
+    L.push(`- SMI ${r.year} (${r.smiRd})${r.casual?`, ${fE(r.smiEv,2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)`:`, ${fE(r.smiA)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.minSalary)}.`);
     if(r.overnightPay>0) L.push(`- Plus por pernoctar fuera por pastoreo, ${fN(config.overnightPct)} % del salario (convenio del campo de Huesca, art. 29): ${fE(r.overnightPay)}.`);
     if(r.minVacation>0) L.push(`- Vacaciones (${fDays(r.vacationDays)}; Estatuto, art. 38): ${fE(r.minVacation)}.`);
     const {salary,overnight,vac}=r.debtParts;
@@ -149,7 +149,7 @@ function claimText(o,r){
     L.push(`Jornadas de ${fInput(o.hoursPerDay)} h: ${f1(Math.max(0,num(o.hoursPerDay)-r.tmWorkday))} h de más cada día sobre la jornada normal (40 h semanales; Estatuto, art. 34), en ${fCount(r.daysWorked)} días trabajados: ${fN(r.tmHoursOver)} h, unas ${fN(A.overtimeWeek)} a la semana.`);
     L.push(`Al salario mínimo por hora (${fE(r.smiHour,2)}), valen ${fE(A.overtimeValue)} brutos.`+(A.overtimeUnpaid>1?` Sin pagar: ${fE(A.overtimeUnpaid)} brutos, unos ${fNet(A.overtimeUnpaid)} netos.`:' Lo que se paga por encima del mínimo las cubre.')
       +' Las horas extra se pagan al menos como una hora normal o se compensan con descanso (Estatuto, art. 35).');
-    if(r.hoursPerWeek>H_MAX||num(o.hoursPerDay)>LAW.maxDayHours) L.push(`Se supera el máximo de la ganadería: 60 h a la semana y 12 h al día (RD 1561/1995, art. 5).`);
+    if(r.hoursPerWeek>H_MAX||num(o.hoursPerDay)>LAW.maxDayHours) L.push(`Se supera el máximo de la ganadería: ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día (RD 1561/1995, art. 5).`);
   }
   L.push('');
   L.push('Cálculo aproximado hecho con el Comparador de jornales. Conviene revisarlo con el convenio vigente y un sindicato.');

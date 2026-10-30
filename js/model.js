@@ -9,9 +9,10 @@ function irpfScale(base){
 /** Earned-income reduction (LIRPF art. 20). */
 function workReduction(rn){
   let red=0;
-  if(rn<=14852) red=7302;
-  else if(rn<=17673.52) red=7302-1.75*(rn-14852);
-  else if(rn<=19747.5) red=2364.34-1.14*(rn-17673.52);
+  const W=LAW.irpf.workReduction;
+  if(rn<=W.fullTo) red=W.full;
+  else if(rn<=W.midTo) red=W.full-W.midSlope*(rn-W.fullTo);
+  else if(rn<=W.lowTo) red=W.lowFrom-W.lowSlope*(rn-W.midTo);
   return Math.max(0,red);
 }
 /** IRPF for the year on an annual gross (general scale, no children, with the deduction for wages near the minimum wage). */

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="css/styles.css">
+<script defer src="js/law.js"></script>
 <script defer src="js/constants.js"></script>
 <script defer src="js/utils.js"></script>
 <script defer src="js/legacy.js"></script>
@@ -22,6 +23,7 @@
 <script defer src="js/backup.js"></script>
 <script defer src="js/cloud.js"></script>
 <script defer src="js/tooltips.js"></script>
+<script defer src="js/laws-tab.js"></script>
 <script defer src="js/main.js"></script>
 </head>
 <body>
@@ -138,7 +140,7 @@
               <label><input type="radio" name="holidays" value="yes">Sí</label>
               <label><input type="radio" name="holidays" value="no">No</label>
             </div>
-            <p class="hint">Son unos 14 al año. Si ya los cuentas en las libranzas, pon «No».</p>
+            <p class="hint">Son unos <span data-law="holidaysPerYear"></span> al año. Si ya los cuentas en las libranzas, pon «No».</p>
           </div>
           <div class="fld full">
             <span>Tipo de contrato</span>
@@ -148,7 +150,7 @@
               <label><input type="radio" name="contract" value="permanent">Fijo</label>
               <label><input type="radio" name="contract" value="none">Sin contrato</label>
             </div>
-            <p class="hint" data-show="withContract">Cambia el mínimo legal: el SMI de temporero solo vale para contratos temporales de hasta 120 días con la misma empresa.</p>
+            <p class="hint" data-show="withContract">Cambia el mínimo legal: el SMI de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
             <p class="hint" data-show="noContract">Sin contrato, todo lo que cobras va en mano: se pone en «En negro». No hace falta poner nómina ni vacaciones.</p>
           </div>
           </fieldset>
@@ -241,7 +243,7 @@
               <label><input type="radio" name="overnight" value="no">No</label>
               <label><input type="radio" name="overnight" value="yes">Sí</label>
             </div>
-            <p class="hint" data-show="overnight">No suman dinero a la oferta, pero suben el mínimo legal: por convenio, pernoctar fuera por pastoreo se paga con al menos un 25 % extra.</p>
+            <p class="hint" data-show="overnight">No suman dinero a la oferta, pero suben el mínimo legal: por convenio, pernoctar fuera por pastoreo se paga con al menos un <span data-law="overnightPct"></span> % extra.</p>
           </div>
           <div class="fld">
             <span>¿Te ponen casa?</span>
@@ -341,21 +343,21 @@
     <p class="hint">Lo que mira la página en «¿Es legal?». Son mínimos: tu contrato o tu convenio pueden darte más, nunca menos.</p>
     <dl class="docs">
       <dt>Salario mínimo</dt>
-      <dd>Cambia cada año; la página usa el del año que pongas en cada oferta. Por 40 h a la semana: en 2024, 15.876 € brutos al año (1.134 € en 14 pagas); en 2025, 16.576 € (1.184 €); en 2026, 17.094 € (1.221 €). En contratos temporales de 120 días o menos, al menos 53,71 €, 56,08 € y 57,82 € por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de 40 h, se reduce en proporción. <span class="source">Reales Decretos <a href="https://www.mites.gob.es/fogasa/impresos/RD_SMI_2024.pdf" target="_blank" rel="noopener">145/2024</a>, <a href="https://www.mites.gob.es/fogasa/impresos/RD_SMI_2025.pdf" target="_blank" rel="noopener">87/2025</a> y <a href="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-3815" target="_blank" rel="noopener">126/2026</a>.</span></dd>
+      <dd>Cambia cada año; la página usa el del año que pongas en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
       <dt>Plus por dormir en el monte</dt>
-      <dd>Si pernoctas fuera por pastoreo (borda, cabaña), al menos un 25 % más de salario. <span class="source"><a href="https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a>, art. 29. Es el último publicado que se ha podido consultar: puede haber uno más reciente, y sus tablas salariales pueden fijar un sueldo mayor que el SMI.</span></dd>
+      <dd>Si pernoctas fuera por pastoreo (borda, cabaña), al menos un <span data-law="overnightPct"></span> % más de salario. <span class="source"><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a>, art. 29. Es el último publicado que se ha podido consultar: puede haber uno más reciente, y sus tablas salariales pueden fijar un sueldo mayor que el SMI.</span></dd>
       <dt>Vacaciones</dt>
-      <dd>30 días naturales al año (2,5 por mes). Se disfrutan: solo se pueden pagar en vez de librarlas si el contrato acaba antes de poder disfrutarlas. En los contratos cortos se pueden cobrar dentro del jornal, en proporción, siempre que lo que queda llegue al salario mínimo; en la nómina tienen que salir como concepto aparte. <span class="source"><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a38" target="_blank" rel="noopener">Estatuto de los Trabajadores, art. 38</a>.</span></dd>
+      <dd><span data-law="vacationDaysPerYear"></span> días naturales al año (<span data-law="vacationPerMonth"></span> por mes). Se disfrutan: solo se pueden pagar en vez de librarlas si el contrato acaba antes de poder disfrutarlas. En los contratos cortos se pueden cobrar dentro del jornal, en proporción, siempre que lo que queda llegue al salario mínimo; en la nómina tienen que salir como concepto aparte. <span class="source"><a data-source="et" data-art="38" target="_blank" rel="noopener">Estatuto de los Trabajadores, art. 38</a>.</span></dd>
       <dt>Descanso semanal</dt>
-      <dd>Día y medio por semana. En ganadería se puede juntar en periodos de hasta 4 semanas. <span class="source"><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a37" target="_blank" rel="noopener">Estatuto, art. 37.1</a>; <a href="https://www.boe.es/eli/es/rd/1995/09/21/1561/con#a5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
+      <dd>Día y medio por semana. En ganadería se puede juntar en periodos de hasta <span data-law="restPeriodWeeks"></span> semanas. <span class="source"><a data-source="et" data-art="37.1" target="_blank" rel="noopener">Estatuto, art. 37.1</a>; <a data-source="rd1561" data-art="5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
       <dt>Festivos</dt>
-      <dd>Unos 14 al año, pagados y sin recuperar. Si los trabajas, se pagan aparte o se compensan con descanso. <span class="source"><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a37" target="_blank" rel="noopener">Estatuto, art. 37.2</a>.</span></dd>
+      <dd>Unos <span data-law="holidaysPerYear"></span> al año, pagados y sin recuperar. Si los trabajas, se pagan aparte o se compensan con descanso. <span class="source"><a data-source="et" data-art="37.2" target="_blank" rel="noopener">Estatuto, art. 37.2</a>.</span></dd>
       <dt>Jornada y horas extra</dt>
-      <dd>40 h a la semana. En ganadería se puede alargar hasta 20 h más, con un máximo de 12 h al día y 10 h de descanso entre jornadas. Lo que pasa de 40 son horas extra: se pagan, al menos como una hora normal, o se devuelven en descanso. <span class="source"><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a34" target="_blank" rel="noopener">Estatuto, art. 34</a> y <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a35" target="_blank" rel="noopener">35</a>; <a href="https://www.boe.es/eli/es/rd/1995/09/21/1561/con#a5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
+      <dd><span data-law="weeklyHours"></span> h a la semana. En ganadería se puede alargar hasta <span data-law="extraWeekHours"></span> h más, con un máximo de <span data-law="maxDayHours"></span> h al día y <span data-law="restBetweenDays"></span> h de descanso entre jornadas. Lo que pasa de <span data-law="weeklyHours"></span> son horas extra: se pagan, al menos como una hora normal, o se devuelven en descanso. <span class="source"><a data-source="et" data-art="34" target="_blank" rel="noopener">Estatuto, art. 34</a> y <a data-source="et" data-art="35" target="_blank" rel="noopener">35</a>; <a data-source="rd1561" data-art="5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
       <dt>Contrato y alta</dt>
       <dd>Trabajar sin contrato ni alta en la Seguridad Social es ilegal, y la responsabilidad es del ganadero. Sin alta no cotizas: no generas paro ni jubilación, y si te accidentas no estás cubierto.</dd>
       <dt>Fin de contrato</dt>
-      <dd>Al acabar un contrato temporal, 12 días de salario por año trabajado. En el fijo discontinuo no hay indemnización al acabar cada temporada, pero la empresa tiene que volver a llamarte. <span class="source"><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a16" target="_blank" rel="noopener">Estatuto, art. 16</a> y <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430#a49" target="_blank" rel="noopener">49.1.c</a>.</span></dd>
+      <dd>Al acabar un contrato temporal, <span data-law="severanceDaysPerYear"></span> días de salario por año trabajado. En el fijo discontinuo no hay indemnización al acabar cada temporada, pero la empresa tiene que volver a llamarte. <span class="source"><a data-source="et" data-art="16" target="_blank" rel="noopener">Estatuto, art. 16</a> y <a data-source="et" data-art="49" target="_blank" rel="noopener">49.1.c</a>.</span></dd>
     </dl>
 
     <h3 class="q">Cómo hace las cuentas esta página</h3>
@@ -364,15 +366,15 @@
       <dt>Lo que ganas</dt>
       <dd>La nómina neta, las vacaciones que te pagan aparte, lo que cobras en negro, lo que te ahorras en casa y comida, los km que te pagan, la indemnización y el paro que generas, menos tus gastos de coche y otros. Se reparte entre las horas, los días o los meses que trabajas. Un mes son 30,4 días.</dd>
       <dt>Nómina</dt>
-      <dd>Del bruto se quitan la Seguridad Social del trabajador (6,43 % por defecto en el régimen agrario: 4,70 % de contingencias comunes, 1,58 % de paro y 0,15 % del mecanismo de equidad, MEI) y la retención de IRPF. La retención es la que pongas tú o, si no, la que corresponde a lo que ganas en el año, con un mínimo del 2 % en los temporales, el de los eventuales agrarios. El IRPF del año se calcula con la escala general, el mínimo personal sin hijos, 2.000 € de gastos, la reducción por rendimientos del trabajo y la deducción para sueldos cerca del SMI del año de cada oferta (en 2025, hasta 340 €, que desaparece en 18.276 €; en 2026, hasta 590,89 €, que desaparece en 20.048 €; en 2024 no había). Si un contrato pasa de un año a otro, su sueldo se reparte por días entre los dos. Lo que se ajuste en la renta no se suma a lo que ganas.</dd>
+      <dd>Del bruto se quitan la Seguridad Social del trabajador (<span data-law="ssWorker"></span> % por defecto en el régimen agrario: <span data-law="ssWorker0"></span> % de contingencias comunes, <span data-law="ssWorker1"></span> % de paro y <span data-law="ssWorker2"></span> % del mecanismo de equidad, MEI) y la retención de IRPF. La retención es la que pongas tú o, si no, la que corresponde a lo que ganas en el año, con un mínimo del <span data-law="irpfWithholding"></span> % en los temporales, el de los eventuales agrarios. El IRPF del año se calcula con la escala general, el mínimo personal sin hijos, <span data-law="irpfExpenses"></span> € de gastos, la reducción por rendimientos del trabajo y la deducción para sueldos cerca del SMI del año de cada oferta (<span data-law="smiDeductionByYear"></span>). Si un contrato pasa de un año a otro, su sueldo se reparte por días entre los dos. Lo que se ajuste en la renta no se suma a lo que ganas.</dd>
       <dt>Paro</dt>
-      <dd>Unos 120 días de paro por cada 360 cotizados. La prestación es el 70 % de tu base los primeros 180 días y el 60 % después, con un mínimo de 560 € y un máximo de 1.225 € al mes (sin hijos), menos su cotización. Solo lo cobras si llegas a 360 días cotizados en 6 años. Se suma a lo que ganas porque es dinero que te da la nómina y el dinero en negro no. Se puede quitar en «Supuestos del cálculo».</dd>
+      <dd>Unos <span data-law="benefitDays"></span> días de paro por cada <span data-law="minDaysContributed"></span> cotizados. La prestación es el <span data-law="benefitPct1"></span> % de tu base los primeros <span data-law="benefitDays70"></span> días y el <span data-law="benefitPct2"></span> % después, con un mínimo de <span data-law="benefitMin"></span> € y un máximo de <span data-law="benefitMax"></span> € al mes (sin hijos), menos su cotización. Solo lo cobras si llegas a <span data-law="minDaysContributed"></span> días cotizados en <span data-law="windowYears"></span> años. Se suma a lo que ganas porque es dinero que te da la nómina y el dinero en negro no. Se puede quitar en «Supuestos del cálculo».</dd>
       <dt>Lo que te deben</dt>
       <dd>Lo que falta para el mínimo de cada cosa por separado (salario, plus de pernocta y vacaciones), contado por meses, que es lo más seguro de reclamar. Lo que sobra en una no compensa lo que falta en otra. Lo que cobras en negro se descuenta, porque es dinero que te llega; aun así, si la nómina no llega al mínimo se marca como ilegal, porque lo de en negro no cotiza.</dd>
       <dt>Jornadas de más y horas extra</dt>
-      <dd>Se cuentan con las dos reglas de la ley: al menos día y medio de descanso por semana, más los festivos, y 40 h de trabajo a la semana, repartidas en esos 5,5 días (unas 7,3 h al día). Las jornadas de más son los días que trabajas sin librar ese descanso o los festivos; cada una vale una jornada normal al salario mínimo. Las horas extra son las que pasan de la jornada normal (40 h a la semana, repartidas en los días laborables) cada día que trabajas, también los de descanso, a la hora del salario mínimo. Las vacaciones que libras se descuentan; las que no libras son días de trabajo que paga el dinero de las vacaciones. Lo que te pagan por encima del mínimo, contando lo de en negro, cubre primero las jornadas de más y después las horas. Las horas son una estimación: en el monte no todas las horas son iguales.</dd>
+      <dd>Se cuentan con las dos reglas de la ley: al menos día y medio de descanso por semana, más los festivos, y <span data-law="weeklyHours"></span> h de trabajo a la semana, repartidas en esos <span data-law="workDaysWeek"></span> días (unas <span data-law="normalWorkday"></span> h al día). Las jornadas de más son los días que trabajas sin librar ese descanso o los festivos; cada una vale una jornada normal al salario mínimo. Las horas extra son las que pasan de la jornada normal (<span data-law="weeklyHours"></span> h a la semana, repartidas en los días laborables) cada día que trabajas, también los de descanso, a la hora del salario mínimo. Las vacaciones que libras se descuentan; las que no libras son días de trabajo que paga el dinero de las vacaciones. Lo que te pagan por encima del mínimo, contando lo de en negro, cubre primero las jornadas de más y después las horas. Las horas son una estimación: en el monte no todas las horas son iguales.</dd>
       <dt>Para negociar: lo que se ahorra el ganadero</dt>
-      <dd>Es su margen para pagarte más. Por pagarte en negro: lo que le costaría de más ponerlo en nómina sin que cobraras menos (el bruto que haría falta más su cotización: un 30,25 % por defecto, la del régimen agrario: 21,20 % de contingencias comunes, 5,50 % de paro, 3,30 % de accidentes, 0,15 % de formación y 0,10 % de Fogasa. Algunas empresas tienen además bonificaciones, así que puede salir algo alto). Por debajo del mínimo, por las jornadas de más y por las horas extra: lo que te falta, en bruto, más su cotización.</dd>
+      <dd>Es su margen para pagarte más. Por pagarte en negro: lo que le costaría de más ponerlo en nómina sin que cobraras menos (el bruto que haría falta más su cotización: un <span data-law="ssEmployer"></span> % por defecto, la del régimen agrario: <span data-law="ssEmployer0"></span> % de contingencias comunes, <span data-law="ssEmployer1"></span> % de paro, <span data-law="ssEmployer2"></span> % de accidentes, <span data-law="ssEmployer3"></span> % de formación y <span data-law="ssEmployer4"></span> % de Fogasa. Algunas empresas tienen además bonificaciones, así que puede salir algo alto). Por debajo del mínimo, por las jornadas de más y por las horas extra: lo que te falta, en bruto, más su cotización.</dd>
     </dl>
 
     <h3 class="q">Dónde reclamar</h3>
@@ -380,12 +382,12 @@
 
     <h3 class="q">Fuentes</h3>
     <ul class="notes">
-      <li>Salario mínimo: <a href="https://www.mites.gob.es/fogasa/impresos/RD_SMI_2024.pdf" target="_blank" rel="noopener">RD 145/2024</a>, <a href="https://www.mites.gob.es/fogasa/impresos/RD_SMI_2025.pdf" target="_blank" rel="noopener">RD 87/2025</a> y <a href="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-3815" target="_blank" rel="noopener">RD 126/2026</a> (BOE).</li>
-      <li><a href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430" target="_blank" rel="noopener">Estatuto de los Trabajadores</a>: jornada (art. 34), horas extra (art. 35), descanso y festivos (art. 37), vacaciones (art. 38), indemnización (art. 49).</li>
-      <li><a href="https://www.boe.es/eli/es/rd/1995/09/21/1561/con" target="_blank" rel="noopener">Real Decreto 1561/1995, jornadas especiales</a>: art. 5, ganadería.</li>
-      <li><a href="https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a> (UGT-FICA).</li>
-      <li><a href="https://www.hacienda.gob.es/es-ES/Prensa/Noticias/Paginas/2026/20260217-NP-CM-SMI-DEDUCCION-2026.aspx" target="_blank" rel="noopener">Deducción de IRPF para quien cobra el SMI</a> (Hacienda, 2026).</li>
-      <li><a href="https://www.sepe.es" target="_blank" rel="noopener">SEPE</a>: prestación por desempleo.</li>
+      <li>Salario mínimo: <span data-law="smiDecreesLong"></span> (BOE).</li>
+      <li><a data-source="et" target="_blank" rel="noopener">Estatuto de los Trabajadores</a>: jornada (art. 34), horas extra (art. 35), descanso y festivos (art. 37), vacaciones (art. 38), indemnización (art. 49).</li>
+      <li><a data-source="rd1561" target="_blank" rel="noopener">Real Decreto 1561/1995, jornadas especiales</a>: art. 5, ganadería.</li>
+      <li><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a> (UGT-FICA).</li>
+      <li><a data-source="smiDeduction2026" target="_blank" rel="noopener">Deducción de IRPF para quien cobra el SMI</a> (Hacienda, 2026).</li>
+      <li><a data-source="sepe" target="_blank" rel="noopener">SEPE</a>: prestación por desempleo.</li>
     </ul>
   </section>
   </div>

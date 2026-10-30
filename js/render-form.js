@@ -80,7 +80,7 @@ function renderForm(r){
     : '';
   if(num(o.payAmount)>0&&o.payUnit==='total'&&o.vacation==='paidAtEnd') $('#payHint').textContent+=' Pon lo que cobraste sin las vacaciones: las vacaciones pagadas se suman aparte.';
   const rp=r.split;
-  if(o.payrollMin&&o.contract!=='none') $('#payHint').textContent=`En nómina, el mínimo${r.casual?' de temporero (el contrato dura 120 días o menos)':''}: unos ${fE(r.minSalary/r.months)} brutos al mes, ${fE(r.minSalary/r.months*netFactor(r))} netos.`;
+  if(o.payrollMin&&o.contract!=='none') $('#payHint').textContent=`En nómina, el mínimo${r.casual?` de temporero (el contrato dura ${LAW.casualMaxDays} días o menos)`:''}: unos ${fE(r.minSalary/r.months)} brutos al mes, ${fE(r.minSalary/r.months*netFactor(r))} netos.`;
   // The calculation, over the whole contract: vacation is paid once (at the end), not every month
   const tot=x=>fE(x), mT=rp?(rp.u==='day'?r.daysWorked:rp.u==='month'?r.months:1):1;
   $('#cashAuto').textContent=!rp?'':!(rp.T>0)?'Lo de en negro es lo que queda del total pactado tras la nómina y las vacaciones.'
@@ -90,7 +90,7 @@ function renderForm(r){
   $('#rentValue').placeholder=fIn(num(config.rentValue),0);
   $('#rentHint').textContent=`Vacío: ${fE(num(config.rentValue))}, el de «Tus datos». Pon otro si aquí el alquiler es más caro o más barato, y 0 si sigues pagando tu casa mientras tanto.`;
   const S=SMI[r.year], yr=actualYear(o);
-  $('#yearHint').textContent=`${o.start?'':'Sin fecha, se toma '+yr+'. '}${yr!==Number(r.year)?`El salario mínimo de ${yr} aún no está en la página: se usa el de ${r.year}. `:''}Salario mínimo de ${r.year}: ${fE(S.annual)} al año (${fE(S.annual/14)} en 14 pagas), o ${fE(S.casual,2)} por jornada en temporales de 120 días o menos (${S.rd}).`;
+  $('#yearHint').textContent=`${o.start?'':'Sin fecha, se toma '+yr+'. '}${yr!==Number(r.year)?`El salario mínimo de ${yr} aún no está en la página: se usa el de ${r.year}. `:''}Salario mínimo de ${r.year}: ${fE(S.annual)} al año (${fE(S.annual/14)} en 14 pagas), o ${fE(S.casual,2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${S.rd}).`;
   const overlap=overlapsOf(o);
   $('#overlapHint').textContent=overlap.length?`Coincide en fechas con ${joinAnd(overlap.map(p=>`«${p.name}»`))}. Si una solo era una oferta que no trabajaste, márcalo en ella: así no se suman las dos en el año ni en el IRPF.`:'';
   $('#daysOffHint').textContent=r.months<=0?'':o.daysOffUnit==='total'&&!r.noDuration

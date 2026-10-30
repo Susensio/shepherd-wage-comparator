@@ -1,32 +1,8 @@
 'use strict';
-/* Legal figures, units, defaults and the tables everything else reads. */
+/* Units, defaults and the tables everything else reads. The legal figures are in law.js. */
 
 const DM = 365/12; // calendar days in an average month
 
-/** Legal figures and fixed assumptions. Sources are listed in the Leyes tab. */
-const LAW = {
-  workdayHours: 8,             // hours in an ordinary workday
-  weeklyHours: 40,         // ordinary hours per week (ET art. 34)
-  workdayMaxHours: 9,          // ordinary hours per day at most (ET art. 34.3)
-  maxWeekHours: 60,             // livestock: 40 + up to 20 h (RD 1561/1995, art. 5)
-  maxDayHours: 12,                // livestock: effective hours per day (RD 1561/1995, art. 5)
-  weeklyRest: 1.5,       // rest days per week (ET art. 37.1)
-  casualMaxDays: 120,      // casual-worker minimum wage: temporary contracts of up to 120 days
-  smiDaysPerYear: 420,          // 14 payments of 30 days: daily minimum wage = annual / 420
-  severanceDaysPerYear: 12,        // severance at the end of a temporary contract (ET art. 49.1.c)
-  holidaysPerYear: 14,          // public holidays per year (national, regional and local)
-  unemployment: {contribPerDay: 3, days70: 180, pct1: .7, pct2: .6, minMonth: 560, maxMonth: 1225, contribRate: .047},
-  // withholding: the minimum for casual farm workers, to get from what you are paid to the gross
-  irpf: {expenses: 2000, personalAllowance: 5550, withholding: 2, // the deduction for wages near the minimum wage is in the SMI table, per year
-         scale: [[12450,.19],[20200,.24],[35200,.30],[60000,.37],[300000,.45],[Infinity,.47]]},
-};
-/** Minimum wage per year: annual (14 payments, 40 h a week) and per workday for temporary contracts of 120 days or less. */
-const SMI = {
-  // ded: IRPF deduction for wages near the minimum wage (up to `max` €, reduced by `taper` € per euro above `from`). There was none in 2024.
-  2024: {annual:15876, casual:53.71, rd:'RD 145/2024', url:'https://www.mites.gob.es/fogasa/impresos/RD_SMI_2024.pdf', ded:null},
-  2025: {annual:16576, casual:56.08, rd:'RD 87/2025',  url:'https://www.mites.gob.es/fogasa/impresos/RD_SMI_2025.pdf', ded:{max:340, from:16576, taper:.2}},
-  2026: {annual:17094, casual:57.82, rd:'RD 126/2026', url:'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-3815', ded:{max:590.89, from:17094, taper:.2}},
-};
 const YEARS = Object.keys(SMI);
 /** The year an offer starts: that of its start date; without a date, the one it had set or the current one. */
 const actualYear = o=>Number(o.start?o.start.slice(0,4):o.year||new Date().getFullYear());
@@ -139,8 +115,9 @@ const DEF_OFFER = {name:'',duration:'',durationUnit:'months',hoursPerDay:'',days
   contract:'temporary',overnight:'no',housing:'no',rentValue:'',mealBreakfast:false,mealSnack:false,mealLunch:false,mealDinner:false,car:'own',commute:'daily',tripsHome:'',kmHome:'',kmWorkPerDay:'',kmRate:'',
   expenses:'',irpfMode:'auto',irpfManual:2,start:'',year:'',offerOnly:false,cashMode:'amount',payrollMin:false,totalAmount:'',totalUnit:'month'};
 /** What applies to every offer: «Tus datos» and «Supuestos del cálculo». */
-const YOUR_DATA = {rentValue:350,mealBreakfastP:2,mealSnackP:3,mealLunchP:4,mealDinnerP:4,fuelUse:7,fuelPrice:1.45,wear:0.06,vacationDaysPerYear:30};
-const DEF_CFG = {unemployment:true,ssEmp:30.25,others:0,ssPct:6.43,inKind:true,annualHours:1826,overnightPct:25,...YOUR_DATA};
+const YOUR_DATA = {rentValue:350,mealBreakfastP:2,mealSnackP:3,mealLunchP:4,mealDinnerP:4,fuelUse:7,fuelPrice:1.45,wear:0.06,vacationDaysPerYear:LAW.vacationDaysPerYear};
+// annualHours: yearly working hours used to turn the annual minimum wage into an hourly one
+const DEF_CFG = {unemployment:true,ssEmp:ssTotal(SOCIAL_SECURITY.employer),others:0,ssPct:ssTotal(SOCIAL_SECURITY.worker),inKind:true,annualHours:1826,overnightPct:LAW.overnightPct,...YOUR_DATA};
 
 /** Templates to start an offer. */
 const TPL = [
