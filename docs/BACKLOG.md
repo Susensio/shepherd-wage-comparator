@@ -14,3 +14,5 @@
 - account | «Perfil guardado.» shows in the orange warning style of the account section's error line; a success needs its own style.
 - shared | The read-only view of another shepherd's offer and their ranking rows still speak to the reader («¿Cuánto ganas?», «te deben»), though the offer is someone else's.
 - shared | Two sharers' offers with the same name look alike in the head-to-head table.
+- account | A browser signed out of one account and into another uploads the first account's offers still cached there into the second (ADR-0009). Clearing the cache on sign-out would fix it, at the cost of an empty page after signing out.
+- account | The «Continuar sin cuenta» choice is per browser and never offered again; someone who skipped it finds sign-in only in Ajustes.
