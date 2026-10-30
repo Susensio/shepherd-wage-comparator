@@ -53,3 +53,5 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Commits
 
 - No `Co-Authored-By` or `Claude-Session` trailers.
+- Prototype stage: work on a local branch, one concern per commit, and tidy it (amend, squash, reword) before it goes anywhere. When a feature is complete, run `npm run check` and `npm test`, fast-forward `master` to the branch and push `master` directly. No pull requests for now.
+- `master` is published as it is (GitHub Pages), so never rewrite it once pushed. A branch nobody else has pulled can be rewritten freely.
