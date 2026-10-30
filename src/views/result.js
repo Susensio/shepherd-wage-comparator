@@ -6,7 +6,7 @@ import { euroDecimals, fCount, fE, fN, fTyped, joinAnd, num } from '../format.js
 import { LAW } from '../law.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
-import { legalLine } from '../text.js';
+import { legalLine, MISSING_TEXT } from '../text.js';
 import {
   fUnit,
   incomeOf,
@@ -180,7 +180,7 @@ function breakdown(o, r, unit) {
 export function resultView(o, r) {
   const shortfall = missing(o);
   if (shortfall.length)
-    return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall)}. <button type="button" class="linkbtn" data-action="complete">Ponerlo</button></p>`;
+    return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. <button type="button" class="linkbtn" data-action="complete">Ponerlo</button></p>`;
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
   const { earnTip, html: breakdownView } = breakdown(o, r, unit);

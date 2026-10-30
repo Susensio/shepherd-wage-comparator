@@ -1,7 +1,7 @@
 /** Ajustes: «Tus datos», the calculation assumptions, where your offers are saved and the backup. */
 
 import { fInputValue, num } from '../format.js';
-import { DEF_CFG, missing } from '../offer.js';
+import { DEF_CFG, isComplete } from '../offer.js';
 import { myOffers, state } from '../state.js';
 import { backupStatus } from '../storage/bundle.js';
 import { $, $$ } from '../ui/dom.js';
@@ -26,7 +26,7 @@ export function fillSettings(skip) {
 
 /** The backup reminder above the offers, and the backup status in Ajustes. */
 export function paintBackup() {
-  const status = backupStatus(myOffers().some((o) => !missing(o).length));
+  const status = backupStatus(myOffers().some((o) => isComplete(o)));
   $('#backupNotice').hidden = !status.remind;
   const { last, days } = status;
   $('#backupStatus').textContent = !last

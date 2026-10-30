@@ -5,8 +5,9 @@
 
 import { render } from 'lit-html';
 import { joinAnd } from './format.js';
-import { defaultVacation, missing, REQUIRED } from './offer.js';
+import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, KEY, myOffers, saveOffers, state, store } from './state.js';
+import { MISSING_TEXT } from './text.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
@@ -64,13 +65,23 @@ function paintChips() {
 
 /* --- Painting --- */
 
+/** The form field where each thing `missing()` reports goes. */
+const MISSING_FIELD = {
+  agreedTotal: '#totalAmount',
+  duration: '#duration',
+  hoursPerDay: '#hoursPerDay',
+  pay: '#payAmount',
+  cashInHand: '#cashAmount',
+  vacation: 'input[name=vacation]',
+};
+
 /** Marks in the form what is missing to see the result, once you have asked to see it. */
 export function markMissing() {
   const o = active();
   const shortfall = ui.askedToSee === o.id ? missing(o) : [];
-  for (const [what, selector] of Object.entries(REQUIRED))
+  for (const [what, selector] of Object.entries(MISSING_FIELD))
     $(selector).closest('.fld').classList.toggle('missing', shortfall.includes(what));
-  $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall)}.` : '';
+  $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
 }
 
 function paintCompare() {
@@ -180,7 +191,7 @@ export function done(fromTop) {
   }
   ui.askedToSee = o.id;
   markMissing();
-  const field = $(REQUIRED[shortfall[0]]);
+  const field = $(MISSING_FIELD[shortfall[0]]);
   const section = /** @type {HTMLDetailsElement | null} */ (field.closest('details.sec'));
   if (section) section.open = true;
   scrollToElement(field.closest('.fld'), 'center');

@@ -4,9 +4,9 @@ import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
-import { DAYS_PER_MONTH, datesText, missing, spanOf, workedOffers } from '../offer.js';
+import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
-import { unpaidTime } from '../text.js';
+import { MISSING_TEXT, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
 import { incomeBar, legend } from './parts.js';
 
@@ -204,15 +204,15 @@ export function compareView(all, unit) {
     const v = unit === 'total' && r.time.noDuration ? Number.NaN : r.earnings[U.key];
     return Number.isFinite(v) ? v : -1e12;
   };
-  const list = all.filter(({ o }) => !missing(o).length).sort((a, b) => sortValue(b.r) - sortValue(a.r));
+  const list = all.filter(({ o }) => isComplete(o)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
   if (list.length < 2) {
-    const incomplete = all.filter(({ o }) => missing(o).length);
+    const incomplete = all.filter(({ o }) => !isComplete(o));
     return {
       picker: nothing,
       body: html`<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
-          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.name || 'Oferta'}» le falta ${joinAnd(missing(o))}.`).join(' ')}`
+          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.name || 'Oferta'}» le falta ${joinAnd(missing(o).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>`,
     };
   }
@@ -290,7 +290,7 @@ export function trendView(all, unit, width) {
     return base * bonus * (1 - cfg.ssPct / 100);
   };
   const points = all
-    .filter(({ o }) => o.start && !missing(o).length)
+    .filter(({ o }) => o.start && isComplete(o))
     .map(({ o, r }) => {
       const d = U.per(r);
       const [start, end] = spanOf(o);
@@ -372,7 +372,7 @@ export function yearlyView(all) {
   const byYear = {};
   const worked = new Set(workedOffers(all.map((x) => x.o)));
   for (const { o, r } of all) {
-    if (!worked.has(o) || missing(o).length || o.durationUnit === 'unknown') continue;
+    if (!worked.has(o) || !isComplete(o) || o.durationUnit === 'unknown') continue;
     for (const [year, share] of Object.entries(yearShares(o))) byYear[year] = [...(byYear[year] || []), { r, share }];
   }
   const years = Object.keys(byYear).sort().reverse();

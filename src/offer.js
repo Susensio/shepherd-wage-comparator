@@ -170,30 +170,24 @@ export function defaultVacation(o) {
   return false;
 }
 
-/** What is needed to give figures, and the form field where each one goes. */
-export const REQUIRED = {
-  'el total pactado': '#totalAmount',
-  'la duración': '#duration',
-  'las horas por día': '#hoursPerDay',
-  'el sueldo': '#payAmount',
-  'lo que te pagan en mano': '#cashAmount',
-  'qué pasa con las vacaciones': 'input[name=vacation]',
-};
-/** What is still missing, in words. */
+/** Ids of what is still missing to give figures. */
 export function missing(o) {
   const noContract = o.contract === 'none';
   const pay = noContract
-    ? !(num(o.cashAmount) > 0) && 'lo que te pagan en mano'
+    ? !(num(o.cashAmount) > 0) && 'cashInHand'
     : fromTotal(o)
-      ? !(num(o.totalAmount) > 0) && 'el total pactado'
-      : !(o.payrollMin || num(o.payAmount) > 0 || num(o.cashAmount) > 0) && 'el sueldo';
+      ? !(num(o.totalAmount) > 0) && 'agreedTotal'
+      : !(o.payrollMin || num(o.payAmount) > 0 || num(o.cashAmount) > 0) && 'pay';
   return [
-    o.durationUnit !== 'unknown' && !(num(o.duration) > 0) && 'la duración',
-    !(num(o.hoursPerDay) > 0) && 'las horas por día',
+    o.durationUnit !== 'unknown' && !(num(o.duration) > 0) && 'duration',
+    !(num(o.hoursPerDay) > 0) && 'hoursPerDay',
     pay,
-    !noContract && !o.vacation && 'qué pasa con las vacaciones',
+    !noContract && !o.vacation && 'vacation',
   ].filter(Boolean);
 }
+
+/** Nothing is missing to give figures. */
+export const isComplete = (o) => missing(o).length === 0;
 
 /* --- Dates --- */
 

@@ -7,6 +7,16 @@ import { contractOf, datesText, mealsGiven, mealsList } from './offer.js';
 import { failuresOf, H_MAX, LAW_SHORT } from './rights.js';
 import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
+/** What `missing()` can report, as the sentence names it. */
+export const MISSING_TEXT = {
+  duration: 'la duración',
+  hoursPerDay: 'las horas por día',
+  pay: 'el sueldo',
+  agreedTotal: 'el total pactado',
+  cashInHand: 'lo que te pagan en mano',
+  vacation: 'qué pasa con las vacaciones',
+};
+
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
 export const fSplit = (v, unit) =>
   unit === 'total'

@@ -10,7 +10,7 @@ import {
   DAYS_PER_MONTH,
   endOf,
   foodPerDay,
-  missing,
+  isComplete,
   rentPerMonth,
   spanOf,
   vacationPaid,
@@ -42,7 +42,7 @@ function othersInYear(o, { cfg, offers }) {
   const shares = yearShares(o);
   const others = o.start
     ? workedOffers(offers)
-        .filter((p) => p.id !== o.id && !missing(p).length)
+        .filter((p) => p.id !== o.id && isComplete(p))
         .map((p) => ({ gross: calc(p, { cfg, offers, alone: true }).pay.gross, shares: yearShares(p) }))
     : [];
   const years = Object.keys(shares);
