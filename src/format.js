@@ -43,8 +43,8 @@ export const fE = (x, decimals) => `${fN(x, euroDecimals(x, decimals))}\u00a0€
 /** For inputs: «1234,5», without thousands separator. */
 export const fInputValue = (x, minDigits, maxDigits = minDigits) => formatter(minDigits, maxDigits, false).format(x);
 
-/** A figure as it was typed: «7,5» h, «4» days off. */
-export const fTyped = (value) => fN(num(value), num(value) % 1 ? 1 : 0);
+/** A figure as it was typed, with up to two decimals: «7,5» h, «4» days off, «78,75» €/día. */
+export const fTyped = (value) => formatter(0, 2).format(num(value));
 
 /** A count of days or hours: one decimal only if it is small and not round. «4,3» días, «13» días. */
 export const fCount = (x) => fN(x, x < 10 && Math.abs(x - Math.round(x)) >= 0.05 ? 1 : 0);
