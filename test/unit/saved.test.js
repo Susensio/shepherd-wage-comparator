@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { ingestSaved } from '../../src/legacy.js';
 import { DEF_CFG, DEF_OFFER } from '../../src/offer.js';
+import { ingestSaved } from '../../src/saved.js';
 
 const current = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const fallbackCfg = { ...DEF_CFG, mealLunchP: 99 };

@@ -5,7 +5,7 @@
  */
 
 import { closeTemplates, scrollChipsNextPaint, select, templatesOpen } from '../app.js';
-import { ingestSaved } from '../legacy.js';
+import { ingestSaved } from '../saved.js';
 import { KEY, myOffers, onSave, state, store } from '../state.js';
 import { fillSettings, paintCloud } from '../views/settings.js';
 import { backupText } from './bundle.js';

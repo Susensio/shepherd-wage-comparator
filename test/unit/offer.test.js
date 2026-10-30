@@ -2,8 +2,8 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { normalizeOffer } from '../../src/legacy.js';
 import { DEF_OFFER, isComplete, missing } from '../../src/offer.js';
+import { normalizeOffer } from '../../src/saved.js';
 
 const makeOffer = (changes = {}) =>
   normalizeOffer({

@@ -1,8 +1,8 @@
 /** Backups: downloading or copying one, and adding the offers of one you saved. */
 
 import { closeTemplates, select } from '../app.js';
-import { ingestSaved } from '../legacy.js';
 import { makeOffer } from '../offer.js';
+import { ingestSaved } from '../saved.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
 import { fillSettings, paintBackup } from '../views/settings.js';

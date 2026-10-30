@@ -4,9 +4,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { normalizeOffer } from '../../src/legacy.js';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG, DEF_OFFER } from '../../src/offer.js';
+import { normalizeOffer } from '../../src/saved.js';
 import { cardText, claimText, summaries } from '../../src/text.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));

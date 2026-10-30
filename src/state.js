@@ -1,8 +1,8 @@
 /** The app's state: offers, the active one, settings and preferences, and saving them in the browser. */
 
-import { ingestSaved } from './legacy.js';
 import { calc } from './model/calc.js';
 import { DEF_CFG, makeOffer } from './offer.js';
+import { ingestSaved } from './saved.js';
 import { UNITS } from './units.js';
 
 /** Storage keys. Do not change them: saved data would be lost. */
