@@ -1,8 +1,5 @@
 # Backlog
 
-- auth | Accounts, probably with Supabase, to store each user's offers on a server instead of only in the browser or the Claude account.
-  Goal: aggregate data across users for joint visualisations.
-  Open: what is stored and whether it is anonymised, consent for pooling, how existing `localStorage` offers migrate in. With other users, conversions are owed again (ADR-0005).
 - modes | Split the app into stages of the process instead of one analysis view. Today the analysis comes first and the other tabs help with later stages.
   Not designed yet. Stages to explore: analysis (current), negotiation, signing.
 - modes | Negotiation mode: build on `views/negotiate.js` to lead a conversation with the employer.

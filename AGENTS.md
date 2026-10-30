@@ -48,6 +48,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 - `docs/adr/`: numbered records of settled choices between alternatives. In English. The main agent writes them.
 - `docs/model.md`: what the model's figures mean, and the rules that cross files. In English.
 - `docs/BACKLOG.md`: open ideas and defects nobody is working on yet. In English. The main agent writes it.
+- `docs/STATE.md`: work decided or started and not finished yet, with its plan. In English. The main agent writes it.
 
 ## Commits
 
