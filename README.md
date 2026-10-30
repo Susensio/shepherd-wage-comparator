@@ -6,7 +6,7 @@ Live at **https://susensio.github.io/shepherd-wage-comparator/**. The interface 
 
 ## How it works
 
-HTML, CSS and JavaScript modules, with no build step. The only library is [lit-html](https://lit.dev/docs/libraries/standalone-templates/), copied into `vendor/`. Offers are saved in the browser (`localStorage`). When the page runs as a Claude artifact, it also syncs to the user's Claude account.
+HTML, CSS and JavaScript modules, with no build step. The only library is [lit-html](https://lit.dev/docs/libraries/standalone-templates/), copied into `vendor/`. Offers are saved in the browser (`localStorage`).
 
 How the figures are calculated is in [docs/model.md](docs/model.md); why the project is built this way is in [docs/adr/](docs/adr/).
 

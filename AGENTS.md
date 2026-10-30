@@ -13,7 +13,6 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 - lit-html is the only library, copied from npm into `vendor/` (`npm run vendor` after changing its version in `package.json`). Use it for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
 - Layers, each only importing from the ones before it: law and offer data → `model/` (every figure of an offer, no DOM) → words (`rights.js`, `text.js`, `units.js`) → `views/` (templates) → state, `ui/`, `app.js`, `events.js`, `main.js`. The words layer has no DOM of its own, but some words come as lit templates with tap-to-explain tips built with `withTip` from `views/parts.js`, the one allowed import from `views/` into it. `views/form.js` and `views/settings.js` fill the static markup instead of returning templates.
 - `window.app` exposes the state and a few functions for tests and the console. Tests can also `await import('./src/…')` from the page.
-- The same files are published as a Claude artifact. Saving to the user's Claude account (`storage/cloud.js`, `window.claude`) only works there; elsewhere everything stays in the browser.
 
 ## Style
 
@@ -22,7 +21,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Saved data
 
-- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and in the Claude account document `data/users/<id>/estado`. All three load paths (browser, backup, Claude account) go through `ingestSaved` in `saved.js`.
+- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`) and in backup files. Both load paths (browser, backup) go through `ingestSaved` in `saved.js`.
 - While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
 
 ## Legal figures
@@ -54,5 +53,4 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 - No `Co-Authored-By` or `Claude-Session` trailers.
 - Prototype stage: work on a local branch, one concern per commit, and tidy it (amend, squash, reword) before it goes anywhere. When a feature is complete, fast-forward `master` to the branch and push `master` directly; the pre-push hook (`.githooks/`, enabled by `npm ci`) runs `npm run check` and `npm test` first. No pull requests for now.
-- The Claude artifact «Jornales de pastoreo» is a separate copy and does not update itself. After pushing to `master` a change that shows on the page, republish it from the repository files with the `Artifact` tool (`index.html`, `css/`, `src/` and `vendor/`, removing files that no longer exist); find its URL with the `list` action. Docs and test changes do not need it.
 - `master` is published as it is (GitHub Pages), so never rewrite it once pushed. A branch nobody else has pulled can be rewritten freely.
