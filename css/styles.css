@@ -812,6 +812,26 @@ details.plg > summary:has(.stat)::after {
   font-size: 13px;
   line-height: 1.35;
 }
+.editinfo.readonly {
+  cursor: auto;
+  margin: 0;
+}
+.contact {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.others-ctl {
+  margin: 10px 0 12px;
+}
+.lr .det .who {
+  color: var(--accent);
+  font-weight: 600;
+}
+.lr.other {
+  border-left: 3px solid var(--accent);
+}
 .editinfo dt {
   color: var(--muted);
 }

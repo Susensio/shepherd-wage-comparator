@@ -14,6 +14,7 @@ import {
   select,
   showTab,
   templatesOpen,
+  viewShared,
 } from './app.js';
 import { fInputValue, num } from './format.js';
 import {
@@ -31,7 +32,7 @@ import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from '.
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { cardText, claimText } from './text.js';
-import { accountActions, onSharingToggled } from './ui/account-section.js';
+import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
@@ -195,6 +196,9 @@ const ACTIONS = {
     pairing.ids = [];
     paintAll();
   },
+  viewShared: (b) => viewShared(b.dataset.id),
+  closeShared: () => viewShared(null),
+  refreshOthers: () => loadOthers(),
   view(b) {
     // to see the offer, without opening the form
     showTab('offers');
@@ -376,6 +380,11 @@ export function setUpEvents() {
     if (el.name === 'termsOnly') {
       state.termsOnly = el.checked;
       paintAll();
+    }
+    if (el.name === 'includeOthers') {
+      state.others.include = el.checked;
+      paintAll();
+      if (el.checked) loadOthers();
     }
     if (el.id === 'profSharing') onSharingToggled(el.checked);
     if (el.name !== 'cmpUnit') return;

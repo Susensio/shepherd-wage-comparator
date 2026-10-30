@@ -16,6 +16,12 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 - The rest of the settings are kept: what housing and meals are worth, Social Security rates, the unemployment switch. They value the terms; they say nothing about the worker's life. The km rate the employer pays is in `terms` but is paid per km driven at work, so with no km it is zero.
 - These figures say what the job pays, not what it is worth to any one worker, so they leave out costs that differ between workers. The Comparar tab can show them for own offers (the «Solo las condiciones de la oferta» switch).
 
+## Other shepherds' offers
+
+- Read only when signed in with sharing on, fetched on entering Comparar (with the include switch on) and on demand, and kept in `state.others`, in memory. They are never put in `state.offers`, `localStorage`, backups or the account's own rows.
+- They come through `ingestShared` (`saved.js`): defaults for missing fields, unknown ones never read, no `mine` but the sharer's name. Calculated with `calcTermsOnly` only; including them in the ranking forces terms-only on for every row, own ones too.
+- The read-only view reuses `resultView` with `readOnly`: no editing, negotiating, copying or payslip controls.
+
 ## What is owed
 
 - Counted per item (salary, overnight bonus, vacation) and month by month. A surplus in one item does not cover a shortfall in another (ADR-0004).

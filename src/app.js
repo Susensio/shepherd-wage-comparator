@@ -9,6 +9,7 @@ import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
 import { MISSING_TEXT } from './text.js';
+import { loadOthers } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
@@ -17,6 +18,7 @@ import { fillForm, fillVacation, paintForm } from './views/form.js';
 import { chipsView, templatesView } from './views/offers-bar.js';
 import { resultView } from './views/result.js';
 import { paintBackup } from './views/settings.js';
+import { sharedView } from './views/shared.js';
 
 /** What the page remembers while open, not saved. */
 const ui = {
@@ -85,17 +87,51 @@ export function markMissing() {
   $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
 }
 
-/** Each offer with its figures: full, or from its terms alone when that switch is on. */
-const compared = () =>
-  myOffers().map((o) => ({ o, r: state.termsOnly ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
+/** Other shepherds' offers are ranked (and your own with them) on terms alone, so like is compared with like. */
+const includesOthers = () => state.others.available && state.others.include;
+const termsOnlyNow = () => state.termsOnly || includesOthers();
 
-function paintCompare() {
-  const all = compared();
-  const { picker, body } = compareView(all, state.cmpUnit, state.termsOnly);
+/** Your offers with their figures: full, or from their terms alone when that is on. */
+const compared = () =>
+  myOffers().map((o) => ({ o, r: termsOnlyNow() ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
+
+/** Other shepherds' offers with their terms-only figures. One that cannot be calculated is left out, not fatal. */
+function comparedOthers() {
+  return state.others.items.flatMap(({ o, sharer }) => {
+    try {
+      return [{ o, sharer, r: calcTermsOnly(o, { cfg: state.config }) }];
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  });
+}
+
+export function paintCompare() {
+  const own = compared();
+  const all = includesOthers() ? [...own, ...comparedOthers()] : own;
+  const { picker, body } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
   restoreFolds($('#cmpBlk'));
-  paintTimeline(all);
+  paintTimeline(own);
+  paintShared();
+}
+
+/** The read-only view of the shared offer opened, in place of the Comparar tab's content. */
+function paintShared() {
+  const shown = state.others.available ? comparedOthers().find((x) => x.o.id === state.others.viewId) : undefined;
+  $('#cmpMain').hidden = !!shown;
+  $('#sharedBlk').hidden = !shown;
+  render(shown ? sharedView(shown) : '', $('#sharedBlk'));
+  restoreFolds($('#sharedBlk'));
+}
+
+/** Opens (or closes, with null) another shepherd's offer. */
+export function viewShared(id) {
+  state.others.viewId = id;
+  paintShared();
+  window.scrollTo({ top: 0 });
 }
 
 /** «Cuándo»: what you are paid over time and each year's summary. Only with dated offers. */
@@ -216,7 +252,10 @@ export function showTab(tab, scrollUp) {
   }
   saveTab(shown);
   if (shown === 'settings') paintBackup();
-  if (shown === 'compare') paintTimeline(); // the trend fits the width, which is only known once shown
+  if (shown === 'compare') {
+    paintTimeline(); // the trend fits the width, which is only known once shown
+    if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
+  }
   if (shown === 'offers') {
     ui.scrollChips = true;
     paintChips();

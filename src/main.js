@@ -4,6 +4,7 @@ import {
   closeTemplates,
   openTemplates,
   paintAll,
+  paintCompare,
   restoreStaticFolds,
   scrollChipsNextPaint,
   select,
@@ -35,6 +36,7 @@ if (state.firstRun) openTemplates();
 
 // Hidden, and no request, while storage/account-config.js has no project.
 setUpAccountSection({
+  onOthers: paintCompare,
   onReplaced() {
     if (templatesOpen()) closeTemplates();
     for (const o of state.offers) defaultVacation(o.terms);

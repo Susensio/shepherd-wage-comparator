@@ -181,11 +181,14 @@ function breakdown(o, r, unit) {
   };
 }
 
-/** The whole result of an offer, or what is still missing to show it. */
-export function resultView(o, r) {
+/**
+ * The whole result of an offer, or what is still missing to show it. `readOnly` (another shepherd's offer): nothing to
+ * complete, negotiate or copy.
+ */
+export function resultView(o, r, { readOnly = false } = {}) {
   const shortfall = missing(o.terms);
   if (shortfall.length)
-    return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. <button type="button" class="linkbtn" data-action="complete">Ponerlo</button></p>`;
+    return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`;
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
   const { earnTip, html: breakdownView } = breakdown(o, r, unit);
@@ -206,12 +209,15 @@ export function resultView(o, r) {
     ${pills(o, r)}
     ${breakdownView}
     ${legalSection(o, r, money)}
-    ${negotiationSection(o, r, money)}
-    ${seasonEndSection(o, r)}
+    ${readOnly ? nothing : negotiationSection(o, r, money)}
+    ${readOnly ? nothing : seasonEndSection(o, r)}
     <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r)}</div></details>
-    <div class="copyrow copies"><button type="button" class="sm" data-action="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>${
-      line
-        ? html`<button type="button" class="sm" data-action="copyClaim" title="Para el sindicato, la inspección o tu propia nota">Copiar reclamación</button>`
-        : nothing
-    }<span class="hint" id="cardMsg"></span><span class="hint" id="claimMsg"></span></div>`;
+    ${readOnly ? nothing : copyRow(line)}`;
 }
+
+const copyRow = (line) =>
+  html`<div class="copyrow copies"><button type="button" class="sm" data-action="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>${
+    line
+      ? html`<button type="button" class="sm" data-action="copyClaim" title="Para el sindicato, la inspección o tu propia nota">Copiar reclamación</button>`
+      : nothing
+  }<span class="hint" id="cardMsg"></span><span class="hint" id="claimMsg"></span></div>`;

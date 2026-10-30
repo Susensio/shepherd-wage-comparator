@@ -1,5 +1,7 @@
 /** The «Cuenta» section of Ajustes: what the person sees and does with the account (ADR-0006). */
 
+import { ingestShared } from '../saved.js';
+import { state } from '../state.js';
 import { signInWithGoogle, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { paintAccount } from '../views/settings.js';
@@ -16,7 +18,47 @@ const view = {
   /** @type {'share' | 'delete' | null} */ confirm: null,
 };
 
-const paint = () => paintAccount(view);
+/** Called when what other shepherds' offers show changes: availability, loading, result. */
+let onOthersChange = () => {};
+
+/** Other shepherds' offers can be read only when signed in with sharing on (ADR-0006). */
+function syncAvailability() {
+  const available = !!(view.user && view.profile?.sharing && !view.pending.length);
+  if (available === state.others.available) return;
+  state.others.available = available;
+  if (!available) Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
+  onOthersChange();
+}
+
+const paint = () => {
+  paintAccount(view);
+  syncAvailability();
+};
+
+let loadSeq = 0;
+
+/** Fetches the others' offers into `state.others` (memory only); the latest request wins. */
+export async function loadOthers() {
+  if (!account || !state.others.available) return;
+  const seq = ++loadSeq;
+  state.others.status = 'loading';
+  onOthersChange();
+  let status = /** @type {'ready' | 'error'} */ ('ready');
+  let items = [];
+  try {
+    items = (await account.sharedOffers()).map(ingestShared).filter(Boolean);
+  } catch (error) {
+    console.error(error);
+    status = 'error';
+  }
+  if (seq !== loadSeq || !state.others.available) return;
+  state.others.status = status;
+  if (status === 'ready') {
+    state.others.items = items;
+    if (!items.some((x) => x.o.id === state.others.viewId)) state.others.viewId = null;
+  }
+  onOthersChange();
+}
 
 /** Runs an account call; its failure becomes `failure`, a short line in the section, never an alert. */
 async function run(failure, call) {
@@ -40,7 +82,8 @@ async function enter(started) {
 }
 
 /** Called once at startup. With no project configured the section stays hidden and nothing else happens. */
-export async function setUpAccountSection({ onReplaced }) {
+export async function setUpAccountSection({ onReplaced, onOthers }) {
+  onOthersChange = onOthers;
   if (!ACCOUNT_CONFIG.url || !ACCOUNT_CONFIG.anonKey) return;
   $('#account').hidden = false;
   paint();

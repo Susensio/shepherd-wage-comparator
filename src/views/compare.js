@@ -19,10 +19,37 @@ const unitPicker = (unit) =>
     (u) => html`<label><input type="radio" name="cmpUnit" value=${u} .checked=${u === unit}>${UNITS[u].pick}</label>`,
   )}</div></div>`;
 
-/** Switch to the figures of the offers' terms alone, as they would be for anyone. */
-const termsOnlySwitch = (on) =>
-  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on}>Solo las condiciones de la oferta</label>
-    <p class="hint">${on ? 'Se calcula sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.' : 'Sin tus desplazamientos ni gastos.'}</p></div>`;
+/** Switch to the figures of the offers' terms alone, as they would be for anyone. Forced on by other shepherds' offers. */
+const termsOnlySwitch = (on, forced) =>
+  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on} ?disabled=${forced}>Solo las condiciones de la oferta</label>
+    <p class="hint">${
+      forced
+        ? 'Con ofertas de otros pastores se comparan solo las condiciones, para que sean comparables.'
+        : on
+          ? 'Se calcula sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
+          : 'Sin tus desplazamientos ni gastos.'
+    }</p></div>`;
+
+/** Whether to rank the offers other shepherds share, and how loading them went. Only offered when they can be read. */
+const othersControl = ({ available, include, status, items }) =>
+  available
+    ? html`<div class="terms-only others-ctl"><label><input type="checkbox" name="includeOthers" .checked=${include}>Incluir ofertas de otros pastores</label>${
+        include
+          ? html`<p class="hint">${
+              status === 'loading'
+                ? 'Cargando las ofertas de otros pastores…'
+                : status === 'error'
+                  ? 'No se pudieron cargar las ofertas de otros pastores.'
+                  : items.length
+                    ? 'Aparecen con el nombre de quien las comparte.'
+                    : 'Todavía no hay ofertas compartidas por otros pastores.'
+            } <button type="button" class="linkbtn" data-action="refreshOthers">${status === 'error' ? 'Reintentar' : 'Actualizar'}</button></p>`
+          : html`<p class="hint">Se comparan con las tuyas, sin tus desplazamientos ni gastos.</p>`
+      }</div>`
+    : nothing;
+
+/** The button action that opens a row: your offer in the offers tab, another shepherd's read-only. */
+const openAction = (x) => (x.sharer ? 'viewShared' : 'view');
 
 /** How much of what you receive is cash: all on payroll, part, or all in cash. */
 const cashText = (r) =>
@@ -171,7 +198,7 @@ function headToHead(list) {
     return shown.length ? html`<tr class="group"><th colspan="3">${title}</th></tr>${shown}` : nothing;
   });
   const header = (x) =>
-    html`<th><button type="button" class="linkbtn" data-action="view" data-id=${x.o.id}>${x.o.mine.name}</button></th>`;
+    html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}>${x.o.mine.name}</button></th>`;
   return html`<div class="pair" id="pairBlk"><div class="pair-head"><h4 class="sub">Cara a cara</h4><button type="button" class="linkbtn" data-action="closePair">Cerrar</button></div>
     <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -182,12 +209,13 @@ function hoursView(list) {
   const pct = (v) => (v / cap) * 100;
   const rows = [...list]
     .sort((a, b) => a.r.time.hoursPerWeek - b.r.time.hoursPerWeek)
-    .map(({ o, r }) => {
+    .map((x) => {
+      const { o, r } = x;
       const weeks = (r.time.noDuration ? DAYS_PER_MONTH : r.time.natDays) / 7;
       const total = r.time.hoursPerWeek;
       const extra = Math.min(total, weeks > 0 ? r.extra.hours / weeks : 0);
       const normal = total - extra;
-      return html`<button type="button" class="hr" data-action="view" data-id=${o.id}><b>${o.mine.name}</b><span class="v">${fN(total)} h</span>
+      return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><b>${o.mine.name}</b><span class="v">${fN(total)} h</span>
       <span class="hbar"><i class="ok" style="left:0;width:${pct(normal)}%"></i>${
         extra >= 0.5 ? html`<i class="unpaid" style="left:${pct(normal)}%;width:${pct(extra)}%"></i>` : nothing
       }</span></button>`;
@@ -198,12 +226,13 @@ function hoursView(list) {
 
 /**
  * Comparar: the ranking in the chosen unit (tap a row to see the offer), the best at each thing and the weekly hours.
- * @param {{o: object, r: object}[]} all your offers with their figures
+ * @param {{o: object, r: object, sharer?: object}[]} all your offers and, with `sharer`, other shepherds' ones, with their figures
  * @param {string} unit
  * @param {boolean} termsOnly show the figures of the terms alone
+ * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
  * @returns {{picker: unknown, body: unknown}}
  */
-export function compareView(all, unit, termsOnly) {
+export function compareView(all, unit, termsOnly, others) {
   const U = UNITS[unit];
   // Without a duration there is no total: those go last
   const sortValue = (r) => {
@@ -211,11 +240,12 @@ export function compareView(all, unit, termsOnly) {
     return Number.isFinite(v) ? v : -1e12;
   };
   const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
+  const controls = othersControl(others);
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
     return {
       picker: nothing,
-      body: html`<p class="empty">${
+      body: html`${controls}<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
@@ -234,27 +264,28 @@ export function compareView(all, unit, termsOnly) {
   };
   const max = Math.max(...list.map(({ r }) => incomeOf(r) / per(r)), 1e-9);
   const medalsOf = medals(list, unit);
-  const rows = list.map(({ o, r }, n) => {
+  const rows = list.map((x, n) => {
+    const { o, r } = x;
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
     const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${o.mine.name}${o.terms.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
-      <span class="det">${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
+      <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
           ? html`<span class="bad">te deben ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;
     return pairing.on
       ? html`<button type="button" class=${picked ? 'lr pickable picked' : 'lr pickable'} data-action="pickPair" aria-pressed=${String(picked)} data-id=${o.id}>${content}</button>`
-      : html`<button type="button" class="lr" data-action="view" data-id=${o.id}>${content}</button>`;
+      : html`<button type="button" class=${x.sharer ? 'lr other' : 'lr'} data-action=${openAction(x)} data-id=${o.id}>${content}</button>`;
   });
   const mode = pairing.on
     ? html`<div class="cmp-mode"><span>${pairing.ids.length === 2 ? 'Comparando:' : pairing.ids.length ? 'Marca otra oferta.' : 'Marca dos ofertas.'}</span><button type="button" class="linkbtn" data-action="closePair">Cancelar</button></div>`
     : html`<div class="cmp-mode"><span>Toca una oferta para verla.</span><button type="button" class="sm" data-action="startPair">Comparar dos</button></div>`;
   return {
     picker: unitPicker(unit),
-    body: html`${termsOnlySwitch(termsOnly)}${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
+    body: html`${controls}${termsOnlySwitch(termsOnly, others.available && others.include)}${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${headToHead(list)}${hoursView(list)}`,
   };

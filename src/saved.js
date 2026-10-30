@@ -1,6 +1,6 @@
 /** Everything read from the browser or a backup goes through here, completed with today's defaults. */
 
-import { DEF_CFG, DEF_MINE, DEF_TERMS } from './offer.js';
+import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation } from './offer.js';
 
 /** A saved offer, complete. */
 export const normalizeOffer = (saved) => ({
@@ -22,4 +22,16 @@ export function ingestSaved(data, { fallbackCfg }) {
     offers: (data.offers ?? []).filter(isCurrentShape).map(normalizeOffer),
     cfg: data.cfg ? { ...DEF_CFG, ...data.cfg } : { ...fallbackCfg },
   };
+}
+
+/**
+ * Another shepherd's shared offer as `{ o, sharer }`, or null if it has no terms. Missing fields take today's defaults
+ * and unknown ones (a newer `schema_version`) are carried but never read. It has no `mine`: the only own figure is the
+ * name, which is the sharer's, since the terms have none. Never saved.
+ */
+export function ingestShared({ offer, sharer }) {
+  if (typeof offer?.terms !== 'object' || offer.terms === null) return null;
+  const o = normalizeOffer({ id: offer.id, terms: offer.terms, mine: { name: sharer?.name || 'Otro pastor' } });
+  defaultVacation(o.terms);
+  return { o, sharer: sharer ?? {} };
 }

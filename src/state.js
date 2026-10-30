@@ -46,6 +46,17 @@ export const state = {
   cmpUnit: 'hour',
   /** Comparar shows the figures of the terms alone (not saved: a way of looking). */
   termsOnly: false,
+  /**
+   * Other shepherds' shared offers (ADR-0006). Never saved and never mixed into `offers`. `available`: signed in with
+   * sharing on; `include`: ranked in Comparar; `viewId`: the one open read-only.
+   */
+  others: {
+    available: false,
+    include: false,
+    status: /** @type {'idle' | 'loading' | 'ready' | 'error'} */ ('idle'),
+    items: /** @type {{ o: any, sharer: any }[]} */ ([]),
+    viewId: /** @type {string | null} */ (null),
+  },
   /** Named collapsibles (data-fold) and whether they are open. */
   folds: /** @type {Record<string, boolean>} */ ({}),
 };
