@@ -36,10 +36,13 @@ export const test = base.extend({
     { auto: true },
   ],
 
-  /** Opens the app in a new tab of `ctx` (the test's own by default); `init(arg)` runs before the app starts. */
+  /**
+   * Opens the app in a new tab of `ctx` (the test's own by default); `init(arg)` runs in the page before the app
+   * starts, and `beforeLoad(page)` before it is loaded (to add routes).
+   */
   openApp: async ({ context, baseURL, pageErrors }, use) => {
     const offline = new Set();
-    await use(async ({ init, arg, ctx = context } = {}) => {
+    await use(async ({ init, arg, beforeLoad, ctx = context } = {}) => {
       // No network but the page itself: it must work without its web fonts
       if (!offline.has(ctx)) {
         await ctx.route('**/*', (route) =>
@@ -50,6 +53,7 @@ export const test = base.extend({
       const page = await ctx.newPage();
       page.on('pageerror', (e) => pageErrors.push(e.message));
       if (init) await page.addInitScript(init, arg);
+      await beforeLoad?.(page);
       await page.goto('/');
       await page.waitForFunction(() => window.app);
       return page;
