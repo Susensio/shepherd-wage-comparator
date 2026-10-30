@@ -63,7 +63,7 @@ test('the minimum wage, prorated in 12 payments, complies', () => {
 test('one euro short a month is 14 € owed', () => {
   const r = figures({ payAmount: 1220 });
   near(r.debt.total, 14, 0.5, 'owed');
-  assert.equal(r.stamp?.text, 'Bajo el mínimo');
+  assert.equal(r.stamp?.code, 'belowMinimum');
 });
 
 test('a 100-day temporary contract uses the casual-worker daily minimum', () => {
@@ -123,7 +123,23 @@ test('without a contract: paid the minimum, only the vacation is owed', () => {
 test('sleeping out: the 25 % overnight bonus is owed', () => {
   const r = figures({ overnight: 'yes' });
   near(r.debt.salary, 17094 * 0.25, 1, 'owed');
-  assert.equal(r.stamp?.text, 'Sin plus');
+  assert.equal(r.stamp?.code, 'noOvernight');
+});
+
+test('stamp: no contract, all cash, and no stamp', () => {
+  assert.equal(
+    figures({ contract: 'none', payAmount: 0, cashAmount: 500, cashUnit: 'month' }).stamp?.code,
+    'noContract',
+  );
+  const allCash = figures({ payAmount: 0, cashAmount: 2000, cashUnit: 'month' });
+  assert.equal(allCash.stamp?.code, 'allCash');
+  assert.equal(allCash.cash.allCash, true);
+  assert.equal(figures().stamp, null);
+});
+
+test('cash: allCash only when payroll is negligible', () => {
+  assert.equal(figures().cash.allCash, false);
+  assert.equal(figures({ cashAmount: 300, cashUnit: 'month' }).cash.allCash, false);
 });
 
 test('cash: the employer saves the contributions', () => {

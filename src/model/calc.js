@@ -59,6 +59,9 @@ function othersInYear(o, { cfg, offers }) {
   };
 }
 
+// Rounding slack: a cash share this close to 1 is shown and treated as all cash
+const ALL_CASH_SHARE = 0.995;
+
 /**
  * Every figure of an offer.
  * @param {object} offer as entered
@@ -161,6 +164,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   savings.total = savings.cash + savings.minimum + savings.days + savings.overtime;
 
   const cashShare = pay.net + cash > 0 ? cash / (pay.net + cash) : 0;
+  const allCash = cashShare >= ALL_CASH_SHARE;
   const restLegal = ((natDays - time.vacationTaken) * LAW.weeklyRest) / 7;
   const debtParts = { salary: salaryPart, overnight: Math.max(0, debtSalary - salaryPart), vacation: debtVacation };
   const perWeek = overtimePerWeek(extra);
@@ -176,7 +180,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     pay,
     /** gross → net for this offer's figures (without payroll, the worker's Social Security alone) */
     netFactor: pay.netFactor > 0 ? pay.netFactor : 1 - cfg.ssPct / 100,
-    cash: { total: cash, share: cashShare, grossEq: cashGrossEq },
+    cash: { total: cash, share: cashShare, allCash, grossEq: cashGrossEq },
     inKind: { housing, food, total: housing + food },
     car,
     expenses: { car: car.cost, other: otherExpenses, total: car.cost + otherExpenses },
@@ -221,13 +225,13 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     extraDays: extraDaysRounded(time, extra),
     savings,
     stamp: noContract
-      ? { text: 'Sin contrato' }
-      : cashShare >= 0.995
-        ? { text: 'Todo en negro' }
+      ? { code: 'noContract' }
+      : allCash
+        ? { code: 'allCash' }
         : debtParts.salary > 1
-          ? { text: 'Bajo el mínimo' }
+          ? { code: 'belowMinimum' }
           : debtParts.overnight > 1
-            ? { text: 'Sin plus', warn: true }
+            ? { code: 'noOvernight' }
             : null,
   };
 }

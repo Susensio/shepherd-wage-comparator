@@ -23,7 +23,7 @@ const unitPicker = (unit) =>
 const cashText = (r) =>
   r.cash.total <= 0.5
     ? html`<span class="payroll">todo en nómina</span>`
-    : r.noContract || r.cash.share >= 0.995
+    : r.noContract || r.cash.allCash
       ? html`<span class="cash">todo en negro</span>`
       : html`<span class="part">${fN(r.cash.share * 100)}\u00a0% en negro</span>`;
 

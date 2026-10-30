@@ -34,6 +34,13 @@ const otherUnits = (r, unit) =>
     return html`<span><b>${fN(x, euroDecimals(x, UNITS[u].decimals || undefined))}</b> ${UNIT_TEXT[u]}</span>`;
   })}</span>`;
 
+const STAMPS = {
+  noContract: { text: 'Sin contrato' },
+  allCash: { text: 'Todo en negro' },
+  belowMinimum: { text: 'Bajo el mínimo' },
+  noOvernight: { text: 'Sin plus', warn: true },
+};
+
 const PILL_RANK = { bad: 0, warn: 1, '': 2, ok: 3 };
 
 /** The offer's pills: hours, days off, contract and cash, coloured like their right in «¿Es legal?». Wrong first. */
@@ -187,7 +194,7 @@ export function resultView(o, r) {
     <h3 class="q">¿Cuánto ganas?</h3>
     <div class="tag"><span class="lbl tipl" data-tip=${earnTip} tabindex="0" role="button">Ganas ${UNITS[unit].label}</span><span class="tag-row"><span class="big">${money.figure(r.earnings.total)}</span>${
       r.stamp
-        ? html`<a href="#secLegal" class=${r.stamp.warn ? 'stamp warn' : 'stamp'}>${stampLines(r.stamp.text)}</a>`
+        ? html`<a href="#secLegal" class=${STAMPS[r.stamp.code].warn ? 'stamp warn' : 'stamp'}>${stampLines(STAMPS[r.stamp.code].text)}</a>`
         : nothing
     }</span>${otherUnits(r, unit)}
       ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}</div>
