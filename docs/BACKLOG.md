@@ -12,3 +12,5 @@
   Revisit if the number of offers grows, for example once accounts bring many.
 - format | `src/views/result.js` still compares `r.pay.irpf - r.pay.irpfYear > 1` directly; it is the same euro slack as `isWorthCounting` in `format.js`.
 - account | «Perfil guardado.» shows in the orange warning style of the account section's error line; a success needs its own style.
+- shared | The read-only view of another shepherd's offer and their ranking rows still speak to the reader («¿Cuánto ganas?», «te deben»), though the offer is someone else's.
+- shared | Two sharers' offers with the same name look alike in the head-to-head table.
