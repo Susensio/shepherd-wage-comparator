@@ -1595,6 +1595,54 @@ details.fixed > summary::-webkit-details-marker {
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
 }
+.account-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.account-body[hidden] {
+  display: none;
+}
+.account-who {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.account-msg:empty {
+  display: none;
+}
+.account-msg {
+  color: var(--c-cash-t);
+  font-weight: 600;
+}
+.account-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.account-confirm[hidden] {
+  display: none;
+}
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.switch input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+#pendingList {
+  margin: 0;
+  padding-left: 20px;
+}
 .backup-status {
   margin: 0;
   font-size: 14px;

@@ -13,8 +13,8 @@ import {
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
-import { startAccount } from './storage/account.js';
 import { cardText, claimText } from './text.js';
+import { setUpAccountSection } from './ui/account-section.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
@@ -33,8 +33,8 @@ fillSettings();
 paintAll();
 if (state.firstRun) openTemplates();
 
-// A no-op while storage/account-config.js has no project or there is no saved session.
-startAccount({
+// Hidden, and no request, while storage/account-config.js has no project.
+setUpAccountSection({
   onReplaced() {
     if (templatesOpen()) closeTemplates();
     for (const o of state.offers) defaultVacation(o.terms);

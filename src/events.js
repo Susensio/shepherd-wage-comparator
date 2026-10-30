@@ -31,6 +31,7 @@ import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from '.
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { cardText, claimText } from './text.js';
+import { accountActions, onSharingToggled } from './ui/account-section.js';
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
@@ -292,6 +293,9 @@ const ACTIONS = {
     paintAll();
   },
 
+  /* Account */
+  ...accountActions,
+
   /* Backups */
   download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#bkMsg')),
   snoozeBackup() {
@@ -373,6 +377,7 @@ export function setUpEvents() {
       state.termsOnly = el.checked;
       paintAll();
     }
+    if (el.id === 'profSharing') onSharingToggled(el.checked);
     if (el.name !== 'cmpUnit') return;
     state.cmpUnit = el.value;
     saveCmpUnit();

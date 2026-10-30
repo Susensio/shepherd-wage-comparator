@@ -33,3 +33,37 @@ export function paintBackup() {
     ? 'Aún no has guardado ninguna copia.'
     : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})${status.changed ? '. Has cambiado ofertas desde entonces.' : ', con todo lo que tienes ahora.'}`;
 }
+
+/** The profile whose fields are in the inputs: they are filled when it changes, so typing is not overwritten. */
+let filledProfile = null;
+
+/**
+ * The «Cuenta» section: signed out, choosing what to do with the browser's offers, or signed in.
+ * @param {{ user: any, profile: any, pending: any[], message: string, confirm: 'share' | 'delete' | null }} view
+ */
+export function paintAccount({ user, profile, pending, message, confirm }) {
+  $('#accountMsg').textContent = message;
+  $('#accountOut').hidden = !!user;
+  $('#accountPending').hidden = !(user && pending.length);
+  $('#accountIn').hidden = !(user && !pending.length);
+  $('#pendingList').replaceChildren(
+    ...pending.map((offer) => Object.assign(document.createElement('li'), { textContent: offer.mine.name })),
+  );
+  if (!user) return;
+  const name = profile?.name || user.user_metadata?.name;
+  const email = profile?.email || user.email;
+  $('#accountWho').textContent = `Has entrado como ${[name, email].filter(Boolean).join(' · ')}.`;
+  if (!profile) return;
+  if (filledProfile !== profile) {
+    filledProfile = profile;
+    /** @type {HTMLInputElement} */ ($('#profName')).value = profile.name ?? '';
+    /** @type {HTMLInputElement} */ ($('#profEmail')).value = profile.email ?? '';
+    /** @type {HTMLInputElement} */ ($('#profPhone')).value = profile.phone ?? '';
+  }
+  /** @type {HTMLInputElement} */ ($('#profSharing')).checked = profile.sharing && confirm !== 'share';
+  $('#sharingState').textContent = profile.sharing
+    ? 'Tus ofertas se están compartiendo y ves las de los demás.'
+    : 'Tus ofertas no se comparten. Tampoco ves las de los demás.';
+  $('#shareConfirm').hidden = confirm !== 'share';
+  $('#deleteConfirm').hidden = confirm !== 'delete';
+}
