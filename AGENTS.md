@@ -45,6 +45,10 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 - Pure calculations go in unit tests. Browser tests are for what needs the page: what it shows, the flows, loading saved data.
 - The page is mobile-first: look at it at 375 px wide, in light and dark mode.
 
+## Records
+
+- `docs/BACKLOG.md`: open ideas and defects nobody is working on yet. In English. The main agent writes it.
+
 ## Commits
 
 - No `Co-Authored-By` or `Claude-Session` trailers.
