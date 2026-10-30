@@ -3,7 +3,7 @@
 
 function openTpl(){
   $('#tplGrid').innerHTML=TPL.map(t=>`<button type="button" class="tcard" data-action="template" data-tpl="${t.k}"><b>${t.t}</b><span>${t.d}</span><span class="tk">${t.s}</span></button>`).join('')
-    +`<button type="button" class="tcard blank" data-action="template" data-tpl="blank"><b>En blanco</b><span>Sin nada rellenado: todo lo pones tú.</span></button>`;
+    +`<button type="button" class="tcard blank" data-action="template" data-tpl="blank"><b>En blanco</b><span>Todo vacío, para rellenarlo tú.</span></button>`;
   $('#tplPanel').hidden=false; setFocusMode(true); window.scrollTo({top:0,behavior:'smooth'});
   if(!placeholderId) $('#tplGrid button')?.focus({preventScroll:true});
 }
