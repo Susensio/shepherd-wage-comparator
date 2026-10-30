@@ -2,8 +2,8 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LAW, MIN_WAGE, RULES, SOCIAL_SECURITY, SOURCES, ssTotal } from '../src/law.js';
-import { DEF_CFG } from '../src/offer.js';
+import { LAW, MIN_WAGE, RULES, SOCIAL_SECURITY, SOURCES, ssTotal } from '../../src/law.js';
+import { DEF_CFG } from '../../src/offer.js';
 
 const years = Object.keys(MIN_WAGE).map(Number);
 

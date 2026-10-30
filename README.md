@@ -11,10 +11,10 @@ HTML, CSS and JavaScript modules, with no build step. The only library is [lit-h
 The page has to be served over http (modules do not load from `file://`):
 
 ```
-python3 -m http.server
+node test/serve.js
 ```
 
-and open http://localhost:8000.
+and open http://localhost:8000. Any static server works (`python3 -m http.server` too).
 
 ```
 index.html        the static markup: the form, the Leyes tab, Ajustes
@@ -32,21 +32,20 @@ src/
   events.js       what each button and field does
   main.js         startup
 vendor/lit-html/  lit-html, as published (BSD-3-Clause)
-test/             unit tests of the model (node --test)
-tests/            browser tests (pytest + Playwright)
+test/unit/        the model and the legal data, in Node (node --test)
+test/e2e/         the page in headless Chromium (Playwright Test)
+test/fixtures/    sample offers, today's format and the Spanish-era one
 ```
 
 ## Development
 
 ```
-npm ci              # Biome, TypeScript and lit-html, for checking only
-npm run check       # format, lint and type-check (JSDoc)
-npm run format      # fix formatting
-npm run test:unit   # the model, in Node
-
-uv sync
-uv run playwright install chromium
-uv run pytest       # the page, in headless Chromium
+npm ci
+npx playwright install chromium   # once
+npm run check                      # format, lint and type-check (JSDoc)
+npm run format                     # fix formatting
+npm test                           # unit tests, then the browser tests
+npx playwright test --ui           # the browser tests, watching them run
 ```
 
 The tests cover the calculations, that every figure on the page adds up, the main flows and loading data saved by older versions.
