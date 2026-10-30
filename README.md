@@ -6,7 +6,7 @@ Live at **https://susensio.github.io/shepherd-wage-comparator/**. The interface 
 
 ## How it works
 
-HTML, CSS and JavaScript modules, with no build step. The only library is [lit-html](https://lit.dev/docs/libraries/standalone-templates/), copied into `vendor/`. Offers are saved in the browser (`localStorage`).
+HTML, CSS and JavaScript modules, with no build step. The libraries are [lit-html](https://lit.dev/docs/libraries/standalone-templates/) and, for optional accounts, [supabase-js](https://supabase.com/docs/reference/javascript), both copied into `vendor/`. Offers are saved in the browser (`localStorage`).
 
 How the figures are calculated is in [docs/model.md](docs/model.md); why the project is built this way is in [docs/adr/](docs/adr/).
 
@@ -18,7 +18,7 @@ node test/serve.js
 
 and open http://localhost:8000. Any static server works (`python3 -m http.server` too).
 
-`index.html` holds the static markup and `src/` the code, with the calculations in `src/model/` and every legal figure in `src/law.js`. `vendor/` has lit-html as published (BSD-3-Clause). Unit tests are in `test/unit/`, browser tests in `test/e2e/`.
+`index.html` holds the static markup and `src/` the code, with the calculations in `src/model/` and every legal figure in `src/law.js`. `vendor/` has lit-html (BSD-3-Clause) and supabase-js (MIT) as published. Unit tests are in `test/unit/`, browser tests in `test/e2e/`.
 
 ## Development
 

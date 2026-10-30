@@ -19,8 +19,7 @@ No preview deploy: work stays on the branch and `master` is not touched until th
    - `offers(id uuid, user_id, terms jsonb, schema_version, updated_at)`, owner, plus readers when the owner shares;
    - `offer_mine(offer_id, mine jsonb)`, owner only;
    - `can_read()`, `security definer`: caller signed in, sharing on, at least one offer.
-7. Vendor `@supabase/supabase-js` from `dist/umd/supabase.js`; `storage/account.js`: sign in and out, load and save through `ingestSaved`, first login offering to upload the browser's offers.
-   To decide here: conflicts per offer (latest `updated_at` wins) and how deletions reach the server.
-8. Ajustes: profile fields, the sharing switch with a plain text of exactly what becomes visible and to whom, and deleting the account with all its data.
+7. Done, tested only against a fake client; first sign-in with browser-only offers pauses sync until the UI calls `uploadPending()` or `discardPending()`: vendor `@supabase/supabase-js` from `dist/umd/supabase.js`; `storage/account.js`: sign in and out, load and save through `ingestSaved`, first login offering to upload the browser's offers.
+8. Ajustes: sign in and out, the first-sign-in prompt (upload or discard the browser's offers), profile fields, the sharing switch with a plain text of exactly what becomes visible and to whom, and deleting the account with all its data.
 9. A view of other people's offers, compared on terms-only figures, with who shared them and how to contact them.
 10. Bring `README.md`, `AGENTS.md` (structure, saved data, commits) and `docs/model.md` in line, then delete this section.

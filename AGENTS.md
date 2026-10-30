@@ -10,7 +10,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Structure
 
 - No build step. `index.html` holds the static markup and loads `src/main.js` as an ES module; an import map points `lit-html` at `vendor/lit-html/lit-html.js`. Because of the modules, the page has to be served over http (`node test/serve.js`); it does not open from `file://`.
-- lit-html is the only library, copied from npm into `vendor/` (`npm run vendor` after changing its version in `package.json`). Use it for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
+- Two libraries, copied from npm into `vendor/` (`npm run vendor` after changing a version in `package.json`): lit-html, and supabase-js as its UMD bundle, which `storage/account.js` loads only once a user signs in (ADR-0006). Use lit-html for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
 - Layers, each only importing from the ones before it: law and offer data → `model/` (every figure of an offer, no DOM) → words (`rights.js`, `text.js`, `units.js`) → `views/` (templates) → state, `ui/`, `app.js`, `events.js`, `main.js`. The words layer has no DOM of its own, but some words come as lit templates with tap-to-explain tips built with `withTip` from `views/parts.js`, the one allowed import from `views/` into it. `views/form.js` and `views/settings.js` fill the static markup instead of returning templates.
 - `window.app` exposes the state and a few functions for tests and the console. Tests can also `await import('./src/…')` from the page.
 
