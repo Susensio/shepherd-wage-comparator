@@ -4,7 +4,7 @@
 
 import { html } from 'lit-html';
 import { explanations } from './explanations.js';
-import { fCount, fN, num } from './format.js';
+import { fCount, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
 import { citeOf, LAW } from './law.js';
 import { isShortContract } from './offer.js';
 import { moneyIn, UNITS } from './units.js';
@@ -33,10 +33,6 @@ export const LAW_SHORT = {
   hours: 'jornada',
 };
 
-/** Euros of slack under which an amount does not count (rounding noise). */
-const WORTH_COUNTING_ABOVE = 1;
-/** An amount big enough to show and add up. */
-export const isWorthCounting = (euros) => euros > WORTH_COUNTING_ABOVE;
 /** Nothing of `value` is paid, give or take the rounding slack. */
 export const isFullyUnpaid = (unpaid, value) => unpaid >= value - WORTH_COUNTING_ABOVE;
 

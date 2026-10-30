@@ -1,10 +1,10 @@
 /** Texts: one-line summaries of an offer, and the texts people copy (the offer card and the claim). */
 
-import { f1, fCount, fDays, fE, fN, fTyped, joinAnd, lowerFirst, num } from './format.js';
+import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd, lowerFirst, num } from './format.js';
 import { LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, mealsGiven, mealsList } from './offer.js';
-import { failuresOf, H_MAX, isFullyUnpaid, isWorthCounting, LAW_SHORT } from './rights.js';
+import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
 import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
 /** What `missing()` can report, as the sentence names it. */

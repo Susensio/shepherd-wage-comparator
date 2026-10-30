@@ -1,7 +1,7 @@
 /** «Para negociar»: what the employer saves at your expense, and what you cost them. */
 
 import { html, nothing } from 'lit-html';
-import { capitalize, fE, fN } from '../format.js';
+import { capitalize, fE, fN, isWorthCounting } from '../format.js';
 import { LAW } from '../law.js';
 import { minimumShortText, unitPhrase } from '../text.js';
 import { columns, row, two } from './parts.js';
@@ -50,14 +50,14 @@ function costDetails(o, r) {
 /** What the employer saves at your expense, item by item: their margin to pay you more. */
 function savingsView(r, money) {
   const s = r.savings;
-  if (s.total <= 1)
+  if (!isWorthCounting(s.total))
     return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a tu costa</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
   const items = [
     [s.cash, r.noContract ? 'Por no hacerte contrato' : 'Por pagarte en negro'],
     [s.minimum, capitalize(minimumShortText(r))],
     [s.days, 'Por las jornadas de más'],
     [s.overtime, 'Por las horas extra', true],
-  ].filter(([value]) => value > 1);
+  ].filter(([value]) => isWorthCounting(value));
   // Two columns, in the offer's unit and over the whole contract; one if it is already the total or has no duration
   const both = !(r.time.noDuration || money.unit === 'total');
   const per = unitPhrase(money.unit, r);

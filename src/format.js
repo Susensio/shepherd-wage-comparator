@@ -1,5 +1,10 @@
 /** Numbers and words the Spanish way: reading what people type, and writing figures, dates and lists. */
 
+/** Euros of slack under which an amount does not count (rounding noise). */
+export const WORTH_COUNTING_ABOVE = 1;
+/** An amount big enough to show and add up. */
+export const isWorthCounting = (euros) => euros > WORTH_COUNTING_ABOVE;
+
 /**
  * Reads a number written the Spanish way: «1.200», «1.200,50», «1,5», «60 €». Anything else is 0.
  * @param {unknown} value

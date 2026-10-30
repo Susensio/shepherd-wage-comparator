@@ -4,7 +4,7 @@
  */
 
 import { html, render } from 'lit-html';
-import { fCount, fE, fInputValue, fN, joinAnd, num } from '../format.js';
+import { fCount, fE, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { actualYear, contractOf, endOf, foodPerDay, fromTotal, isoOf, mealsGiven, overlapsOf } from '../offer.js';
 import { fSplit, summaries } from '../text.js';
@@ -98,7 +98,7 @@ function payHint(o, r) {
     o.payType === 'net'
       ? `Unos ${fE(r.pay.entered.gross)} brutos${per}: ${rates}.`
       : `Unos ${fE(r.pay.entered.net)} netos${per}: ${rates}.`,
-    refund > 1 ? ` En la renta te devolverían unos ${fE(refund)} (no contado).` : '',
+    isWorthCounting(refund) ? ` En la renta te devolverían unos ${fE(refund)} (no contado).` : '',
     o.payUnit === 'day' ? ' El jornal en nómina cubre también vacaciones y festivos librados.' : '',
     o.payUnit === 'total' && o.vacation === 'paidAtEnd'
       ? ' Pon lo que cobraste sin las vacaciones: las vacaciones pagadas se suman aparte.'

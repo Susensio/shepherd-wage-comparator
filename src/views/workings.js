@@ -1,7 +1,7 @@
 /** «Las cuentas, paso a paso»: what is behind each figure of the offer, in € over the whole contract. */
 
 import { html, nothing } from 'lit-html';
-import { f1, fCount, fDays, fE, fN, fTyped, joinAnd } from '../format.js';
+import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { hoursWeek } from '../model/time.js';
 import { row } from './parts.js';
@@ -11,10 +11,10 @@ const section = (title, rows, note) =>
 
 /** «Sin pagar» or «nada», with the net amount under it. */
 const unpaidRow = (label, unpaid, net, cls = 'tot') =>
-  row(label, unpaid > 1 ? fE(unpaid) : 'nada', {
+  row(label, isWorthCounting(unpaid) ? fE(unpaid) : 'nada', {
     cls,
-    valueCls: unpaid > 1 ? 'bad' : 'ok',
-    sub: unpaid > 1 ? `unos ${net(unpaid)} netos` : '',
+    valueCls: isWorthCounting(unpaid) ? 'bad' : 'ok',
+    sub: isWorthCounting(unpaid) ? `unos ${net(unpaid)} netos` : '',
   });
 
 function timeSection(o, r) {
@@ -52,7 +52,7 @@ function payrollSection(r) {
       ? `Para el IRPF se suman también ${fE(others.gross)} brutos de ${others.count === 1 ? 'tu otra oferta trabajada' : `tus otras ${others.count} ofertas trabajadas`} en ${years ? 'esos años' : 'ese año'}. `
       : '',
     `IRPF de esta oferta en el año, con la deducción para sueldos cerca del SMI: ${fE(pay.irpfYear)}.`,
-    pay.irpf - pay.irpfYear > 1
+    isWorthCounting(pay.irpf - pay.irpfYear)
       ? ` En la renta te devolverían unos ${fE(pay.irpf - pay.irpfYear)}; no se suma a lo que ganas.`
       : '',
   ].join('');
@@ -96,7 +96,7 @@ function minimumSection(o, r, net) {
   });
   const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(r.cfg.overnightPct)} %)`, fE(min.overnight));
   const salaryShort = (sub) =>
-    row('= Falta de sueldo', debt.salary > 1 ? fE(debt.salary) : 'nada', { cls: 'strong', sub });
+    row('= Falta de sueldo', isWorthCounting(debt.salary) ? fE(debt.salary) : 'nada', { cls: 'strong', sub });
   if (r.noContract) {
     const factor = 1 - r.cfg.ssPct / 100;
     return section('Mínimo legal, contado por meses', [
@@ -110,27 +110,31 @@ function minimumSection(o, r, net) {
     ]);
   }
   const vacation = min.vacation > 0.5 && o.vacation !== 'taken';
-  const covered = debt.total > 1 && r.cash.total > 0;
+  const covered = isWorthCounting(debt.total) && r.cash.total > 0;
   return section(
     'Mínimo legal, contado por meses',
     [
       minimum,
       bonus,
       row('− Sueldo en nómina', fE(pay.salary), { sub: 'sin las vacaciones' }),
-      salaryShort(debt.salary <= 1 && pay.salary - withBonus > 1 ? `sobran ${fE(pay.salary - withBonus)}` : ''),
+      salaryShort(
+        !isWorthCounting(debt.salary) && isWorthCounting(pay.salary - withBonus)
+          ? `sobran ${fE(pay.salary - withBonus)}`
+          : '',
+      ),
       vacation && row('Vacaciones mínimas', fE(min.vacation), { sub: `${fDays(r.time.vacationDays)} que no libras` }),
       vacation && row('− Vacaciones en nómina', fE(pay.vacationPay)),
       vacation &&
-        row('= Falta de vacaciones', debt.vacation > 1 ? fE(debt.vacation) : 'nada', {
+        row('= Falta de vacaciones', isWorthCounting(debt.vacation) ? fE(debt.vacation) : 'nada', {
           cls: 'strong',
           sub:
-            debt.vacation <= 1 && pay.vacationPay - min.vacation > 1
+            !isWorthCounting(debt.vacation) && isWorthCounting(pay.vacationPay - min.vacation)
               ? `sobran ${fE(pay.vacationPay - min.vacation)}`
               : '',
         }),
-      row('Faltan en nómina', debt.total > 1 ? fE(debt.total) : 'nada', {
+      row('Faltan en nómina', isWorthCounting(debt.total) ? fE(debt.total) : 'nada', {
         cls: 'subt',
-        valueCls: debt.total > 1 ? 'bad' : 'ok',
+        valueCls: isWorthCounting(debt.total) ? 'bad' : 'ok',
       }),
       covered &&
         row('− Lo que cobras en negro, pasado a bruto', fE(Math.min(debt.total, r.cash.grossEq)), {

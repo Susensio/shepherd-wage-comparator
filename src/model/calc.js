@@ -3,7 +3,7 @@
  * says otherwise. No DOM here.
  */
 
-import { num } from '../format.js';
+import { isWorthCounting, num } from '../format.js';
 import { LAW, minWageOf } from '../law.js';
 import {
   actualYear,
@@ -155,11 +155,11 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const cashSavings = cashGrossEq * employerRate - cash;
   const savings = {
     /** contributions on the cash part (on everything, without a contract) */
-    cash: cashSavings > 1 ? cashSavings : 0,
+    cash: isWorthCounting(cashSavings) ? cashSavings : 0,
     /** what is missing from the minimum and cash does not cover */
-    minimum: owed > 1 ? owed * employerRate : 0,
-    days: daysValue > 0 && daysUnpaid > 1 ? daysUnpaid * employerRate : 0,
-    overtime: overtimeValue > 0 && overtimeUnpaid > 1 ? overtimeUnpaid * employerRate : 0,
+    minimum: isWorthCounting(owed) ? owed * employerRate : 0,
+    days: daysValue > 0 && isWorthCounting(daysUnpaid) ? daysUnpaid * employerRate : 0,
+    overtime: overtimeValue > 0 && isWorthCounting(overtimeUnpaid) ? overtimeUnpaid * employerRate : 0,
   };
   savings.total = savings.cash + savings.minimum + savings.days + savings.overtime;
 
@@ -228,9 +228,9 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
       ? { code: 'noContract' }
       : allCash
         ? { code: 'allCash' }
-        : debtParts.salary > 1
+        : isWorthCounting(debtParts.salary)
           ? { code: 'belowMinimum' }
-          : debtParts.overnight > 1
+          : isWorthCounting(debtParts.overnight)
             ? { code: 'noOvernight' }
             : null,
   };

@@ -1,7 +1,7 @@
 /** The Comparar tab: the ranking, medals, head to head, weekly hours, and over time (trend and years). */
 
 import { html, nothing, svg } from 'lit-html';
-import { fCount, fDate, fE, fN, fTyped, joinAnd, num } from '../format.js';
+import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
 import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
@@ -73,7 +73,7 @@ function headToHead(list) {
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
   const [a, b] = pairing.ids.map((id) => list.find((x) => x.o.id === id));
-  const debt = (x) => (x.r.debt.owed > 1 ? x.r.debt.owed * x.r.netFactor : 0);
+  const debt = (x) => (isWorthCounting(x.r.debt.owed) ? x.r.debt.owed * x.r.netFactor : 0);
   // Totals only compare when both last about the same (under 10 % apart): otherwise the longer one always wins
   const similar =
     !a.r.time.noDuration &&
@@ -139,7 +139,7 @@ function headToHead(list) {
       'Derechos',
       [
         ['En negro', (x) => x.r.cash.share, (v) => (v <= 0.005 ? 'nada' : `${fN(v * 100)} %`), 'min'],
-        ['Te deben', debt, (v) => (v > 1 ? fE(v) : 'nada'), 'min'],
+        ['Te deben', debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
         similar && [
           'Paro que genera',
           (x) => x.r.unemployment.days,
@@ -235,7 +235,7 @@ export function compareView(all, unit) {
     const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${o.name}${o.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
-        debt > 1
+        isWorthCounting(debt)
           ? html`<span class="bad">te deben ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;

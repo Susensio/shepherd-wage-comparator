@@ -1,7 +1,7 @@
 /** «¿Es legal?»: the verdict, what you are owed, the extra days and hours, and each right with its source. */
 
 import { html, nothing } from 'lit-html';
-import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, joinAnd } from '../format.js';
+import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { hoursWeek } from '../model/time.js';
 import { endOf, parseDate } from '../offer.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
@@ -12,7 +12,7 @@ import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './part
 /** Deadline to claim: each payment, one year from when it was due (Estatuto, art. 59.2). Only with dates. */
 function claimDeadline(o, debt) {
   const end = endOf(o);
-  if (!o.start || debt <= 1 || !end) return nothing;
+  if (!o.start || !isWorthCounting(debt) || !end) return nothing;
   const start = parseDate(o.start);
   const last = new Date(end);
   const firstPay = new Date(start.getFullYear(), start.getMonth() + 1, 0); // the first payment, at the end of the first month
@@ -36,9 +36,9 @@ function claimDeadline(o, debt) {
 function owedReasons(o, r, money) {
   const { salary, overnight, vacation } = r.debt.parts;
   const reasons = [
-    salary > 1 && [`el salario mínimo${r.min.casual ? ' de temporero' : ''}`, salary],
-    overnight > 1 && [`el plus de pernocta (${fN(r.cfg.overnightPct)} %)`, overnight],
-    vacation > 1 && [
+    isWorthCounting(salary) && [`el salario mínimo${r.min.casual ? ' de temporero' : ''}`, salary],
+    isWorthCounting(overnight) && [`el plus de pernocta (${fN(r.cfg.overnightPct)} %)`, overnight],
+    isWorthCounting(vacation) && [
       o.vacation === 'paidAtEnd' ? 'parte de las vacaciones' : 'las vacaciones, que no caben en el jornal',
       vacation,
     ],
@@ -57,7 +57,7 @@ function owedReasons(o, r, money) {
 function minimumBar(r, money) {
   const toUnit = (x) => inUnit(x, r, money.unit);
   const net = (x) => toUnit(x) * money.factor;
-  const salary = r.debt.salary > 1;
+  const salary = isWorthCounting(r.debt.salary);
   const min = salary ? r.min.salary + r.min.overnight : r.min.vacation;
   const paid = salary ? r.pay.salary : r.pay.vacationPay;
   const shortfall = salary ? r.debt.salary : r.debt.vacation;
@@ -90,9 +90,10 @@ function owedCard(o, r, money) {
   if (r.noContract) {
     const lost = r.unemployment.lost;
     const reasons = [
-      r.debt.vacation > 1 &&
+      isWorthCounting(r.debt.vacation) &&
         `Sin contrato no te pagan las vacaciones que te corresponden (${fDays(r.time.vacationDays)}): te deben unos ${money.netAll(r.debt.vacation)} netos.`,
-      r.debt.salary > 1 && `Lo que te dan no llega al salario mínimo: te deben ${money.net(r.debt.salary)} ${per}.`,
+      isWorthCounting(r.debt.salary) &&
+        `Lo que te dan no llega al salario mínimo: te deben ${money.net(r.debt.salary)} ${per}.`,
       'Sin jubilación ni bajas pagadas: si te pones malo o te haces daño, no cobras.',
     ].filter(Boolean);
     return html`<div class="owed">${
@@ -111,12 +112,12 @@ function owedCard(o, r, money) {
           )
     }
       <ul class="reasons">${reasons.map((t) => html`<li>${t}</li>`)}</ul>
-      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${debt > 1 ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${debt > 1 ? claimDeadline(o, debt) : nothing}</div>`;
+      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${isWorthCounting(debt) ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${isWorthCounting(debt) ? claimDeadline(o, debt) : nothing}</div>`;
   }
-  if (debt <= 1) return nothing;
+  if (!isWorthCounting(debt)) return nothing;
   const reasons = owedReasons(o, r, money);
   const owed = r.debt.owed;
-  if (owed > 1) {
+  if (isWorthCounting(owed)) {
     const total =
       money.unit !== 'total' && !r.time.noDuration && money.netAll(owed) !== money.net(owed)
         ? `${money.netAll(owed)} en todo el contrato`
@@ -189,7 +190,13 @@ function hoursBar(r) {
 /** How much of their value extra time is paid, with nuance: missing almost nothing is not missing almost everything. */
 const payStatus = (unpaid, value) => {
   const share = value > 0 ? 1 - unpaid / value : 1;
-  return unpaid <= 1 ? 'paid' : share >= 0.85 ? 'casi todas pagadas' : share > 0.02 ? 'mal pagadas' : 'sin pagar';
+  return !isWorthCounting(unpaid)
+    ? 'paid'
+    : share >= 0.85
+      ? 'casi todas pagadas'
+      : share > 0.02
+        ? 'mal pagadas'
+        : 'sin pagar';
 };
 const payMark = (status) =>
   status === 'paid'
