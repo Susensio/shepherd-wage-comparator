@@ -22,6 +22,8 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Saved data
 
 - Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`) and in backup files. Both load paths (browser, backup) go through `ingestSaved` in `saved.js`.
+- An offer is `{ id, cmp, terms, mine }` (ADR-0007). `terms` is what the employer offers and is shared with other users once accounts arrive; `mine` is the shepherd's own and never leaves their account. A new field goes in `terms` only if it describes the job, not the shepherd.
+- `supabase/schema.sql` holds the account tables and their row-level security; `test/unit/rls.test.js` checks the policies offline with PGlite.
 - While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
 
 ## Legal figures
