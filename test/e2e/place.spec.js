@@ -108,6 +108,22 @@ test('a village inside a municipality names both', async ({ page }) => {
   await expect(page.locator('#sum-place')).toHaveText('Sarvisé · Municipio de Broto · Huesca');
 });
 
+test('an article is said first, not last', async ({ page }) => {
+  await startOffer(page);
+  await page.fill('#place', 'enova');
+  await expect(page.getByRole('option').first()).toContainText("l'Ènova");
+  await expect(page.getByRole('listbox')).not.toContainText("Ènova, l'");
+});
+
+test('focusing the field brings it near the top, where the keyboard will not cover its suggestions', async ({
+  page,
+}) => {
+  await startOffer(page);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.focus('#place');
+  await expect.poll(() => page.locator('#place').evaluate((e) => e.getBoundingClientRect().top)).toBeLessThan(250);
+});
+
 test('keyboard: arrows move, Enter picks, Escape closes', async ({ page }) => {
   await startOffer(page);
   const field = page.locator('#place');

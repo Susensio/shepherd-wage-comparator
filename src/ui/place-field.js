@@ -6,6 +6,7 @@ import { active } from '../state.js';
 import { loadPlaces, onPlacesChange, placesIfLoaded } from '../storage/places.js';
 import { areaLine } from '../text.js';
 import { $ } from './dom.js';
+import { scrollToElement } from './motion.js';
 
 /** @type {import('../places.js').Place[]} */
 let suggestions = [];
@@ -108,6 +109,8 @@ export function setUpPlaceField(callbacks) {
     // Where the list is held back (data saving), the field asks for it
     loadPlaces().catch(console.warn);
     suggest();
+    // Up near the top, so the phone keyboard does not cover the suggestions
+    scrollToElement(field);
   });
   field.addEventListener('focusout', close);
   const list = $('#placeList');

@@ -134,11 +134,12 @@ export function scrollToElement(el, align = 'start') {
     const nav = $('.offers')?.getBoundingClientRect().height || 0;
     return Math.max(0, scrollY + (align === 'center' ? box.top - (innerHeight - box.height) / 2 : box.top - nav - 8));
   };
-  requestAnimationFrame(() => window.scrollTo({ top: targetY(), behavior: 'smooth' }));
+  const behavior = () => (reducedMotion() ? 'instant' : 'smooth');
+  requestAnimationFrame(() => window.scrollTo({ top: targetY(), behavior: behavior() }));
   cancelScroll();
   scrollTimer = setTimeout(() => {
     const y = targetY();
-    if (Math.abs(y - scrollY) > 4) window.scrollTo({ top: y, behavior: 'smooth' });
+    if (Math.abs(y - scrollY) > 4) window.scrollTo({ top: y, behavior: behavior() });
   }, 650);
 }
 
