@@ -1,7 +1,7 @@
 /** «Las cuentas, paso a paso»: what is behind each figure of the offer, in € over the whole contract. */
 
 import { html, nothing } from 'lit-html';
-import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
+import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { hoursWeek } from '../model/time.js';
 import { voiceOf } from '../voice.js';
@@ -186,7 +186,7 @@ function extraDaysSection(o, r, net, third) {
     [
       row('Días del contrato', fCount(contract)),
       vacation >= 0.5 / k && row(say('− Vacaciones que libras', '− Vacaciones que se libran'), fCount(vacation)),
-      row('− Descanso semanal', fCount(rest), { sub: 'día y medio por semana' }),
+      row('− Descanso semanal', fCount(rest), { sub: `${fDaysSpoken(LAW.weeklyRest)} por semana` }),
       holidays >= 0.5 / k && row('− Festivos', fCount(holidays)),
       row('= Días laborables', fCount(days.due), { cls: 'strong' }),
       row(say('Trabajas', 'Se trabajan'), fCount(days.worked)),
@@ -226,7 +226,7 @@ function overtimeSection(r, net, third) {
     [
       row('Horas a la semana', hours(week.total), { sub: `${f1(week.days)} días de ${fTyped(week.hoursPerDay)} h` }),
       row('− Jornada legal', hours(week.normal)),
-      row('= Por encima de 40', hours(week.over), { cls: restDays ? '' : 'strong' }),
+      row(`= Por encima de ${LAW.weeklyHours}`, hours(week.over), { cls: restDays ? '' : 'strong' }),
       restDays && row('− Ya en «Jornadas de más»', hours(week.restDays), { sub: 'días de descanso trabajados' }),
       restDays && row('= Horas extra', hours(week.beyond), { cls: 'strong', sub: 'a la semana' }),
       row('En todo el contrato', `${fN(x.overtime)} h`),

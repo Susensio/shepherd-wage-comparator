@@ -53,6 +53,13 @@ export const fCount = (x) => fN(x, x < 10 && Math.abs(x - Math.round(x)) >= 0.05
 export const f1 = (x) => fN(x, Math.abs(x - Math.round(x)) >= 0.05 ? 1 : 0);
 
 /** «1 día», «2,5 días». */
+/** A number of days as said aloud: 1.5 «día y medio», 2 «dos días», else «N días». */
+export const fDaysSpoken = (x) => {
+  if (x === 1) return 'un día';
+  if (x === 1.5) return 'día y medio';
+  if (x === 2) return 'dos días';
+  return `${fN(x, x % 1 ? 1 : 0)} días`;
+};
 export const fDays = (x) => `${fCount(x)} ${fCount(x) === '1' ? 'día' : 'días'}`;
 
 /** «21 jun 2026», or «21 jun» without the year. */

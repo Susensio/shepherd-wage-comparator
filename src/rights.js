@@ -4,7 +4,7 @@
 
 import { html } from 'lit-html';
 import { explanations } from './explanations.js';
-import { fCount, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
+import { fCount, fDaysSpoken, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
 import { citeOf, LAW } from './law.js';
 import { isShortContract } from './offer.js';
 import { moneyIn, UNITS } from './units.js';
@@ -168,14 +168,20 @@ export function rightsOf(o, r, unit = 'month', third = false) {
       'Descanso semanal',
       `${r.time.daysOffTotal < 0.5 ? say('No libras ningún día', 'No se libra ningún día') : say(`Libras ${fN(r.time.daysOffTotal)} días`, `Se libran ${fN(r.time.daysOffTotal)} días`)} ${overTxt} y ${say('te', 'le')} corresponden al menos ${fN(r.rest.legal)}: ${say('trabajas', 'se trabajan')} unos ${fN(r.rest.short)} que deberían ser de descanso.`,
     );
-  else add('rest', true, 'Descanso semanal', `${say('Libras', 'Se libra')} al menos día y medio por semana.`);
+  else
+    add(
+      'rest',
+      true,
+      'Descanso semanal',
+      `${say('Libras', 'Se libra')} al menos ${fDaysSpoken(LAW.weeklyRest)} por semana.`,
+    );
 
   const x = r.extra;
-  if (hoursPerWeek <= H_ORDINARY) add('hours', true, 'Jornada', '40 h o menos a la semana.');
+  if (hoursPerWeek <= H_ORDINARY) add('hours', true, 'Jornada', `${LAW.weeklyHours} h o menos a la semana.`);
   else if (hoursPerWeek <= H_MAX && hoursPerDay <= LAW.maxDayHours) {
     const what =
       x.overtimePerWeek >= 0.5
-        ? `${fN(hoursPerWeek)} h a la semana: unas ${fN(x.over40PerWeek)} por encima de 40.`
+        ? `${fN(hoursPerWeek)} h a la semana: unas ${fN(x.over40PerWeek)} por encima de ${LAW.weeklyHours}.`
         : `${fN(hoursPerWeek)} h a la semana.`;
     if (isWorthCounting(x.overtimeUnpaid) && !r.noContract)
       add(

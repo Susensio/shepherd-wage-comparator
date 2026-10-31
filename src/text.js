@@ -1,7 +1,7 @@
 /** Texts: one-line summaries of an offer, and the texts people copy (the offer card and the claim). */
 
-import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd, lowerFirst, num } from './format.js';
-import { LAW } from './law.js';
+import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd, lowerFirst, num } from './format.js';
+import { citeOf, LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
 import { fold, placeOfTerms } from './places.js';
@@ -214,7 +214,8 @@ export function cardText(o, r) {
     legalLine(o, r)?.text || '',
     [
       x.daysValue > 0 && r.extraDays.extra >= 1 && `Jornadas de más: ${fCount(r.extraDays.extra)} en el contrato`,
-      x.overtime >= 0.5 && `Horas extra: unas ${fN(x.over40PerWeek)} a la semana por encima de 40 (estimado)`,
+      x.overtime >= 0.5 &&
+        `Horas extra: unas ${fN(x.over40PerWeek)} a la semana por encima de ${LAW.weeklyHours} (estimado)`,
     ]
       .filter(Boolean)
       .join(' · '),
@@ -249,14 +250,14 @@ export function claimText(o, r) {
   add('SALARIO');
   if (r.noContract) {
     add(
-      `Sin contrato ni alta en la Seguridad Social (Estatuto, art. 8). Se pagan ${fE(cash)} en mano en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
+      `Sin contrato ni alta en la Seguridad Social (${citeOf('et', '8').label}). Se pagan ${fE(cash)} en mano en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
     );
     add(
       `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (SMI ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(LAW.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
     );
     if (isWorthCounting(r.debt.vacation))
       add(
-        `Vacaciones sin pagar (${fDays(r.time.vacationDays)}): ${fE(r.debt.vacation)} brutos, unos ${fNet(r.debt.vacation)} netos (Estatuto, art. 38).`,
+        `Vacaciones sin pagar (${fDays(r.time.vacationDays)}): ${fE(r.debt.vacation)} brutos, unos ${fNet(r.debt.vacation)} netos (${citeOf('et', '38').label}).`,
       );
     if (isWorthCounting(r.debt.salary)) add(`Lo que se paga no llega al mínimo: faltan ${fE(r.debt.salary)} brutos.`);
   } else {
@@ -272,7 +273,7 @@ export function claimText(o, r) {
         `- Plus por pernoctar fuera por pastoreo, ${fN(LAW.overnightPct)}\u00a0% del salario (convenio del campo de Huesca, art. 29): ${fE(r.min.overnight)}.`,
       );
     if (r.min.vacation > 0)
-      add(`- Vacaciones (${fDays(r.time.vacationDays)}; Estatuto, art. 38): ${fE(r.min.vacation)}.`);
+      add(`- Vacaciones (${fDays(r.time.vacationDays)}; ${citeOf('et', '38').label}): ${fE(r.min.vacation)}.`);
     const { salary, overnight, vacation } = r.debt.parts;
     if (isWorthCounting(r.debt.total)) {
       const parts = [
@@ -299,11 +300,11 @@ export function claimText(o, r) {
     add('', 'DESCANSO Y JORNADAS DE MÁS');
     if (r.rest.short >= 1)
       add(
-        `Descanso semanal: ${fN(r.time.daysOffTotal)} días libres frente a un mínimo de ${fN(r.rest.legal)} (día y medio por semana; Estatuto, art. 37.1).`,
+        `Descanso semanal: ${fN(r.time.daysOffTotal)} días libres frente a un mínimo de ${fN(r.rest.legal)} (${fDaysSpoken(LAW.weeklyRest)} por semana; ${citeOf('et', '37.1').label}).`,
       );
     if (o.terms.holidays !== 'yes' && x.holidays >= 0.5)
       add(
-        `Festivos trabajados: ${Math.round(x.holidays) <= 1 ? 'uno' : `unos ${fN(x.holidays)}`} (Estatuto, art. 37.2).`,
+        `Festivos trabajados: ${Math.round(x.holidays) <= 1 ? 'uno' : `unos ${fN(x.holidays)}`} (${citeOf('et', '37.2').label}).`,
       );
     add(
       `Jornadas de más: ${fCount(days.extra)}. De ${fCount(r.time.natDays)} días de contrato, ${fCount(days.due)} son laborables, sin el descanso semanal ni los festivos${r.time.vacationTaken > 0 ? ' ni las vacaciones' : ''}, y se trabajan ${fCount(days.worked)}.`,
@@ -321,14 +322,14 @@ export function claimText(o, r) {
   if (x.overtime >= 0.5) {
     add('', 'HORAS EXTRA (ESTIMACIÓN)');
     add(
-      `Jornadas de ${fTyped(o.terms.hoursPerDay)} h: ${f1(Math.max(0, num(o.terms.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (40 h semanales; Estatuto, art. 34), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
+      `Jornadas de ${fTyped(o.terms.hoursPerDay)} h: ${f1(Math.max(0, num(o.terms.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (${LAW.weeklyHours} h semanales; ${citeOf('et', '34').label}), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
     );
     add(
-      `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${isWorthCounting(x.overtimeUnpaid) ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (Estatuto, art. 35).`,
+      `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${isWorthCounting(x.overtimeUnpaid) ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (${citeOf('et', '35').label}).`,
     );
     if (r.time.hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours)
       add(
-        `Se supera el máximo de la ganadería: ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día (RD 1561/1995, art. 5).`,
+        `Se supera el máximo de la ganadería: ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día (${citeOf('rd1561', '5').label}).`,
       );
   }
 
