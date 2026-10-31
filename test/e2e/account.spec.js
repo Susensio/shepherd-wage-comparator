@@ -433,6 +433,20 @@ test('a failed save shows a line, not an alert', async ({ openApp }) => {
   await expect(page.locator('#accountMsg')).toHaveText('No se pudo guardar el perfil.');
 });
 
+test('while the account connects, the backup card shows neither version', async ({ openApp }) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { tables: { profiles: [{ ...PROFILE }], ...accountRows() }, holdSession: true },
+    beforeLoad: withProject,
+  });
+  await page.evaluate(() => app.openSettingsPage());
+  await expect(page.locator('#backupGuest')).toBeHidden();
+  await expect(page.locator('#backupAccount')).toBeHidden();
+  await page.evaluate(() => window.fake.releaseSession());
+  await expect(page.locator('#backupAccount')).toBeVisible();
+  await expect(page.locator('#backupGuest')).toBeHidden();
+});
+
 test('sharing asks first, and turning it off does not', async ({ openApp }) => {
   const page = await openAccount(openApp);
   const sharing = () => page.evaluate(() => window.fake.data.profiles[0].sharing);

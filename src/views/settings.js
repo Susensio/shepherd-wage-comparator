@@ -109,8 +109,9 @@ export function paintAccountButton(view) {
   button.title = label;
   $('#accountTitle').hidden = status !== 'guest';
   // Signed in, the account keeps the offers: the backup card says so instead of warning about the browser
-  $('#backupGuest').hidden = !!view.user;
-  $('#backupAccount').hidden = !view.user;
+  // Neither until the saved session is known, so a signed-in user does not see the guest version first
+  $('#backupGuest').hidden = !view.started || !!view.user;
+  $('#backupAccount').hidden = !view.started || !view.user;
   const storage = $('#settingsStorage');
   storage.textContent = storageLine(view);
   storage.hidden = !storage.textContent;

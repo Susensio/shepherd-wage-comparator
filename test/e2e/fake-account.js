@@ -30,10 +30,11 @@ export const withoutProject = (page) => serveConfig(page, { url: null, anonKey: 
 /**
  * Runs in the page before the app: a saved session (unless `signedOut`), the tables, and `window.supabase`. The
  * client has only what the account layer calls, over `window.fake.data`; `fake` also records oauth, the ID token, the
- * emailed code (and every one sent, in `otps`), rpc and sign-outs. `failUpload` fails the first offer upload; `google` adds a fake Google script whose
+ * emailed code (and every one sent, in `otps`), rpc and sign-outs. `failUpload` fails the first offer upload; `holdSession`
+ * keeps the first `getSession` pending until the test calls `fake.releaseSession()`; `google` adds a fake Google script whose
  * button hands over a token, and which records its nonce, the theme of each button drawn and how often the account chooser was opened.
  */
-export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google }) {
+export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google, holdSession }) {
   if (!signedOut) localStorage.setItem('cj.session', '{}');
   if (localOffers) localStorage.setItem('cj.ofertas2', JSON.stringify(localOffers));
   const data = { offers: [], offer_mine: [], settings: [], profiles: [], ...tables };
@@ -54,6 +55,11 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
     return { data: { session }, error: null };
   };
   let uploadFails = !!failUpload;
+  let held = holdSession
+    ? new Promise((resolve) => {
+        fake.releaseSession = resolve;
+      })
+    : null;
   if (google) {
     let callback = () => {};
     window.google = {
@@ -151,7 +157,11 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
       return { data: null, error: null };
     },
     auth: {
-      getSession: async () => ({ data: { session }, error: null }),
+      getSession: async () => {
+        await held;
+        held = null;
+        return { data: { session }, error: null };
+      },
       signInWithIdToken: async (args) => {
         fake.idToken = args;
         return signIn();
