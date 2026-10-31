@@ -175,6 +175,8 @@ export function createAccount({
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
     known.offers = new Map(ownOffers().map((o) => [o.id, fingerprint(o)]));
     known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
+    // Rows written before offerOnly moved to `mine` still hold it in the shared terms: unsynced until rewritten.
+    for (const row of account.offers) if (row.terms && 'offerOnly' in row.terms) known.offers.delete(row.id);
     if (left) {
       for (const offerId of left.changed) known.offers.delete(offerId);
       for (const offerId of left.removed) if (accountIds.has(offerId)) known.offers.set(offerId, '');

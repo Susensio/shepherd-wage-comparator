@@ -412,6 +412,27 @@ describe('saving changes', () => {
     assert.equal('terms' in mine.rows[0], false);
   });
 
+  test('an offer whose shared terms still hold offerOnly is rewritten without it', async () => {
+    const old = accountRow(2, { offerOnly: true });
+    delete old[1].mine.offerOnly; // rows from before the move have no offerOnly in `mine`
+    const tables = accountTables(accountRow(1), old);
+    const { account, state, calls } = setUp({ tables });
+    await account.connect();
+    assert.equal(state.offers[1].mine.offerOnly, true);
+    assert.equal('offerOnly' in state.offers[1].terms, false);
+    await account.flush();
+    const [offers, mine] = calls;
+    assert.deepEqual(
+      offers.rows.map((r) => r.id),
+      [id(2)],
+    );
+    assert.equal('offerOnly' in offers.rows[0].terms, false);
+    assert.equal(mine.rows[0].mine.offerOnly, true);
+    calls.length = 0;
+    await account.flush();
+    assert.deepEqual(calls, []);
+  });
+
   test('nothing is written when nothing changed', async () => {
     const { account, calls } = await connected();
     await account.flush();
