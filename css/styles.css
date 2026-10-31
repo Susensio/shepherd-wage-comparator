@@ -1989,6 +1989,9 @@ details.paste > summary {
   color: var(--c-cash-t);
   font-weight: 600;
 }
+.account-msg.ok {
+  color: var(--c-pay);
+}
 .account-confirm {
   display: flex;
   flex-direction: column;

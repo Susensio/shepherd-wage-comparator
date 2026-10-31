@@ -20,6 +20,8 @@ const view = {
   /** @type {any} */ profile: null,
   /** @type {any[]} */ pending: [],
   message: '',
+  /** `message` is a success, not a failure. */
+  messageOk: false,
   /** The line in Comparar's section: a failure there is not the account page's business. */
   othersMessage: '',
   /** «Ahora no» in Comparar's section: it shrinks to a button for this visit. */
@@ -189,6 +191,7 @@ export async function loadOthers() {
 /** Runs an account call; its failure becomes `failure`, a short line in `line`'s section, never an alert. */
 async function run(failure, call, line = 'message') {
   view[line] = '';
+  if (line === 'message') view.messageOk = false;
   try {
     await call();
   } catch (error) {
@@ -331,6 +334,7 @@ export const accountActions = {
         phone: value('#profPhone'),
       });
       view.message = 'Perfil guardado.';
+      view.messageOk = true;
     }),
 
   confirmShare: () => setSharing(true, 'message'),

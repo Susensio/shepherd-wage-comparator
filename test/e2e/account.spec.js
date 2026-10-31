@@ -419,6 +419,7 @@ test('the profile is edited and saved', async ({ openApp }) => {
   await page.locator('#profPhone').fill('611 222 333');
   await page.getByRole('button', { name: 'Guardar perfil' }).click();
   await expect(page.locator('#accountMsg')).toHaveText('Perfil guardado.');
+  await expect(page.locator('#accountMsg')).toHaveClass(/\bok\b/); // a success is green, not the warning colour
   const row = await page.evaluate(() => window.fake.data.profiles[0]);
   expect(row).toMatchObject({ name: 'Ana P.', email: 'ana@example.com', phone: '611 222 333' });
 });

@@ -49,7 +49,7 @@ export function paintBackup() {
 
 /**
  * @typedef {{
- *   user: any, profile: any, pending: any[], message: string, confirm: 'share' | 'delete' | null,
+ *   user: any, profile: any, pending: any[], message: string, messageOk: boolean, confirm: 'share' | 'delete' | null,
  *   enabled: boolean, started: boolean, sync: 'saved' | 'saving' | 'error', offline: boolean,
  *   othersMessage: string, othersDeclined: boolean, tipDismissed: boolean, signIn: any,
  * }} AccountView
@@ -127,8 +127,9 @@ let filledProfile = null;
  * The «Cuenta» section: signed out, choosing what to do with the browser's offers, or signed in.
  * @param {AccountView} view
  */
-export function paintAccount({ user, profile, pending, message, confirm }) {
+export function paintAccount({ user, profile, pending, message, messageOk, confirm }) {
   $('#accountMsg').textContent = message;
+  $('#accountMsg').classList.toggle('ok', messageOk);
   $('#accountOut').hidden = !!user;
   $('#accountPending').hidden = !(user && pending.length);
   $('#accountIn').hidden = !(user && !pending.length);
