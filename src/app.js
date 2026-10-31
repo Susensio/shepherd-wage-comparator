@@ -1,6 +1,6 @@
 /**
  * The controller: paints every view from the state, and the things the page does that more than one event needs
- * (choosing an offer, the templates panel, «Hecho», the tabs, the account page).
+ * (choosing an offer, the templates panel, «Hecho», the tabs, the account and settings pages).
  */
 
 import { render } from 'lit-html';
@@ -28,7 +28,7 @@ const ui = {
   scrollChips: false,
   /** The offer where you pressed «Hecho» with data missing: the missing fields are marked until you fill them in. */
   askedToSee: /** @type {string | null} */ (null),
-  /** The account page was opened from the tooltip: leave it once signed in. */
+  /** The account page was opened from a tooltip: leave it once signed in. */
   leaveAfterSignIn: false,
   scrollBeforePage: 0,
 };
@@ -250,15 +250,18 @@ export function done(fromTop) {
 
 const TABS = ['offers', 'compare', 'laws'];
 
-/** Hides every panel but `shown`; the account page is the `settings` panel, reached from the account button only. */
+/** The pages opened from the bar's buttons, over the tab shown: each is a panel of its own. */
+const PAGES = ['account', 'settings'];
+
+/** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
 function showPanel(shown) {
-  for (const t of [...TABS, 'settings']) $(`[data-panel=${t}]`).hidden = t !== shown;
-  document.body.classList.toggle('on-page', shown === 'settings');
+  for (const t of [...TABS, ...PAGES]) $(`[data-panel=${t}]`).hidden = t !== shown;
+  document.body.classList.toggle('on-page', PAGES.includes(shown));
 }
 
 /** Shows a tab. With `scrollUp`, if the page is further down, it goes back up to the tabs. */
 export function showTab(tab, scrollUp) {
-  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the account page opens Ofertas
+  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the pages opens Ofertas
   showPanel(shown);
   for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   saveTab(shown);
@@ -275,45 +278,50 @@ export function showTab(tab, scrollUp) {
   if (scrollUp && tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: tabs.offsetTop });
 }
 
+/** The page open, or undefined on a tab. */
+export const pageOpen = () => PAGES.find((page) => !$(`[data-panel=${page}]`).hidden);
+
 /**
- * Opens the account page (the settings alone without a project) over the tab shown, which stays selected so «Volver»
- * knows where to go. `fromPrompt`: opened from the tooltip, so signing in sends the reader back at once; from the
- * button, the page stays, since whoever went there may want the profile or sharing next.
+ * Opens a page over the tab shown, which stays selected so «Volver» knows where to go. `fromPrompt`: the account page
+ * was opened from a tooltip, so signing in sends the reader back at once; from the button, the page stays, since
+ * whoever went there may want the profile or sharing next.
+ * @param {'account' | 'settings'} page
  */
-export function openAccountPage(fromPrompt = false) {
+export function openPage(page, fromPrompt = false) {
   ui.leaveAfterSignIn = fromPrompt;
-  if (!accountPageOpen()) {
+  if (!pageOpen()) {
     ui.scrollBeforePage = scrollY;
-    history.pushState({ accountPage: true }, ''); // the phone's Back closes the page, not the site
+    history.pushState({ page: true }, ''); // the phone's Back closes the page, not the site
   }
-  showPanel('settings');
+  showPanel(page);
   paintBackup();
   paintAccountStatus({ chooser: fromPrompt });
   window.scrollTo({ top: 0 });
 }
 
-const accountPageOpen = () => !$('[data-panel=settings]').hidden;
+export const openAccountPage = (fromPrompt = false) => openPage('account', fromPrompt);
+export const openSettingsPage = () => openPage('settings');
 
 /** Back to the tab the page was opened from, where it was scrolled. */
-function leaveAccountPage() {
+function leavePage() {
   showTab(/** @type {string} */ ($('.tabs [aria-selected=true]').dataset.tab));
   window.scrollTo({ top: ui.scrollBeforePage, behavior: 'instant' });
 }
 
 /** «Volver»: through the history when the page pushed an entry, so Back and «Volver» stay in step. */
-export function closeAccountPage() {
-  if (history.state?.accountPage) history.back();
-  else leaveAccountPage();
+export function closePage() {
+  if (history.state?.page) history.back();
+  else leavePage();
 }
 
-/** Back (or forward) with the page open closes it. */
+/** Back (or forward) with a page open closes it. */
 export function onPopState() {
-  if (accountPageOpen()) leaveAccountPage();
+  if (pageOpen()) leavePage();
 }
 
 /** A sign-in completed: if it began at the tooltip, back to where it began. */
 export function returnAfterSignIn() {
-  if (ui.leaveAfterSignIn && accountPageOpen()) closeAccountPage();
+  if (ui.leaveAfterSignIn && pageOpen() === 'account') closePage();
   ui.leaveAfterSignIn = false;
 }
 

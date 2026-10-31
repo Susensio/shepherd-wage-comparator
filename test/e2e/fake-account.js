@@ -30,8 +30,8 @@ export const withoutProject = (page) => serveConfig(page, { url: null, anonKey: 
 /**
  * Runs in the page before the app: a saved session (unless `signedOut`), the tables, and `window.supabase`. The
  * client has only what the account layer calls, over `window.fake.data`; `fake` also records oauth, the ID token, the
- * emailed code, rpc and sign-outs. `failUpload` fails the first offer upload; `google` adds a fake Google script whose
- * button hands over a token, and which records its nonce and how often the account chooser was opened.
+ * emailed code (and every one sent, in `otps`), rpc and sign-outs. `failUpload` fails the first offer upload; `google` adds a fake Google script whose
+ * button hands over a token, and which records its nonce, the theme of each button drawn and how often the account chooser was opened.
  */
 export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google }) {
   if (!signedOut) localStorage.setItem('cj.session', '{}');
@@ -42,10 +42,11 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
     oauth: null,
     idToken: null,
     otp: null,
+    otps: [],
     rpc: [],
     signedOut: false,
     sharedReads: 0,
-    google: { nonce: null, prompts: 0 },
+    google: { nonce: null, prompts: 0, themes: [] },
   };
   let session = signedOut ? null : { user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } };
   const signIn = () => {
@@ -62,7 +63,8 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
             fake.google.nonce = options.nonce;
             callback = options.callback;
           },
-          renderButton(slot) {
+          renderButton(slot, options) {
+            fake.google.themes.push(options.theme);
             const button = document.createElement('button');
             button.type = 'button';
             button.textContent = 'Google (falso)';
@@ -156,6 +158,7 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
       },
       signInWithOtp: async (args) => {
         fake.otp = args;
+        fake.otps.push(args);
         return { data: {}, error: null };
       },
       verifyOtp: async ({ token }) =>

@@ -1,4 +1,4 @@
-/** The account page (Ajustes without a project): the account, «Tus datos», the calculation assumptions and the backup. */
+/** The settings page (the assumptions, «Tus datos», the backup) and the account page, and the bar's account button. */
 
 import { fInputValue, num } from '../format.js';
 import { DEF_CFG, isComplete } from '../offer.js';
@@ -25,7 +25,7 @@ export function fillSettings(skip) {
     input.checked = (input.value === '1') === (cfg.unemployment !== false);
 }
 
-/** The backup reminder above the offers, and the backup status on the account page. */
+/** The backup reminder above the offers, and the backup status on the settings page. */
 export function paintBackup() {
   const status = backupStatus(myOffers().some((o) => isComplete(o.terms)));
   // With accounts, the offers are kept in the account instead
@@ -46,7 +46,6 @@ export function paintBackup() {
 
 /** Where the account stands, as the dot on its button shows it. */
 function accountStatus(/** @type {AccountView} */ view) {
-  if (!view.enabled) return 'off';
   if (!view.started) return 'connecting';
   if (!view.user) return 'guest';
   if (view.pending.length) return 'pending';
@@ -56,7 +55,6 @@ function accountStatus(/** @type {AccountView} */ view) {
 }
 
 const STATUS_TEXT = {
-  off: '',
   connecting: 'Conectando con la cuenta…',
   guest: 'Sin cuenta: las ofertas solo están en este navegador.',
   pending: 'No se pudieron subir a la cuenta las ofertas de este navegador.',
@@ -77,9 +75,13 @@ const initialsOf = (/** @type {string} */ text) =>
     .map((word) => Array.from(word)[0].toUpperCase())
     .join('');
 
+/** Where the settings page says they are kept: nothing until the saved session has been looked at. */
+const storageLine = (/** @type {AccountView} */ view) =>
+  view.user ? 'Se guardan en tu cuenta.' : view.started ? 'Se guardan solo en este navegador.' : '';
+
 /**
- * The account button (a cog without a project, a person for a guest, the initials once signed in) with its status dot,
- * and what depends on the account being there or not. Returns the status.
+ * The account button (a person for a guest, the initials once signed in) with its status dot, and what depends on the
+ * account being there or not. Only called with a project configured: without one the button stays hidden.
  * @param {AccountView} view
  */
 export function paintAccountButton(view) {
@@ -87,18 +89,17 @@ export function paintAccountButton(view) {
   const button = $('#accountButton');
   const who = view.user && (view.profile?.name || view.user.user_metadata?.name || view.user.email);
   const initials = who ? initialsOf(who) : '';
+  button.hidden = false;
   button.dataset.status = status;
-  button.dataset.kind = status === 'off' ? 'cog' : initials ? 'initials' : 'person';
+  button.dataset.kind = initials ? 'initials' : 'person';
   $('#accountButton .initials').textContent = initials;
-  if (status !== 'off') {
-    const label = `Cuenta. ${STATUS_TEXT[status]}`;
-    button.setAttribute('aria-label', label);
-    button.title = label;
-  }
-  const guest = status === 'guest';
-  $('#guestNote').hidden = !guest;
-  $('#accountTitle').hidden = !guest;
-  $('#pageTitle').textContent = status === 'off' ? 'Ajustes' : 'Cuenta';
+  const label = `Cuenta. ${STATUS_TEXT[status]}`;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  $('#accountTitle').hidden = status !== 'guest';
+  const storage = $('#settingsStorage');
+  storage.textContent = storageLine(view);
+  storage.hidden = !storage.textContent;
   const sync = $('#accountSync');
   sync.textContent = view.user && !view.pending.length ? STATUS_TEXT[status] : '';
   sync.dataset.status = status;

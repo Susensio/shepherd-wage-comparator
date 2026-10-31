@@ -233,7 +233,7 @@ test.describe('the «Otros pastores» section', () => {
     await expect(section(page)).not.toContainText('€');
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     await section(page).getByRole('button', { name: 'Entrar' }).click();
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
     await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
   });
 
@@ -273,14 +273,14 @@ test.describe('the «Otros pastores» section', () => {
     const page = await openCompare(openApp, { sharing: false });
     const text = await section(page).locator('.account-confirm p').allTextContents();
     await page.evaluate(() => app.openAccountPage());
-    await page.getByLabel('Compartir mis ofertas').click();
+    await page.getByLabel('Compartir tus ofertas').click();
     for (const paragraph of text.slice(2)) await expect(page.locator('#shareConfirm')).toContainText(paragraph);
   });
 
   test("accepting in Comparar closes the account page's own confirmation", async ({ openApp }) => {
     const page = await openCompare(openApp, { sharing: false });
     await page.evaluate(() => app.openAccountPage());
-    await page.getByLabel('Compartir mis ofertas').click();
+    await page.getByLabel('Compartir tus ofertas').click();
     await expect(page.locator('#shareConfirm')).toBeVisible();
     await page
       .getByRole('button', { name: /Volver/ })
@@ -290,7 +290,7 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.locator('.lr.other')).toHaveCount(2);
     await page.evaluate(() => app.openAccountPage());
     await expect(page.locator('#shareConfirm')).toBeHidden();
-    await expect(page.getByLabel('Compartir mis ofertas')).toBeChecked();
+    await expect(page.getByLabel('Compartir tus ofertas')).toBeChecked();
   });
 
   test('the section sits right under the ranking, before the weekly hours', async ({ openApp }) => {
@@ -350,7 +350,7 @@ test.describe('the «Otros pastores» section', () => {
     const page = await openCompare(openApp);
     await expect(section(page)).toContainText('Añade un teléfono en tu cuenta para que te puedan contactar.');
     await section(page).getByRole('button', { name: 'Abrir la cuenta' }).click();
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
     await page.locator('#profPhone').fill('600 000 000');
     await page.getByRole('button', { name: 'Guardar perfil' }).click();
     await page

@@ -26,6 +26,7 @@ const codeStep = ({ email, busy }) =>
       maxlength="6" pattern="[0-9]{6}"></label>
     <div class="actions">
       <button type="submit" class="pri" ?disabled=${busy} data-action="verifyEmailCode">Entrar</button>
+      <button type="button" class="sm" ?disabled=${busy} data-action="resendEmailCode">Enviar otro código</button>
       <button type="button" class="sm" data-action="changeSignInEmail">Otro correo</button>
     </div>
   </form>`;

@@ -1,5 +1,6 @@
-// The account, against a fake supabase-js client: no real project is needed. The account button (a cog without a
-// project) with its status, the page it opens, and the tooltip that leads to it (ADR-0009, ADR-0011).
+// The account, against a fake supabase-js client: no real project is needed. The app bar's account button (absent
+// without a project) with its status, the page it opens, the settings page of the cog, and the tooltip that leads to
+// the account page (ADR-0009, ADR-0011).
 //
 // The fake client and its seam are in fake-account.js.
 
@@ -27,33 +28,79 @@ const accountRows = () => ({
   offer_mine: [{ offer_id: ACCOUNT_OFFER, mine: { name: 'De la cuenta' }, cmp: true }],
 });
 
-test('with no project configured: a cog opens the settings alone, and nothing asks to sign in', async ({ openApp }) => {
+test('with no project configured: only the cog shows, it opens the settings, and nothing asks to sign in', async ({
+  openApp,
+}) => {
   const page = await openApp({ beforeLoad: withoutProject });
-  const button = page.locator('#accountButton');
-  await expect(button).toHaveAttribute('aria-label', 'Ajustes');
-  await expect(button.locator('.ic-cog')).toBeVisible();
-  await expect(button.locator('.status-dot')).toBeHidden();
+  await expect(page.locator('#accountButton')).toBeHidden();
   await expect(page.locator('#accountTip .tip')).toHaveCount(0);
-  await button.click();
-  await expect(page.locator('#pageTitle')).toHaveText('Ajustes');
+  await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
+  await expect(page.locator('[data-panel=settings] h2')).toHaveText('Ajustes');
   await expect(page.locator('#yourdata')).toBeVisible();
-  await expect(page.locator('#account')).toBeHidden();
-  await expect(page.locator('#guestNote')).toBeHidden();
+  await expect(page.locator('#settingsStorage')).toBeHidden();
+  await expect(page.locator('[data-panel=account]')).toBeHidden();
 });
 
-test('signed out: the page lists how to sign in, with Google through the redirect when its script does not load', async ({
+test('signed out: the account page lists how to sign in, with Google through the redirect when its script does not load', async ({
   openApp,
 }) => {
   const page = await openAccount(openApp, { signedOut: true });
-  await expect(page.locator('#pageTitle')).toHaveText('Cuenta');
+  await expect(page.locator('[data-panel=account] h2')).toHaveText('Cuenta');
   await expect(page.locator('#account')).toBeVisible();
   await expect(page.locator('#accountTitle')).toHaveText('Entrar');
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
   await expect(page.locator('#accountOut')).toContainText('compartiendo las tuyas');
-  await expect(page.locator('#guestNote')).toHaveText('Sin cuenta, se guardan solo en este navegador.');
   await expect(page.locator('#accountIn')).toBeHidden();
   await page.locator('#accountOut').getByRole('button', { name: 'Continuar con Google' }).click();
   await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
+});
+
+test.describe('the settings page', () => {
+  const storage = (page) => page.locator('#settingsStorage');
+
+  test('the cog opens «Ajustes», with the data, the assumptions and the backup, and none of the account', async ({
+    openApp,
+  }) => {
+    const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
+    await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
+    await expect(page.locator('[data-panel=settings] h2')).toHaveText('Ajustes');
+    await expect(page.locator('.tabs')).toBeHidden();
+    for (const id of ['#yourdata', '#assumptions', '#backup']) await expect(page.locator(id)).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeHidden();
+    await expect(page.locator('#account')).toBeHidden();
+  });
+
+  test('says where the settings are kept: the browser for a guest, the account when signed in', async ({ openApp }) => {
+    const guest = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
+    await guest.evaluate(() => app.openSettingsPage());
+    await expect(storage(guest)).toHaveText('Se guardan solo en este navegador.');
+    const member = await openApp({
+      init: installFake,
+      arg: { tables: { profiles: [{ ...PROFILE }] } },
+      beforeLoad: withProject,
+    });
+    await member.evaluate(() => app.openSettingsPage());
+    await expect(storage(member)).toHaveText('Se guardan en tu cuenta.');
+  });
+
+  test('the account page holds the account and none of the settings', async ({ openApp }) => {
+    const page = await openAccount(openApp);
+    await expect(page.locator('#accountIn')).toBeVisible();
+    for (const id of ['#yourdata', '#assumptions', '#backup', '#settingsStorage'])
+      await expect(page.locator(id)).toBeHidden();
+  });
+
+  test('the cog on the account page switches to the settings, and one «Volver» leaves both', async ({ openApp }) => {
+    const page = await openAccount(openApp);
+    await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeHidden();
+    await page
+      .locator('[data-panel=settings]')
+      .getByRole('button', { name: /Volver/ })
+      .click();
+    await expect(page.locator('[data-panel=offers]')).toBeVisible();
+  });
 });
 
 test.describe('the account button', () => {
@@ -109,23 +156,25 @@ test.describe('the account button', () => {
     await expect(button(page)).toHaveAttribute('aria-label', /No se pudieron subir/);
   });
 
-  test('it opens the page, and «Volver» returns to the tab it came from', async ({ openApp }) => {
+  test('it opens the account page, and «Volver» returns to the tab it came from', async ({ openApp }) => {
     const page = await open(openApp);
     await page.locator('.tabs [data-tab=laws]').click();
     await button(page).click();
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeHidden();
     await expect(page.locator('[data-panel=laws]')).toBeHidden();
     await page.getByRole('button', { name: '← Volver' }).click();
     await expect(page.locator('[data-panel=laws]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeVisible();
-    await expect(page.locator('[data-panel=settings]')).toBeHidden();
+    await expect(page.locator('[data-panel=account]')).toBeHidden();
   });
 
-  test('the top bar is on the welcome too, and a stored «settings» tab opens Ofertas', async ({ openApp }) => {
+  test('the app bar is on the welcome too, and a stored «settings» tab opens Ofertas', async ({ openApp }) => {
     const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
     await expect(page.locator('#welcome')).toBeVisible();
-    await expect(page.locator('.topbar .kicker')).toBeVisible();
+    await expect(page.locator('.appbar h1')).toHaveText('Comparador de jornales');
+    await expect(page.locator('.appbar .kicker')).toHaveText('Para pastores y pastoras');
+    await expect(page.getByRole('button', { name: 'Ajustes', exact: true })).toBeVisible();
     await expect(button(page)).toBeVisible();
     await page.evaluate(() => localStorage.setItem('cj.tab', 'settings'));
     await page.reload();
@@ -185,7 +234,7 @@ test.describe('the tooltip', () => {
   test('«Entrar» opens the page, with its sign-in', async ({ openApp }) => {
     const page = await openGuest(openApp);
     await tip(page).getByRole('button', { name: 'Entrar' }).click();
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
     await expect(page.locator('#accountOut')).toBeVisible();
   });
 
@@ -212,7 +261,7 @@ test.describe('the tooltip', () => {
     await page.locator('#accountButton').click();
     await page.locator('#accountSignIn').getByRole('button', { name: 'Google (falso)' }).click();
     await expect(page.locator('#accountWho')).toContainText('Ana Pastora');
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
   });
 
   test('signs in with a code sent by email', async ({ openApp }) => {
@@ -231,6 +280,34 @@ test.describe('the tooltip', () => {
     await form.getByLabel('Código').fill('123456');
     await form.getByLabel('Código').press('Enter');
     await expect(page.locator('#accountWho')).toBeVisible();
+  });
+
+  test('«Enviar otro código» sends another to the same address', async ({ openApp }) => {
+    const page = await openGuest(openApp);
+    await page.locator('#accountButton').click();
+    const form = page.locator('#accountSignIn');
+    await form.getByLabel('Tu correo').fill('ana@example.com');
+    await form.getByRole('button', { name: 'Enviarme un código' }).click();
+    await form.getByRole('button', { name: 'Enviar otro código' }).click();
+    await expect(form).toContainText('Se ha enviado otro código.');
+    expect(await page.evaluate(() => window.fake.otps.map((otp) => otp.email))).toEqual([
+      'ana@example.com',
+      'ana@example.com',
+    ]);
+    await form.getByLabel('Código').fill('123456');
+    await form.getByLabel('Código').press('Enter');
+    await expect(page.locator('#accountWho')).toBeVisible();
+  });
+
+  test("Google's button takes the dark theme in dark mode, and back", async ({ openApp }) => {
+    const page = await openGuest(openApp, { google: true });
+    await page.locator('#accountButton').click();
+    const themes = () => page.evaluate(() => window.fake.google.themes.at(-1));
+    await expect.poll(themes).toBe('outline');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(themes).toBe('filled_black');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect.poll(themes).toBe('outline');
   });
 
   test('the backup reminder gives way to the account', async ({ openApp }) => {
@@ -290,7 +367,6 @@ test('signed in: online on the button and in the section, and no tooltip', async
   await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
   await expect(page.locator('#accountSync')).toContainText('se guardan en tu cuenta');
   await expect(page.locator('#accountTitle')).toBeHidden();
-  await expect(page.locator('#guestNote')).toBeHidden();
   await page.evaluate(() => app.showTab('offers'));
   await expect(page.locator('#accountTip .tip')).toHaveCount(0);
 });
@@ -403,44 +479,62 @@ test('signing out from the page opened over Comparar silences the tooltip on eve
   await expect(page.locator('#accountTip .tip')).toHaveCount(0);
 });
 
-test.describe('the account page and the history', () => {
-  const openOnCompare = async (openApp) => {
-    const page = await openApp({
-      init: installFake,
-      arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() } },
-      beforeLoad: withProject,
+for (const [name, open] of [
+  ['account', () => app.openAccountPage()],
+  ['settings', () => app.openSettingsPage()],
+]) {
+  test.describe(`the ${name} page and the history`, () => {
+    const openOnCompare = async (openApp) => {
+      const page = await openApp({
+        init: installFake,
+        arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() } },
+        beforeLoad: withProject,
+      });
+      await page.evaluate(() => app.showTab('compare'));
+      await page.evaluate(() => window.scrollTo(0, 200));
+      return page;
+    };
+
+    test("the browser's Back closes the page, stays in the app, and restores the scroll", async ({ openApp }) => {
+      const page = await openOnCompare(openApp);
+      const before = await page.evaluate(() => scrollY);
+      expect(before).toBeGreaterThan(0);
+      const url = page.url();
+      await page.evaluate(open); // the bar is not sticky: a click would scroll up first
+      await expect(page.locator(`[data-panel=${name}]`)).toBeVisible();
+      await page.goBack();
+      await expect(page.locator(`[data-panel=${name}]`)).toBeHidden();
+      await expect(page.locator('[data-panel=compare]')).toBeVisible();
+      expect(page.url()).toBe(url);
+      expect(await page.evaluate(() => scrollY)).toBe(before);
     });
-    await page.evaluate(() => app.showTab('compare'));
-    await page.evaluate(() => window.scrollTo(0, 200));
-    return page;
-  };
 
-  test("the browser's Back closes the page, stays in the app, and restores the scroll", async ({ openApp }) => {
-    const page = await openOnCompare(openApp);
-    const before = await page.evaluate(() => scrollY);
-    expect(before).toBeGreaterThan(0);
-    const url = page.url();
-    await page.evaluate(() => app.openAccountPage()); // the bar is not sticky: a click would scroll up first
-    await expect(page.locator('[data-panel=settings]')).toBeVisible();
-    await page.goBack();
-    await expect(page.locator('[data-panel=settings]')).toBeHidden();
-    await expect(page.locator('[data-panel=compare]')).toBeVisible();
-    expect(page.url()).toBe(url);
-    expect(await page.evaluate(() => scrollY)).toBe(before);
+    test('«Volver» goes back through the history and restores the scroll', async ({ openApp }) => {
+      const page = await openOnCompare(openApp);
+      const before = await page.evaluate(() => scrollY);
+      const length = await page.evaluate(() => history.length);
+      await page.evaluate(open);
+      await page
+        .getByRole('button', { name: /Volver/ })
+        .first()
+        .click();
+      await expect(page.locator('[data-panel=compare]')).toBeVisible();
+      expect(await page.evaluate(() => scrollY)).toBe(before);
+      await expect.poll(() => page.evaluate(() => history.state?.page ?? false)).toBe(false);
+      expect(await page.evaluate(() => history.length)).toBe(length + 1); // the entry stays forward, not stacked
+    });
   });
+}
 
-  test('«Volver» goes back through the history and restores the scroll', async ({ openApp }) => {
-    const page = await openOnCompare(openApp);
-    const before = await page.evaluate(() => scrollY);
-    const length = await page.evaluate(() => history.length);
-    await page.evaluate(() => app.openAccountPage());
-    await page
-      .getByRole('button', { name: /Volver/ })
-      .first()
-      .click();
-    await expect(page.locator('[data-panel=compare]')).toBeVisible();
-    expect(await page.evaluate(() => scrollY)).toBe(before);
-    await expect.poll(() => page.evaluate(() => history.state?.accountPage ?? false)).toBe(false);
-    expect(await page.evaluate(() => history.length)).toBe(length + 1); // the entry stays forward, not stacked
+test('the cog opens the settings from the app bar, over the tab shown', async ({ openApp }) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { localOffers: sample.offers, signedOut: true },
+    beforeLoad: withProject,
   });
+  await page.locator('.tabs [data-tab=laws]').click();
+  await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
+  await expect(page.locator('[data-panel=settings]')).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('[data-panel=laws]')).toBeVisible();
 });

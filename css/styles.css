@@ -123,11 +123,10 @@ h4 {
   margin: 0;
 }
 h1 {
-  font-size: clamp(28px, 6vw, 44px);
+  font-size: 19px;
   font-weight: 800;
-  font-stretch: 75%;
-  letter-spacing: -0.01em;
-  line-height: 1;
+  font-stretch: 85%;
+  line-height: 1.05;
 }
 h2 {
   font-size: 22px;
@@ -166,21 +165,16 @@ a {
   text-transform: uppercase;
   color: var(--muted);
 }
-header p {
-  margin-top: 8px;
+#intro {
   color: var(--muted);
   max-width: 62ch;
 }
-header {
-  position: relative;
-}
 /* The sheep (its own colours: white with a black face in dark mode too) */
 .sheep {
-  position: absolute;
-  top: -4px;
-  right: 0;
-  width: 84px;
-  height: 63px;
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 35px;
   padding: 0;
   border: 0;
   background: none;
@@ -220,7 +214,7 @@ header {
 }
 .sheep .beee {
   position: absolute;
-  right: 0;
+  left: 0;
   top: calc(100% + 4px);
   font-family: var(--f-display);
   font-weight: 750;
@@ -256,10 +250,6 @@ header {
 }
 :root[data-theme="dark"] .sheep svg {
   filter: drop-shadow(0 0 1.2px rgba(229, 236, 228, 0.55));
-}
-header h1,
-#intro {
-  padding-right: 88px;
 }
 .sech {
   font-size: 24px;
@@ -1421,20 +1411,29 @@ section.blk {
   color: var(--bg);
 }
 
-/* The top bar: the kicker, and the account button with its status dot (ADR-0011) */
-.topbar {
+/* The app bar: the sheep, the title, the cog and the account button with its status dot (ADR-0011) */
+.appbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: -8px;
+  gap: 8px;
+  margin-bottom: -12px;
 }
-.topbar .kicker {
-  margin: 0;
+.brand {
+  flex: 1;
+  min-width: 0;
 }
-.acct {
-  position: relative;
+.brand .kicker {
+  margin: 2px 0 0;
+  font-size: 10.5px;
+  text-wrap: balance;
+}
+.bar-actions {
+  display: flex;
   flex: none;
+  gap: 8px;
+}
+.barbtn {
+  position: relative;
   display: grid;
   place-items: center;
   width: 38px;
@@ -1446,23 +1445,24 @@ section.blk {
   font-size: 14px;
   letter-spacing: 0.02em;
 }
-.acct svg {
-  width: 20px;
-  height: 20px;
+.barbtn[hidden] {
+  display: none;
+}
+.barbtn svg {
+  width: 19px;
+  height: 19px;
 }
 .acct[data-kind="initials"] {
   background: var(--accent);
   color: var(--accent-ink);
   border-color: var(--accent);
 }
-.acct[data-kind="cog"] > :is(.ic-person, .initials),
-.acct[data-kind="person"] > :is(.ic-cog, .initials),
-.acct[data-kind="initials"] > :is(.ic-cog, .ic-person) {
+.acct[data-kind="person"] > .initials,
+.acct[data-kind="initials"] > .ic-person {
   display: none;
 }
-/* The account's status, as a dot on the button; none without accounts */
+/* The account's status, as a dot on the button */
 .status-dot {
-  display: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -1475,9 +1475,6 @@ section.blk {
   width: 11px;
   height: 11px;
   border: 2px solid var(--bg);
-}
-.acct:not([data-status="off"]) .status-dot {
-  display: block;
 }
 [data-status="guest"],
 [data-status="pending"] {
@@ -1559,8 +1556,8 @@ section.blk {
   border-color: color-mix(in srgb, var(--bg) 35%, transparent);
 }
 
-/* The account page replaces the tabs */
-body.on-page :is(.tabs, header) {
+/* A page (account, settings) replaces the tabs and the intro */
+body.on-page :is(.tabs, #intro) {
   display: none;
 }
 .page-head {
@@ -1568,9 +1565,6 @@ body.on-page :is(.tabs, header) {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-}
-.guest-note {
-  font-weight: 600;
 }
 .account-sync {
   margin: 0;

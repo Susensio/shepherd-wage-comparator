@@ -12,18 +12,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar">
-    <p class="kicker">Para pastores y pastoras</p>
-    <button type="button" class="acct" id="accountButton" data-action="openAccountPage" data-kind="cog" data-status="off" aria-label="Ajustes" title="Ajustes">
-      <svg class="ic-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
-      <svg class="ic-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
-      <span class="initials" aria-hidden="true"></span>
-      <span class="status-dot" aria-hidden="true"></span>
-    </button>
-  </div>
-  <div class="tip-slot" id="accountTip" aria-live="polite"></div>
-
-  <header>
+  <header class="appbar">
     <button type="button" class="sheep" data-action="beee" aria-label="Una oveja" title="Beee">
       <svg viewBox="0 0 64 48" aria-hidden="true">
         <g class="legs"><rect x="20" y="34" width="3.5" height="11" rx="1.5"/><rect x="27" y="35" width="3.5" height="10" rx="1.5"/><rect x="37" y="35" width="3.5" height="10" rx="1.5"/><rect x="44" y="34" width="3.5" height="11" rx="1.5"/></g>
@@ -33,9 +22,23 @@
       </svg>
       <span class="beee" aria-live="polite"></span>
     </button>
-    <h1>Comparador de jornales</h1>
-    <p id="intro">Apunta las ofertas de pastoreo tal como te las proponen y mira cuánto ganas de verdad y si es legal.</p>
+    <div class="brand">
+      <h1>Comparador de jornales</h1>
+      <p class="kicker">Para pastores y pastoras</p>
+    </div>
+    <div class="bar-actions">
+      <button type="button" class="barbtn" data-action="openSettingsPage" aria-label="Ajustes" title="Ajustes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+      <button type="button" class="barbtn acct" id="accountButton" data-action="openAccountPage" data-kind="person" data-status="connecting" aria-label="Cuenta" title="Cuenta" hidden>
+        <svg class="ic-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        <span class="initials" aria-hidden="true"></span>
+        <span class="status-dot" aria-hidden="true"></span>
+      </button>
+    </div>
   </header>
+  <div class="tip-slot" id="accountTip" aria-live="polite"></div>
+  <p id="intro">Apunta las ofertas de pastoreo tal como te las proponen y mira cuánto ganas de verdad y si es legal.</p>
 
   <div class="tabs" role="tablist" aria-label="Partes de la página">
     <button type="button" role="tab" data-action="tab" data-tab="offers">Ofertas</button>
@@ -390,10 +393,10 @@
   </section>
   </div>
 
-  <div class="panel" data-panel="settings" hidden>
+  <div class="panel" data-panel="account" hidden>
   <div class="page-head">
-    <button type="button" class="linkbtn" data-action="closeAccountPage">← Volver</button>
-    <h2 id="pageTitle">Ajustes</h2>
+    <button type="button" class="linkbtn" data-action="closePage">← Volver</button>
+    <h2>Cuenta</h2>
   </div>
   <details id="account" class="sec fixed" open hidden>
     <summary id="accountTitle" hidden>Entrar</summary>
@@ -428,8 +431,8 @@
       </div>
       <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
 
-      <h4>Compartir tus ofertas</h4>
-      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir mis ofertas</span></label>
+      <h4>Otros pastores</h4>
+      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir tus ofertas</span></label>
       <p class="hint" id="sharingState"></p>
       <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
         <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
@@ -452,9 +455,16 @@
       </div>
     </div>
   </details>
+  </div>
+
+  <div class="panel" data-panel="settings" hidden>
+  <div class="page-head">
+    <button type="button" class="linkbtn" data-action="closePage">← Volver</button>
+    <h2>Ajustes</h2>
+    <p class="hint" id="settingsStorage" hidden></p>
+  </div>
   <details id="yourdata" class="sec fixed" open>
     <summary>Tus datos</summary>
-    <p class="hint guest-note" id="guestNote" hidden>Sin cuenta, se guardan solo en este navegador.</p>
     <p class="hint">Lo que no depende de la oferta sino de ti. Vale para todas las ofertas. Las cifras que ves son las de por defecto: cámbialas si las tuyas son otras.</p>
     <h4>Casa y comida</h4>
     <div class="assump">

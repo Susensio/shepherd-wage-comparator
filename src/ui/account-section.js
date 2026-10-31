@@ -66,7 +66,7 @@ function othersSection() {
   return { stage: view.othersDeclined ? 'declined' : 'ask', message, noPhone: false };
 }
 
-/** The tab shown, or the one the account page was opened from. */
+/** The tab shown, or the one a page was opened from. */
 const currentTab = () => /** @type {HTMLElement} */ ($('.tabs [aria-selected=true]')).dataset.tab ?? 'offers';
 
 /**
@@ -77,7 +77,7 @@ export function paintAccountStatus({ chooser = false } = {}) {
   if (!view.enabled) return;
   const status = paintAccountButton(view);
   const tab = currentTab();
-  const onPage = !$('[data-panel=settings]').hidden;
+  const onPage = document.body.classList.contains('on-page');
   /** @type {Parameters<typeof tipView>[0] | null} */
   let tip = null;
   if (!onPage && status === 'guest' && !view.dismissed.has(tab) && GUEST_TIPS[tab])
@@ -213,6 +213,7 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
   view.enabled = true;
   view.offline = navigator.onLine === false;
   $('#account').hidden = false;
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => showSignInButtons());
   addEventListener('offline', () => {
     view.offline = true;
     paint();
@@ -267,6 +268,12 @@ export const accountActions = {
       Object.assign(view.signIn, { stage: 'code', email });
     });
   },
+
+  resendEmailCode: () =>
+    signInStep('No se pudo enviar el código. Inténtalo de nuevo.', async () => {
+      await (await openAccount()).sendEmailCode(view.signIn.email);
+      view.signIn.message = 'Se ha enviado otro código.';
+    }),
 
   verifyEmailCode(button) {
     const input = fieldBy(button, 'signInCode');

@@ -53,19 +53,29 @@ function ready(clientId) {
   return loading;
 }
 
+/** Google's dark button in dark mode: the page's `data-theme` where the CSS uses it, else the system's scheme. */
+function buttonTheme() {
+  const forced = document.documentElement.dataset.theme;
+  const dark = forced ? forced === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  return dark ? 'filled_black' : 'outline';
+}
+
 /**
- * Draws Google's button into every empty `slot` and, with `chooser`, opens Google's account chooser. `handler` gets the
- * ID token and the raw nonce.
+ * Draws Google's button into every slot that has none, or one in the other theme, and with `chooser` opens Google's
+ * account chooser. `handler` gets the ID token and the raw nonce.
  * @param {{ clientId: string, slots: HTMLElement[], handler: (token: string, nonce: string) => void, chooser?: boolean }} options
  */
 export async function showGoogleButtons({ clientId, slots, handler, chooser = false }) {
   const id = await ready(clientId);
   onToken = handler;
+  const theme = buttonTheme();
   for (const slot of slots) {
-    if (slot.childElementCount) continue;
+    if (slot.childElementCount && slot.dataset.buttonTheme === theme) continue;
+    slot.replaceChildren();
+    slot.dataset.buttonTheme = theme;
     id.renderButton(slot, {
       type: 'standard',
-      theme: 'outline',
+      theme,
       size: 'large',
       text: 'continue_with',
       shape: 'pill',

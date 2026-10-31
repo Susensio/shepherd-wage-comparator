@@ -3,7 +3,7 @@
 import {
   animateNextPaint,
   chipEdges,
-  closeAccountPage,
+  closePage,
   closeTemplates,
   commit,
   done,
@@ -11,6 +11,7 @@ import {
   onPopState,
   openAccountPage,
   openFirstSections,
+  openSettingsPage,
   openTemplates,
   paintAll,
   scrollChipsNextPaint,
@@ -181,8 +182,9 @@ let deleteButton;
 const ACTIONS = {
   tab: (b) => showTab(b.dataset.tab, true),
   openAccountPage: () => openAccountPage(),
+  openSettingsPage: () => openSettingsPage(),
   openAccountFromPrompt: () => openAccountPage(true),
-  closeAccountPage,
+  closePage,
 
   /* Comparar */
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out
