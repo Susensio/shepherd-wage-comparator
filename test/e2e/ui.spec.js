@@ -150,7 +150,7 @@ test('without accounts, a backup, downloaded and loaded in another browser', asy
   const other = await openApp({ ctx: await browser.newContext() });
   const backup = { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(data) };
   await other.setInputFiles('#backupFile', backup);
-  await expect(other.locator('#bkMsg2')).toHaveText(/^Añadida 1 oferta/);
+  await expect(other.locator('#backupResult')).toHaveText(/^Añadida 1 oferta/);
   await other.setInputFiles('#backupFile', backup);
-  await expect(other.locator('#bkMsg2')).toContainText('ya la tenías');
+  await expect(other.locator('#backupResult')).toContainText('ya la tenías');
 });

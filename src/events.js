@@ -309,20 +309,21 @@ const ACTIONS = {
   ...accountActions,
 
   /* Backups */
-  download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#bkMsg')),
+  download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#backupResult')),
   snoozeBackup() {
     snoozeReminder();
     paintBackup();
   },
-  copyBackupText: () => copyBackup($('#bkMsg')),
+  copyBackupText: () => copyBackup($('#backupResult')),
   loadBackupText() {
     const box = /** @type {HTMLTextAreaElement} */ ($('#backupPaste'));
     if (!box.value.trim()) {
-      $('#bkMsg2').textContent = 'Pega antes el texto de una copia.';
+      $('#backupResult').textContent = 'Pega antes el texto de una copia.';
+      $('#backupResult').dataset.kind = 'warn';
       box.focus();
       return;
     }
-    if (loadBackup(box.value, $('#bkMsg2'))) box.value = '';
+    if (loadBackup(box.value, $('#backupResult'))) box.value = '';
   },
 };
 
@@ -347,27 +348,27 @@ function onSummaryClick(e) {
   toggleFold(details, !details.open);
 }
 
-/** The backup file, picked or dropped on the text box. */
+/** The backup file, picked or dropped on the drop area. */
 function setUpBackupFile() {
-  const box = $('#backupPaste');
-  box.addEventListener('dragover', (e) => {
+  const drop = $('#backupDrop');
+  drop.addEventListener('dragover', (e) => {
     if (![...e.dataTransfer.types].includes('Files')) return;
     e.preventDefault();
-    box.classList.add('dragging');
+    drop.classList.add('dragging');
   });
-  box.addEventListener('dragleave', () => box.classList.remove('dragging'));
-  box.addEventListener('drop', async (e) => {
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
+  drop.addEventListener('drop', async (e) => {
     const file = e.dataTransfer.files?.[0];
-    box.classList.remove('dragging');
+    drop.classList.remove('dragging');
     if (!file) return;
     e.preventDefault();
-    loadBackup(await file.text(), $('#bkMsg2'));
+    loadBackup(await file.text(), $('#backupResult'));
   });
   $('#backupFile').addEventListener('change', async (e) => {
     const input = /** @type {HTMLInputElement} */ (e.target);
     const file = input.files?.[0];
     if (!file) return;
-    loadBackup(await file.text(), $('#bkMsg2'));
+    loadBackup(await file.text(), $('#backupResult'));
     input.value = '';
   });
 }

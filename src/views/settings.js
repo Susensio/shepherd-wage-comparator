@@ -25,15 +25,24 @@ export function fillSettings(skip) {
     input.checked = (input.value === '1') === (cfg.unemployment !== false);
 }
 
-/** The backup reminder above the offers, and the backup status on the settings page. */
+/** The backup reminder above the offers, and the status in the settings page's backup card (the account part of the card is toggled in `paintAccountButton`). */
 export function paintBackup() {
   const status = backupStatus(myOffers().some((o) => isComplete(o.terms)));
   // With accounts, the offers are kept in the account instead
   $('#backupNotice').hidden = !status.remind || !!(ACCOUNT_CONFIG.url && ACCOUNT_CONFIG.anonKey);
   const { last, days } = status;
-  $('#backupStatus').textContent = !last
+  const title = $('#backupStatus');
+  title.textContent = !last
     ? 'Aún no has guardado ninguna copia.'
-    : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})${status.changed ? '. Has cambiado ofertas desde entonces.' : ', con todo lo que tienes ahora.'}`;
+    : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})`;
+  title.classList.toggle('ok', !status.changed);
+  title.classList.toggle('warn', status.changed);
+  const since = !last
+    ? ''
+    : status.changed
+      ? 'Has cambiado ofertas desde entonces. '
+      : 'Incluye todo lo que tienes ahora. ';
+  $('#backupAdvice').textContent = `${since}El navegador puede borrarlas: guarda una copia de vez en cuando.`;
 }
 
 /**
@@ -97,6 +106,9 @@ export function paintAccountButton(view) {
   button.setAttribute('aria-label', label);
   button.title = label;
   $('#accountTitle').hidden = status !== 'guest';
+  // Signed in, the account keeps the offers: the backup card says so instead of warning about the browser
+  $('#backupGuest').hidden = !!view.user;
+  $('#backupAccount').hidden = !view.user;
   const storage = $('#settingsStorage');
   storage.textContent = storageLine(view);
   storage.hidden = !storage.textContent;

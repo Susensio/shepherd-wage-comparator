@@ -501,22 +501,32 @@
 
   <details id="backup" class="sec fixed" open>
     <summary>Copia de seguridad</summary>
-    <p class="hint" id="backupWhy">El navegador puede borrar tus ofertas (Safari, por ejemplo, si pasas una semana sin abrir la página). Guarda una copia de vez en cuando.</p>
-    <p class="backup-status" id="backupStatus"></p>
-    <h4>Guardar una copia</h4>
-    <div class="actions">
-      <button type="button" class="sm pri" data-action="download">Descargar archivo</button>
-      <button type="button" class="sm" data-action="copyBackupText">Copiar como texto</button>
+    <div class="bk-card">
+      <div id="backupGuest">
+        <p class="bk-title" id="backupStatus"></p>
+        <p class="hint" id="backupAdvice"></p>
+      </div>
+      <div id="backupAccount" hidden>
+        <p class="bk-title ok">Tus ofertas se guardan en tu cuenta.</p>
+        <p class="hint">Una copia en archivo es un respaldo extra, o sirve para pasarlas a otro sitio.</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="sm pri" data-action="download">Descargar copia</button>
+        <button type="button" class="linkbtn" data-action="copyBackupText">Copiar como texto</button>
+      </div>
     </div>
-    <p class="hint" id="bkMsg" aria-live="polite"></p>
     <h4>Recuperar una copia</h4>
     <p class="hint">Se añaden las ofertas de la copia que no tengas. Las que ya tienes no cambian.</p>
-    <div class="actions">
+    <div class="drop" id="backupDrop">
       <label class="filebtn">Elegir el archivo<input type="file" id="backupFile"></label>
+      <span>o arrástralo aquí</span>
     </div>
-    <textarea id="backupPaste" rows="3" placeholder="…o arrastra aquí el archivo, o pega su texto" aria-label="Texto de una copia"></textarea>
-    <div class="actions"><button type="button" class="sm" data-action="loadBackupText">Recuperar este texto</button></div>
-    <p class="hint" id="bkMsg2" aria-live="polite"></p>
+    <details class="paste" id="backupPasteFold">
+      <summary>Pegar el texto de una copia</summary>
+      <textarea id="backupPaste" rows="3" aria-label="Texto de una copia"></textarea>
+      <div class="actions"><button type="button" class="sm" data-action="loadBackupText">Recuperar este texto</button></div>
+    </details>
+    <div class="result" id="backupResult" role="status" aria-live="polite"></div>
   </details>
 
   </div>
