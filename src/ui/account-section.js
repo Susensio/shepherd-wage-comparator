@@ -215,7 +215,6 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
   view.enabled = true;
   view.offline = navigator.onLine === false;
   $('#account').hidden = false;
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => showSignInButtons());
   addEventListener('offline', () => {
     view.offline = true;
     paint();

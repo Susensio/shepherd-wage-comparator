@@ -315,15 +315,13 @@ test.describe('the tooltip', () => {
     await expect(page.locator('#accountWho')).toBeVisible();
   });
 
-  test("Google's button takes the dark theme in dark mode, and back", async ({ openApp }) => {
+  test("Google's button is the white one in dark mode too, on a transparent frame", async ({ openApp }) => {
     const page = await openGuest(openApp, { google: true });
-    await page.locator('#accountButton').click();
-    const themes = () => page.evaluate(() => window.fake.google.themes.at(-1));
-    await expect.poll(themes).toBe('outline');
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect.poll(themes).toBe('filled_black');
-    await page.emulateMedia({ colorScheme: 'light' });
-    await expect.poll(themes).toBe('outline');
+    await page.locator('#accountButton').click();
+    await expect.poll(() => page.evaluate(() => window.fake.google.themes.at(-1))).toBe('outline');
+    const scheme = await page.locator('#accountOut .gsi-slot').evaluate((slot) => getComputedStyle(slot).colorScheme);
+    expect(scheme).toBe('light');
   });
 
   test('the backup reminder gives way to the account', async ({ openApp }) => {

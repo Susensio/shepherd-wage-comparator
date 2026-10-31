@@ -1812,6 +1812,9 @@ details.fixed > summary::-webkit-details-marker {
 }
 .gsi-slot {
   min-height: 44px;
+  /* Google draws its button in a light frame; a frame whose scheme differs from the page's is painted opaque, so in
+     dark mode the button would sit on a white box. */
+  color-scheme: light;
 }
 .signin-or {
   display: flex;
