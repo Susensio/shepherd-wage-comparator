@@ -196,7 +196,7 @@ export function resultView(o, r, { readOnly = false } = {}) {
   const line = legalLine(o, r);
   return html`${
     year !== r.year
-      ? html`<p class="year-warning">Esta oferta es de ${year} y la página aún no tiene el salario mínimo ni el IRPF de ${year}: las cuentas usan los de ${r.year}.</p>`
+      ? html`<p class="year-warning">Esta oferta es de ${year} y aún no están incluidos el salario mínimo ni el IRPF de ${year}: las cuentas usan los de ${r.year}.</p>`
       : ''
   }
     <h3 class="q">¿Cuánto ganas?</h3>

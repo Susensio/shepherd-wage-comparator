@@ -8,7 +8,7 @@ export function explanations(o, r) {
   const cfg = r.cfg;
   const severanceDays = `${LAW.severanceDaysPerYear} días de salario por año trabajado`;
   const contract = {
-    temporary: `Contrato por temporada. Al acabar te toca una indemnización de ${severanceDays}${r.employer.severance > 0.5 ? `: unos ${fE(r.employer.severance)} brutos` : ''}.${r.min.casual ? ` Como dura ${LAW.casualMaxDays} días o menos, el mínimo es el de temporero: ${fE(r.wage.casual, 2)} por jornada.` : ''}`,
+    temporary: `Contrato por temporada. Al acabar te corresponde una indemnización de ${severanceDays}${r.employer.severance > 0.5 ? `: unos ${fE(r.employer.severance)} brutos` : ''}.${r.min.casual ? ` Como dura ${LAW.casualMaxDays} días o menos, el mínimo es el de temporero: ${fE(r.wage.casual, 2)} por jornada.` : ''}`,
     seasonal:
       'Trabajas por temporadas, pero el contrato sigue entre una y otra: la empresa tiene que volver a llamarte cada campaña, en el orden que marque el convenio. Al acabar cada temporada no hay indemnización, y entre campañas puedes cobrar el paro si tienes cotizado lo suficiente. Si no te llaman, es un despido.',
     permanent: `Contrato indefinido todo el año. Si te despiden sin causa justificada te corresponden ${LAW.dismissalDaysPerYear} días de salario por año trabajado.`,
@@ -20,7 +20,7 @@ export function explanations(o, r) {
     b: 'Lo que cobras en negro cuenta como dinero, pero no cotiza: no da paro, jubilación ni baja, ni cuenta para la indemnización.',
     allPayroll:
       'Todo lo que cobras va en nómina y cotiza: cuenta para el paro, la jubilación, la baja y la indemnización.',
-    severance: `Al acabar un contrato temporal te toca una indemnización de ${severanceDays} (Estatuto de los Trabajadores, art. 49.1.c). Va en el finiquito.`,
+    severance: `Al acabar un contrato temporal te corresponde una indemnización de ${severanceDays} (Estatuto de los Trabajadores, art. 49.1.c). Va en el finiquito.`,
     contract: contract[o.terms.contract],
   };
 }

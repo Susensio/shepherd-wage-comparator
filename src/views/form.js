@@ -158,7 +158,7 @@ function carHint(o, r) {
 function yearHint(o, r) {
   const year = actualYear(o.terms);
   const w = r.wage;
-  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está en la página: se usa el de ${r.year}. ` : ''}Salario mínimo de ${r.year}: ${fE(w.annual)} al año (${fE(w.annual / 14)} en 14 pagas), o ${fE(w.casual, 2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${w.decree}).`;
+  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está incluido: se usa el de ${r.year}. ` : ''}Salario mínimo de ${r.year}: ${fE(w.annual)} al año (${fE(w.annual / 14)} en 14 pagas), o ${fE(w.casual, 2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${w.decree}).`;
 }
 
 /**
