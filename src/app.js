@@ -129,7 +129,8 @@ const needPlacesFor = (o) => {
 export function paintCompare() {
   const own = compared();
   if (includesOthers()) for (const { o } of state.others.items) needPlacesFor(o);
-  const all = includesOthers() ? [...own, ...comparedOthers()] : own;
+  const others = includesOthers() ? comparedOthers() : null;
+  const all = others ? [...own, ...others] : own;
   const { picker, body, more } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
@@ -137,12 +138,13 @@ export function paintCompare() {
   restoreFolds($('#cmpBlk'));
   restoreFolds($('#cmpMore'));
   paintTimeline(own);
-  paintShared();
+  paintShared(others);
 }
 
-/** The read-only view of the shared offer opened, in place of the Comparar tab's content. */
-function paintShared() {
-  const shown = state.others.available ? comparedOthers().find((x) => x.o.id === state.others.viewId) : undefined;
+/** The read-only view of the shared offer opened, in place of the Comparar tab's content. `others`: `comparedOthers()` if the caller has it. */
+function paintShared(others = null) {
+  const open = state.others.available && state.others.viewId !== null;
+  const shown = open ? (others ?? comparedOthers()).find((x) => x.o.id === state.others.viewId) : undefined;
   $('#cmpMain').hidden = !!shown;
   $('#sharedBlk').hidden = !shown;
   if (shown) needPlacesFor(shown.o);
