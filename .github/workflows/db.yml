@@ -1,0 +1,49 @@
+name: Database
+
+on:
+  push:
+    branches: [master]
+    paths: ['supabase/migrations/**']
+
+# One push at a time; never cancel one half-way.
+concurrency:
+  group: db-push
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Look for the secrets
+        id: gate
+        run: |
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ] && [ -n "$SUPABASE_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Supabase secrets are not set; migrations not pushed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        if: steps.gate.outputs.ready == 'true'
+      # Policies tested offline before they reach the project.
+      - run: node --test test/unit/rls.test.js
+        if: steps.gate.outputs.ready == 'true'
+      - uses: supabase/setup-cli@v3
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          version: 2.122.0
+      - run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+        if: steps.gate.outputs.ready == 'true'
+      - run: supabase db push
+        if: steps.gate.outputs.ready == 'true'
