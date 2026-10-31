@@ -25,7 +25,7 @@ function costDetails(o, r) {
     r.employer.ss > 0.5 && [
       'Seguridad Social que paga la empresa',
       r.employer.ss,
-      `aprox. ${fN(r.cfg.ssEmp, 1)} % del bruto`,
+      `aprox. ${fN(LAW.ssEmployerPct, 1)} % del bruto`,
     ],
     r.cash.total > 0 && [r.noContract ? 'En mano, sin contrato' : 'En negro', r.cash.total, ''],
     r.car.kmPaid > 0.5 && ['Kilometraje que te paga', r.car.kmPaid, ''],

@@ -28,6 +28,7 @@ const LAW_FIGURES = {
   vacationPerMonth: fN(LAW.vacationDaysPerYear / 12, 1),
   severanceDaysPerYear: fN(LAW.severanceDaysPerYear),
   overnightPct: fN(LAW.overnightPct),
+  annualHours: fN(LAW.annualHours),
   casualMaxDays: fN(LAW.casualMaxDays),
   workDaysWeek: fN(7 - LAW.weeklyRest, 1),
   normalWorkday: fN(LAW.weeklyHours / (7 - LAW.weeklyRest), 1),

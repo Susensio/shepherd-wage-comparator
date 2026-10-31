@@ -1,5 +1,6 @@
 /** Estimated payslips, month by month, for a dated season. */
 
+import { LAW } from '../law.js';
 import { endOf, parseDate } from '../offer.js';
 
 /**
@@ -7,7 +8,7 @@ import { endOf, parseDate } from '../offer.js';
  * contract's); the vacation not taken and the severance go in the last one, the final settlement.
  * Contributions at the settings' rates.
  */
-export function monthlyPayslips(terms, r, cfg) {
+export function monthlyPayslips(terms, r) {
   const end = endOf(terms);
   if (!terms.start || !end || r.pay.gross <= 0) return [];
   const start = parseDate(terms.start);
@@ -24,8 +25,8 @@ export function monthlyPayslips(terms, r, cfg) {
   const shares = months.reduce((sum, x) => sum + x.share, 0) || 1;
   const scale = r.time.months / shares;
   const lastIdx = months.length - 1;
-  const ss = cfg.ssPct / 100;
-  const employer = cfg.ssEmp / 100;
+  const ss = LAW.ssWorkerPct / 100;
+  const employer = LAW.ssEmployerPct / 100;
   return months.map((x, i) => {
     const salary = (r.pay.salary * x.share * scale) / r.time.months;
     const vacation = r.pay.vacationPay > 0 && i === lastIdx ? r.pay.vacationPay : 0;

@@ -33,9 +33,10 @@ test('every rule has a source or a note', () => {
     assert.ok(rule.source ? SOURCES[rule.source] && rule.art : rule.note, `${key}: no source and no note`);
 });
 
-test('the default settings come from the law', () => {
-  assert.equal(DEF_CFG.ssPct, ssTotal(SOCIAL_SECURITY.worker));
-  assert.equal(DEF_CFG.ssEmp, ssTotal(SOCIAL_SECURITY.employer));
-  assert.equal(DEF_CFG.overnightPct, LAW.overnightPct);
-  assert.equal(DEF_CFG.vacationDaysPerYear, LAW.vacationDaysPerYear);
+test('law figures are read from the law, not from the settings', () => {
+  assert.equal(LAW.ssWorkerPct, ssTotal(SOCIAL_SECURITY.worker));
+  assert.equal(LAW.ssEmployerPct, ssTotal(SOCIAL_SECURITY.employer));
+  assert.equal(LAW.annualHours, 1826);
+  for (const key of ['ssPct', 'ssEmp', 'annualHours', 'overnightPct', 'vacationDaysPerYear'])
+    assert.ok(!(key in DEF_CFG), `${key} is a law figure, not a setting`);
 });

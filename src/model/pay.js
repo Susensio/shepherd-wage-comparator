@@ -12,7 +12,7 @@ import { bisect, irpfAdded } from './tax.js';
  * @param {object} ctx `{cfg, wage}`: settings and the minimum wage of the offer's year
  * @param {ReturnType<import('./time.js').schedule>} time
  */
-export function legalMinimum(terms, { cfg, wage }, time) {
+export function legalMinimum(terms, { wage }, time) {
   const { noDuration, months, hoursPerDay, workFrac, natDays, vacationDays, daysWorked } = time;
   const partTime = Math.min(1, (workFrac * 7 * hoursPerDay) / LAW.weeklyHours);
   const casual = !noDuration && terms.contract === 'temporary' && natDays <= LAW.casualMaxDays;
@@ -21,7 +21,7 @@ export function legalMinimum(terms, { cfg, wage }, time) {
     : ((wage.annual * months) / 12) * partTime;
   const vacation =
     casual || terms.vacation !== 'taken' ? vacationDays * (wage.annual / LAW.smiDaysPerYear) * partTime : 0;
-  const overnightRate = terms.overnight === 'yes' ? cfg.overnightPct / 100 : 0;
+  const overnightRate = terms.overnight === 'yes' ? LAW.overnightPct / 100 : 0;
   const overnight = overnightRate * salary;
   return {
     casual,
@@ -30,7 +30,7 @@ export function legalMinimum(terms, { cfg, wage }, time) {
     vacation,
     total: salary + overnight + vacation,
     overnightRate,
-    hourly: wage.annual / cfg.annualHours,
+    hourly: wage.annual / LAW.annualHours,
   };
 }
 
@@ -89,7 +89,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
     manual
       ? irpfYearOf(gross)
       : Math.max(irpfYearOf(gross), terms.contract === 'temporary' ? (gross * LAW.irpf.withholding) / 100 : 0);
-  const netOf = (gross) => gross - (gross * cfg.ssPct) / 100 - withholdingOf(gross);
+  const netOf = (gross) => gross - (gross * LAW.ssWorkerPct) / 100 - withholdingOf(gross);
   let gross = base + extraPays + vacationPay;
   let ratio = 1;
   if (terms.payType === 'net' && gross > 0) {
@@ -100,7 +100,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
     extraPays *= ratio;
     vacationPay *= ratio;
   }
-  const ss = (gross * cfg.ssPct) / 100;
+  const ss = (gross * LAW.ssWorkerPct) / 100;
   const irpf = withholdingOf(gross);
   const net = gross - ss - irpf;
   const netFactor = gross > 0 ? net / gross : 0;
@@ -131,7 +131,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
  */
 export function effectiveOffer(terms, mine, ctx, schedule) {
   if (terms.contract === 'none' || (!terms.payrollMin && !fromTotal(terms))) return { terms, split: null };
-  const time = schedule(terms, ctx.cfg);
+  const time = schedule(terms);
   const min = legalMinimum(terms, ctx, time);
   let x = terms;
   // Legally, vacation «included in the agreed pay» shows on the payslip as a separate item

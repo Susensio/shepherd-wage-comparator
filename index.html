@@ -344,7 +344,7 @@
     <p class="hint">Lo que se comprueba en «¿Es legal?». Son mínimos: tu contrato o tu convenio pueden darte más, nunca menos.</p>
     <dl class="docs">
       <dt>Salario mínimo</dt>
-      <dd>Cambia cada año; se usa el del año que pongas en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
+      <dd>Cambia cada año; se usa el del año que pongas en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. El mínimo por hora se calcula con <span data-law="annualHours"></span> horas de jornada al año. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
       <dt>Plus por dormir en el monte</dt>
       <dd>Si pernoctas fuera por pastoreo (borda, cabaña), al menos un <span data-law="overnightPct"></span> % más de salario. <span class="source"><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a>, art. 29. Es el último publicado que se ha podido consultar: puede haber uno más reciente, y sus tablas salariales pueden fijar un sueldo mayor que el SMI.</span></dd>
       <dt>Vacaciones</dt>
@@ -489,19 +489,14 @@
   </details>
 
   <details id="assumptions" class="sec fixed" open>
-    <summary>Supuestos del cálculo</summary>
+    <summary>Cómo se cuenta</summary>
     <div class="assump">
-      <label class="fld">Cotización del trabajador (%)<input class="n" type="text" inputmode="decimal" id="cfg_ss" data-cfg="ssPct"></label>
-      <label class="fld">Cotización de la empresa (% del bruto)<input class="n" type="text" inputmode="decimal" id="cfg_ssEmp" data-cfg="ssEmp"></label>
-      <label class="fld">Horas de jornada al año (para el SMI por hora)<input class="n" type="text" inputmode="decimal" id="cfg_annualHours" data-cfg="annualHours"></label>
-      <label class="fld">Plus de pernocta (% del salario)<input class="n" type="text" inputmode="decimal" id="cfg_overnight" data-cfg="overnightPct"></label>
-      <label class="fld">Días de vacaciones al año (naturales)<input class="n" type="text" inputmode="decimal" id="cfg_vacation" data-cfg="vacationDaysPerYear"></label>
       <label class="fld"><span>Contar casa y comida</span>
         <span class="seg"><label><input type="radio" name="cfg_inKind" value="1">Sí</label><label><input type="radio" name="cfg_inKind" value="0">No</label></span></label>
       <label class="fld"><span>Contar el paro que generas</span>
         <span class="seg"><label><input type="radio" name="cfg_unemployment" value="1">Sí</label><label><input type="radio" name="cfg_unemployment" value="0">No</label></span></label>
     </div>
-    <p class="hint">Qué dice la ley, cómo se hacen las cuentas y de dónde salen las cifras: en la pestaña «Leyes».</p>
+    <p class="hint">Las cifras de la ley (cotizaciones, pernocta, vacaciones, jornada anual) no se cambian aquí: salen de la ley vigente y se explican en «Leyes».</p>
   </details>
 
   <details id="backup" class="sec fixed" open>

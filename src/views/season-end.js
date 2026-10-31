@@ -5,7 +5,7 @@
 
 import { html, nothing } from 'lit-html';
 import { clamp, fCount, fDate, fE, fN } from '../format.js';
-import { LAW, SOCIAL_SECURITY, ssTotal } from '../law.js';
+import { LAW, SOCIAL_SECURITY } from '../law.js';
 import { monthlyPayslips } from '../model/payslips.js';
 import { endOf, parseDate } from '../offer.js';
 import { figureCard } from './parts.js';
@@ -25,18 +25,13 @@ const monthName = (date) => {
 const e2 = (x) => fN(x, 2);
 const pct = (x) => `${fN(x, 2)}\u00a0%`;
 
-/** Contribution items one by one with the default rates; with yours, a single line. */
-const ratesOf = (pctSet, defaults) =>
-  Math.abs(pctSet - ssTotal(defaults)) < 0.005 ? defaults : [['Seguridad Social', pctSet]];
-
 /**
  * Every payslip goes in the same table and only the chosen month's rows show: the others are collapsed
  * (visibility: collapse) but still count towards the column widths, so they stay put from one month to the next.
  */
 function payslipTables(r, months, shown) {
-  const cfg = r.cfg;
-  const workerRates = ratesOf(cfg.ssPct, SOCIAL_SECURITY.worker);
-  const employerRates = ratesOf(cfg.ssEmp, SOCIAL_SECURITY.employer);
+  const workerRates = SOCIAL_SECURITY.worker;
+  const employerRates = SOCIAL_SECURITY.employer;
   const vacationDay = r.time.vacationDays > 0 ? r.pay.vacationPay / r.time.vacationDays : 0;
   const cls = (m, extra = '') => [m === shown ? '' : 'collapsed', extra].filter(Boolean).join(' ') || nothing;
   const line = (m, concept, detail, credit, debit) =>
@@ -99,7 +94,7 @@ function simulator(o, r, months) {
 export function seasonEndSection(o, r) {
   const end = endOf(o.terms);
   if (!o.terms.start || o.terms.offerOnly || r.time.noDuration || !end) return nothing;
-  const months = monthlyPayslips(o.terms, r, r.cfg);
+  const months = monthlyPayslips(o.terms, r);
   const payroll = months.reduce((sum, x) => sum + x.net, 0);
   const cash = r.cash.total;
   const total = payroll + cash;

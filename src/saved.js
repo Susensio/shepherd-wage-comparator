@@ -30,15 +30,21 @@ const toCurrentShape = (saved) => {
   return saved && typeof saved === 'object' && typeof saved.id === 'string' ? fromFlat(saved) : null;
 };
 
+/** Settings that were once editable and are now read from law.js. Saved values are dropped so they are not re-saved. */
+const FORMER_LAW_KEYS = ['ssPct', 'ssEmp', 'annualHours', 'overnightPct', 'vacationDaysPerYear'];
+
+const withoutLawFigures = (cfg) =>
+  Object.fromEntries(Object.entries(cfg).filter(([key]) => !FORMER_LAW_KEYS.includes(key)));
+
 /**
  * `{ offers, cfg }` from a saved bundle (browser, backup or account), completed with defaults.
- * `fallbackCfg` (the caller's current settings) is the base when the bundle has none. The input is not touched.
+ * `fallbackCfg` (the caller's current settings) is the base when the bundle has none. Former law figures in `cfg` are dropped. The input is not touched.
  * Offers in the old flat shape are converted.
  */
 export function ingestSaved(data, { fallbackCfg }) {
   return {
     offers: (data.offers ?? []).map(toCurrentShape).filter(Boolean).map(normalizeOffer),
-    cfg: data.cfg ? { ...DEF_CFG, ...data.cfg } : { ...fallbackCfg },
+    cfg: data.cfg ? { ...DEF_CFG, ...withoutLawFigures(data.cfg) } : { ...fallbackCfg },
   };
 }
 

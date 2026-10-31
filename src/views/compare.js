@@ -316,18 +316,17 @@ export function trendView(all, unit, width) {
   const U = UNITS[unit];
   // The legal minimum in the unit, net of the worker's Social Security only
   const minimumIn = (o, r) => {
-    const cfg = r.cfg;
-    const bonus = o.terms.overnight === 'yes' ? 1 + cfg.overnightPct / 100 : 1;
+    const bonus = o.terms.overnight === 'yes' ? 1 + LAW.overnightPct / 100 : 1;
     const annual = r.wage.annual;
     const base =
       unit === 'hour'
-        ? annual / cfg.annualHours
+        ? annual / LAW.annualHours
         : unit === 'day'
-          ? (annual / cfg.annualHours) * LAW.workdayHours
+          ? (annual / LAW.annualHours) * LAW.workdayHours
           : unit === 'month'
             ? annual / 12
             : (r.min.salary + r.min.vacation) / bonus;
-    return base * bonus * (1 - cfg.ssPct / 100);
+    return base * bonus * (1 - LAW.ssWorkerPct / 100);
   };
   const points = all
     .filter(({ o }) => o.terms.start && isComplete(o.terms))

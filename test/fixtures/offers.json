@@ -330,14 +330,9 @@
     "mealLunchP": 4,
     "fuelUse": 7,
     "wear": 0.06,
-    "vacationDaysPerYear": 30,
     "inKind": true,
-    "annualHours": 1826,
     "others": 0,
     "unemployment": true,
-    "overnightPct": 25,
-    "fuelPrice": 1.45,
-    "ssEmp": 30.25,
-    "ssPct": 6.43
+    "fuelPrice": 1.45
   }
 }

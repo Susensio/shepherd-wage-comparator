@@ -36,8 +36,15 @@ test('entries that are not offers are left out', () => {
 });
 
 test('saved settings are completed with defaults', () => {
-  const { cfg } = ingestSaved({ offers: [], cfg: { ssEmp: 20 } }, { fallbackCfg });
-  assert.deepEqual(cfg, { ...DEF_CFG, ssEmp: 20 });
+  const { cfg } = ingestSaved({ offers: [], cfg: { fuelUse: 9 } }, { fallbackCfg });
+  assert.deepEqual(cfg, { ...DEF_CFG, fuelUse: 9 });
+});
+
+test('saved values of figures that now come from the law are dropped', () => {
+  const former = { ssPct: 1, ssEmp: 2, annualHours: 3, overnightPct: 4, vacationDaysPerYear: 5 };
+  const { cfg } = ingestSaved({ offers: [], cfg: { ...former, fuelUse: 9 } }, { fallbackCfg });
+  assert.deepEqual(cfg, { ...DEF_CFG, fuelUse: 9 });
+  for (const key of Object.keys(former)) assert.ok(!(key in cfg), key);
 });
 
 test('a bundle without cfg uses fallbackCfg', () => {

@@ -60,7 +60,7 @@ function payrollSection(r) {
     'Nómina',
     [
       row('Nómina bruta', fE(pay.gross), { sub: parts.length ? `con ${joinAnd(parts)}` : '' }),
-      row(`− Seguridad Social (${fN(r.cfg.ssPct, 1)}\u00a0%)`, fE(pay.ss)),
+      row(`− Seguridad Social (${fN(LAW.ssWorkerPct, 1)}\u00a0%)`, fE(pay.ss)),
       row(`− Retención de IRPF (${fN(pay.irpfPct * 100, 1)}\u00a0%)`, fE(pay.irpf)),
       row('= Nómina neta', fE(pay.net), { cls: severance > 0.5 ? 'strong' : 'tot' }),
       severance > 0.5 &&
@@ -94,11 +94,11 @@ function minimumSection(o, r, net) {
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
       : `SMI ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
   });
-  const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(r.cfg.overnightPct)} %)`, fE(min.overnight));
+  const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(LAW.overnightPct)} %)`, fE(min.overnight));
   const salaryShort = (sub) =>
     row('= Falta de sueldo', isWorthCounting(debt.salary) ? fE(debt.salary) : 'nada', { cls: 'strong', sub });
   if (r.noContract) {
-    const factor = 1 - r.cfg.ssPct / 100;
+    const factor = 1 - LAW.ssWorkerPct / 100;
     return section('Mínimo legal, contado por meses', [
       minimum,
       bonus,

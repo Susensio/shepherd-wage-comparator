@@ -187,7 +187,7 @@ export function claimText(o, r) {
       `Sin contrato ni alta en la Seguridad Social (Estatuto, art. 8). Se pagan ${fE(cash)} en mano en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
     );
     add(
-      `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (SMI ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(r.cfg.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
+      `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (SMI ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(LAW.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
     );
     if (isWorthCounting(r.debt.vacation))
       add(
@@ -204,7 +204,7 @@ export function claimText(o, r) {
     );
     if (r.min.overnight > 0)
       add(
-        `- Plus por pernoctar fuera por pastoreo, ${fN(r.cfg.overnightPct)}\u00a0% del salario (convenio del campo de Huesca, art. 29): ${fE(r.min.overnight)}.`,
+        `- Plus por pernoctar fuera por pastoreo, ${fN(LAW.overnightPct)}\u00a0% del salario (convenio del campo de Huesca, art. 29): ${fE(r.min.overnight)}.`,
       );
     if (r.min.vacation > 0)
       add(`- Vacaciones (${fDays(r.time.vacationDays)}; Estatuto, art. 38): ${fE(r.min.vacation)}.`);

@@ -71,6 +71,12 @@ export const RULES = {
     note: 'unfair dismissal of a permanent worker, days of salary per year',
   },
   claimYears: { value: 1, source: 'et', art: '59.2', note: 'each payment can be claimed for a year after it was due' },
+  annualHours: {
+    value: 1826,
+    source: 'et',
+    art: '34.1',
+    note: 'ordinary hours per year at 40 a week, after rest days, holidays and vacation; turns the annual minimum wage into an hourly one',
+  },
   overnightPct: { value: 25, source: 'agreement', art: '29', note: 'bonus for sleeping out when herding, % of salary' },
   casualMaxDays: {
     value: 120,
@@ -108,6 +114,7 @@ export const MIN_WAGE = {
 };
 
 /** Social Security in the agricultural scheme, % of the gross: what the worker and the employer pay, item by item. */
+/** @type {{worker: [string, number][], employer: [string, number][]}} */
 export const SOCIAL_SECURITY = {
   worker: [
     ['Contingencias comunes', 4.7],
@@ -163,11 +170,13 @@ export const IRPF = {
 };
 
 /** The figures in the shape the model reads them. */
-/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF}} */
+/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF, ssWorkerPct: number, ssEmployerPct: number}} */
 export const LAW = {
   .../** @type {any} */ (Object.fromEntries(Object.entries(RULES).map(([k, r]) => [k, r.value]))),
   unemployment: UNEMPLOYMENT,
   irpf: IRPF,
+  ssWorkerPct: ssTotal(SOCIAL_SECURITY.worker),
+  ssEmployerPct: ssTotal(SOCIAL_SECURITY.employer),
 };
 /** «Estatuto, art. 38» and its link. */
 export const citeOf = (source, art) => ({

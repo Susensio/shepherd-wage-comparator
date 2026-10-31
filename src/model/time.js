@@ -26,9 +26,8 @@ export function payrollMonths(start, days) {
 /**
  * Duration, days worked and off, hours.
  * @param {object} terms the offer's terms
- * @param {object} cfg the settings
  */
-export function schedule(terms, cfg) {
+export function schedule(terms) {
   const noDuration = terms.durationUnit === 'unknown';
   const days = terms.durationUnit === 'days' ? Math.max(0, num(terms.duration)) : 0;
   // In days and with a start date, months are counted as on the payslip: whole calendar months and the days left over
@@ -43,7 +42,7 @@ export function schedule(terms, cfg) {
   const natDays = terms.durationUnit === 'days' && !noDuration ? days : months * DAYS_PER_MONTH;
   const hoursPerDay = Math.max(0, num(terms.hoursPerDay));
   // Vacation: 2.5 days per month, rounded to whole days, as on payslips (8.33 → 8)
-  const vacationDays = Math.round((num(cfg.vacationDaysPerYear) * months) / 12);
+  const vacationDays = Math.round((num(LAW.vacationDaysPerYear) * months) / 12);
   const vacationTaken = terms.vacation === 'taken' ? vacationDays : 0;
   // Share of days you work. «En total»: days off over the whole contract, vacation aside
   const off = Math.max(0, num(terms.daysOff));

@@ -2,6 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
+import { LAW } from '../law.js';
 import { hoursWeek } from '../model/time.js';
 import { endOf, parseDate } from '../offer.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
@@ -37,7 +38,7 @@ function owedReasons(o, r, money) {
   const { salary, overnight, vacation } = r.debt.parts;
   const reasons = [
     isWorthCounting(salary) && [`el salario mínimo${r.min.casual ? ' de temporero' : ''}`, salary],
-    isWorthCounting(overnight) && [`el plus de pernocta (${fN(r.cfg.overnightPct)} %)`, overnight],
+    isWorthCounting(overnight) && [`el plus de pernocta (${fN(LAW.overnightPct)} %)`, overnight],
     isWorthCounting(vacation) && [
       o.terms.vacation === 'paidAtEnd' ? 'parte de las vacaciones' : 'las vacaciones, que no caben en el jornal',
       vacation,

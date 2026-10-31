@@ -1,4 +1,4 @@
-/** The settings page (the assumptions, «Tus datos», the backup) and the account page, and the bar's account button. */
+/** The settings page («Tus datos», «Cómo se cuenta», the backup) and the account page, and the bar's account button. */
 
 import { fInputValue, num } from '../format.js';
 import { DEF_CFG, isComplete } from '../offer.js';
@@ -8,7 +8,7 @@ import { backupStatus } from '../storage/bundle.js';
 import { $, $$ } from '../ui/dom.js';
 
 /**
- * Fills in «Tus datos» and the assumptions. Values left at their default stay empty, with the default in grey.
+ * Fills in «Tus datos» and the two counting choices. Values left at their default stay empty, with the default in grey.
  * @param {HTMLElement} [skip] the field being typed in, left alone
  */
 export function fillSettings(skip) {

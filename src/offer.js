@@ -1,7 +1,6 @@
 /** An offer as people enter it: its fields, defaults, templates, dates and what is still missing. */
 
 import { fDate, joinAnd, num } from './format.js';
-import { LAW, SOCIAL_SECURITY, ssTotal } from './law.js';
 
 /** Calendar days in an average month. */
 export const DAYS_PER_MONTH = 365 / 12;
@@ -80,18 +79,13 @@ export const YOUR_DATA = {
   fuelUse: 7,
   fuelPrice: 1.45,
   wear: 0.06,
-  vacationDaysPerYear: LAW.vacationDaysPerYear,
 };
 
-/** Your figures and the calculation assumptions («Supuestos del cálculo»). */
+/** Your figures and the two counting choices («Tus datos», «Cómo se cuenta»). Law figures are not here: see law.js. */
 export const DEF_CFG = {
   unemployment: true, // count the unemployment benefit you generate as money
   inKind: true, // count housing and food as money
   others: 0, // other gross pay in the year, for IRPF
-  ssPct: ssTotal(SOCIAL_SECURITY.worker),
-  ssEmp: ssTotal(SOCIAL_SECURITY.employer),
-  annualHours: 1826, // yearly working hours, to turn the annual minimum wage into an hourly one
-  overnightPct: LAW.overnightPct,
   ...YOUR_DATA,
 };
 

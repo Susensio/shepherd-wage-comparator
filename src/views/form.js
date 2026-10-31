@@ -91,7 +91,6 @@ const text = (selector, value) => {
 
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
-  const cfg = r.cfg;
   if (o.terms.payrollMin && o.terms.contract !== 'none') {
     const monthly = r.min.salary / r.time.months;
     return `En nómina, el mínimo${r.min.casual ? ` de temporero (el contrato dura ${LAW.casualMaxDays} días o menos)` : ''}: unos ${fE(monthly)} brutos al mes, ${fE(monthly * r.netFactor)} netos.`;
@@ -104,7 +103,7 @@ function payHint(o, r) {
       : o.terms.contract === 'temporary' && r.pay.irpfPct * 100 < LAW.irpf.withholding + 0.05
         ? ' (la mínima de los eventuales agrarios)'
         : '';
-  const rates = `${fN(cfg.ssPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
+  const rates = `${fN(LAW.ssWorkerPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
   const refund = r.pay.irpf - r.pay.irpfYear;
   return [
     o.terms.payType === 'net'

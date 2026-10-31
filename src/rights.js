@@ -55,7 +55,7 @@ export function rightsOf(o, r, unit = 'month') {
   const hoursPerDay = num(o.terms.hoursPerDay);
   const hoursPerWeek = r.time.hoursPerWeek;
   const vacationDays = fCount(r.time.vacationDays);
-  const pct = fN(r.cfg.overnightPct);
+  const pct = fN(LAW.overnightPct);
   const rights = [];
   const add = (id, status, title, text) => rights.push({ id, status, title, text });
 

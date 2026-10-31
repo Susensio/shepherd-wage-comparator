@@ -42,13 +42,13 @@ export function irpfTax(gross, ssPct, deduction) {
  * IRPF that a gross adds to what you already earn in the year. If the offer spans two years, the gross is split
  * between them by days: `shares` holds, per year, the share of the gross, what your other offers earn then and that year's deduction.
  * @param {number} gross
- * @param {{ssPct: number, others: number}} cfg
+ * @param {{others: number}} cfg
  * @param {{share: number, others: number, deduction: object | null}[]} shares
  */
 export const irpfAdded = (gross, cfg, shares) =>
   shares.reduce((sum, { share, others, deduction }) => {
     const base = num(cfg.others) + others;
-    return sum + irpfTax(base + share * gross, cfg.ssPct, deduction) - irpfTax(base, cfg.ssPct, deduction);
+    return sum + irpfTax(base + share * gross, LAW.ssWorkerPct, deduction) - irpfTax(base, LAW.ssWorkerPct, deduction);
   }, 0);
 
 /**

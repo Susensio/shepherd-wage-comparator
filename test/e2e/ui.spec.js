@@ -102,8 +102,16 @@ test('Comparar can show the terms alone, without your travel and expenses', asyn
 test('settings apply to every offer', async ({ page }) => {
   await page.locator('.tcard').first().click();
   await page.click('[data-action=openSettingsPage]');
-  await page.fill('#cfg_overnight', '30');
-  expect(await page.evaluate(() => app.state.config.overnightPct)).toBe(30);
+  await page.fill('#cfg_wear', '0.1');
+  expect(await page.evaluate(() => app.state.config.wear)).toBe(0.1);
+});
+
+test('law figures are not settings: «Cómo se cuenta» has only the two choices', async ({ page }) => {
+  await page.click('[data-action=openSettingsPage]');
+  await expect(page.locator('#assumptions summary')).toHaveText('Cómo se cuenta');
+  await expect(page.locator('#assumptions input[type=text]')).toHaveCount(0);
+  await expect(page.locator('#assumptions input[type=radio]')).toHaveCount(4);
+  await expect(page.locator('#assumptions .hint')).toContainText('no se cambian aquí');
 });
 
 test('«Hecho» with data missing takes you to it', async ({ page }) => {
