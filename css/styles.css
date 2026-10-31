@@ -1160,6 +1160,20 @@ section.blk {
   font-size: 12px;
   color: var(--muted);
 }
+/* The 40 h line on the weekly-hours bars, and its legend */
+.hours .hbar s {
+  border-left: 2px solid var(--ink);
+  opacity: 0.8;
+}
+.legend .lg-line {
+  display: inline-block;
+  width: 0;
+  height: 11px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border-left: 2px solid var(--ink);
+  opacity: 0.8;
+}
 .legend span {
   display: inline-flex;
   align-items: center;

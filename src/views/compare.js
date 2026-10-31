@@ -8,7 +8,7 @@ import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } 
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
-import { incomeBar, legend } from './parts.js';
+import { incomeBar, legend, swatch } from './parts.js';
 
 /** «Comparar dos»: whether it is on and which offers are picked. Not saved: every visit starts without it. */
 export const pairing = { on: false, ids: /** @type {string[]} */ ([]) };
@@ -205,7 +205,8 @@ function headToHead(list) {
 
 /** Hours per week: the normal ones and, in a stronger colour, the extra ones (extra days and overtime). */
 function hoursView(list) {
-  const cap = Math.max(...list.map((x) => x.r.time.hoursPerWeek));
+  const limit = LAW.weeklyHours;
+  const cap = Math.max(limit, ...list.map((x) => x.r.time.hoursPerWeek));
   const pct = (v) => (v / cap) * 100;
   const rows = [...list]
     .sort((a, b) => a.r.time.hoursPerWeek - b.r.time.hoursPerWeek)
@@ -218,10 +219,13 @@ function hoursView(list) {
       return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><b>${o.mine.name}</b><span class="v">${fN(total)} h</span>
       <span class="hbar"><i class="ok" style="left:0;width:${pct(normal)}%"></i>${
         extra >= 0.5 ? html`<i class="unpaid" style="left:${pct(normal)}%;width:${pct(extra)}%"></i>` : nothing
-      }</span></button>`;
+      }<s style="left:${pct(limit)}%"></s></span></button>`;
     });
+  const anyExtra = list.some((x) => x.r.extra.hours > 0.5);
   return html`<h4 class="sub">Horas a la semana</h4><div class="lst hours">${rows}</div>
-    <p class="hint">En color, las horas de más: jornadas de más y horas extra.</p>`;
+    <p class="legend"><span>${swatch('--c-work')}Horas normales</span>${
+      anyExtra ? html`<span>${swatch('--c-work-extra')}Horas de más</span>` : nothing
+    }<span><i class="lg-line"></i>${limit} h, máximo legal</span></p>`;
 }
 
 /**
