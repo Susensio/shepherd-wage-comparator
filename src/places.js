@@ -61,7 +61,7 @@ export function searchPlaces(index, query) {
     else inside.push(row);
   }
   const byLength = (a, b) => a.folded.length - b.folded.length;
-  return [...starts.sort(byLength), ...words.sort(byLength), ...inside]
+  return [...starts.sort(byLength), ...words.sort(byLength), ...inside.sort(byLength)]
     .slice(0, MAX_SUGGESTIONS)
     .map((row) => ({ name: row.name, ...index.municipalities[row.municipality] }));
 }

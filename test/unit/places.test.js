@@ -52,6 +52,17 @@ test('search: shorter names first within a group', () => {
   assert.deepEqual(names(index, 'zara'), ['Zaragoza', 'Zaragoza Sur']);
 });
 
+test('search: shorter names first in the contains group too', () => {
+  const index = buildIndex({
+    ...small,
+    places: [
+      ['Ribainsa Alta', 0],
+      ['Ribainsa', 0],
+    ],
+  });
+  assert.deepEqual(names(index, 'ains'), ['Ribainsa', 'Ribainsa Alta']);
+});
+
 test('search: a result names the village, its municipality and province', () => {
   assert.deepEqual(searchPlaces(buildIndex(small), 'mediano')[0], {
     name: 'Mediano Aínsa',
