@@ -69,10 +69,10 @@ test('compare, and go to an offer from there', async ({ page }) => {
   await page.click('.tabs [data-tab=compare]');
   const rows = page.locator('#cmpBlk .lr');
   await expect(rows).toHaveCount(2);
-  await expect(rows.first().locator('.v')).toHaveText(/\/hora$/);
+  await expect(rows.first().locator('.v')).toHaveText(/\/día$/); // per day by default
   await page.click("#cmpView label:has-text('total')");
   expect(await page.evaluate(() => app.state.cmpUnit)).toBe('total');
-  await expect(rows.first().locator('.v')).not.toContainText('/hora');
+  await expect(rows.first().locator('.v')).not.toContainText('/día');
   await page.locator('#cmpBlk [data-action=view]').nth(1).click();
   await expect(page.locator('.tabs [aria-selected=true]')).toHaveAttribute('data-tab', 'offers');
 });

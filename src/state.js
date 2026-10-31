@@ -42,8 +42,8 @@ export const state = {
   placeholderId: /** @type {string | null} */ (null),
   firstRun: false,
   config: { ...DEF_CFG },
-  /** The Comparar unit: per hour is the fairest between different workdays. */
-  cmpUnit: 'hour',
+  /** The Comparar unit: per day by default, the way offers are usually told; per hour is fairer between workdays. */
+  cmpUnit: 'day',
   /** Comparar shows the figures of the terms alone (not saved: a way of looking). */
   termsOnly: false,
   /**
@@ -113,7 +113,7 @@ export function load() {
 
   let activeId = store.get(KEY.active, null) || offers[0].id;
   if (!offers.some((x) => x.id === activeId)) activeId = offers[0].id;
-  const unit = store.get(KEY.cmpUnit, 'hour');
+  const unit = store.get(KEY.cmpUnit, 'day');
 
   Object.assign(state, {
     offers,
@@ -121,7 +121,7 @@ export function load() {
     firstRun,
     placeholderId: firstRun ? offers[0].id : null,
     config,
-    cmpUnit: UNITS[unit] ? unit : 'hour',
+    cmpUnit: UNITS[unit] ? unit : 'day',
     folds: { time: true, payroll: true, breakdown: true, ...store.get(KEY.folds, {}) },
   });
 }
