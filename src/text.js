@@ -3,7 +3,8 @@
 import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd, lowerFirst, num } from './format.js';
 import { LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
-import { contractOf, datesText, mealsGiven, mealsList } from './offer.js';
+import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
+import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
 import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
@@ -25,8 +26,32 @@ export const fSplit = (v, unit) =>
       ? `${fE(v, Math.abs(v - Math.round(v)) < 0.005 ? 0 : 2)}/día`
       : `${fE(v)}/mes`;
 
-/** One line per form section, for the folded summaries and the copied texts. */
-export function summaries(o, r) {
+/**
+ * Where the job is: «Yebra de Basa (Huesca)», or «Sarvisé, Yebra de Basa (Huesca)» with a village of its own. Names come
+ * from the places list, so without it (not loaded yet) only the village is left. Empty if there is nothing to say.
+ * @param {object} terms
+ * @param {import('./places.js').PlacesIndex | null} places
+ * @param {string} village yours alone: left out for offers that are not yours
+ */
+export function whereText(terms, places, village = '') {
+  const found = places && placeOfTerms(places, terms);
+  const name = village.trim();
+  if (!found) return name;
+  const area = found.municipality ? `${found.municipality} (${found.province})` : found.province;
+  return !name || fold(name) === fold(found.municipality) ? area : `${name}, ${area}`;
+}
+
+/** The herd: «600 ovejas · 1 vaca». Empty if no head count is set. */
+export const herdText = (terms) =>
+  HERD.filter(([field]) => num(terms[field]) > 0)
+    .map(([field, one, many]) => `${fN(num(terms[field]))} ${num(terms[field]) === 1 ? one : many}`)
+    .join(' · ');
+
+/**
+ * One line per form section, for the folded summaries and the copied texts.
+ * @param {import('./places.js').PlacesIndex | null} [places] to name the municipality and province
+ */
+export function summaries(o, r, places = null) {
   const one = num(o.terms.duration) === 1;
   const duration =
     o.terms.durationUnit === 'unknown'
@@ -55,7 +80,12 @@ export function summaries(o, r) {
       ? ` · ~${isUnderAMonth(r) || r.time.months < 1 ? `${fN(km)}\u00a0km en total` : `${fN(r.time.months > 0 ? km / r.time.months : 0)}\u00a0km/mes`} con el tuyo`
       : '';
   const split = r.split;
+  const where = whereText(o.terms, places, o.mine.place);
+  const herd = herdText(o.terms);
   return {
+    where,
+    herd,
+    place: [where, herd].filter(Boolean).join(' · ') || 'Sin poner',
     time: `${datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : ''}${duration} · ${daysOff} · ${num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner'}`,
     payroll:
       o.terms.contract === 'none'

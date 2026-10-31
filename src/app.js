@@ -8,6 +8,7 @@ import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
+import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
@@ -113,6 +114,14 @@ function comparedOthers() {
   });
 }
 
+/** The place list as the views take it: what is in, and how the load is going. */
+const placesNow = () => ({ index: placesIfLoaded(), status: placesStatus() });
+
+/** An offer that names a municipality needs the list to say where it is: fetched in the background if not yet. */
+const needPlacesFor = (o) => {
+  if (o.terms.municipality && !placesIfLoaded()) preloadPlaces();
+};
+
 export function paintCompare() {
   const own = compared();
   const all = includesOthers() ? [...own, ...comparedOthers()] : own;
@@ -131,7 +140,8 @@ function paintShared() {
   const shown = state.others.available ? comparedOthers().find((x) => x.o.id === state.others.viewId) : undefined;
   $('#cmpMain').hidden = !!shown;
   $('#sharedBlk').hidden = !shown;
-  render(shown ? sharedView(shown) : '', $('#sharedBlk'));
+  if (shown) needPlacesFor(shown.o);
+  render(shown ? sharedView(shown, placesIfLoaded()) : '', $('#sharedBlk'));
   restoreFolds($('#sharedBlk'));
 }
 
@@ -156,7 +166,8 @@ export function paintAll() {
   const o = active();
   const r = calcOffer(o);
   paintChips();
-  paintForm(o, r, myOffers(), ui.animateFields);
+  needPlacesFor(o);
+  paintForm(o, r, myOffers(), ui.animateFields, placesNow());
   ui.animateFields = false;
   markMissing();
   render(resultView(o, r), $('#result'));

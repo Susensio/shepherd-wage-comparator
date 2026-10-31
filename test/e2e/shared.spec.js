@@ -177,6 +177,19 @@ test.describe('the read-only view', () => {
     await expect(view).toBeHidden();
   });
 
+  test('municipality, province and herd show, never the village', async ({ openApp }) => {
+    const terms = { ...byName('Puerto A').terms, municipality: '22252', province: 'HU', sheep: 800, cattle: 1 };
+    const page = await openCompare(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });
+    await include(page);
+    await page.locator('.lr.other').first().click();
+    const conditions = page.locator('#sharedBlk .editinfo');
+    await expect(conditions).toContainText('Yebra de Basa (Huesca)'); // named once the list arrives
+    await expect(conditions).toContainText('800 ovejas · 1 vaca');
+    expect(await page.evaluate(() => app.state.others.items[0].o.mine)).toEqual(
+      expect.not.objectContaining({ place: expect.stringMatching(/./) }),
+    );
+  });
+
   test('without contact data it says so', async ({ openApp }) => {
     const page = await openCompare(openApp);
     await page.evaluate(() => {

@@ -6,8 +6,9 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG } from '../../src/offer.js';
+import { buildIndex } from '../../src/places.js';
 import { normalizeOffer } from '../../src/saved.js';
-import { cardText, claimText, summaries } from '../../src/text.js';
+import { cardText, claimText, herdText, summaries, whereText } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
@@ -55,11 +56,50 @@ test('no sample offer prints NaN or undefined in any text', () => {
 test('summaries: one line per form section', () => {
   const o = byId('o1');
   const s = summaries(o, resultOf(o));
-  assert.deepEqual(Object.keys(s), ['time', 'payroll', 'b', 'housing', 'car', 'others']);
+  assert.deepEqual(Object.keys(s), ['where', 'herd', 'place', 'time', 'payroll', 'b', 'housing', 'car', 'others']);
   assert.match(s.time, /102 días/);
   assert.match(s.payroll, /neto/);
   assert.match(s.housing, /^Duermes en borda/);
   assert.match(s.car, /^Tu coche/);
+});
+
+const places = buildIndex({
+  provinces: [['HU', 'Huesca']],
+  municipalities: [['Yebra de Basa', 0, '22252']],
+  places: [['Yebra de Basa', 0]],
+});
+
+test('where: municipality and province from the list, with your village if it differs', () => {
+  const terms = { municipality: '22252', province: 'HU' };
+  assert.equal(whereText(terms, places), 'Yebra de Basa (Huesca)');
+  assert.equal(whereText(terms, places, 'Yebra de Basa'), 'Yebra de Basa (Huesca)');
+  assert.equal(whereText(terms, places, ' Sarvisé '), 'Sarvisé, Yebra de Basa (Huesca)');
+  assert.equal(whereText({ municipality: '', province: 'HU' }, places), 'Huesca');
+});
+
+test("where: before the list is in, only your own village shows; nothing for another shepherd's offer", () => {
+  const terms = { municipality: '22252', province: 'HU' };
+  assert.equal(whereText(terms, null, 'Sarvisé'), 'Sarvisé');
+  assert.equal(whereText(terms, null), '');
+  assert.equal(whereText({ municipality: '', province: '' }, places), '');
+});
+
+test('herd: head counts with the right number', () => {
+  assert.equal(herdText({ sheep: 600, goats: '', cattle: 1 }), '600 ovejas · 1 vaca');
+  assert.equal(herdText({ sheep: '', goats: 0, cattle: '' }), '');
+  assert.equal(herdText({ sheep: 1200, goats: 40, cattle: 12 }), '1.200 ovejas · 40 cabras · 12 vacas');
+});
+
+test('summaries: the place line joins where and herd', () => {
+  const o = normalizeOffer({
+    id: 'x',
+    terms: { municipality: '22252', province: 'HU', sheep: 600 },
+    mine: { name: 'X' },
+  });
+  const r = resultOf(o);
+  assert.equal(summaries(o, r, places).place, 'Yebra de Basa (Huesca) · 600 ovejas');
+  assert.equal(summaries(o, r).place, '600 ovejas');
+  assert.equal(summaries(normalizeOffer({ id: 'y', terms: {}, mine: {} }), r).place, 'Sin poner');
 });
 
 test('summaries: a no-contract offer says everything is paid in hand', () => {

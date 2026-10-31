@@ -91,6 +91,23 @@
           </div>
         </div>
 
+        <details class="sec" data-fold="place">
+          <summary><span class="st">Dónde y qué ganado</span><span class="ss" id="sum-place"></span></summary>
+          <fieldset aria-label="Dónde y qué ganado">
+          <div class="fld full place-fld">
+            <label for="place">Pueblo</label>
+            <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. Yebra de Basa">
+            <ul class="suggest" id="placeList" role="listbox" aria-label="Pueblos" hidden></ul>
+            <p class="hint place-picked" id="placePicked" hidden><span id="placePickedText"></span> <button type="button" class="linkbtn" data-action="changePlace">Cambiar</button></p>
+            <p class="hint" id="placeHint"></p>
+            <p class="hint">Si compartes la oferta, se ven el municipio, la provincia y el ganado; el pueblo, no.</p>
+          </div>
+          <label class="fld">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep"></label>
+          <label class="fld">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats"></label>
+          <label class="fld">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle"></label>
+          </fieldset>
+        </details>
+
         <details class="sec" data-fold="time">
           <summary><span class="st">Tiempo de trabajo</span><span class="ss" id="sum-time"></span></summary>
           <fieldset aria-label="Tiempo de trabajo">
@@ -389,6 +406,7 @@
       <li><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a> (UGT-FICA).</li>
       <li><a data-source="smiDeduction2026" target="_blank" rel="noopener">Deducción de IRPF para quien cobra el SMI</a> (Hacienda, 2026).</li>
       <li><a data-source="sepe" target="_blank" rel="noopener">SEPE</a>: prestación por desempleo.</li>
+      <li>Lista de pueblos y municipios: <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a>, con licencia <a href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noopener">CC BY 4.0</a>; los códigos de municipio son los del INE.</li>
     </ul>
   </section>
   </div>

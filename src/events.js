@@ -25,6 +25,7 @@ import {
   DAYS_PER_MONTH,
   DEF_CFG,
   defaultVacation,
+  HERD,
   isoOf,
   makeOffer,
   newId,
@@ -35,11 +36,13 @@ import {
 import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
+import { preloadPlaces } from './storage/places.js';
 import { cardText, claimText } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
+import { changePlace } from './ui/place-field.js';
 import { pairing } from './views/compare.js';
 import { fillForm, form, paintEnd } from './views/form.js';
 import { stepPayslipMonth } from './views/season-end.js';
@@ -105,6 +108,8 @@ function onFormInput(e) {
   else if (el.name === 'name') side.name = el.value;
   else if (el.name === 'rentValue' && el.value.trim() === '')
     side.rentValue = ''; // empty: the one in «Tus datos»
+  else if (HERD.some(([field]) => field === el.name) && el.value.trim() === '')
+    side[el.name] = ''; // no head count
   else side[el.name] = num(el.value);
   animateNextPaint();
   if (el.name === 'vacation') delete terms.vacationAuto;
@@ -185,6 +190,7 @@ const ACTIONS = {
   openSettingsPage: () => openSettingsPage(),
   openAccountFromPrompt: () => openAccountPage(true),
   closePage,
+  changePlace,
 
   /* Comparar */
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out
@@ -416,6 +422,7 @@ export function setUpEvents() {
     true,
   );
   $('#editWrap').addEventListener('toggle', () => {
+    if (/** @type {HTMLDetailsElement} */ ($('#editWrap')).open) preloadPlaces();
     if (!(/** @type {any} */ ($('#editWrap'))._animating)) syncEditor();
   });
   $('#chips').addEventListener('scroll', chipEdges, { passive: true });

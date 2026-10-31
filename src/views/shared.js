@@ -2,7 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { contractOf } from '../offer.js';
-import { summaries } from '../text.js';
+import { herdText, summaries, whereText } from '../text.js';
 import { resultView } from './result.js';
 
 /** Only plain addresses and numbers become links: the data is another user's. */
@@ -20,16 +20,19 @@ const contact = (sharer) => {
 
 /**
  * @param {{ o: any, r: any, sharer: any }} item the offer with its terms-only figures
+ * @param {import('../places.js').PlacesIndex | null} places to name the municipality and province, once loaded
  */
-export function sharedView({ o, r, sharer }) {
+export function sharedView({ o, r, sharer }, places) {
   const s = summaries(o, r);
   const conditions = [
+    ['Dónde', whereText(o.terms, places)], // never the village: it is not theirs to share
+    ['Ganado', herdText(o.terms)],
     ['Tiempo', s.time],
     ['Nómina', s.payroll],
     ['En negro', s.b],
     ['Casa y comida', s.housing],
     ['Contrato', contractOf(o.terms).stat],
-  ];
+  ].filter(([, v]) => v);
   return html`<button type="button" class="linkbtn" data-action="closeShared">← Volver a Comparar</button>
     <h3 class="q">Oferta de ${o.mine.name}</h3>
     <p class="hint">Solo se ven las condiciones de la oferta, sin desplazamientos ni gastos.</p>

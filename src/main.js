@@ -2,6 +2,7 @@
 
 import {
   closeTemplates,
+  commit,
   openAccountPage,
   openSettingsPage,
   openTemplates,
@@ -19,6 +20,7 @@ import { defaultVacation } from './offer.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
 import { setUpAccountSection } from './ui/account-section.js';
+import { setUpPlaceField } from './ui/place-field.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
@@ -30,6 +32,7 @@ fillLawFigures();
 restoreStaticFolds();
 setUpEvents();
 setUpTooltips();
+setUpPlaceField({ commit, paint: paintAll });
 showTab(store.get(KEY.tab, 'offers'));
 scrollChipsNextPaint();
 fillForm(active());

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { DEF_CFG, DEF_MINE, DEF_TERMS } from '../../src/offer.js';
+import { DEF_CFG, DEF_MINE, DEF_TERMS, SCHEMA_VERSION } from '../../src/offer.js';
 import { ingestSaved } from '../../src/saved.js';
 
 const current = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
@@ -61,4 +61,35 @@ test('the input is not mutated', () => {
   const before = structuredClone(current);
   ingestSaved(current, { fallbackCfg });
   assert.deepEqual(current, before);
+});
+
+test('offers saved before the place and herd fields get them empty', () => {
+  const { offers } = ingestSaved(
+    { offers: [{ id: 'a', terms: { payAmount: 5 }, mine: { name: 'X' } }] },
+    { fallbackCfg },
+  );
+  assert.deepEqual(
+    [
+      offers[0].terms.municipality,
+      offers[0].terms.province,
+      offers[0].terms.sheep,
+      offers[0].terms.goats,
+      offers[0].terms.cattle,
+    ],
+    ['', '', '', '', ''],
+  );
+  assert.equal(offers[0].mine.place, '');
+});
+
+test("the village is the shepherd's own; the codes and head counts are terms", () => {
+  assert.ok('place' in DEF_MINE);
+  for (const field of ['municipality', 'province', 'sheep', 'goats', 'cattle']) {
+    assert.ok(field in DEF_TERMS, field);
+    assert.ok(!(field in DEF_MINE), field);
+  }
+  assert.ok(!('place' in DEF_TERMS));
+});
+
+test('the account schema is at version 2', () => {
+  assert.equal(SCHEMA_VERSION, 2);
 });

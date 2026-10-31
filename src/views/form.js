@@ -17,6 +17,7 @@ import {
   overlapsOf,
   sideOf,
 } from '../offer.js';
+import { placeOfTerms } from '../places.js';
 import { fSplit, summaries } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
 import { fadeIn } from '../ui/motion.js';
@@ -57,6 +58,7 @@ export function paintEnd(terms) {
 /** Puts the offer's values in the form. */
 export function fillForm(o) {
   paintEnd(o.terms);
+  /** @type {HTMLInputElement} */ ($('#place')).value = o.mine.place;
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
     if (!el.name) continue;
     const side = sideOf(o, el.name);
@@ -88,6 +90,25 @@ function applyShow(o, animate) {
 const text = (selector, value) => {
   $(selector).textContent = value;
 };
+
+/**
+ * What is said under «Pueblo»: the municipality and province picked, and how the list is doing.
+ * @param {object} o
+ * @param {{ index: import('../places.js').PlacesIndex | null, status: string }} places
+ */
+function paintPlace(o, { index, status }) {
+  const found = index && placeOfTerms(index, o.terms);
+  $('#placePicked').hidden = !found?.municipality;
+  text('#placePickedText', found?.municipality ? `Municipio de ${found.municipality} · ${found.province}` : '');
+  text(
+    '#placeHint',
+    status === 'loading'
+      ? 'Cargando pueblos…'
+      : status === 'error'
+        ? 'No se pudo cargar la lista de pueblos. Se guarda lo que escribas.'
+        : '',
+  );
+}
 
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
@@ -166,8 +187,9 @@ function yearHint(o, r) {
  * @param {object} r its figures
  * @param {object[]} offers your offers, to warn about overlapping dates
  * @param {boolean} animate fade in the fields that appear
+ * @param {{ index: import('../places.js').PlacesIndex | null, status: string }} places the place list, to name the municipality
  */
-export function paintForm(o, r, offers, animate) {
+export function paintForm(o, r, offers, animate, places) {
   const cfg = r.cfg;
   applyShow(o, animate);
   text(
@@ -176,22 +198,27 @@ export function paintForm(o, r, offers, animate) {
       ? 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.'
       : '',
   );
-  const s = summaries(o, r);
+  const s = summaries(o, r, places.index);
   render(
     [
+      ['Dónde', s.where],
+      ['Ganado', s.herd],
       ['Tiempo', s.time],
       ['Nómina', s.payroll],
       ['En negro', s.b],
       ['Casa y comida', s.housing],
       ['Coche', s.car],
       ['Contrato', contractOf(o.terms).stat],
-    ].map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`),
+    ]
+      .filter(([, v]) => v)
+      .map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`),
     $('#editInfo'),
   );
   for (const [k, v] of Object.entries(s)) {
     const el = $(`#sum-${k}`);
     if (el) el.textContent = v;
   }
+  paintPlace(o, places);
   text('#payHint', payHint(o, r));
   text('#cashAuto', cashHint(r));
   const food = foodPerDay(o.terms, cfg);

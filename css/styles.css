@@ -416,6 +416,44 @@ summary:focus-visible,
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* The place field's suggestions: in the flow, under the field, so nothing is clipped on a phone */
+.suggest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 16em;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.suggest li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.suggest li + li {
+  border-top: 1px solid var(--line);
+}
+.suggest li span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.suggest li[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+.place-picked:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+#placeHint:empty {
+  display: none;
+}
+
 .combo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -38,14 +38,20 @@ export const DEF_TERMS = {
   mealLunch: false,
   mealDinner: false,
   kmRate: '',
+  municipality: '', // INE code of the municipality (places list)
+  province: '', // province code (places list)
+  sheep: '', // head counts, each optional
+  goats: '',
+  cattle: '',
 };
 
 /** Version of the offer shape written to the account; shared rows are read by other users' pages (ADR-0006). */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',
+  place: '', // the village as you wrote or picked it; the codes in `terms` are the shared part
   rentValue: '', // empty: the one in the settings
   car: 'own', // own · noCar
   commute: 'daily', // daily · liveIn
@@ -141,6 +147,13 @@ export const makeOffer = (terms = {}, mine = {}) => ({
   mine: { ...DEF_MINE, name: 'Oferta 1', ...mine },
   cmp: true,
 });
+
+/** The herd, one head count per species: [terms field, one, many]. */
+export const HERD = [
+  ['sheep', 'oveja', 'ovejas'],
+  ['goats', 'cabra', 'cabras'],
+  ['cattle', 'vaca', 'vacas'],
+];
 
 /* --- Meals and housing --- */
 
