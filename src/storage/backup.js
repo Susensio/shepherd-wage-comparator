@@ -19,7 +19,7 @@ export async function downloadBackup(msg) {
     link.click();
     URL.revokeObjectURL(link.href);
     markBackup();
-    msg.textContent = 'Copia guardada. Para recuperarla: Ajustes, «Elegir el archivo».';
+    msg.textContent = 'Copia guardada. Para recuperarla: Ajustes, «Copia de seguridad», «Elegir el archivo».';
   } catch {
     const copied = await copyText(text, msg, {
       ok: 'No se pudo descargar: la copia está en el portapapeles. Pégala en una nota o mándatela por mensaje.',
@@ -34,7 +34,7 @@ export async function downloadBackup(msg) {
 export async function copyBackup(msg) {
   const copied = await copyText(backupText(), msg, {
     ok: 'Copiada. Pégala en una nota o mándatela por mensaje.',
-    failMsg: 'No se pudo copiar sola. Aquí la tienes, ya seleccionada: cópiala a mano.',
+    failMsg: 'No se pudo copiar. Aquí la tienes, ya seleccionada: cópiala a mano.',
   });
   if (copied) {
     markBackup();
@@ -80,7 +80,7 @@ export function loadBackup(content, msg) {
   select(state.offers.find((o) => o.id === state.activeId)?.id || state.offers[0].id);
   msg.textContent = `${added === 1 ? 'Añadida 1 oferta' : `Añadidas ${added} ofertas`}.${
     alreadyHad
-      ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no se ha tocado' : `Otras ${alreadyHad} ya las tenías y no se han tocado`}.`
+      ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no ha cambiado' : `Otras ${alreadyHad} ya las tenías y no han cambiado`}.`
       : ''
   }${hadOffers && saved.cfg ? ' «Tus datos» siguen como los tenías.' : ''}`;
   return true;

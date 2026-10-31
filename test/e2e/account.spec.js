@@ -49,7 +49,7 @@ test('signed out: the account page lists how to sign in, with Google through the
   await expect(page.locator('#account')).toBeVisible();
   await expect(page.locator('#accountTitle')).toHaveText('Entrar');
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
-  await expect(page.locator('#accountOut')).toContainText('compartiendo las tuyas');
+  await expect(page.locator('#accountOut')).toContainText('Si compartes las tuyas');
   await expect(page.locator('#accountIn')).toBeHidden();
   await page.locator('#accountOut').getByRole('button', { name: 'Continuar con Google' }).click();
   await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
@@ -117,7 +117,7 @@ test.describe('the account button', () => {
     await expect(button(page)).toHaveAttribute('data-status', 'guest');
     await expect(button(page).locator('.ic-person')).toBeVisible();
     await expect(button(page).locator('.status-dot')).toBeVisible();
-    await expect(button(page)).toHaveAttribute('aria-label', /Sin cuenta/);
+    await expect(button(page)).toHaveAttribute('aria-label', /Entrar\. Tus ofertas solo están/);
   });
 
   test('signed in: the initials, and the status in words', async ({ openApp }) => {
@@ -200,7 +200,7 @@ test.describe('the tooltip', () => {
 
   test('shows on Ofertas, not on Comparar, Leyes or the page', async ({ openApp }) => {
     const page = await openGuest(openApp);
-    await expect(tip(page)).toContainText('Guarda tus ofertas en tu cuenta. Ahora solo están en este navegador.');
+    await expect(tip(page)).toContainText('Guarda tus ofertas en una cuenta. Ahora solo están en este navegador.');
     await page.locator('.tabs [data-tab=compare]').click();
     await expect(tip(page)).toHaveCount(0);
     await page.locator('.tabs [data-tab=laws]').click();
@@ -269,13 +269,13 @@ test.describe('the tooltip', () => {
     await page.locator('#accountButton').click();
     const form = page.locator('#accountSignIn');
     await form.getByLabel('Tu correo').fill('ana@example.com');
-    await form.getByRole('button', { name: 'Enviarme un código' }).click();
+    await form.getByRole('button', { name: 'Enviar un código' }).click();
     await expect(form).toContainText('Se ha enviado un código a ana@example.com');
     expect(await page.evaluate(() => window.fake.otp.email)).toBe('ana@example.com');
 
     await form.getByLabel('Código').fill('999999');
     await form.getByRole('button', { name: 'Entrar' }).click();
-    await expect(form).toContainText('El código no vale');
+    await expect(form).toContainText('El código no es correcto');
 
     await form.getByLabel('Código').fill('123456');
     await form.getByLabel('Código').press('Enter');
@@ -287,7 +287,7 @@ test.describe('the tooltip', () => {
     await page.locator('#accountButton').click();
     const form = page.locator('#accountSignIn');
     await form.getByLabel('Tu correo').fill('ana@example.com');
-    await form.getByRole('button', { name: 'Enviarme un código' }).click();
+    await form.getByRole('button', { name: 'Enviar un código' }).click();
     await form.getByRole('button', { name: 'Enviar otro código' }).click();
     await expect(form).toContainText('Se ha enviado otro código.');
     expect(await page.evaluate(() => window.fake.otps.map((otp) => otp.email))).toEqual([
@@ -337,14 +337,14 @@ test.describe('first sign-in with offers only in this browser', () => {
     await expect(page.locator('#accountPending')).toBeVisible();
     await expect(page.locator('#pendingList li')).toHaveCount(sample.offers.length);
     await expect(page.locator('#accountIn')).toBeHidden();
-    await page.getByRole('button', { name: 'Volver a intentarlo' }).click();
+    await page.getByRole('button', { name: 'Reintentar' }).click();
     await expect(page.locator('#accountIn')).toBeVisible();
     expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(sample.offers.length + 1);
   });
 
   test('after a failed upload, keeping only the account discards them', async ({ openApp }) => {
     const page = await open(openApp, { failUpload: true });
-    await page.getByRole('button', { name: 'Quedarme solo con las de la cuenta' }).click();
+    await page.getByRole('button', { name: 'Descartar estas ofertas' }).click();
     await expect(page.locator('#accountIn')).toBeVisible();
     expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(1);
     expect(await page.evaluate(() => app.state.offers.map((o) => o.id))).toEqual([ACCOUNT_OFFER]);
@@ -425,8 +425,8 @@ test('sharing asks first, and turning it off does not', async ({ openApp }) => {
   await sw.click();
   await expect(page.locator('#shareConfirm')).toBeVisible();
   await expect(page.locator('#shareConfirm')).toContainText('tu nombre, tu correo y tu teléfono');
-  await expect(page.locator('#shareConfirm')).toContainText('también comparta al menos una oferta');
-  await expect(page.locator('#shareConfirm')).toContainText('No se muestran tus km');
+  await expect(page.locator('#shareConfirm')).toContainText('comparten al menos una oferta');
+  await expect(page.locator('#shareConfirm')).toContainText('No se ven tus km');
   expect(await sharing()).toBe(false);
   await expect(sw).not.toBeChecked();
 
@@ -442,23 +442,23 @@ test('sharing asks first, and turning it off does not', async ({ openApp }) => {
 
   await sw.uncheck();
   await expect(page.locator('#shareConfirm')).toBeHidden();
-  await expect(page.locator('#sharingState')).toContainText('no se comparten');
+  await expect(page.locator('#sharingState')).toContainText('No compartes tus ofertas');
   expect(await sharing()).toBe(false);
 });
 
 test('deleting the account asks first and keeps the browser offers', async ({ openApp }) => {
   const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
   const before = await page.evaluate(() => app.state.offers.map((o) => o.id));
-  await page.getByRole('button', { name: 'Borrar cuenta' }).click();
+  await page.getByRole('button', { name: 'Borrar la cuenta', exact: true }).click();
   await expect(page.locator('#deleteConfirm')).toContainText('para siempre');
-  await expect(page.locator('#deleteConfirm')).toContainText('siguen en este navegador');
+  await expect(page.locator('#deleteConfirm')).toContainText('En este navegador se quedan tus ofertas');
   expect(await page.evaluate(() => window.fake.rpc)).toEqual([]);
 
   await page.getByRole('button', { name: 'Cancelar' }).last().click();
   await expect(page.locator('#deleteConfirm')).toBeHidden();
   expect(await page.evaluate(() => window.fake.rpc)).toEqual([]);
 
-  await page.getByRole('button', { name: 'Borrar cuenta' }).click();
+  await page.getByRole('button', { name: 'Borrar la cuenta', exact: true }).click();
   await page.getByRole('button', { name: 'Sí, borrar la cuenta' }).click();
   await expect(page.locator('#accountOut')).toBeVisible();
   expect(await page.evaluate(() => window.fake.rpc)).toEqual(['delete_my_account']);

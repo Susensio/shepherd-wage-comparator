@@ -16,7 +16,7 @@ const emailStep = ({ email, busy }) =>
   html`<form class="signin-email" onsubmit="return false">
     <label class="fld">Tu correo<input type="text" name="signInEmail" autocomplete="email" inputmode="email" pattern="[^@\\s]+@[^@\\s]+\\.[^@\\s]+"
       .value=${email} required></label>
-    <div class="actions"><button type="submit" ?disabled=${busy} data-action="sendEmailCode">Enviarme un código</button></div>
+    <div class="actions"><button type="submit" ?disabled=${busy} data-action="sendEmailCode">Enviar un código</button></div>
   </form>`;
 
 const codeStep = ({ email, busy }) =>
@@ -27,7 +27,7 @@ const codeStep = ({ email, busy }) =>
     <div class="actions">
       <button type="submit" class="pri" ?disabled=${busy} data-action="verifyEmailCode">Entrar</button>
       <button type="button" class="sm" ?disabled=${busy} data-action="resendEmailCode">Enviar otro código</button>
-      <button type="button" class="sm" data-action="changeSignInEmail">Otro correo</button>
+      <button type="button" class="sm" data-action="changeSignInEmail">Cambiar de correo</button>
     </div>
   </form>`;
 

@@ -24,7 +24,7 @@ const termsOnlySwitch = (on, forced) =>
   html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on} ?disabled=${forced}>Solo las condiciones de la oferta</label>
     <p class="hint">${
       forced
-        ? 'Con ofertas de otros pastores se comparan solo las condiciones, para que sean comparables.'
+        ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
         : on
           ? 'Se calcula sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
           : 'Sin tus desplazamientos ni gastos.'

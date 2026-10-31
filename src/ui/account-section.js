@@ -141,7 +141,7 @@ async function connect(opened) {
 }
 
 function onGoogleToken(token, nonce) {
-  signInStep('No se pudo entrar con Google. Inténtalo de nuevo.', async () => {
+  signInStep('No se pudo entrar. Inténtalo de nuevo.', async () => {
     const opened = await openAccount();
     await opened.signInWithGoogleToken(token, nonce);
     await connect(opened);
@@ -245,7 +245,9 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
 /** Turns sharing on or off through the account; a failure goes to `line`. */
 const setSharing = (on, line) =>
   run(
-    on ? 'No se pudo activar. Inténtalo de nuevo.' : 'No se pudo desactivar. Inténtalo de nuevo.',
+    on
+      ? 'No se pudieron compartir tus ofertas. Inténtalo de nuevo.'
+      : 'No se pudo dejar de compartir. Inténtalo de nuevo.',
     async () => {
       view.profile = await account.updateProfile({ sharing: on });
       view.confirm = null;
@@ -256,14 +258,13 @@ const setSharing = (on, line) =>
 
 /** For the buttons, by data-action. */
 export const accountActions = {
-  accountSignIn: () =>
-    signInStep('No se pudo iniciar sesión. Inténtalo de nuevo.', async () => (await openAccount()).signIn()),
+  accountSignIn: () => signInStep('No se pudo entrar. Inténtalo de nuevo.', async () => (await openAccount()).signIn()),
 
   sendEmailCode(button) {
     const input = fieldBy(button, 'signInEmail');
     if (!input.reportValidity()) return;
     const email = input.value.trim();
-    signInStep('No se pudo enviar el código. Revisa el correo e inténtalo de nuevo.', async () => {
+    signInStep('No se pudo enviar el código. Revisa la dirección e inténtalo de nuevo.', async () => {
       await (await openAccount()).sendEmailCode(email);
       Object.assign(view.signIn, { stage: 'code', email });
     });
@@ -283,7 +284,7 @@ export const accountActions = {
       paint();
       return;
     }
-    signInStep('El código no vale o ha caducado. Revísalo o pide otro.', async () => {
+    signInStep('El código no es correcto o ha caducado. Revísalo o pide otro.', async () => {
       const opened = await openAccount();
       await opened.verifyEmailCode(view.signIn.email, code);
       await connect(opened);
@@ -301,7 +302,7 @@ export const accountActions = {
   },
 
   accountSignOut: () =>
-    run('No se pudo cerrar la sesión.', async () => {
+    run('No se pudo salir. Inténtalo de nuevo.', async () => {
       await account.signOut();
       signedOut();
     }),

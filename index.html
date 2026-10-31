@@ -68,7 +68,7 @@
         <li><b>Comprueba</b> si la nómina llega al salario mínimo y al plus de pernocta, y cuánto te deben si no.</li>
         <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
       </ul>
-      <p class="hint">Tus ofertas son solo tuyas: nadie más las ve.</p>
+      <p class="hint">Nadie más ve tus ofertas, salvo que las compartas.</p>
     </div>
     <h2 id="tplTitle">¿Qué tipo de trabajo es?</h2>
     <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
@@ -403,19 +403,19 @@
     <p class="hint account-msg" id="accountMsg" role="status" aria-live="polite"></p>
 
     <div id="accountOut" class="account-body" hidden>
-      <p class="hint">Con una cuenta tus ofertas se guardan y las ves desde cualquier dispositivo. Si quieres, también puedes comparar tus ofertas con las de otros pastores, compartiendo las tuyas. Sin cuenta, todo sigue guardado solo en este navegador.</p>
+      <p class="hint">Con una cuenta, tus ofertas se guardan en ella y las ves desde cualquier dispositivo. Si compartes las tuyas, también puedes compararlas con las de otros pastores.</p>
       <div id="accountSignIn"></div>
     </div>
 
     <div id="accountPending" class="account-body" hidden>
       <h4>Ofertas de este navegador</h4>
-      <p>No se pudieron subir a tu cuenta estas ofertas de este navegador:</p>
+      <p>No se pudieron subir a tu cuenta:</p>
       <ul id="pendingList"></ul>
       <div class="actions">
-        <button type="button" class="pri" data-action="uploadPending">Volver a intentarlo</button>
-        <button type="button" data-action="discardPending">Quedarme solo con las de la cuenta</button>
+        <button type="button" class="pri" data-action="uploadPending">Reintentar</button>
+        <button type="button" data-action="discardPending">Descartar estas ofertas</button>
       </div>
-      <p class="hint">Si eliges solo las de la cuenta, las ofertas de este navegador se descartan.</p>
+      <p class="hint">Se quedan solo las de la cuenta.</p>
     </div>
 
     <div id="accountIn" class="account-body" hidden>
@@ -435,7 +435,7 @@
       <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir tus ofertas</span></label>
       <p class="hint" id="sharingState"></p>
       <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
-        <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
+        <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se ve</strong></p>
         <div id="shareTerms"></div>
         <div class="actions">
           <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
@@ -443,11 +443,10 @@
         </div>
       </div>
 
-      <h4>Borrar la cuenta</h4>
-      <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar cuenta</button></div>
+      <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar la cuenta</button></div>
       <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
         <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
-        <p>Se borran para siempre la cuenta y todo lo que contiene: perfil, ofertas y ajustes. Tus ofertas siguen en este navegador.</p>
+        <p>Se borran para siempre la cuenta, tu perfil y todo lo guardado en ella. En este navegador se quedan tus ofertas y tus ajustes.</p>
         <div class="actions">
           <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
           <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
@@ -507,7 +506,7 @@
 
   <details id="backup" class="sec fixed" open>
     <summary>Copia de seguridad</summary>
-    <p class="hint" id="backupWhy">El navegador puede borrarlas (Safari, por ejemplo, si pasas una semana sin abrir la página). Guarda una copia de vez en cuando.</p>
+    <p class="hint" id="backupWhy">El navegador puede borrar tus ofertas (Safari, por ejemplo, si pasas una semana sin abrir la página). Guarda una copia de vez en cuando.</p>
     <p class="backup-status" id="backupStatus"></p>
     <h4>Guardar una copia</h4>
     <div class="actions">
@@ -516,7 +515,7 @@
     </div>
     <p class="hint" id="bkMsg" aria-live="polite"></p>
     <h4>Recuperar una copia</h4>
-    <p class="hint">Se añaden las ofertas de la copia que no tengas. Las tuyas no se tocan.</p>
+    <p class="hint">Se añaden las ofertas de la copia que no tengas. Las que ya tienes no cambian.</p>
     <div class="actions">
       <label class="filebtn">Elegir el archivo<input type="file" id="backupFile"></label>
     </div>

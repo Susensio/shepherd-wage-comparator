@@ -56,10 +56,10 @@ function accountStatus(/** @type {AccountView} */ view) {
 
 const STATUS_TEXT = {
   connecting: 'Conectando con la cuenta…',
-  guest: 'Sin cuenta: las ofertas solo están en este navegador.',
+  guest: 'Entrar. Tus ofertas solo están en este navegador.',
   pending: 'No se pudieron subir a la cuenta las ofertas de este navegador.',
   offline: 'Sin conexión: los cambios se guardan en este navegador y se suben al volver la conexión.',
-  error: 'No se pudieron guardar los últimos cambios en la cuenta. Se reintenta con el siguiente.',
+  error: 'No se pudieron guardar los últimos cambios en la cuenta. Se vuelve a intentar con el próximo cambio.',
   saving: 'Guardando en la cuenta…',
   online: 'Conectado: tus ofertas y ajustes se guardan en tu cuenta.',
 };
@@ -93,7 +93,7 @@ export function paintAccountButton(view) {
   button.dataset.status = status;
   button.dataset.kind = initials ? 'initials' : 'person';
   $('#accountButton .initials').textContent = initials;
-  const label = `Cuenta. ${STATUS_TEXT[status]}`;
+  const label = status === 'guest' ? STATUS_TEXT.guest : `Cuenta. ${STATUS_TEXT[status]}`;
   button.setAttribute('aria-label', label);
   button.title = label;
   $('#accountTitle').hidden = status !== 'guest';
@@ -134,8 +134,8 @@ export function paintAccount({ user, profile, pending, message, confirm }) {
   }
   /** @type {HTMLInputElement} */ ($('#profSharing')).checked = profile.sharing && confirm !== 'share';
   $('#sharingState').textContent = profile.sharing
-    ? 'Tus ofertas se están compartiendo y ves las de los demás.'
-    : 'Tus ofertas no se comparten. Tampoco ves las de los demás.';
+    ? 'Compartes tus ofertas y ves las de otros pastores.'
+    : 'No compartes tus ofertas ni ves las de otros pastores.';
   $('#shareConfirm').hidden = confirm !== 'share';
   $('#deleteConfirm').hidden = confirm !== 'delete';
 }

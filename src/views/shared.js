@@ -32,7 +32,7 @@ export function sharedView({ o, r, sharer }) {
   ];
   return html`<button type="button" class="linkbtn" data-action="closeShared">← Volver a Comparar</button>
     <h3 class="q">Oferta de ${o.mine.name}</h3>
-    <p class="hint">Solo se pueden ver las condiciones, sin desplazamientos ni gastos de nadie.</p>
+    <p class="hint">Solo se ven las condiciones de la oferta, sin desplazamientos ni gastos.</p>
     <h4 class="sub">Quién la comparte</h4>
     ${contact(sharer)}
     <h4 class="sub">Condiciones</h4>

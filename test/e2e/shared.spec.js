@@ -256,11 +256,11 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.locator('.lr.other')).toHaveCount(0);
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     for (const phrase of [
-      'todas las condiciones de todas tus ofertas',
+      'Se ven las condiciones de todas tus ofertas',
       'tu nombre, tu correo y tu teléfono',
-      'usuario con sesión iniciada que también comparta al menos una oferta',
-      'tus km, tus gastos, los nombres que has puesto a las ofertas ni tus ajustes',
-      'dejas de ver los de los demás',
+      'pastores que han entrado y comparten al menos una oferta',
+      'tus km, tus gastos, los nombres de tus ofertas ni tus ajustes',
+      'dejas de ver las ofertas de otros pastores',
     ])
       await expect(section(page)).toContainText(phrase);
     await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
@@ -305,12 +305,12 @@ test.describe('the «Otros pastores» section', () => {
   test('«Ahora no» leaves one button that reopens the consent', async ({ openApp }) => {
     const page = await openCompare(openApp, { sharing: false });
     await section(page).getByRole('button', { name: 'Ahora no' }).click();
-    await expect(section(page).getByRole('button', ask)).toHaveCount(0);
-    await expect(section(page).getByRole('button', { name: 'Compartir para comparar' })).toBeVisible();
-    await expect(section(page)).not.toContainText('Para verlas, se comparten las tuyas');
-    await section(page).getByRole('button', { name: 'Compartir para comparar' }).click();
+    await expect(section(page).getByRole('button', ask)).toHaveCount(1);
+    await expect(section(page).getByRole('button', { name: 'Compartir y comparar' })).toBeVisible();
+    await expect(section(page)).not.toContainText('Para verlas, comparte las tuyas');
+    await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
     await expect(section(page)).toContainText('Compara tus ofertas con las de otros pastores.');
-    await expect(section(page)).toContainText('Para verlas, se comparten las tuyas.');
+    await expect(section(page)).toContainText('Para verlas, comparte las tuyas.');
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
   });
 
@@ -322,7 +322,7 @@ test.describe('the «Otros pastores» section', () => {
     });
     await page.evaluate(() => app.showTab('compare'));
     await section(page).getByRole('button', ask).click();
-    await expect(section(page)).toContainText('No se pudo activar. Inténtalo de nuevo.');
+    await expect(section(page)).toContainText('No se pudieron compartir tus ofertas. Inténtalo de nuevo.');
     await expect(page.locator('.lr.other')).toHaveCount(0);
   });
 
@@ -348,8 +348,8 @@ test.describe('the «Otros pastores» section', () => {
 
   test('without a phone a hint links to the account page; with one, no hint', async ({ openApp }) => {
     const page = await openCompare(openApp);
-    await expect(section(page)).toContainText('Añade un teléfono en tu cuenta para que te puedan contactar.');
-    await section(page).getByRole('button', { name: 'Abrir la cuenta' }).click();
+    await expect(section(page)).toContainText('Añade un teléfono a tu perfil para que te puedan contactar.');
+    await section(page).getByRole('button', { name: 'Ir al perfil' }).click();
     await expect(page.locator('[data-panel=account]')).toBeVisible();
     await page.locator('#profPhone').fill('600 000 000');
     await page.getByRole('button', { name: 'Guardar perfil' }).click();

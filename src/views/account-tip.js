@@ -6,7 +6,7 @@ import { html, nothing } from 'lit-html';
 
 /** @type {Record<string, Tip>} what each tab says to a guest; a tab without an entry has no tooltip */
 export const GUEST_TIPS = {
-  offers: { title: 'Guarda tus ofertas en tu cuenta.', text: 'Ahora solo están en este navegador.' },
+  offers: { title: 'Guarda tus ofertas en una cuenta.', text: 'Ahora solo están en este navegador.' },
 };
 
 /**
