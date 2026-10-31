@@ -16,3 +16,7 @@
 - shared | Two sharers' offers with the same name look alike in the head-to-head table.
 - account | A browser signed out of one account and into another uploads the first account's offers still cached there into the second (ADR-0009). Clearing the cache on sign-out would fix it, at the cost of an empty page after signing out.
 - account | The «Continuar sin cuenta» choice is per browser and never offered again; someone who skipped it finds sign-in only in Ajustes.
+- account | Sign-in by emailed code is built but off (`emailSignIn` in `storage/account-config.js`, ADR-0009). To turn it on: a custom SMTP sender in Supabase (Resend's free plan, 100 emails a day, is enough; store its API key as an environment secret so a session can configure it), then the «Magic link» and «Confirm signup» templates in Spanish with `{{ .Token }}` (the code is already 6 digits), then `emailSignIn: true` and a real sign-in. Supabase's built-in sender reaches only the project's team, two emails an hour, and its templates cannot be changed on the free plan.
+- account | Google refused `http://localhost:8000` as an origin on 31 October 2026, though `https://susensio.github.io` worked: check the OAuth client's Authorized JavaScript origins before testing sign-in on a computer.
+- ops | Revoke the Supabase access token behind the `SUPABASE_ACCESS_TOKEN` environment secret, and remove the secret, once no session needs to change the project.
+- ops | Delete the retired Claude artifact (ADR-0008), after exporting a backup from it.
