@@ -1,4 +1,4 @@
--- Paste into the Supabase SQL editor; safe to run again.
+-- Baseline: the schema as it stood when migrations began; the live project already has it (see docs/BACKLOG.md, ops).
 -- Security rests on these policies: the anon key in the page is public.
 
 create table if not exists public.profiles (

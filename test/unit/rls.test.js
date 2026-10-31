@@ -1,10 +1,18 @@
-// Row-level security of supabase/schema.sql against Postgres in WASM, with a stub of what Supabase provides.
+// Row-level security of supabase/migrations/ (applied in order) against Postgres in WASM, with a stub of what Supabase provides.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { before, describe, test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
-const SCHEMA = readFileSync(new URL('../../supabase/schema.sql', import.meta.url), 'utf8');
+const MIGRATIONS_DIR = new URL('../../supabase/migrations/', import.meta.url);
+const MIGRATIONS = readdirSync(MIGRATIONS_DIR)
+  .filter((file) => file.endsWith('.sql'))
+  .sort()
+  .map((file) => readFileSync(new URL(file, MIGRATIONS_DIR), 'utf8'));
+
+async function migrate() {
+  for (const sql of MIGRATIONS) await db.exec(sql);
+}
 
 const STUB = `
   create role anon nologin;
@@ -53,7 +61,7 @@ async function column(who, sql) {
 before(async () => {
   db = new PGlite();
   await db.exec(STUB);
-  await db.exec(SCHEMA);
+  await migrate();
   for (const [name, id] of Object.entries(ID)) {
     await db.query('insert into auth.users values ($1, $2, $3)', [
       id,
@@ -79,7 +87,7 @@ describe('schema', () => {
   });
 
   test('loading it twice is harmless', async () => {
-    await db.exec(SCHEMA);
+    await migrate();
   });
 });
 
