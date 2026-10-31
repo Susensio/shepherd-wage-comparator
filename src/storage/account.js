@@ -36,6 +36,7 @@ const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cm
  * @param {{ get(key: string, fallback: any): any, set(key: string, value: any): void }} deps.store
  * @param {() => void} [deps.onReplaced] the account's copy has replaced the offers: repaint
  * @param {(error: unknown) => void} [deps.onError] a background save failed; it is retried with the next change
+ * @param {(status: 'saving' | 'saved' | 'error') => void} [deps.onStatus] how the background saving goes
  * @param {number} [deps.debounceMs]
  */
 export function createAccount({
@@ -45,6 +46,7 @@ export function createAccount({
   store,
   onReplaced = () => {},
   onError = console.error,
+  onStatus = () => {},
   debounceMs = 1500,
 }) {
   /** @type {{ id: string } | null} */
@@ -129,11 +131,13 @@ export function createAccount({
     const ingested = ingestSaved(account, { fallbackCfg: state.config });
     const offers = ingested.offers.sort((a, b) => position(a.id) - position(b.id));
     syncing = false;
-    state.offers = offers.length ? offers : [makeOffer()];
+    // An empty account starts like a first visit: a placeholder, replaced by the template picked
+    const empty = !offers.length;
+    state.offers = empty ? [makeOffer()] : offers;
     if (!state.offers.some((o) => o.id === state.activeId)) state.activeId = state.offers[0].id;
     state.config = ingested.cfg;
-    state.placeholderId = null;
-    state.firstRun = false;
+    state.placeholderId = empty ? state.offers[0].id : null;
+    state.firstRun = empty;
     persist();
     onReplaced();
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
@@ -266,7 +270,18 @@ export function createAccount({
     changed() {
       if (!syncing) return;
       clearTimeout(timer);
-      timer = setTimeout(() => flush().catch(onError), debounceMs);
+      onStatus('saving');
+      timer = setTimeout(
+        () =>
+          flush().then(
+            () => onStatus('saved'),
+            (error) => {
+              onError(error);
+              onStatus('error');
+            },
+          ),
+        debounceMs,
+      );
     },
 
     /** Writes the pending changes now. */
@@ -331,6 +346,8 @@ export function loadSupabase() {
 let opening = null;
 /** Called by the page when the account's offers replace the browser's. */
 let onReplacedByPage = () => {};
+/** Called by the page as background saves start, succeed or fail. */
+let onStatusByPage = (_status) => {};
 
 /** The account, created (and the bundle loaded) on first use. */
 function open({ config, loadBundle }) {
@@ -348,6 +365,7 @@ function open({ config, loadBundle }) {
         },
         store,
         onReplaced: () => onReplacedByPage(),
+        onStatus: (status) => onStatusByPage(status),
       });
       onSave(account.changed);
       return account;
@@ -362,10 +380,17 @@ function open({ config, loadBundle }) {
 /**
  * Called once at startup. With no project configured, or no saved session and no login in progress, it does nothing
  * (no request, no bundle) and returns null. Otherwise `{ account, user, pending }` once connected.
- * @param {{ config?: typeof ACCOUNT_CONFIG, loadBundle?: () => Promise<any>, onReplaced?: () => void }} [options]
+ * `onReplaced` and `onStatus` also serve an account opened later by a sign-in button.
+ * @param {{
+ *   config?: typeof ACCOUNT_CONFIG,
+ *   loadBundle?: () => Promise<any>,
+ *   onReplaced?: () => void,
+ *   onStatus?: (status: 'saving' | 'saved' | 'error') => void,
+ * }} [options]
  */
-export async function startAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase, onReplaced } = {}) {
+export async function startAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase, onReplaced, onStatus } = {}) {
   if (onReplaced) onReplacedByPage = onReplaced;
+  if (onStatus) onStatusByPage = onStatus;
   if (!config.url || !config.anonKey) return null;
   // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
   const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');

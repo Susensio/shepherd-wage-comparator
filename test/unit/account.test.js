@@ -161,6 +161,7 @@ function setUp({ tables, session, localOffers, synced = ME } = {}) {
   const persisted = [];
   const replaced = [];
   const errors = [];
+  const statuses = [];
   const fakeAll = fakeClient({ session, tables });
   const account = createAccount({
     client: fakeAll.client,
@@ -169,9 +170,10 @@ function setUp({ tables, session, localOffers, synced = ME } = {}) {
     persist: () => persisted.push(state.offers.map((o) => o.id)),
     onReplaced: () => replaced.push(state.offers.map((o) => o.id)),
     onError: (e) => errors.push(e),
+    onStatus: (status) => statuses.push(status),
     debounceMs: 5,
   });
-  return { account, state, store: memory, persisted, replaced, errors, ...fakeAll };
+  return { account, state, store: memory, persisted, replaced, errors, statuses, ...fakeAll };
 }
 
 const ids = (state) => state.offers.map((o) => o.id);
@@ -284,10 +286,12 @@ describe('sign in', () => {
     assert.deepEqual(ids(state), [id(1)]);
   });
 
-  test('an empty account leaves a blank offer, not written until changed; the settings are uploaded', async () => {
+  test('an empty account starts like a first visit, with a placeholder never written; the settings are uploaded', async () => {
     const { account, state, calls } = setUp();
     await account.connect();
     assert.equal(state.offers.length, 1);
+    assert.equal(state.placeholderId, state.offers[0].id);
+    assert.equal(state.firstRun, true);
     await account.flush();
     assert.deepEqual(
       calls.map((c) => c.table),
@@ -459,13 +463,23 @@ describe('saving changes', () => {
     assert.ok(ids(state).includes(written));
   });
 
+  test('a background save reports saving, then saved', async () => {
+    const { account, state, statuses } = await connected();
+    state.offers[0].terms.payAmount = 5;
+    account.changed();
+    assert.deepEqual(statuses, ['saving']);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    assert.deepEqual(statuses, ['saving', 'saved']);
+  });
+
   test('a failed write is reported and retried with the next change', async () => {
-    const { account, state, calls, errors, fake } = await connected();
+    const { account, state, calls, errors, statuses, fake } = await connected();
     state.offers[0].terms.payAmount = 5;
     fake.failNext = true;
     account.changed();
     await new Promise((resolve) => setTimeout(resolve, 40));
     assert.equal(errors.length, 1);
+    assert.deepEqual(statuses, ['saving', 'error']);
     assert.deepEqual(calls, []);
     await account.flush();
     assert.equal(calls[0].rows[0].id, id(1));
