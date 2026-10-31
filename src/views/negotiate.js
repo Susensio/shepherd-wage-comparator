@@ -68,8 +68,7 @@ function savingsView(r, money) {
     <div class="rows sv-rows">${both ? row('', two(capitalize(per), 'En total'), { cls: 'hd' }) : nothing}${items.map(
       ([value, label, estimate]) =>
         row(label, cell(value), { sub: estimate ? 'estimado' : '', cls: estimate ? 'est' : '' }),
-    )}</div>
-    <p class="hint">Es su margen para pagarte más. Lleva su Seguridad Social y la tuya: también es tu paro y tu jubilación.</p></div>`;
+    )}</div></div>`;
 }
 
 /** «Para negociar». */
