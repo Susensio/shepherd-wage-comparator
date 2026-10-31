@@ -77,7 +77,7 @@ export const YOUR_DATA = {
   mealLunchP: 4,
   mealDinnerP: 4,
   fuelUse: 7,
-  fuelPrice: 1.45,
+  fuelPrice: 1.89, // diesel, Spain, week of 26 October 2026 (EU Weekly Oil Bulletin)
   wear: 0.06,
 };
 
