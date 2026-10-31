@@ -1776,7 +1776,7 @@ section.season-end details.plg {
   z-index: 5;
   background: var(--bg);
   padding: 8px 0;
-  margin: -8px 0;
+  margin: -8px 0 0;
 }
 .view-l {
   font-size: 13px;
