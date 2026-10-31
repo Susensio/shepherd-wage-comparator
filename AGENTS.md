@@ -25,7 +25,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 - An offer is `{ id, cmp, terms, mine }` (ADR-0007). `terms` is what the employer offers and is shared with other users who share too (ADR-0006); `mine` is the shepherd's own and never leaves their account. A new field goes in `terms` only if it describes the job, not the shepherd.
 - `supabase/schema.sql` holds the account tables and their row-level security; `test/unit/rls.test.js` checks the policies offline with PGlite. Run a changed schema against the project too (Supabase SQL editor): the page does not migrate it.
 - `storage/account-config.js` holds the project URL, the publishable key, Google's client ID and the `emailSignIn` switch, all public. With a null `url` every account feature is off; the browser tests serve their own config (`test/e2e/fake-account.js`).
-- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers in an account, conversions are owed again (ADR-0005, ADR-0006); account rows carry `schema_version` for that.
+- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes (Cuenta, with accounts on) first, and renames need no mapping. Once anyone else saves offers in an account, conversions are owed again (ADR-0005, ADR-0006); account rows carry `schema_version` for that.
 
 ## Legal figures
 
