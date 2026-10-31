@@ -25,6 +25,32 @@ const monthName = (date) => {
 const e2 = (x) => fN(x, 2);
 const pct = (x) => `${fN(x, 2)}\u00a0%`;
 
+const cents = (x) => Math.round(x * 100) / 100;
+
+/**
+ * A month's payslip figures rounded to cents one by one, and the totals summed from those, so every column adds up on
+ * screen.
+ */
+function shownFigures(x, r) {
+  const gross = cents(x.salary) + cents(x.vacation);
+  const contributions = r.pay.rates.worker.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
+  const irpf = cents(gross * r.pay.irpfPct);
+  const severance = x.severance > 0.5 ? cents(x.severance) : 0;
+  const deductions = contributions.reduce((sum, [, amount]) => sum + amount, irpf);
+  const employer = r.pay.rates.employer.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
+  return {
+    gross,
+    contributions,
+    irpf,
+    severance,
+    credits: gross + severance,
+    deductions,
+    net: gross + severance - deductions,
+    employer,
+    employerTotal: employer.reduce((sum, [, amount]) => sum + amount, 0),
+  };
+}
+
 /**
  * Every payslip goes in the same table and only the chosen month's rows show: the others are collapsed
  * (visibility: collapse) but still count towards the column widths, so they stay put from one month to the next.
@@ -33,6 +59,7 @@ function payslipTables(r, months, shown) {
   const workerRates = r.pay.rates.worker;
   const employerRates = r.pay.rates.employer;
   const vacationDay = r.time.vacationDays > 0 ? r.pay.vacationPay / r.time.vacationDays : 0;
+  const shownMonths = months.map((x) => shownFigures(x, r));
   const cls = (m, extra = '') => [m === shown ? '' : 'collapsed', extra].filter(Boolean).join(' ') || nothing;
   const line = (m, concept, detail, credit, debit) =>
     html`<tr class=${cls(m)}><th>${concept}</th><td class="det">${detail || ''}</td><td>${credit != null ? e2(credit) : ''}</td><td>${debit != null ? e2(debit) : ''}</td></tr>`;
@@ -54,27 +81,27 @@ function payslipTables(r, months, shown) {
               )
             : nothing
         }
-        <tr class=${cls(m, 'base')}><th>Base de cotización</th><td class="det">${e2(x.gross)}</td><td></td><td></td></tr>
-        ${workerRates.map(([concept, p]) => line(m, concept, pct(p), null, (x.gross * p) / 100))}
-        ${line(m, 'IRPF', pct(r.pay.irpfPct * 100), null, x.irpf)}
-        ${x.severance > 0.5 ? line(m, 'Indemnización', `${LAW.severanceDaysPerYear} días por año`, x.severance, null) : nothing}`,
+        <tr class=${cls(m, 'base')}><th>Base de cotización</th><td class="det">${e2(shownMonths[m].gross)}</td><td></td><td></td></tr>
+        ${workerRates.map(([concept, p], i) => line(m, concept, pct(p), null, shownMonths[m].contributions[i][1]))}
+        ${line(m, 'IRPF', pct(r.pay.irpfPct * 100), null, shownMonths[m].irpf)}
+        ${x.severance > 0.5 ? line(m, 'Indemnización', `${LAW.severanceDaysPerYear} días por año`, shownMonths[m].severance, null) : nothing}`,
       )}
       </tbody>
       <tfoot>${months.map(
         (
-          x,
+          _x,
           m,
-        ) => html`<tr class=${cls(m, 'tt')}><th>Totales</th><td></td><td>${e2(x.gross + x.severance)}</td><td>${e2(x.contrib + x.irpf)}</td></tr>
-        <tr class=${cls(m, 'net')}><th colspan="3">Neto a percibir</th><td>${e2(x.net)}</td></tr>`,
+        ) => html`<tr class=${cls(m, 'tt')}><th>Totales</th><td></td><td>${e2(shownMonths[m].credits)}</td><td>${e2(shownMonths[m].deductions)}</td></tr>
+        <tr class=${cls(m, 'net')}><th colspan="3">Neto a percibir</th><td>${e2(shownMonths[m].net)}</td></tr>`,
       )}</tfoot></table>
       <table class="table ps-t ps-emp"><thead><tr><th>Aportación de la empresa</th><th class="det">Tipo</th><th>Importe</th></tr></thead>
-      <tbody>${months.map((x, m) =>
+      <tbody>${months.map((_x, m) =>
         employerRates.map(
-          ([concept, p]) =>
-            html`<tr class=${cls(m)}><th>${concept}</th><td class="det">${pct(p)}</td><td>${e2((x.gross * p) / 100)}</td></tr>`,
+          ([concept, p], i) =>
+            html`<tr class=${cls(m)}><th>${concept}</th><td class="det">${pct(p)}</td><td>${e2(shownMonths[m].employer[i][1])}</td></tr>`,
         ),
       )}</tbody>
-      <tfoot>${months.map((x, m) => html`<tr class=${cls(m)}><th colspan="2">Total empresa</th><td>${e2(x.employer)}</td></tr>`)}</tfoot></table></div>`;
+      <tfoot>${months.map((_x, m) => html`<tr class=${cls(m)}><th colspan="2">Total empresa</th><td>${e2(shownMonths[m].employerTotal)}</td></tr>`)}</tfoot></table></div>`;
 }
 
 /** The simulator: pick a month and its payslip shows, like a real one. */

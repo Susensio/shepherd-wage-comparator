@@ -38,6 +38,41 @@ async function invariantProblems() {
     if (payslips.length && Math.abs(net - onPayroll) > 3)
       problems.push(`payslip simulator: net sum ${net.toFixed(0)} ≠ net payroll ${onPayroll.toFixed(0)}`);
   }
+  // The payslip simulator: each month's totals are the sum of the rows shown, and the net is credits − deductions
+  const slip = document.querySelector('#secSeason table.ps-t:not(.ps-emp)');
+  const number = (cell) => Number.parseFloat(cell.textContent.replace(/\./g, '').replace(',', '.')) || 0;
+  if (slip) {
+    const totals = [...slip.querySelectorAll('tfoot tr.tt')];
+    const nets = [...slip.querySelectorAll('tfoot tr.net')];
+    const months = [];
+    for (const row of slip.querySelectorAll('tbody tr')) {
+      if (row.querySelector('th').textContent === 'Salario') months.push({ credits: 0, debits: 0 });
+      const cells = row.querySelectorAll('td');
+      months.at(-1).credits += number(cells[1]);
+      months.at(-1).debits += number(cells[2]);
+    }
+    months.forEach((m, i) => {
+      const [credits, debits] = [...totals[i].querySelectorAll('td')].slice(1).map(number);
+      const net = number(nets[i].querySelector('td'));
+      if (Math.abs(m.credits - credits) > 0.001 || Math.abs(m.debits - debits) > 0.001)
+        problems.push(
+          `payslip ${i + 1}: rows give ${m.credits.toFixed(2)} / ${m.debits.toFixed(2)}, totals ${credits} / ${debits}`,
+        );
+      if (Math.abs(credits - debits - net) > 0.001)
+        problems.push(`payslip ${i + 1}: net ${net} ≠ ${credits} − ${debits}`);
+    });
+  }
+  const employerSlip = document.querySelector('#secSeason table.ps-emp');
+  if (employerSlip) {
+    const totals = [...employerSlip.querySelectorAll('tfoot td')].map(number);
+    const rows = [...employerSlip.querySelectorAll('tbody tr')];
+    const perMonth = rows.length / totals.length;
+    totals.forEach((total, i) => {
+      const sum = rows.slice(i * perMonth, (i + 1) * perMonth).reduce((s, row) => s + number(row.lastElementChild), 0);
+      if (Math.abs(sum - total) > 0.001)
+        problems.push(`employer payslip ${i + 1}: rows give ${sum.toFixed(2)}, total ${total}`);
+    });
+  }
   const pill = [...document.querySelectorAll('#result .pill')]
     .map((e) => e.textContent)
     .find((s) => /h\/semana/.test(s));
