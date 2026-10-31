@@ -6,7 +6,7 @@ Live at **https://susensio.github.io/shepherd-wage-comparator/**. The interface 
 
 ## How it works
 
-HTML, CSS and JavaScript modules, with no build step. The libraries are [lit-html](https://lit.dev/docs/libraries/standalone-templates/) and, for optional accounts, [supabase-js](https://supabase.com/docs/reference/javascript), both copied into `vendor/`. Offers are saved in the browser (`localStorage`).
+HTML, CSS and JavaScript modules, with no build step. The libraries are [lit-html](https://lit.dev/docs/libraries/standalone-templates/) and, for optional accounts, [supabase-js](https://supabase.com/docs/reference/javascript), both copied into `vendor/`. Offers are saved in the browser (`localStorage`) and, with an optional account (Google sign-in, on [Supabase](https://supabase.com)), in that account, from where a shepherd can share them with others who share too.
 
 How the figures are calculated is in [docs/model.md](docs/model.md); why the project is built this way is in [docs/adr/](docs/adr/).
 

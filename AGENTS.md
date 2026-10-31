@@ -10,7 +10,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Structure
 
 - No build step. `index.html` holds the static markup and loads `src/main.js` as an ES module; an import map points `lit-html` at `vendor/lit-html/lit-html.js`. Because of the modules, the page has to be served over http (`node test/serve.js`); it does not open from `file://`.
-- Two libraries, copied from npm into `vendor/` (`npm run vendor` after changing a version in `package.json`): lit-html, and supabase-js as its UMD bundle, which `storage/account.js` loads only once a user signs in (ADR-0006). Use lit-html for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
+- Two libraries, copied from npm into `vendor/` (`npm run vendor` after changing a version in `package.json`): lit-html, and supabase-js as its UMD bundle, which `storage/account.js` loads only once a user signs in (ADR-0006). Google's sign-in script is not vendored: `storage/google-sign-in.js` loads it from Google only while a sign-in choice is on screen (ADR-0009). Use lit-html for anything rendered from the state: views return templates and `app.js` renders them into their container. lit escapes what it inserts, so do not build HTML strings.
 - Layers, each only importing from the ones before it: law and offer data → `model/` (every figure of an offer, no DOM) → words (`rights.js`, `text.js`, `units.js`) → `views/` (templates) → state, `ui/`, `app.js`, `events.js`, `main.js`. The words layer has no DOM of its own, but some words come as lit templates with tap-to-explain tips built with `withTip` from `views/parts.js`, the one allowed import from `views/` into it. `views/form.js` and `views/settings.js` fill the static markup instead of returning templates.
 - `window.app` exposes the state and a few functions for tests and the console. Tests can also `await import('./src/…')` from the page.
 
@@ -21,10 +21,11 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Saved data
 
-- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`) and in backup files. Both load paths (browser, backup) go through `ingestSaved` in `saved.js`.
-- An offer is `{ id, cmp, terms, mine }` (ADR-0007). `terms` is what the employer offers and is shared with other users once accounts arrive; `mine` is the shepherd's own and never leaves their account. A new field goes in `terms` only if it describes the job, not the shepherd.
-- `supabase/schema.sql` holds the account tables and their row-level security; `test/unit/rls.test.js` checks the policies offline with PGlite.
-- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers, or accounts on a server arrive, conversions are owed again (ADR-0005).
+- Offers and settings live in `localStorage` (keys in `KEY`, in `state.js`), in backup files and, signed in, in the Supabase account, which is then the source of truth with `localStorage` as its cache. All three load paths go through `ingestSaved` in `saved.js`.
+- An offer is `{ id, cmp, terms, mine }` (ADR-0007). `terms` is what the employer offers and is shared with other users who share too (ADR-0006); `mine` is the shepherd's own and never leaves their account. A new field goes in `terms` only if it describes the job, not the shepherd.
+- `supabase/schema.sql` holds the account tables and their row-level security; `test/unit/rls.test.js` checks the policies offline with PGlite. Run a changed schema against the project too (Supabase SQL editor): the page does not migrate it.
+- `storage/account-config.js` holds the project URL, the publishable key, Google's client ID and the `emailSignIn` switch, all public. With a null `url` every account feature is off; the browser tests serve their own config (`test/e2e/fake-account.js`).
+- While the owner is the only user, a change to the saved format may break existing data: export a backup from Ajustes first, and renames need no mapping. Once anyone else saves offers in an account, conversions are owed again (ADR-0005, ADR-0006); account rows carry `schema_version` for that.
 
 ## Legal figures
 
