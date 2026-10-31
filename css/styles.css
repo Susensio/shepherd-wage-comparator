@@ -2437,6 +2437,14 @@ details.paste > summary {
   overflow: hidden;
   color: #fff;
 }
+.br-b i.tx-start {
+  justify-content: flex-start;
+  padding-left: 6px;
+}
+.br-b i.tx-end {
+  justify-content: flex-end;
+  padding-right: 6px;
+}
 .br-b i + i {
   box-shadow: inset 1.5px 0 0 var(--surface);
 }

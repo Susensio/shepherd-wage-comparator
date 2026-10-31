@@ -94,16 +94,30 @@ export const unitSuffix = (unit) =>
  * @param {[string, number, string][]} segments [class, value, label]
  * @param {number} scale the value of 100 %
  */
-export function segmentBar(segments, scale, format = fCount, minPct = 9) {
+export function segmentBar(segments, scale, format = fCount, minPct = 9, markerPct = null) {
   const shown = segments.filter(([, value]) => value > 0.05);
   const fits = (value) => (value / scale) * 100 >= minPct;
-  return html`<div class="br-b">${shown.map(
-    ([cls, value]) =>
-      html`<i class=${cls} style="width:${((value / scale) * 100).toFixed(2)}%">${fits(value) ? html`<span class="tx">${format(value)}</span>` : nothing}</i>`,
+  let start = 0;
+  const placed = shown.map(([cls, value, label]) => {
+    const from = start;
+    start += (value / scale) * 100;
+    return { cls, value, label, from, to: start };
+  });
+  // A marker through the figure: the figure moves to the roomier side of it
+  const side = ({ from, to, value }) => {
+    if (markerPct === null) return '';
+    const half = (format(value).length * 2.2 + 3) / 2;
+    const middle = (from + to) / 2;
+    if (Math.abs(markerPct - middle) >= half || markerPct <= from || markerPct >= to) return '';
+    return markerPct - from > to - markerPct ? ' tx-start' : ' tx-end';
+  };
+  return html`<div class="br-b">${placed.map(
+    (seg) =>
+      html`<i class="${seg.cls}${side(seg)}" style="width:${((seg.value / scale) * 100).toFixed(2)}%">${fits(seg.value) ? html`<span class="tx">${format(seg.value)}</span>` : nothing}</i>`,
   )}</div>
-    <div class="br-k">${shown.map(([cls, value, label]) =>
-      label
-        ? html`<span><i class=${cls}></i>${label}${fits(value) ? nothing : html` <b>${format(value)}</b>`}</span>`
+    <div class="br-k">${placed.map((seg) =>
+      seg.label
+        ? html`<span><i class=${seg.cls}></i>${seg.label}${fits(seg.value) ? nothing : html` <b>${format(seg.value)}</b>`}</span>`
         : nothing,
     )}</div>`;
 }

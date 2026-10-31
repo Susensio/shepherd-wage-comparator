@@ -158,6 +158,9 @@ function extraDaysBar(r, third) {
         ['l', free, third ? 'libres' : 'libras'],
       ],
       scale,
+      undefined,
+      undefined,
+      days.extra >= 1 ? ((regular + paid) / scale) * 100 : null,
     )}${days.extra >= 1 ? marker(((regular + paid) / scale) * 100, 'pagado', true, ((regular + days.extra) / scale) * 100) : nothing}</div>
   </div>`;
 }
@@ -179,6 +182,7 @@ function hoursBar(r) {
       total,
       hours,
       13,
+      restDays + beyond > 0.05 ? ((normal + paidRestDays + paidBeyond) / total) * 100 : null,
     )}${restDays + beyond > 0.05 ? marker(((normal + paidRestDays + paidBeyond) / total) * 100, 'pagado', true) : nothing}</div>
   </div>`;
 }

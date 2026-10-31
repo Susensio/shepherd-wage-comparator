@@ -1,6 +1,6 @@
 // Spacing and tap sizes: measured on the page, at phone width.
 
-import { expect, test } from './fixtures.js';
+import { expect, sample, test } from './fixtures.js';
 
 const TAPPED = 'button:not(.linkbtn), .filebtn, .tabs button, .chip, .barbtn, summary';
 
@@ -39,3 +39,22 @@ test('Comparar: the sticky «Comparar por» row does not cover the checkbox unde
   ]);
   expect(checkbox.y).toBeGreaterThanOrEqual(row.y + row.height - 0.5);
 });
+
+for (const offer of sample.offers) {
+  test(`${offer.mine.name}: the «pagado» marker does not run through a figure of its bar`, async ({ loaded: page }) => {
+    await page.evaluate((id) => app.select(id), offer.id);
+    const crossed = await page.evaluate(() =>
+      [...document.querySelectorAll('.br-mw')].flatMap((bar) => {
+        const marker = bar.querySelector('.br-min')?.getBoundingClientRect();
+        if (!marker) return [];
+        return [...bar.querySelectorAll('.br-b .tx')]
+          .filter((tx) => {
+            const box = tx.getBoundingClientRect();
+            return box.width && marker.left < box.right && marker.right > box.left;
+          })
+          .map((tx) => tx.textContent);
+      }),
+    );
+    expect(crossed).toEqual([]);
+  });
+}
