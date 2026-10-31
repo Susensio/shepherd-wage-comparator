@@ -28,6 +28,11 @@ export const SOURCES = {
     title: 'Orden PJC/297/2026, cotización a la Seguridad Social en 2026',
     url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296',
   },
+  granada: {
+    cite: 'Convenio de Granada',
+    title: 'Convenio Colectivo del Sector del Campo de Granada 2023–2025 (BOP Granada nº 229, 1 de diciembre de 2023)',
+    url: 'https://www.dipgra.es/',
+  },
   smiDeduction2026: {
     cite: 'Hacienda',
     title: 'Deducción de IRPF para quien cobra el SMI',
@@ -78,9 +83,9 @@ export const RULES = {
   claimYears: { value: 1, source: 'et', art: '59.2', note: 'each payment can be claimed for a year after it was due' },
   annualHours: {
     value: 1826,
-    source: 'et',
-    art: '34.1',
-    note: 'ordinary hours per year at 40 a week, after rest days, holidays and vacation; turns the annual minimum wage into an hourly one',
+    source: 'granada',
+    art: '5',
+    note: 'provincial reference, not a national figure: the Granada farm agreement (BOP Granada nº 229, 1 Dec 2023, valid 2023-2025, expired) sets 1,826 hours a year, 160 a month, 40 a week; other provinces differ (Huesca about 1,760); turns the annual minimum wage into an hourly one',
   },
   overnightPct: { value: 25, source: 'agreement', art: '29', note: 'bonus for sleeping out when herding, % of salary' },
   casualMaxDays: {
