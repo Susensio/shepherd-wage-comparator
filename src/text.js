@@ -18,6 +18,9 @@ export const MISSING_TEXT = {
   vacation: 'qué pasa con las vacaciones',
 };
 
+/** The same for another shepherd's offer: impersonal. */
+export const MISSING_TEXT_THIRD = { ...MISSING_TEXT, cashInHand: 'lo que se paga en mano' };
+
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
 export const fSplit = (v, unit) =>
   unit === 'total'
@@ -50,8 +53,9 @@ export const herdText = (terms) =>
 /**
  * One line per form section, for the folded summaries and the copied texts.
  * @param {import('./places.js').PlacesIndex | null} [places] to name the municipality and province
+ * @param {boolean} [third] another shepherd's offer: impersonal instead of to the reader
  */
-export function summaries(o, r, places = null) {
+export function summaries(o, r, places = null, third = false) {
   const one = num(o.terms.duration) === 1;
   const duration =
     o.terms.durationUnit === 'unknown'
@@ -73,7 +77,7 @@ export function summaries(o, r, places = null) {
     ] || 'vacaciones sin poner';
   const extraPays =
     !['year', 'total'].includes(o.terms.payUnit) && o.terms.extraPays === 'separate' ? ' · 2 pagas extra' : '';
-  const meals = mealsGiven(o.terms).length ? `te dan ${mealsList(o.terms)}` : 'sin comida';
+  const meals = mealsGiven(o.terms).length ? `${third ? 'se dan' : 'te dan'} ${mealsList(o.terms)}` : 'sin comida';
   const km = r.car.km;
   const carKm =
     km > 0
@@ -102,7 +106,7 @@ export function summaries(o, r, places = null) {
       : num(o.terms.cashAmount) > 0
         ? `${fTyped(o.terms.cashAmount)} ${UNIT_TEXT[o.terms.cashUnit]}`
         : 'Nada',
-    housing: `${o.terms.overnight === 'yes' ? 'Duermes en borda · ' : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
+    housing: `${o.terms.overnight === 'yes' ? (third ? 'Se duerme en borda · ' : 'Duermes en borda · ') : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
     car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
     others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };

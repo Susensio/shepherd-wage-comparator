@@ -43,10 +43,11 @@ export const isFullyUnpaid = (unpaid, value) => unpaid >= value - WORTH_COUNTING
 
 /**
  * Each right, checked on its own: salary without vacation or bonus; then the bonus (only once the salary is reached)
- * and vacation; then rest and working hours. null if there is nothing to calculate with.
+ * and vacation; then rest and working hours. null if there is nothing to calculate with. `third`: another shepherd's
+ * offer, worded impersonally instead of to the reader.
  * @returns {Right[] | null}
  */
-export function rightsOf(o, r, unit = 'month') {
+export function rightsOf(o, r, unit = 'month', third = false) {
   if (r.min.total <= 0 || r.time.daysWorked <= 0) return null;
   const money = moneyIn(r, unit);
   const netWithTip = (x) => withTip(money.net(x), `${money.figure(x)} brutos en nómina`);
@@ -57,30 +58,32 @@ export function rightsOf(o, r, unit = 'month') {
   const vacationDays = fCount(r.time.vacationDays);
   const pct = fN(LAW.overnightPct);
   const rights = [];
+  /** The sentence in the reader's voice, or in the impersonal one for another shepherd's offer. */
+  const say = (you, they) => (third ? they : you);
   const add = (id, status, title, text) => rights.push({ id, status, title, text });
 
   const salaryOk = r.pay.salary >= r.min.salary - 1;
   if (r.noContract) {
-    add('contract', false, 'Contrato y alta', explanations(o, r).contract);
+    add('contract', false, 'Contrato y alta', explanations(o, r, third).contract);
     add(
       'salary',
       !isWorthCounting(r.debt.salary),
       'Salario mínimo',
-      `Te pagan ${money.figure(r.cash.total)} en mano ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus por dormir en el monte' : ''}.`,
+      `${say('Te pagan', 'Se pagan')} ${money.figure(r.cash.total)} en mano ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus por dormir en el monte' : ''}.`,
     );
     if (isWorthCounting(r.min.vacation))
       add(
         'vacation',
         false,
         'Vacaciones',
-        `Sin contrato no te pagan los ${vacationDays} días de vacaciones que te corresponden: unos ${money.netAll(r.min.vacation)} netos.`,
+        `Sin contrato no ${say('te pagan', 'se pagan')} los ${vacationDays} días de vacaciones que ${say('te', 'le')} corresponden: unos ${money.netAll(r.min.vacation)} netos.`,
       );
   } else {
     add(
       'salary',
       salaryOk,
       'Salario mínimo',
-      html`Te pagan ${netWithTip(r.pay.salary)} netos ${per}; el mínimo es ${netWithTip(r.min.salary)}.`,
+      html`${say('Te pagan', 'Se pagan')} ${netWithTip(r.pay.salary)} netos ${per}; el mínimo es ${netWithTip(r.min.salary)}.`,
     );
     if (o.terms.overnight === 'yes') {
       const short = r.min.salary + r.min.overnight - r.pay.salary;
@@ -90,49 +93,57 @@ export function rightsOf(o, r, unit = 'month') {
           'overnight',
           null,
           title,
-          html`El convenio fija al menos un ${pct}\u00a0% más de salario: unos ${netWithTip(r.min.overnight)} ${per}. Ya va sumado en lo que te deben.`,
+          html`El convenio fija al menos un ${pct}\u00a0% más de salario: unos ${netWithTip(r.min.overnight)} ${per}. Ya va sumado en lo que ${say('te deben', 'se le deben')}.`,
         );
       else if (!isWorthCounting(short))
         add(
           'overnight',
           true,
           title,
-          html`Tu salario cubre también el ${pct}\u00a0% más que fija el convenio (unos ${netWithTip(r.min.overnight)} ${per}).`,
+          html`${say('Tu salario cubre', 'El salario cubre')} también el ${pct}\u00a0% más que fija el convenio (unos ${netWithTip(r.min.overnight)} ${per}).`,
         );
       else
         add(
           'overnight',
           false,
           title,
-          html`Cumples el salario mínimo, pero falta el plus de pernocta: el convenio da un ${pct}\u00a0% más por dormir fuera. Te faltan unos ${netWithTip(short)} ${per}.`,
+          html`${say('Cumples', 'Cumple')} el salario mínimo, pero falta el plus de pernocta: el convenio da un ${pct}\u00a0% más por dormir fuera. ${say('Te faltan', 'Faltan')} unos ${netWithTip(short)} ${per}.`,
         );
     } else
       add(
         'overnight',
         null,
-        '¿Duermes en el monte?',
-        `Si duermes fuera por pastoreo (borda, cabaña), el convenio te da al menos un ${pct}\u00a0% más de salario. Márcalo en «Casa y comida».`,
+        say('¿Duermes en el monte?', '¿Se duerme en el monte?'),
+        say(
+          `Si duermes fuera por pastoreo (borda, cabaña), el convenio te da al menos un ${pct}\u00a0% más de salario. Márcalo en «Casa y comida».`,
+          `Si se duerme fuera por pastoreo (borda, cabaña), el convenio da al menos un ${pct}\u00a0% más de salario.`,
+        ),
       );
     const mayBePaid = r.time.noDuration || isShortContract(o.terms);
     const onlyIfShort = mayBePaid
       ? ''
-      : ' Pero solo se pueden pagar en vez de disfrutar si el contrato acaba antes de poder librarlas: en un contrato así de largo, tienes derecho a librarlas.';
+      : ` Pero solo se pueden pagar en vez de disfrutar si el contrato acaba antes de poder librarlas: en un contrato así de largo, ${say('tienes', 'se tiene')} derecho a librarlas.`;
     const paid = r.pay.vacationPay >= r.min.vacation - 1;
     if (o.terms.vacation === 'taken')
-      add('vacation', true, 'Vacaciones', `Libras los ${vacationDays} días que te corresponden, cobrando.`);
+      add(
+        'vacation',
+        true,
+        'Vacaciones',
+        `${say('Libras', 'Se libran')} los ${vacationDays} días que ${say('te', 'le')} corresponden, cobrando.`,
+      );
     else if (o.terms.vacation === 'paidAtEnd')
       paid
         ? add(
             'vacation',
             mayBePaid || 'warn',
             'Vacaciones',
-            `Te pagan al acabar los ${vacationDays} días que te corresponden: unos ${money.netAll(r.pay.vacationPay)} netos.${onlyIfShort}`,
+            `${say('Te pagan', 'Se pagan')} al acabar los ${vacationDays} días que ${say('te', 'le')} corresponden: unos ${money.netAll(r.pay.vacationPay)} netos.${onlyIfShort}`,
           )
         : add(
             'vacation',
             false,
             'Vacaciones',
-            `Por los ${vacationDays} días que te corresponden te pagan unos ${money.netAll(r.pay.vacationPay)} netos, y el mínimo es ${money.netAll(r.min.vacation)}.`,
+            `Por los ${vacationDays} días que ${say('te', 'le')} corresponden ${say('te pagan', 'se pagan')} unos ${money.netAll(r.pay.vacationPay)} netos, y el mínimo es ${money.netAll(r.min.vacation)}.`,
           );
     else
       paid
@@ -140,7 +151,7 @@ export function rightsOf(o, r, unit = 'month') {
             'vacation',
             mayBePaid || 'warn',
             'Vacaciones',
-            `Van dentro del jornal: de lo que te pagan, unos ${money.netAll(r.pay.vacationPay)} netos son los ${vacationDays} días de vacaciones que te corresponden.${onlyIfShort.replace('pagar en vez', 'cobrar en vez')}`,
+            `Van dentro del jornal: de lo que ${say('te pagan', 'se paga')}, unos ${money.netAll(r.pay.vacationPay)} netos son los ${vacationDays} días de vacaciones que ${say('te', 'le')} corresponden.${onlyIfShort.replace('pagar en vez', 'cobrar en vez')}`,
           )
         : add(
             'vacation',
@@ -155,9 +166,9 @@ export function rightsOf(o, r, unit = 'month') {
       'rest',
       false,
       'Descanso semanal',
-      `${r.time.daysOffTotal < 0.5 ? 'No libras ningún día' : `Libras ${fN(r.time.daysOffTotal)} días`} ${overTxt} y te corresponden al menos ${fN(r.rest.legal)}: trabajas unos ${fN(r.rest.short)} que deberían ser de descanso.`,
+      `${r.time.daysOffTotal < 0.5 ? say('No libras ningún día', 'No se libra ningún día') : say(`Libras ${fN(r.time.daysOffTotal)} días`, `Se libran ${fN(r.time.daysOffTotal)} días`)} ${overTxt} y ${say('te', 'le')} corresponden al menos ${fN(r.rest.legal)}: ${say('trabajas', 'se trabajan')} unos ${fN(r.rest.short)} que deberían ser de descanso.`,
     );
-  else add('rest', true, 'Descanso semanal', 'Libras al menos día y medio por semana.');
+  else add('rest', true, 'Descanso semanal', `${say('Libras', 'Se libra')} al menos día y medio por semana.`);
 
   const x = r.extra;
   if (hoursPerWeek <= H_ORDINARY) add('hours', true, 'Jornada', '40 h o menos a la semana.');
@@ -171,7 +182,7 @@ export function rightsOf(o, r, unit = 'month') {
         'hours',
         false,
         'Jornada',
-        `${what} ${isFullyUnpaid(x.overtimeUnpaid, x.overtimeValue) ? 'No te las pagan' : `Te pagan solo una parte: quedan sin pagar unas ${fN(x.overtimeUnpaidPerWeek)} a la semana`}. Las horas extra se pagan al menos como una hora normal, o se devuelven en descanso.`,
+        `${what} ${isFullyUnpaid(x.overtimeUnpaid, x.overtimeValue) ? say('No te las pagan', 'No se pagan') : `${say('Te pagan solo una parte', 'Se paga solo una parte')}: quedan sin pagar unas ${fN(x.overtimeUnpaidPerWeek)} a la semana`}. Las horas extra se pagan al menos como una hora normal, o se devuelven en descanso.`,
       );
     else add('hours', 'warn', 'Jornada', `${what} Se pagan o se devuelven en descanso.`);
   } else
@@ -179,7 +190,7 @@ export function rightsOf(o, r, unit = 'month') {
       'hours',
       false,
       'Jornada',
-      `${fN(hoursPerWeek)} h a la semana${hoursPerDay > LAW.maxDayHours ? ` y ${fN(hoursPerDay)} h al día` : ''}: pasas del límite de la ganadería (${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día).`,
+      `${fN(hoursPerWeek)} h a la semana${hoursPerDay > LAW.maxDayHours ? ` y ${fN(hoursPerDay)} h al día` : ''}: ${say('pasas', 'se pasa')} del límite de la ganadería (${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día).`,
     );
 
   const holidays = (LAW.holidaysPerYear * r.time.months) / 12;
@@ -188,7 +199,7 @@ export function rightsOf(o, r, unit = 'month') {
       'holidays',
       null,
       'Festivos',
-      `Trabajas los festivos, ${holidays < 1.5 ? 'uno' : `unos ${fN(holidays)}`} en este contrato. Se pagan aparte o se compensan con descanso${x.daysValue > 0 && r.extraDays.extra >= 1 ? ': ya van contados en las jornadas de más' : ''}.`,
+      `${say('Trabajas', 'Se trabajan')} los festivos, ${holidays < 1.5 ? 'uno' : `unos ${fN(holidays)}`} en este contrato. Se pagan aparte o se compensan con descanso${x.daysValue > 0 && r.extraDays.extra >= 1 ? ': ya van contados en las jornadas de más' : ''}.`,
     );
   return rights;
 }

@@ -223,6 +223,53 @@ test.describe('the read-only view', () => {
   });
 });
 
+// Second-person verbs and possessives about pay, rights and what is owed
+const SECOND_PERSON =
+  /\b(ganas|cobras|trabajas|libras|pasas|cumples|generas|disfrutas|ahorras|tienes|puedes|tu|tus|te|tuyo|ti)\b/i;
+
+test.describe('whose voice an offer speaks in', () => {
+  /** Text and tap-to-explain tips of an offer's result, as a reader of that view meets them. */
+  const voices = (page) =>
+    page.evaluate(async () => {
+      const { render } = await import('lit-html');
+      const { calcTermsOnly } = await import('./src/model/calc.js');
+      const { resultView } = await import('./src/views/result.js');
+      const { sharedView } = await import('./src/views/shared.js');
+      const read = (offer) => {
+        const host = document.createElement('div');
+        render(offer, host);
+        for (const d of host.querySelectorAll('details')) d.open = true;
+        return [host.textContent, ...[...host.querySelectorAll('[data-tip]')].map((el) => el.dataset.tip)].join('\n');
+      };
+      return app.state.offers.map((o) => {
+        const r = calcTermsOnly(o, { cfg: app.state.config });
+        const item = { o, r, sharer: {}, label: o.mine.name };
+        return { name: o.mine.name, own: read(resultView(o, r)), shared: read(sharedView(item, null)) };
+      });
+    });
+
+  test('the read-only view of every sample offer says nothing to «tú»; own offers still do', async ({ openApp }) => {
+    const page = await openApp();
+    await loadOffers(page, sample);
+    const all = await voices(page);
+    expect(all.length).toBeGreaterThan(5);
+    for (const { name, shared } of all) expect(shared.match(new RegExp(SECOND_PERSON, 'gi')), name).toBeNull();
+    expect(all.some(({ own }) => SECOND_PERSON.test(own))).toBe(true);
+    expect(all.some(({ own }) => /¿Cuánto ganas\?/.test(own) && /Te deben/.test(own))).toBe(true);
+    expect(all.some(({ shared }) => /¿Cuánto se gana\?/.test(shared) && /Se le deben/.test(shared))).toBe(true);
+  });
+
+  test("another shepherd's ranking rows say «se le deben»; own rows keep «te deben»", async ({ openApp }) => {
+    const others = sample.offers.map((o, i) => ({ id: sharedId(i + 1), user_id: OTHER, terms: o.terms }));
+    const page = await openCompare(openApp, { others });
+    await include(page);
+    const theirs = (await page.locator('.lr.other').allTextContents()).join('\n');
+    expect(theirs).toContain('se le deben');
+    expect(theirs).not.toMatch(SECOND_PERSON);
+    expect(theirs).not.toContain('te deben');
+  });
+});
+
 const section = (page) => page.locator('#othersBlk');
 const ask = { name: 'Compartir y comparar' };
 

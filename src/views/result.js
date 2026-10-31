@@ -6,7 +6,7 @@ import { euroDecimals, fCount, fE, fN, fTyped, joinAnd, num } from '../format.js
 import { LAW } from '../law.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
-import { legalLine, MISSING_TEXT } from '../text.js';
+import { legalLine, MISSING_TEXT, MISSING_TEXT_THIRD } from '../text.js';
 import {
   fUnit,
   incomeOf,
@@ -44,11 +44,12 @@ const STAMPS = {
 const PILL_RANK = { bad: 0, warn: 1, '': 2, ok: 3 };
 
 /** The offer's pills: hours, days off, contract and cash, coloured like their right in «¿Es legal?». Wrong first. */
-function pills(o, r) {
+function pills(o, r, third) {
+  const say = (you, they) => (third ? they : you);
   const hoursPerWeek = r.time.hoursPerWeek;
   const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
-  const explain = explanations(o, r);
-  const statusOf = Object.fromEntries((rightsOf(o, r) || []).map((right) => [right.id, right.status]));
+  const explain = explanations(o, r, third);
+  const statusOf = Object.fromEntries((rightsOf(o, r, 'month', third) || []).map((right) => [right.id, right.status]));
   const color = (id, fallback) =>
     id in statusOf
       ? statusOf[id] === true
@@ -87,16 +88,16 @@ function pills(o, r) {
     icon: 'clock',
     text: `${fTyped(o.terms.hoursPerDay)}\u00a0h/día · ${fN(hoursPerWeek)}\u00a0h/semana`,
     status: color('hours', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
-    tip: `Trabajas unas ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` Te salen ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours ? ' Pasas del límite legal.' : ''}`,
+    tip: `${say('Trabajas unas', 'Se trabajan unas')} ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` ${say('Te salen', 'Salen')} ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours ? ` ${say('Pasas', 'Se pasa')} del límite legal.` : ''}`,
   });
   list.push({
     icon: 'cal',
     text:
       r.time.daysOffMonth < 0.05
         ? 'Sin libranzas'
-        : `Libras ${fTyped(o.terms.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.terms.daysOffUnit] || 'al mes'}`,
+        : `${say('Libras', 'Se libran')} ${fTyped(o.terms.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.terms.daysOffUnit] || 'al mes'}`,
     status: color('rest', r.rest.short < 1 ? 'ok' : 'warn'),
-    tip: `Por ley te corresponden al menos ${fN(LAW.weeklyRest, 1)} días de descanso por semana (unos ${fN((LAW.weeklyRest * DAYS_PER_MONTH) / 7, 1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.${r.rest.short >= 1 ? ` Con esta oferta trabajas unos ${fN(r.rest.short)} días ${overTxt} que deberían ser de descanso.` : ' Esta oferta lo cumple.'}`,
+    tip: `Por ley ${say('te', 'le')} corresponden al menos ${fN(LAW.weeklyRest, 1)} días de descanso por semana (unos ${fN((LAW.weeklyRest * DAYS_PER_MONTH) / 7, 1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.${r.rest.short >= 1 ? ` Con esta oferta ${say('trabajas', 'se trabajan')} unos ${fN(r.rest.short)} días ${overTxt} que deberían ser de descanso.` : ' Esta oferta lo cumple.'}`,
   });
   // Stable sort: within each colour, contract and money first
   list.sort((a, b) => PILL_RANK[a.status] - PILL_RANK[b.status]);
@@ -107,11 +108,12 @@ function pills(o, r) {
 }
 
 /** Breakdown: from what you are paid to what you earn. Returns it with the explanation of the headline figure. */
-function breakdown(o, r, unit) {
+function breakdown(o, r, unit, third) {
+  const say = (you, they) => (third ? they : you);
   const cfg = r.cfg;
   const p = r.earnings.parts;
   const money = moneyIn(r, unit);
-  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ' + lo que cobras en negro' : ''}${p.housing > 0.5 || p.food > 0.5 ? ' + lo que te ahorras en casa y comida' : ''}${p.km > 0.5 ? ' + los km que te pagan' : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${p.unemployment > 0.5 ? ' + el paro que generas' : ''}${r.expenses.total > 0.5 ? ' − tus gastos de coche y otros' : ''}, ${{ hour: 'repartido entre las horas que trabajas', day: 'repartido entre los días que trabajas', month: 'repartido entre los meses del contrato', total: 'en todo el contrato' }[unit]}.${p.unemployment > 0.5 ? ` El paro lo cobras al juntar ${LAW.unemployment.minDaysContributed} días cotizados.` : cfg.unemployment === false ? ' No incluye el paro.' : ''}`;
+  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ` + lo que ${say('cobras', 'se cobra')} en negro` : ''}${p.housing > 0.5 || p.food > 0.5 ? ` + lo que ${say('te ahorras', 'se ahorra')} en casa y comida` : ''}${p.km > 0.5 ? ` + los km que ${say('te pagan', 'se pagan')}` : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${p.unemployment > 0.5 ? ` + el paro que ${say('generas', 'se genera')}` : ''}${r.expenses.total > 0.5 ? ` − ${say('tus', 'los')} gastos de coche y otros` : ''}, ${{ hour: `repartido entre las horas que ${say('trabajas', 'se trabajan')}`, day: `repartido entre los días que ${say('trabajas', 'se trabajan')}`, month: 'repartido entre los meses del contrato', total: 'en todo el contrato' }[unit]}.${p.unemployment > 0.5 ? ` El paro ${say('lo cobras', 'se cobra')} al juntar ${LAW.unemployment.minDaysContributed} días cotizados.` : cfg.unemployment === false ? ' No incluye el paro.' : ''}`;
   // From gross to net payroll, on tapping «Nómina» (paid vacation has its own row)
   const netPay = p.base + p.extraPays;
   const grossPay = netPay / (r.pay.netFactor || 1);
@@ -120,23 +122,23 @@ function breakdown(o, r, unit) {
     `− Seguridad Social (${fN(LAW.ssWorkerPct, 1)}\u00a0%)${r.pay.irpf > 0.5 ? ` y retención de IRPF (${fN(r.pay.irpfPct * 100, 1)}\u00a0%)` : ''}: ${money.figure(grossPay - netPay)}`,
     `= Nómina neta: ${money.figure(netPay)}`,
     r.pay.irpf < 0.5
-      ? 'Con lo que ganas en el año no te retienen IRPF.'
+      ? say('Con lo que ganas en el año no te retienen IRPF.', 'Con lo que se gana en el año no se retiene IRPF.')
       : r.pay.irpf - r.pay.irpfYear > 1
-        ? `Es la retención: en la renta te devolverían unos ${fE(r.pay.irpf - r.pay.irpfYear)}.`
-        : 'Es la retención de IRPF de tu nómina.',
+        ? `Es la retención: en la renta ${say('te devolverían', 'devolverían')} unos ${fE(r.pay.irpf - r.pay.irpfYear)}.`
+        : say('Es la retención de IRPF de tu nómina.', 'Es la retención de IRPF de la nómina.'),
     p.vacationPay > 0.5 ? 'Las vacaciones pagadas van en su fila.' : '',
   ]
     .filter(Boolean)
     .join('\n');
   const vacationDays = fCount(r.time.vacationDays);
   const tips = {
-    ...explanations(o, r),
+    ...explanations(o, r, third),
     payroll: payrollTip,
     vacationPay:
       o.terms.vacation === 'included'
-        ? `Los ${vacationDays} días de vacaciones que no disfrutas van dentro de lo que te pagan: unos ${fE(p.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`
-        : `Los ${vacationDays} días de vacaciones que no disfrutas te los pagan al acabar: unos ${fE(p.vacationPay)} netos, aquí repartidos entre lo que trabajas.`,
-    unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. Lo cobras cuando juntes ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que trabajas. Se puede quitar en «Supuestos del cálculo».`,
+        ? `Los ${vacationDays} días de vacaciones que ${say('no disfrutas', 'no se disfrutan')} van dentro de lo que ${say('te pagan', 'se paga')}: unos ${fE(p.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`
+        : `Los ${vacationDays} días de vacaciones que ${say('no disfrutas te los pagan', 'no se disfrutan se pagan')} al acabar: unos ${fE(p.vacationPay)} netos, aquí repartidos entre lo que ${say('trabajas', 'se trabaja')}.`,
+    unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. ${say('Lo cobras cuando juntes', 'Se cobra al juntar')} ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que ${say('trabajas', 'se trabaja')}.${third ? '' : ' Se puede quitar en «Supuestos del cálculo».'}`,
   };
   const trip =
     o.mine.commute === 'daily'
@@ -162,20 +164,20 @@ function breakdown(o, r, unit) {
   return {
     earnTip,
     html: html`
-    <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">cobras <b>${fUnit(inUnit(r.earnings.received, r, cols.other), cols.other)}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
+    <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">${say('cobras', 'se cobra')} <b>${fUnit(inUnit(r.earnings.received, r, cols.other), cols.other)}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
     ${incomeBar(r, incomeOf(r) || 1)}
     <div class="rows">
       ${row('', cols.header, { swatch: '', cls: 'hd' })}
       ${[
         ...moneyParts.map(partRow),
         ...(moneyParts.length > 1 && others.length
-          ? [row('Cobras', cols.value(received), { swatch: '', cls: 'subt' })]
+          ? [row(say('Cobras', 'Se cobra'), cols.value(received), { swatch: '', cls: 'subt' })]
           : []),
         ...others.map(partRow),
       ]}
       ${shows(r.car.cost) ? row(withTip('Coche', carTip), cols.minus(r.car.cost), { swatch: 'expense', valueCls: 'minus' }) : nothing}
       ${shows(r.expenses.other) ? row('Otros', cols.minus(r.expenses.other), { swatch: 'expense', valueCls: 'minus' }) : nothing}
-      ${row('Ganas', cols.value(r.earnings.total), { swatch: '', cls: 'tot' })}
+      ${row(say('Ganas', 'Se gana'), cols.value(r.earnings.total), { swatch: '', cls: 'tot' })}
     </div>
     </details>`,
   };
@@ -188,10 +190,10 @@ function breakdown(o, r, unit) {
 export function resultView(o, r, { readOnly = false } = {}) {
   const shortfall = missing(o.terms);
   if (shortfall.length)
-    return html`<p class="empty">Para ver cuánto ganas falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`;
+    return html`<p class="empty">Para ver cuánto ${readOnly ? 'se gana' : 'ganas'} falta ${joinAnd(shortfall.map((id) => (readOnly ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`;
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
-  const { earnTip, html: breakdownView } = breakdown(o, r, unit);
+  const { earnTip, html: breakdownView } = breakdown(o, r, unit, readOnly);
   const year = actualYear(o.terms);
   const line = legalLine(o, r);
   return html`${
@@ -199,19 +201,19 @@ export function resultView(o, r, { readOnly = false } = {}) {
       ? html`<p class="year-warning">Esta oferta es de ${year} y aún no están incluidos el salario mínimo ni el IRPF de ${year}: las cuentas usan los de ${r.year}.</p>`
       : ''
   }
-    <h3 class="q">¿Cuánto ganas?</h3>
-    <div class="tag"><span class="lbl tipl" data-tip=${earnTip} tabindex="0" role="button">Ganas ${UNITS[unit].label}</span><span class="tag-row"><span class="big">${money.figure(r.earnings.total)}</span>${
+    <h3 class="q">${readOnly ? '¿Cuánto se gana?' : '¿Cuánto ganas?'}</h3>
+    <div class="tag"><span class="lbl tipl" data-tip=${earnTip} tabindex="0" role="button">${readOnly ? 'Se gana' : 'Ganas'} ${UNITS[unit].label}</span><span class="tag-row"><span class="big">${money.figure(r.earnings.total)}</span>${
       r.stamp
         ? html`<a href="#secLegal" class=${STAMPS[r.stamp.code].warn ? 'stamp warn' : 'stamp'}>${stampLines(STAMPS[r.stamp.code].text)}</a>`
         : nothing
     }</span>${otherUnits(r, unit)}
       ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}</div>
-    ${pills(o, r)}
+    ${pills(o, r, readOnly)}
     ${breakdownView}
-    ${legalSection(o, r, money)}
+    ${legalSection(o, r, money, readOnly)}
     ${readOnly ? nothing : negotiationSection(o, r, money)}
     ${readOnly ? nothing : seasonEndSection(o, r)}
-    <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r)}</div></details>
+    <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r, readOnly)}</div></details>
     ${readOnly ? nothing : copyRow(line)}`;
 }
 

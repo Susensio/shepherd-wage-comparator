@@ -6,7 +6,7 @@ import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
 import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
-import { MISSING_TEXT, unpaidTime } from '../text.js';
+import { MISSING_TEXT, MISSING_TEXT_THIRD, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
 import { incomeBar, legend, swatch } from './parts.js';
 
@@ -105,6 +105,7 @@ function headToHead(list) {
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
   const [a, b] = pairing.ids.map((id) => list.find((x) => x.o.id === id));
+  const say = (you, they) => (a.sharer || b.sharer ? they : you); // a column of another shepherd's: impersonal
   const debt = (x) => (isWorthCounting(x.r.debt.owed) ? x.r.debt.owed * x.r.netFactor : 0);
   // Totals only compare when both last about the same (under 10 % apart): otherwise the longer one always wins
   const similar =
@@ -125,22 +126,27 @@ function headToHead(list) {
     [
       'Dinero',
       [
-        ['Ganas por hora', (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
-        ['Ganas al mes', (x) => (perMonthOk(x) ? x.r.earnings.perMonth : Number.NaN), orDash(fE), 'max'],
+        [say('Ganas por hora', 'Se gana por hora'), (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
         [
-          'Te entra al mes',
+          say('Ganas al mes', 'Se gana al mes'),
+          (x) => (perMonthOk(x) ? x.r.earnings.perMonth : Number.NaN),
+          orDash(fE),
+          'max',
+        ],
+        [
+          say('Te entra al mes', 'Entra al mes'),
           (x) => (perMonthOk(x) ? x.r.earnings.received / (x.r.time.months || 1) : Number.NaN),
           orDash(fE),
           'max',
         ],
         similar && [
-          'Ganas en total',
+          say('Ganas en total', 'Se gana en total'),
           (x) => (x.r.time.noDuration ? Number.NaN : x.r.earnings.total),
           orDash(fE),
           'max',
         ],
         similar && [
-          'Te entra en total',
+          say('Te entra en total', 'Entra en total'),
           (x) => (x.r.time.noDuration ? Number.NaN : x.r.earnings.received),
           orDash(fE),
           'max',
@@ -171,7 +177,7 @@ function headToHead(list) {
       'Derechos',
       [
         ['En negro', (x) => x.r.cash.share, (v) => (v <= 0.005 ? 'nada' : `${fN(v * 100)} %`), 'min'],
-        ['Te deben', debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
+        [say('Te deben', 'Se le deben'), debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
         similar && [
           'Paro que genera',
           (x) => x.r.unemployment.days,
@@ -252,7 +258,7 @@ export function compareView(all, unit, termsOnly, others) {
       body: html`${controls}<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
-          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
+          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${x.o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => (x.sharer ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}.`).join(' ')}`
       }</p>`,
       more: nothing,
     };
@@ -278,7 +284,7 @@ export function compareView(all, unit, termsOnly, others) {
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
-          ? html`<span class="bad">te deben ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
+          ? html`<span class="bad">${x.sharer ? 'se le deben' : 'te deben'} ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;
     return pairing.on
