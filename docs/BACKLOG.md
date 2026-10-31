@@ -22,3 +22,6 @@
 - account | No real sign-in has been tried on the live page since ADR-0011 to ADR-0013 (only the fake client): Google's button in both schemes, the return after signing in from a tooltip, the upload of the browser's offers, «Compartir y comparar» in Comparar.
 - backup | The result of «Recuperar una copia» is a small grey line under the text box: on 31 October 2026 an import that added nothing looked like nothing happened. Make the result visible (and say when a file holds no offer it can read).
 - ux | Comparar shows a guest two sign-in prompts until the tooltip is dismissed: the tooltip and «Otros pastores» (ADR-0013).
+- law | `SOCIAL_SECURITY` has one set of rates, the temporary-contract ones (unemployment 1.58 % worker, 5.5 % employer); permanent and fijo discontinuo contracts pay less for unemployment. With the rates no longer editable (ADR-0014), make them depend on the contract, with sources.
+- law | `annualHours` (1,826) is cited to ET art. 34.1 with a note, but that article only sets the 40-hour week; find the source of the yearly figure (the farm collective agreement is the likely one) and cite it.
+- account | While the account is still connecting at startup, Ajustes' backup card shows the guest version for a moment.
