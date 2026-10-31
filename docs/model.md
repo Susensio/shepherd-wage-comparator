@@ -18,14 +18,14 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 
 ## Other shepherds' offers
 
-- Read only when signed in with sharing on, fetched on entering Comparar (with the include switch on) and on demand, and kept in `state.others`, in memory. They are never put in `state.offers`, `localStorage`, backups or the account's own rows.
+- Read only when signed in with sharing on, fetched on entering Comparar and on demand; the include switch is on by default while sharing, and kept in `state.others`, in memory. They are never put in `state.offers`, `localStorage`, backups or the account's own rows.
 - They come through `ingestShared` (`saved.js`): defaults for missing fields, unknown ones never read, no `mine` but the sharer's name. Calculated with `calcTermsOnly` only; including them in the ranking forces terms-only on for every row, own ones too.
 - The read-only view reuses `resultView` with `readOnly`: no editing, negotiating, copying or payslip controls.
 
 ## The account copy
 
 - Signed in, the account is the source of truth and `localStorage` its cache (`storage/account.js`). Changes are written after a pause, and only the offers whose `terms`, `mine` or `cmp` changed.
-- The first sign-in of a user on a browser uploads the offers the account lacks and keeps both sets, merged by id; ids that are not uuids get a new one first, in the browser too. Only a failed upload asks (ADR-0009).
+- The first sign-in of a user on a browser uploads the offers the account lacks and keeps both sets, merged by id; ids that are not uuids get a new one first, in the browser too. Only a failed upload asks (ADR-0009). An empty account starts like a first visit, with the templates, and its placeholder offer is never written.
 - A browser that has synced with that user before takes the account's copy as it is: an offer missing from the account was deleted on another device.
 - The blank placeholder offer of a first visit is never written.
 

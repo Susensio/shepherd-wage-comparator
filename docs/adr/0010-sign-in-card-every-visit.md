@@ -1,6 +1,6 @@
 # ADR-0010: Keep the sign-in card coming back each visit, shrunk to a line when dismissed, with the account's status on a Cuenta tab, instead of a card dismissed for good
 
-Status: Accepted
+Status: Superseded by [ADR-0011](0011-account-button-sharing-in-comparar.md)
 Date: 2026-10-31
 
 ## Context
