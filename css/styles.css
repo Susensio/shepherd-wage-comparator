@@ -1005,7 +1005,7 @@ details.plg > summary:has(.stat)::after {
   border-style: dashed;
 }
 /* While picking a template only the templates and the backup are shown (to restore your offers in another browser) */
-body.choosing :is(#main, #results, #backupNotice, .tabs) {
+body.choosing :is(#main, #results, #backupNotice, .tabs, #accountPrompt) {
   display: none !important;
 }
 
@@ -1393,6 +1393,103 @@ section.blk {
   background: var(--ink);
   color: var(--bg);
 }
+
+/* The account's status, as a dot on its tab (ADR-0010). No dot without accounts. */
+.status-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--status, var(--muted));
+}
+#settingsTab:not([data-status="off"]) .status-dot {
+  display: inline-block;
+}
+[data-status="guest"],
+[data-status="pending"] {
+  --status: var(--c-cash);
+}
+[data-status="online"],
+[data-status="saving"] {
+  --status: var(--c-pay);
+}
+[data-status="error"] {
+  --status: var(--neg);
+}
+[data-status="offline"],
+[data-status="connecting"] {
+  --status: var(--muted);
+}
+:is([data-status="saving"], [data-status="connecting"]) .status-dot {
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  to {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-dot {
+    animation: none !important;
+  }
+}
+
+/* Under the tabs: the sign-in card pointing at Cuenta, or a line once dismissed */
+.account-prompt {
+  margin-top: -16px;
+}
+.account-prompt[hidden],
+.account-prompt [hidden] {
+  display: none !important;
+}
+.account-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--c-cash) 40%, var(--surface));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-cash) 10%, var(--surface));
+  font-size: 13px;
+}
+.account-strip p {
+  flex: 1;
+}
+.account-strip button {
+  flex: none;
+}
+.welcome-account {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.welcome-account[hidden] {
+  display: none;
+}
+.account-sync {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.account-sync:empty {
+  display: none;
+}
+.account-sync::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--status, var(--muted));
+}
 .panel {
   display: flex;
   flex-direction: column;
@@ -1616,10 +1713,10 @@ details.fixed > summary::-webkit-details-marker {
   outline-offset: 2px;
 }
 .signin-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 14px;
   padding: 14px 16px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--surface));
   border-radius: 12px;
@@ -1628,6 +1725,20 @@ details.fixed > summary::-webkit-details-marker {
 }
 .signin-card[hidden] {
   display: none;
+}
+/* The arrow, over the middle of the fourth tab, Cuenta */
+.signin-card::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: calc(12.5% - 7px);
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border: inherit;
+  border-right: 0;
+  border-bottom: 0;
+  transform: rotate(45deg);
 }
 .signin-card h2 {
   margin: 0;

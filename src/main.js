@@ -38,7 +38,9 @@ if (state.firstRun) openTemplates();
 setUpAccountSection({
   onOthers: paintCompare,
   onReplaced() {
-    if (templatesOpen()) closeTemplates();
+    // An empty account starts like a first visit, with the templates
+    if (state.placeholderId) openTemplates();
+    else if (templatesOpen()) closeTemplates();
     for (const o of state.offers) defaultVacation(o.terms);
     fillSettings();
     scrollChipsNextPaint();

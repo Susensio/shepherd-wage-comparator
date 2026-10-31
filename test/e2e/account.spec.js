@@ -1,4 +1,5 @@
-// The «Cuenta» section of Ajustes, against a fake supabase-js client: no real project is needed.
+// The account, against a fake supabase-js client: no real project is needed. The «Cuenta» tab (Ajustes without a
+// project), the status on it, and the sign-in on the welcome and under the tabs (ADR-0009, ADR-0010).
 //
 // The fake client and its seam are in fake-account.js.
 
@@ -10,7 +11,7 @@ const ME = '00000000-0000-0000-0000-00000000000a';
 const ACCOUNT_OFFER = '10000000-0000-0000-0000-000000000001';
 const PROFILE = { user_id: ME, name: 'Ana Pastora', email: 'ana@example.com', phone: null, sharing: false };
 
-/** The page on the Ajustes tab, with the fake account. */
+/** The page on the Cuenta tab, with the fake account. */
 async function openAccount(openApp, options = {}) {
   const arg = {
     tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] },
@@ -30,6 +31,10 @@ test('with no project configured the section is hidden', async ({ openApp }) => 
   const page = await openApp({ beforeLoad: withoutProject });
   await page.evaluate(() => app.showTab('settings'));
   await expect(page.locator('#account')).toBeHidden();
+  await expect(page.locator('#settingsTab')).toHaveText('Ajustes');
+  await expect(page.locator('#settingsTab .status-dot')).toBeHidden();
+  await expect(page.locator('#accountPrompt')).toBeHidden();
+  await expect(page.locator('#welcomeAccount')).toBeHidden();
 });
 
 test('signed out: what an account gives, and Google through the redirect when its script does not load', async ({
@@ -45,13 +50,25 @@ test('signed out: what an account gives, and Google through the redirect when it
 });
 
 test.describe('the sign-in card', () => {
-  /** The page on Ofertas, signed out. */
+  /** The page on Ofertas, signed out, with offers in the browser (a first visit has the welcome instead). */
   const openCard = (openApp, options = {}) =>
     openApp({
       init: installFake,
-      arg: { signedOut: true, tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] }, ...options },
+      arg: {
+        signedOut: true,
+        localOffers: sample.offers,
+        tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] },
+        ...options,
+      },
       beforeLoad: withProject,
     });
+
+  test('the tab is Cuenta, with the guest status', async ({ openApp }) => {
+    const page = await openCard(openApp);
+    await expect(page.locator('#settingsTab')).toHaveText('Cuenta');
+    await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'guest');
+    await expect(page.locator('#settingsTab .status-dot')).toBeVisible();
+  });
 
   test("heads the page, with Google's button and its account chooser", async ({ openApp }) => {
     const page = await openCard(openApp, { google: true });
@@ -89,17 +106,41 @@ test.describe('the sign-in card', () => {
     await expect(card).toBeHidden();
   });
 
-  test('«Continuar sin cuenta» is remembered, and Google is not reached again', async ({ openApp }) => {
+  test('«Ahora no» shrinks it to a line on every tab, and the card is back on the next visit', async ({ openApp }) => {
     const page = await openCard(openApp);
-    await page.getByRole('button', { name: 'Continuar sin cuenta' }).click();
+    await page.getByRole('button', { name: 'Ahora no' }).click();
     await expect(page.locator('#signInCard')).toBeHidden();
-    const google = [];
-    page.on('request', (request) => request.url().includes('accounts.google.com') && google.push(request.url()));
+    await expect(page.locator('#accountGuestStrip')).toBeVisible();
+    await page.locator('.tabs [data-tab=compare]').click();
+    await expect(page.locator('#accountGuestStrip')).toBeVisible();
+    await page.locator('#accountGuestStrip').getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.locator('#signInCard')).toBeVisible();
+    await page.getByRole('button', { name: 'Ahora no' }).click();
     await page.reload();
     await page.waitForFunction(() => window.app);
-    await page.waitForTimeout(300); // the card would show once the start-up has looked for a session
-    await expect(page.locator('#signInCard')).toBeHidden();
-    expect(google).toEqual([]);
+    await expect(page.locator('#signInCard')).toBeVisible();
+  });
+
+  test('not on the Cuenta tab, which has its own sign-in', async ({ openApp }) => {
+    const page = await openCard(openApp);
+    await page.locator('.tabs [data-tab=settings]').click();
+    await expect(page.locator('#accountPrompt')).toBeHidden();
+    await expect(page.locator('#accountOut')).toBeVisible();
+  });
+
+  test('the backup reminder gives way to it', async ({ openApp }) => {
+    const page = await openCard(openApp);
+    await expect(page.locator('#signInCard')).toBeVisible();
+    await expect(page.locator('#backupNotice')).toBeHidden();
+  });
+
+  test('a first visit has it on the welcome, above the templates', async ({ openApp }) => {
+    const page = await openCard(openApp, { localOffers: undefined });
+    await expect(page.locator('#welcomeAccount')).toBeVisible();
+    await expect(page.locator('#tplGrid button').first()).toBeVisible();
+    await expect(page.locator('#accountPrompt')).toBeHidden();
+    await page.locator('#welcomeAccount').getByRole('button', { name: 'Continuar con Google' }).click();
+    await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
   });
 });
 
@@ -147,6 +188,36 @@ test('signed in: who, and signing out', async ({ openApp }) => {
   expect(await page.evaluate(() => window.fake.signedOut)).toBe(true);
   await page.evaluate(() => app.showTab('offers'));
   await expect(page.locator('#signInCard')).toBeHidden();
+});
+
+test('signed in: online on the tab and in the section, and no prompt', async ({ openApp }) => {
+  const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
+  await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'online');
+  await expect(page.locator('#accountSync')).toContainText('se guardan en tu cuenta');
+  await page.evaluate(() => app.showTab('offers'));
+  await expect(page.locator('#accountPrompt')).toBeHidden();
+});
+
+test('an empty account opens the templates, like a first visit', async ({ openApp }) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { tables: { profiles: [{ ...PROFILE }] } },
+    beforeLoad: withProject,
+  });
+  await expect(page.locator('#welcome')).toBeVisible();
+  await expect(page.locator('#welcomeAccount')).toBeHidden();
+  await expect(page.locator('#tplGrid button').first()).toBeVisible();
+});
+
+test('a failed first upload: a line under the tabs that leads to it', async ({ openApp }) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { tables: { profiles: [{ ...PROFILE }], ...accountRows() }, localOffers: sample.offers, failUpload: true },
+    beforeLoad: withProject,
+  });
+  await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'pending');
+  await page.locator('#accountPendingStrip').getByRole('button', { name: 'Revisar' }).click();
+  await expect(page.locator('#accountPending')).toBeVisible();
 });
 
 test('the profile is edited and saved', async ({ openApp }) => {

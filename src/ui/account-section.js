@@ -1,17 +1,17 @@
-/** The «Cuenta» section of Ajustes: what the person sees and does with the account (ADR-0006). */
+/**
+ * The account (ADR-0006, ADR-0009, ADR-0010): the «Cuenta» section, the status on its tab, and the sign-in card under
+ * the tabs and on the welcome.
+ */
 
 import { render } from 'lit-html';
 import { ingestShared } from '../saved.js';
-import { state, store } from '../state.js';
+import { state } from '../state.js';
 import { openAccount, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
-import { paintAccount } from '../views/settings.js';
+import { paintAccount, paintAccountPrompts } from '../views/settings.js';
 import { signInCardView, signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
-
-/** Set once the sign-in card is dismissed, or after signing out: the card stays away. */
-const CARD_SKIPPED_KEY = 'cj.signInSkipped';
 
 /** @type {any} */
 let account;
@@ -22,13 +22,18 @@ const view = {
   /** @type {any[]} */ pending: [],
   message: '',
   /** @type {'share' | 'delete' | null} */ confirm: null,
+  /** Accounts are configured: without a project nothing of this shows. */
+  enabled: false,
   /** The saved session has been looked at: until then the sign-in card would only flash. */
   started: false,
+  /** How the background saving goes. */
+  /** @type {'saved' | 'saving' | 'error'} */ sync: 'saved',
+  offline: false,
+  /** «Ahora no» on the card, or a sign-out: a line instead, for this visit only, so the card is back on the next. */
+  pitchDismissed: false,
   /** @type {import('../views/sign-in.js').SignIn} */
   signIn: { stage: 'email', email: '', busy: false, googleFailed: false, message: '' },
 };
-
-const cardShown = () => view.started && !view.user && !store.get(CARD_SKIPPED_KEY, false);
 
 /** Called when what other shepherds' offers show changes: availability, loading, result. */
 let onOthersChange = () => {};
@@ -42,19 +47,26 @@ function syncAvailability() {
   onOthersChange();
 }
 
+/** The tab's status and the sign-in prompts, which also depend on the page: the welcome, the tab shown. */
+export function paintAccountStatus() {
+  if (!view.enabled) return;
+  const { card, welcome } = paintAccountPrompts(view);
+  const withEmail = !!ACCOUNT_CONFIG.emailSignIn;
+  render(card ? signInCardView(view.signIn, withEmail) : '', $('#signInCard'));
+  render(welcome ? signInView(view.signIn, withEmail) : '', $('#welcomeSignIn'));
+  showSignInButtons();
+}
+
 const paint = () => {
   paintAccount(view);
-  const card = $('#signInCard');
-  card.hidden = !cardShown();
-  render(card.hidden ? '' : signInCardView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), card);
   render(view.user ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
+  paintAccountStatus();
   syncAvailability();
-  showSignInButtons();
 };
 
 /**
  * Draws Google's button where a sign-in is on screen; Google's script is loaded only then (ADR-0009). Called again
- * when Ajustes is shown.
+ * whenever the prompts are repainted.
  */
 export function showSignInButtons({ chooser = false } = {}) {
   const clientId = ACCOUNT_CONFIG.googleClientId;
@@ -96,10 +108,10 @@ function onGoogleToken(token, nonce) {
   });
 }
 
-/** Signing out or deleting the account: the card does not come back on its own. */
+/** Signing out or deleting the account: the line, not the card, until the next visit. */
 function signedOut() {
   forgetGoogleChoice();
-  store.set(CARD_SKIPPED_KEY, true);
+  view.pitchDismissed = true;
   Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
 }
 
@@ -157,17 +169,36 @@ async function enter(started) {
 export async function setUpAccountSection({ onReplaced, onOthers }) {
   onOthersChange = onOthers;
   if (!ACCOUNT_CONFIG.url || !ACCOUNT_CONFIG.anonKey) return;
+  view.enabled = true;
+  view.offline = navigator.onLine === false;
   $('#account').hidden = false;
+  $('#settingsTabLabel').textContent = 'Cuenta';
+  addEventListener('offline', () => {
+    view.offline = true;
+    paint();
+  });
+  addEventListener('online', () => {
+    view.offline = false;
+    account?.changed(); // what failed while offline is written now
+    paint();
+  });
   paint();
   await run('No se pudo conectar con la cuenta.', async () => {
     try {
-      const started = await startAccount({ onReplaced });
+      const started = await startAccount({
+        onReplaced,
+        onStatus(status) {
+          view.sync = status;
+          paintAccount(view);
+          paintAccountStatus();
+        },
+      });
       if (started) await enter(started);
     } finally {
       view.started = true;
     }
   });
-  if (cardShown()) showSignInButtons({ chooser: true });
+  if (!view.user) showSignInButtons({ chooser: true });
 }
 
 /** For the buttons, by data-action. */
@@ -206,7 +237,12 @@ export const accountActions = {
   },
 
   skipSignIn() {
-    store.set(CARD_SKIPPED_KEY, true);
+    view.pitchDismissed = true;
+    paint();
+  },
+
+  expandSignIn() {
+    view.pitchDismissed = false;
     paint();
   },
 

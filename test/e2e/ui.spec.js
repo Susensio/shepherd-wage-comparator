@@ -1,6 +1,7 @@
 // The main flows, clicked through as a person would.
 
 import { readFileSync } from 'node:fs';
+import { withoutProject } from './fake-account.js';
 import { expect, test } from './fixtures.js';
 
 async function fillOffer(page, { duration = '4', hours = '11', pay = '70' } = {}) {
@@ -124,8 +125,9 @@ test('copy the claim', async ({ loaded: page }) => {
   expect(text).toContain('Comparador de jornales');
 });
 
-test('a backup, downloaded and loaded in another browser', async ({ openApp, browser }) => {
-  const page = await openApp();
+// With accounts the reminder gives way to the sign-in card (account.spec.js)
+test('without accounts, a backup, downloaded and loaded in another browser', async ({ openApp, browser }) => {
+  const page = await openApp({ beforeLoad: withoutProject });
   await page.locator('.tcard').first().click();
   await fillOffer(page, { hours: '10', pay: '60' });
   await expect(page.locator('#backupNotice')).toBeVisible();

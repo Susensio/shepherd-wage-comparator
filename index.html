@@ -31,11 +31,22 @@
     <button type="button" role="tab" data-action="tab" data-tab="offers">Ofertas</button>
     <button type="button" role="tab" data-action="tab" data-tab="compare">Comparar</button>
     <button type="button" role="tab" data-action="tab" data-tab="laws">Leyes</button>
-    <button type="button" role="tab" data-action="tab" data-tab="settings">Ajustes</button>
+    <button type="button" role="tab" data-action="tab" data-tab="settings" id="settingsTab"><span class="status-dot" aria-hidden="true"></span><span id="settingsTabLabel">Ajustes</span></button>
   </div>
 
+  <aside class="account-prompt" id="accountPrompt" aria-label="Cuenta" hidden>
+    <section class="signin-card" id="signInCard" aria-label="Entrar en tu cuenta" hidden></section>
+    <div class="account-strip" id="accountGuestStrip" hidden>
+      <p>Sin cuenta: tus ofertas solo están en este navegador.</p>
+      <button type="button" class="sm pri" data-action="expandSignIn">Entrar</button>
+    </div>
+    <div class="account-strip" id="accountPendingStrip" hidden>
+      <p>No se pudieron subir a tu cuenta las ofertas de este navegador.</p>
+      <button type="button" class="sm pri" data-action="tab" data-tab="settings">Revisar</button>
+    </div>
+  </aside>
+
   <div class="panel" data-panel="offers">
-  <section class="signin-card" id="signInCard" aria-label="Entrar en tu cuenta" hidden></section>
   <div class="backup-notice" id="backupNotice" hidden>
     <p>Tus ofertas solo están guardadas en este navegador, que puede borrarlas. Guarda una copia por si acaso.</p>
     <div class="actions"><button type="button" class="sm pri" data-action="download">Descargar copia</button><button type="button" class="sm" data-action="snoozeBackup">Ahora no</button></div>
@@ -58,6 +69,11 @@
         <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
       </ul>
       <p class="hint">Tus ofertas son solo tuyas: nadie más las ve.</p>
+      <div class="welcome-account" id="welcomeAccount" hidden>
+        <p>Entra y tus ofertas se guardan en tu cuenta, para verlas en cualquier dispositivo.</p>
+        <div id="welcomeSignIn"></div>
+        <p class="hint">O empieza sin cuenta: elige abajo el tipo de trabajo. Se puede entrar más tarde, sin perder nada.</p>
+      </div>
     </div>
     <h2 id="tplTitle">¿Qué tipo de trabajo es?</h2>
     <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
@@ -381,6 +397,65 @@
   </div>
 
   <div class="panel" data-panel="settings" hidden>
+  <details id="account" class="sec fixed" open hidden>
+    <summary>Cuenta</summary>
+    <p class="hint account-msg" id="accountMsg" role="status" aria-live="polite"></p>
+
+    <div id="accountOut" class="account-body" hidden>
+      <p class="hint">Con una cuenta tus ofertas se guardan y las ves desde cualquier dispositivo. Si quieres, también puedes comparar tus ofertas con las de otros pastores, compartiendo las tuyas. Sin cuenta, todo sigue guardado solo en este navegador.</p>
+      <div id="accountSignIn"></div>
+    </div>
+
+    <div id="accountPending" class="account-body" hidden>
+      <h4>Ofertas de este navegador</h4>
+      <p>No se pudieron subir a tu cuenta estas ofertas de este navegador:</p>
+      <ul id="pendingList"></ul>
+      <div class="actions">
+        <button type="button" class="pri" data-action="uploadPending">Volver a intentarlo</button>
+        <button type="button" data-action="discardPending">Quedarme solo con las de la cuenta</button>
+      </div>
+      <p class="hint">Si eliges solo las de la cuenta, las ofertas de este navegador se descartan.</p>
+    </div>
+
+    <div id="accountIn" class="account-body" hidden>
+      <p class="account-who" id="accountWho"></p>
+      <p class="account-sync" id="accountSync" role="status"></p>
+      <div class="actions"><button type="button" class="sm" data-action="accountSignOut">Salir</button></div>
+
+      <h4>Tu perfil</h4>
+      <div class="assump">
+        <label class="fld">Nombre<input type="text" id="profName" autocomplete="name"></label>
+        <label class="fld">Correo<input type="text" id="profEmail" inputmode="email" autocomplete="email"></label>
+        <label class="fld">Teléfono<input type="text" id="profPhone" inputmode="tel" autocomplete="tel"></label>
+      </div>
+      <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
+
+      <h4>Compartir tus ofertas</h4>
+      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir mis ofertas</span></label>
+      <p class="hint" id="sharingState"></p>
+      <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
+        <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
+        <p>Se mostrarán todas las condiciones de todas tus ofertas, junto con tu nombre, tu correo y tu teléfono. Las verá cualquier usuario con sesión iniciada que también comparta al menos una oferta.</p>
+        <p>No se muestran tus km, tus gastos, los nombres que has puesto a las ofertas ni tus ajustes.</p>
+        <p>Si lo desactivas, tus datos dejan de verse y tú dejas de ver los de los demás.</p>
+        <div class="actions">
+          <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
+          <button type="button" class="sm" data-action="cancelShare">Cancelar</button>
+        </div>
+      </div>
+
+      <h4>Borrar la cuenta</h4>
+      <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar cuenta</button></div>
+      <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
+        <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
+        <p>Se borran para siempre la cuenta y todo lo que contiene: perfil, ofertas y ajustes. Tus ofertas siguen en este navegador.</p>
+        <div class="actions">
+          <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
+          <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </details>
   <details id="yourdata" class="sec fixed" open>
     <summary>Tus datos</summary>
     <p class="hint">Lo que no depende de la oferta sino de ti. Vale para todas las ofertas. Las cifras que ves son las de por defecto: cámbialas si las tuyas son otras.</p>
@@ -443,64 +518,6 @@
     <p class="hint" id="bkMsg2" aria-live="polite"></p>
   </details>
 
-  <details id="account" class="sec fixed" open hidden>
-    <summary>Cuenta</summary>
-    <p class="hint account-msg" id="accountMsg" role="status" aria-live="polite"></p>
-
-    <div id="accountOut" class="account-body" hidden>
-      <p class="hint">Con una cuenta tus ofertas se guardan y las ves desde cualquier dispositivo. Si quieres, también puedes comparar tus ofertas con las de otros pastores, compartiendo las tuyas. Sin cuenta, todo sigue guardado solo en este navegador.</p>
-      <div id="accountSignIn"></div>
-    </div>
-
-    <div id="accountPending" class="account-body" hidden>
-      <h4>Ofertas de este navegador</h4>
-      <p>No se pudieron subir a tu cuenta estas ofertas de este navegador:</p>
-      <ul id="pendingList"></ul>
-      <div class="actions">
-        <button type="button" class="pri" data-action="uploadPending">Volver a intentarlo</button>
-        <button type="button" data-action="discardPending">Quedarme solo con las de la cuenta</button>
-      </div>
-      <p class="hint">Si eliges solo las de la cuenta, las ofertas de este navegador se descartan.</p>
-    </div>
-
-    <div id="accountIn" class="account-body" hidden>
-      <p class="account-who" id="accountWho"></p>
-      <div class="actions"><button type="button" class="sm" data-action="accountSignOut">Salir</button></div>
-
-      <h4>Tu perfil</h4>
-      <div class="assump">
-        <label class="fld">Nombre<input type="text" id="profName" autocomplete="name"></label>
-        <label class="fld">Correo<input type="text" id="profEmail" inputmode="email" autocomplete="email"></label>
-        <label class="fld">Teléfono<input type="text" id="profPhone" inputmode="tel" autocomplete="tel"></label>
-      </div>
-      <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
-
-      <h4>Compartir tus ofertas</h4>
-      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir mis ofertas</span></label>
-      <p class="hint" id="sharingState"></p>
-      <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
-        <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
-        <p>Se mostrarán todas las condiciones de todas tus ofertas, junto con tu nombre, tu correo y tu teléfono. Las verá cualquier usuario con sesión iniciada que también comparta al menos una oferta.</p>
-        <p>No se muestran tus km, tus gastos, los nombres que has puesto a las ofertas ni tus ajustes.</p>
-        <p>Si lo desactivas, tus datos dejan de verse y tú dejas de ver los de los demás.</p>
-        <div class="actions">
-          <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
-          <button type="button" class="sm" data-action="cancelShare">Cancelar</button>
-        </div>
-      </div>
-
-      <h4>Borrar la cuenta</h4>
-      <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar cuenta</button></div>
-      <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
-        <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
-        <p>Se borran para siempre la cuenta y todo lo que contiene: perfil, ofertas y ajustes. Tus ofertas siguen en este navegador.</p>
-        <div class="actions">
-          <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
-          <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
-        </div>
-      </div>
-    </div>
-  </details>
   </div>
 </div>
 </body>
