@@ -339,7 +339,7 @@ export function trendView(all, unit, width) {
           : unit === 'month'
             ? annual / 12
             : (r.min.salary + r.min.vacation) / bonus;
-    return base * bonus * (1 - LAW.ssWorkerPct / 100);
+    return base * bonus * (1 - r.pay.rates.workerPct / 100);
   };
   const points = all
     .filter(({ o }) => o.terms.start && isComplete(o.terms))

@@ -1,6 +1,5 @@
 /** Estimated payslips, month by month, for a dated season. */
 
-import { LAW } from '../law.js';
 import { endOf, parseDate } from '../offer.js';
 
 /**
@@ -25,8 +24,8 @@ export function monthlyPayslips(terms, r) {
   const shares = months.reduce((sum, x) => sum + x.share, 0) || 1;
   const scale = r.time.months / shares;
   const lastIdx = months.length - 1;
-  const ss = LAW.ssWorkerPct / 100;
-  const employer = LAW.ssEmployerPct / 100;
+  const ss = r.pay.rates.workerPct / 100;
+  const employer = r.pay.rates.employerPct / 100;
   return months.map((x, i) => {
     const salary = (r.pay.salary * x.share * scale) / r.time.months;
     const vacation = r.pay.vacationPay > 0 && i === lastIdx ? r.pay.vacationPay : 0;

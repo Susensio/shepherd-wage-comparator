@@ -64,7 +64,7 @@ function payrollSection(r, third) {
     'Nómina',
     [
       row('Nómina bruta', fE(pay.gross), { sub: parts.length ? `con ${joinAnd(parts)}` : '' }),
-      row(`− Seguridad Social (${fN(LAW.ssWorkerPct, 1)}\u00a0%)`, fE(pay.ss)),
+      row(`− Seguridad Social (${fN(pay.rates.workerPct, 1)}\u00a0%)`, fE(pay.ss)),
       row(`− Retención de IRPF (${fN(pay.irpfPct * 100, 1)}\u00a0%)`, fE(pay.irpf)),
       row('= Nómina neta', fE(pay.net), { cls: severance > 0.5 ? 'strong' : 'tot' }),
       severance > 0.5 &&
@@ -103,7 +103,7 @@ function minimumSection(o, r, net, third) {
   const salaryShort = (sub) =>
     row('= Falta de sueldo', isWorthCounting(debt.salary) ? fE(debt.salary) : 'nada', { cls: 'strong', sub });
   if (r.noContract) {
-    const factor = 1 - LAW.ssWorkerPct / 100;
+    const factor = 1 - r.pay.rates.workerPct / 100;
     return section('Mínimo legal, contado por meses', [
       minimum,
       bonus,

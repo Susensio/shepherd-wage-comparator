@@ -6,7 +6,6 @@ import { ledgerProblems } from './ledger.js';
 /** Model invariants, and the same figure where it appears twice. */
 async function invariantProblems() {
   const { monthlyPayslips } = await import('./src/model/payslips.js');
-  const { LAW } = await import('./src/law.js');
   const o = app.active();
   const r = app.calcOffer(o);
   const { time: t, extra: x, extraDays: days } = r;
@@ -24,7 +23,7 @@ async function invariantProblems() {
     );
   if (x.overtimePerWeek > 0.5 && !close(x.overtimePerWeek * weeks, x.overtime, Math.max(3, x.overtime * 0.08)))
     problems.push('overtime per week × weeks ≠ total overtime');
-  if (r.savings.days > 1 && !close(r.savings.days, x.daysUnpaid * (1 + LAW.ssEmployerPct / 100)))
+  if (r.savings.days > 1 && !close(r.savings.days, x.daysUnpaid * (1 + r.pay.rates.employerPct / 100)))
     problems.push('extra-days savings ≠ unpaid × employer rate');
   const onPayroll = r.pay.net + r.employer.severance;
   const legend = document.querySelector('#secSeason .rc-legend');

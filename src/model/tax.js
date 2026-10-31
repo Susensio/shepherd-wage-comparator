@@ -44,11 +44,12 @@ export function irpfTax(gross, ssPct, deduction) {
  * @param {number} gross
  * @param {{others: number}} cfg
  * @param {{share: number, others: number, deduction: object | null}[]} shares
+ * @param {number} ssPct worker's Social Security, %
  */
-export const irpfAdded = (gross, cfg, shares) =>
+export const irpfAdded = (gross, cfg, shares, ssPct) =>
   shares.reduce((sum, { share, others, deduction }) => {
     const base = num(cfg.others) + others;
-    return sum + irpfTax(base + share * gross, LAW.ssWorkerPct, deduction) - irpfTax(base, LAW.ssWorkerPct, deduction);
+    return sum + irpfTax(base + share * gross, ssPct, deduction) - irpfTax(base, ssPct, deduction);
   }, 0);
 
 /**

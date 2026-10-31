@@ -5,7 +5,7 @@
 
 import { html, nothing } from 'lit-html';
 import { clamp, fCount, fDate, fE, fN } from '../format.js';
-import { LAW, SOCIAL_SECURITY } from '../law.js';
+import { LAW } from '../law.js';
 import { monthlyPayslips } from '../model/payslips.js';
 import { endOf, parseDate } from '../offer.js';
 import { figureCard } from './parts.js';
@@ -30,8 +30,8 @@ const pct = (x) => `${fN(x, 2)}\u00a0%`;
  * (visibility: collapse) but still count towards the column widths, so they stay put from one month to the next.
  */
 function payslipTables(r, months, shown) {
-  const workerRates = SOCIAL_SECURITY.worker;
-  const employerRates = SOCIAL_SECURITY.employer;
+  const workerRates = r.pay.rates.worker;
+  const employerRates = r.pay.rates.employer;
   const vacationDay = r.time.vacationDays > 0 ? r.pay.vacationPay / r.time.vacationDays : 0;
   const cls = (m, extra = '') => [m === shown ? '' : 'collapsed', extra].filter(Boolean).join(' ') || nothing;
   const line = (m, concept, detail, credit, debit) =>

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { num } from '../../src/format.js';
-import { LAW, MIN_WAGE } from '../../src/law.js';
+import { MIN_WAGE } from '../../src/law.js';
 import { calc, calcTermsOnly } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
@@ -145,7 +145,7 @@ test('cash: allCash only when payroll is negligible', () => {
 
 test('cash: the employer saves the contributions', () => {
   const r = figures({ cashAmount: 300, cashUnit: 'month' });
-  near(r.savings.cash, r.cash.grossEq * (1 + LAW.ssEmployerPct / 100) - r.cash.total, 0.01, 'savings');
+  near(r.savings.cash, r.cash.grossEq * (1 + r.pay.rates.employerPct / 100) - r.cash.total, 0.01, 'savings');
 });
 
 test('63 h a week: extra time', () => {

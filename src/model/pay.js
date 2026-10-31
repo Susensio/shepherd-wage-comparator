@@ -1,7 +1,7 @@
 /** Money: the payroll, the legal minimum, how an agreed total is split, and the car. */
 
 import { num } from '../format.js';
-import { LAW } from '../law.js';
+import { LAW, ssOf } from '../law.js';
 import { DAYS_PER_MONTH, fromTotal } from '../offer.js';
 import { bisect, irpfAdded } from './tax.js';
 
@@ -83,13 +83,15 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
   }
   // IRPF withheld: yours if you set it; otherwise what matches your yearly income, and at least the minimum for casual
   // farm workers in temporary contracts. The net is what reaches your account. What the tax return settles is apart.
+  const rates = ssOf(terms.contract);
   const manual = mine.irpfMode === 'manual';
-  const irpfYearOf = (gross) => (manual ? (gross * num(mine.irpfManual)) / 100 : irpfAdded(gross, cfg, irpfShares));
+  const irpfYearOf = (gross) =>
+    manual ? (gross * num(mine.irpfManual)) / 100 : irpfAdded(gross, cfg, irpfShares, rates.workerPct);
   const withholdingOf = (gross) =>
     manual
       ? irpfYearOf(gross)
       : Math.max(irpfYearOf(gross), terms.contract === 'temporary' ? (gross * LAW.irpf.withholding) / 100 : 0);
-  const netOf = (gross) => gross - (gross * LAW.ssWorkerPct) / 100 - withholdingOf(gross);
+  const netOf = (gross) => gross - (gross * rates.workerPct) / 100 - withholdingOf(gross);
   let gross = base + extraPays + vacationPay;
   let ratio = 1;
   if (terms.payType === 'net' && gross > 0) {
@@ -100,7 +102,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
     extraPays *= ratio;
     vacationPay *= ratio;
   }
-  const ss = (gross * LAW.ssWorkerPct) / 100;
+  const ss = (gross * rates.workerPct) / 100;
   const irpf = withholdingOf(gross);
   const net = gross - ss - irpf;
   const netFactor = gross > 0 ? net / gross : 0;
@@ -111,6 +113,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
     salary: base + extraPays,
     gross,
     ss,
+    rates,
     irpf,
     irpfPct: gross > 0 ? irpf / gross : 0,
     irpfYear: irpfYearOf(gross),

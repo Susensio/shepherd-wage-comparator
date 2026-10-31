@@ -119,7 +119,7 @@ function breakdown(o, r, unit, third) {
   const grossPay = netPay / (r.pay.netFactor || 1);
   const payrollTip = [
     `Nómina bruta: ${money.figure(grossPay)}${p.extraPays > 0.5 ? ' (con las pagas extra)' : ''}`,
-    `− Seguridad Social (${fN(LAW.ssWorkerPct, 1)}\u00a0%)${r.pay.irpf > 0.5 ? ` y retención de IRPF (${fN(r.pay.irpfPct * 100, 1)}\u00a0%)` : ''}: ${money.figure(grossPay - netPay)}`,
+    `− Seguridad Social (${fN(r.pay.rates.workerPct, 1)}\u00a0%)${r.pay.irpf > 0.5 ? ` y retención de IRPF (${fN(r.pay.irpfPct * 100, 1)}\u00a0%)` : ''}: ${money.figure(grossPay - netPay)}`,
     `= Nómina neta: ${money.figure(netPay)}`,
     r.pay.irpf < 0.5
       ? say('Con lo que ganas en el año no te retienen IRPF.', 'Con lo que se gana en el año no se retiene IRPF.')

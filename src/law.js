@@ -23,6 +23,11 @@ export const SOURCES = {
     title: 'Convenio del campo de Huesca 2015–2017',
     url: 'https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf',
   },
+  ssOrder: {
+    cite: 'Orden PJC/297/2026',
+    title: 'Orden PJC/297/2026, cotización a la Seguridad Social en 2026',
+    url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296',
+  },
   smiDeduction2026: {
     cite: 'Hacienda',
     title: 'Deducción de IRPF para quien cobra el SMI',
@@ -113,23 +118,60 @@ export const MIN_WAGE = {
   },
 };
 
-/** Social Security in the agricultural scheme, % of the gross: what the worker and the employer pay, item by item. */
+/**
+ * Social Security in the Sistema Especial para Trabajadores por Cuenta Ajena Agrarios, % of the base, 2026.
+ * Source: Orden PJC/297/2026 (BOE-A-2026-7296), https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296
+ * Group 1 pays 23.60 employer contingencias comunes (art. 14.3.a); the shepherd is in groups 2-11, so 21.20.
+ * AT/EP is employer-only, from the premium tariff (DA 61ª LGSS); the livestock heading is not verified against
+ * the 2026 tariff (a secondary source gives 2.60 for CNAE 01), so 3.3 stays.
+ * Unemployment depends on the contract: see UNEMPLOYMENT_RATES.
+ */
 /** @type {{worker: [string, number][], employer: [string, number][]}} */
-export const SOCIAL_SECURITY = {
+const SS_COMMON = {
   worker: [
-    ['Contingencias comunes', 4.7],
-    ['Desempleo', 1.58],
-    ['MEI', 0.15],
+    ['Contingencias comunes', 4.7], // art. 14.3.a
+    ['Formación profesional', 0.03], // art. 34.3
+    ['MEI', 0.15], // art. 16
   ],
   employer: [
-    ['Contingencias comunes', 21.2],
-    ['Desempleo', 5.5],
-    ['Accidentes de trabajo', 3.3],
-    ['Formación profesional', 0.15],
-    ['Fogasa', 0.1],
+    ['Contingencias comunes', 21.2], // art. 14.3.a
+    ['Accidentes de trabajo', 3.3], // DA 61ª, not verified (see above)
+    ['Formación profesional', 0.15], // art. 34.3
+    ['Fogasa', 0.1], // art. 34.2
+    ['MEI', 0.75], // art. 16
   ],
 };
+
+/**
+ * Unemployment, [worker, employer] %, Orden PJC/297/2026. Art. 34.1.a: indefinite and fijo discontinuo;
+ * art. 34.1.b: eventual (temporary). Art. 34.1 also gives 7.05 for «contratos de duración determinada»: which of
+ * the two applies to a given temporary contract needs the owner's check; 34.1.b is used.
+ */
+const UNEMPLOYMENT_RATES = {
+  indefinite: [1.55, 5.5],
+  temporary: [1.6, 6.7],
+};
+const UNEMPLOYMENT_OF = {
+  permanent: UNEMPLOYMENT_RATES.indefinite,
+  seasonal: UNEMPLOYMENT_RATES.indefinite,
+  temporary: UNEMPLOYMENT_RATES.temporary,
+};
+
 export const ssTotal = (items) => Math.round(items.reduce((s, [, p]) => s + p, 0) * 100) / 100;
+
+/**
+ * The contributions of a contract: items and totals, % of the gross. Without a contract (`none`) it is what a
+ * legal temporary contract would pay, which is what the model compares the cash against.
+ * @param {string} [contract] `terms.contract`
+ */
+export const ssOf = (contract) => {
+  const [workerUnemployment, employerUnemployment] = UNEMPLOYMENT_OF[contract] || UNEMPLOYMENT_RATES.temporary;
+  const worker = [...SS_COMMON.worker];
+  worker.splice(1, 0, ['Desempleo', workerUnemployment]);
+  const employer = [...SS_COMMON.employer];
+  employer.splice(1, 0, ['Desempleo', employerUnemployment]);
+  return { worker, employer, workerPct: ssTotal(worker), employerPct: ssTotal(employer) };
+};
 
 /** Unemployment benefit (SEPE): no children; monthly limits in € before the benefit's own contribution. */
 export const UNEMPLOYMENT = {
@@ -170,13 +212,11 @@ export const IRPF = {
 };
 
 /** The figures in the shape the model reads them. */
-/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF, ssWorkerPct: number, ssEmployerPct: number}} */
+/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF}} */
 export const LAW = {
   .../** @type {any} */ (Object.fromEntries(Object.entries(RULES).map(([k, r]) => [k, r.value]))),
   unemployment: UNEMPLOYMENT,
   irpf: IRPF,
-  ssWorkerPct: ssTotal(SOCIAL_SECURITY.worker),
-  ssEmployerPct: ssTotal(SOCIAL_SECURITY.employer),
 };
 /** «Estatuto, art. 38» and its link. */
 export const citeOf = (source, art) => ({

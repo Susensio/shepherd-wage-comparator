@@ -5,7 +5,7 @@
 
 import { html, render } from 'lit-html';
 import { fN, joinAnd } from '../format.js';
-import { articleUrl, LAW, MIN_WAGE, SOCIAL_SECURITY, SOURCES, ssTotal } from '../law.js';
+import { articleUrl, LAW, MIN_WAGE, SOURCES, ssOf } from '../law.js';
 
 const decimals = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 2);
 const fPct = (x) => fN(x, decimals(x));
@@ -15,6 +15,9 @@ const link = (url, text) => html`<a href=${url} target="_blank" rel="noopener">$
 const wages = Object.entries(MIN_WAGE);
 /** A list joined with commas and «y», as a template (for links). */
 const joinAndHtml = (items) => items.map((item, i) => html`${i ? (i === items.length - 1 ? ' y ' : ', ') : ''}${item}`);
+
+const SS_TEMPORARY = ssOf('temporary');
+const SS_INDEFINITE = ssOf('permanent');
 
 /** The text (or template, for links) of each figure. */
 const LAW_FIGURES = {
@@ -52,10 +55,14 @@ const LAW_FIGURES = {
       ),
     ...wages.filter(([, m]) => !m.ded).map(([y]) => `en ${y} no había`),
   ].join('; '),
-  ssWorker: fPct(ssTotal(SOCIAL_SECURITY.worker)),
-  ssEmployer: fPct(ssTotal(SOCIAL_SECURITY.employer)),
-  ...Object.fromEntries(SOCIAL_SECURITY.worker.map(([, p], i) => [`ssWorker${i}`, fN(p, 2)])),
-  ...Object.fromEntries(SOCIAL_SECURITY.employer.map(([, p], i) => [`ssEmployer${i}`, fN(p, 2)])),
+  ssWorkerTemporary: fPct(SS_TEMPORARY.workerPct),
+  ssWorkerIndefinite: fPct(SS_INDEFINITE.workerPct),
+  ssEmployerTemporary: fPct(SS_TEMPORARY.employerPct),
+  ssEmployerIndefinite: fPct(SS_INDEFINITE.employerPct),
+  ...Object.fromEntries(SS_TEMPORARY.worker.map(([, p], i) => [`ssWorker${i}`, fN(p, 2)])),
+  ...Object.fromEntries(SS_TEMPORARY.employer.map(([, p], i) => [`ssEmployer${i}`, fN(p, 2)])),
+  ssWorkerUnemploymentIndefinite: fN(SS_INDEFINITE.worker[1][1], 2),
+  ssEmployerUnemploymentIndefinite: fN(SS_INDEFINITE.employer[1][1], 2),
   irpfWithholding: fN(LAW.irpf.withholding),
   irpfExpenses: fN(LAW.irpf.expenses),
   benefitDays: fN(LAW.unemployment.minDaysContributed / LAW.unemployment.contribPerDay),

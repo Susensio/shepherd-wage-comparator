@@ -103,7 +103,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const netPayroll = pay.netOf(pay.gross);
   const cashGrossEq = cash > 0 ? bisect((x) => pay.netOf(pay.gross + x) - netPayroll, cash, cash, cash * 3, 50) : 0;
 
-  const employerRate = 1 + LAW.ssEmployerPct / 100;
+  const employerRate = 1 + pay.rates.employerPct / 100;
   const salaryPerDay = natDays > 0 ? pay.salary / natDays : 0;
   const severance =
     !noDuration && t.contract === 'temporary' ? (salaryPerDay * LAW.severanceDaysPerYear * natDays) / 365 : 0;
@@ -129,7 +129,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   let minNetNoContract = 0;
   if (noContract) {
     // What you are paid in cash against the minimum wage with bonus, through the same net↔gross factor as the rest
-    const factor = pay.netFactor > 0 ? pay.netFactor : 1 - LAW.ssWorkerPct / 100;
+    const factor = pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100;
     const minSalary = min.salary + min.overnight;
     minNetNoContract = minSalary * factor;
     debtSalary = Math.max(0, minSalary - cash / factor);
@@ -181,7 +181,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     time,
     pay,
     /** gross → net for this offer's figures (without payroll, the worker's Social Security alone) */
-    netFactor: pay.netFactor > 0 ? pay.netFactor : 1 - LAW.ssWorkerPct / 100,
+    netFactor: pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100,
     cash: { total: cash, share: cashShare, allCash, grossEq: cashGrossEq },
     inKind: { housing, food, total: housing + food },
     car,
@@ -203,7 +203,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
       lost: noContract ? unemploymentBenefit(coveredByCash, noDuration ? DAYS_PER_MONTH : natDays) : null,
     },
     employer: {
-      ss: (pay.gross * LAW.ssEmployerPct) / 100,
+      ss: (pay.gross * pay.rates.employerPct) / 100,
       severance,
       cost: pay.gross * employerRate + cash + housing + food + car.kmPaid + severance,
     },

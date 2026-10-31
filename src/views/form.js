@@ -124,7 +124,7 @@ function payHint(o, r) {
       : o.terms.contract === 'temporary' && r.pay.irpfPct * 100 < LAW.irpf.withholding + 0.05
         ? ' (la mínima de los eventuales agrarios)'
         : '';
-  const rates = `${fN(LAW.ssWorkerPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
+  const rates = `${fN(r.pay.rates.workerPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
   const refund = r.pay.irpf - r.pay.irpfYear;
   return [
     o.terms.payType === 'net'
