@@ -1,16 +1,15 @@
 /** The account (ADR-0006, ADR-0009, ADR-0011): the account page's section, the button's status, and the tooltip. */
 
 import { render } from 'lit-html';
-import { ingestShared } from '../saved.js';
-import { state } from '../state.js';
 import { openAccount, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
-import { GUEST_TIPS, tipView } from '../views/account-tip.js';
+import { GUEST_TIPS, PENDING_TIP, tipView } from '../views/account-tip.js';
 import { othersView, shareTermsView } from '../views/others.js';
 import { signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
-import { currentTab, openPageName, tabInView } from './navigation.js';
+import { currentTab, openPageName } from './navigation.js';
+import { othersSection, setUpOthers, syncAvailability, useAccount } from './others.js';
 import { paintAccount, paintAccountButton } from './settings-page.js';
 
 /** @type {any} */
@@ -41,33 +40,8 @@ const view = {
   signIn: { stage: 'email', email: '', busy: false, googleFailed: false, message: '' },
 };
 
-/** Called when what other shepherds' offers show changes: availability, loading, result. */
-let onOthersChange = () => {};
 /** Called when a sign-in is complete. */
 let onSignedIn = () => {};
-
-/** Other shepherds' offers can be read only when signed in with sharing on (ADR-0006). */
-function syncAvailability() {
-  const available = !!(view.user && view.profile?.sharing && !view.pending.length);
-  if (available === state.others.available) return;
-  state.others.available = available;
-  if (!available) {
-    Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
-  } else state.others.include = true; // sharing means seeing the others, until hidden with the checkbox
-  onOthersChange();
-  if (available && tabInView('compare')) loadOthers(); // else showTab loads on arrival
-}
-
-/** Comparar's section, from the account: nothing until the saved session has been looked at, or while uploads wait. */
-/** @returns {import('../views/others.js').OthersSection | null} */
-function othersSection() {
-  if (!view.enabled || !view.started || view.pending.length) return null;
-  const message = view.othersMessage;
-  if (!view.user) return { stage: 'guest', message, noPhone: false };
-  if (!view.profile) return null;
-  if (view.profile.sharing) return { stage: 'sharing', message, noPhone: !view.profile.phone };
-  return { stage: view.othersDeclined ? 'declined' : 'ask', message, noPhone: false };
-}
 
 /**
  * The button's status and the tooltip, which depend on the tab and on the page; Google's button where the page shows
@@ -82,13 +56,7 @@ export function paintAccountStatus({ chooser = false } = {}) {
   let tip = null;
   if (status === 'guest' && !view.tipDismissed && GUEST_TIPS[where])
     tip = { ...GUEST_TIPS[where], go: 'Entrar', action: 'openAccountFromPrompt', dismissable: true };
-  else if (!page && status === 'pending' && where === 'offers')
-    tip = {
-      title: 'No se pudieron subir tus ofertas a la cuenta.',
-      go: 'Revisar',
-      action: 'openAccountPage',
-      dismissable: false,
-    };
+  else if (!page && status === 'pending' && where === 'offers') tip = PENDING_TIP;
   render(tip ? tipView(tip) : '', $('#accountTip'));
   showSignInButtons({ chooser });
 }
@@ -97,10 +65,10 @@ const paint = () => {
   paintAccount(view);
   render(view.user ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
   paintAccountStatus();
-  const section = othersSection();
+  const section = othersSection(view);
   $('#othersBlk').hidden = !section;
   render(section ? othersView(section) : '', $('#othersBlk'));
-  syncAvailability();
+  syncAvailability(view);
 };
 
 /**
@@ -119,20 +87,6 @@ export function showSignInButtons({ chooser = false } = {}) {
   });
 }
 
-/** Runs a sign-in step; its failure becomes `failure`, a line under the sign-in choices. */
-async function signInStep(failure, call) {
-  Object.assign(view.signIn, { message: '', busy: true });
-  paint();
-  try {
-    await call();
-  } catch (error) {
-    console.error(error);
-    view.signIn.message = failure;
-  }
-  view.signIn.busy = false;
-  paint();
-}
-
 /** Signed in by whatever way: read the account, upload this browser's offers, show who is in. */
 async function connect(opened) {
   await enter({ account: opened, ...(await opened.connect()) });
@@ -141,7 +95,7 @@ async function connect(opened) {
 }
 
 function onGoogleToken(token, nonce) {
-  signInStep('No se pudo entrar. Inténtalo de nuevo.', async () => {
+  attempt('No se pudo entrar. Inténtalo de nuevo.', async () => {
     const opened = await openAccount();
     await opened.signInWithGoogleToken(token, nonce);
     await connect(opened);
@@ -165,41 +119,33 @@ function signedOut({ keptInAccount = false } = {}) {
 const fieldBy = (button, name) =>
   /** @type {HTMLInputElement} */ (/** @type {HTMLFormElement} */ (button.closest('form')).elements.namedItem(name));
 
-let loadSeq = 0;
-
-/** Fetches the others' offers into `state.others` (memory only); the latest request wins. */
-export async function loadOthers() {
-  if (!account || !state.others.available) return;
-  const seq = ++loadSeq;
-  state.others.status = 'loading';
-  onOthersChange();
-  let status = /** @type {'ready' | 'error'} */ ('ready');
-  let items = [];
-  try {
-    items = (await account.sharedOffers()).map(ingestShared).filter(Boolean);
-  } catch (error) {
-    console.error(error);
-    status = 'error';
-  }
-  if (seq !== loadSeq || !state.others.available) return;
-  state.others.status = status;
-  if (status === 'ready') {
-    state.others.items = items;
-    if (!items.some((x) => x.o.id === state.others.viewId)) state.others.viewId = null;
-  }
-  onOthersChange();
-}
-
-/** Runs an account call; its failure becomes `failure`, a short line in `line`'s section, never an alert. */
-async function run(failure, call, line = 'message') {
-  view[line] = '';
+/**
+ * Runs an account call; its failure becomes `failure`, a short line, never an alert. `line`: «message» (the account
+ * page), «othersMessage» (Comparar's section) or «signIn» (under the sign-in choices, busy while it runs).
+ * @param {string} failure
+ * @param {() => Promise<void>} call
+ * @param {'message' | 'othersMessage' | 'signIn'} [line]
+ */
+async function attempt(failure, call, line = 'message') {
+  const signingIn = line === 'signIn';
+  // connect() replaces view.signIn, so the line is looked up each time
+  const write = (text) => {
+    if (signingIn) view.signIn.message = text;
+    else view[line] = text;
+  };
+  write('');
   if (line === 'message') view.messageOk = false;
+  if (signingIn) {
+    view.signIn.busy = true;
+    paint();
+  }
   try {
     await call();
   } catch (error) {
     console.error(error);
-    view[line] = failure;
+    write(failure);
   }
+  if (signingIn) view.signIn.busy = false;
   paint();
 }
 
@@ -207,6 +153,7 @@ async function run(failure, call, line = 'message') {
 async function enter(started) {
   $('#signedOutNotice').hidden = true;
   account = started.account;
+  useAccount(account);
   view.user = started.user;
   view.pending = started.pending;
   view.profile = null;
@@ -215,7 +162,7 @@ async function enter(started) {
 
 /** Called once at startup. With no project configured the section stays hidden and nothing else happens. */
 export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: signedIn }) {
-  onOthersChange = onOthers;
+  setUpOthers(onOthers);
   onSignedIn = signedIn;
   if (!ACCOUNT_CONFIG.url || !ACCOUNT_CONFIG.anonKey) return;
   view.enabled = true;
@@ -232,7 +179,7 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
   });
   render(shareTermsView(), $('#shareTerms'));
   paint();
-  await run('No se pudo conectar con la cuenta.', async () => {
+  await attempt('No se pudo conectar con la cuenta.', async () => {
     try {
       const started = await startAccount({
         onReplaced,
@@ -251,7 +198,7 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
 
 /** Turns sharing on or off through the account; a failure goes to `line`. */
 const setSharing = (on, line) =>
-  run(
+  attempt(
     on
       ? 'No se pudieron compartir tus ofertas. Inténtalo de nuevo.'
       : 'No se pudo dejar de compartir. Inténtalo de nuevo.',
@@ -265,23 +212,32 @@ const setSharing = (on, line) =>
 
 /** For the buttons, by data-action. */
 export const accountActions = {
-  accountSignIn: () => signInStep('No se pudo entrar. Inténtalo de nuevo.', async () => (await openAccount()).signIn()),
+  accountSignIn: () =>
+    attempt('No se pudo entrar. Inténtalo de nuevo.', async () => (await openAccount()).signIn(), 'signIn'),
 
   sendEmailCode(button) {
     const input = fieldBy(button, 'signInEmail');
     if (!input.reportValidity()) return;
     const email = input.value.trim();
-    signInStep('No se pudo enviar el código. Revisa la dirección e inténtalo de nuevo.', async () => {
-      await (await openAccount()).sendEmailCode(email);
-      Object.assign(view.signIn, { stage: 'code', email });
-    });
+    attempt(
+      'No se pudo enviar el código. Revisa la dirección e inténtalo de nuevo.',
+      async () => {
+        await (await openAccount()).sendEmailCode(email);
+        Object.assign(view.signIn, { stage: 'code', email });
+      },
+      'signIn',
+    );
   },
 
   resendEmailCode: () =>
-    signInStep('No se pudo enviar el código. Inténtalo de nuevo.', async () => {
-      await (await openAccount()).sendEmailCode(view.signIn.email);
-      view.signIn.message = 'Se ha enviado otro código.';
-    }),
+    attempt(
+      'No se pudo enviar el código. Inténtalo de nuevo.',
+      async () => {
+        await (await openAccount()).sendEmailCode(view.signIn.email);
+        view.signIn.message = 'Se ha enviado otro código.';
+      },
+      'signIn',
+    ),
 
   verifyEmailCode(button) {
     const input = fieldBy(button, 'signInCode');
@@ -291,11 +247,15 @@ export const accountActions = {
       paint();
       return;
     }
-    signInStep('El código no es correcto o ha caducado. Revísalo o pide otro.', async () => {
-      const opened = await openAccount();
-      await opened.verifyEmailCode(view.signIn.email, code);
-      await connect(opened);
-    });
+    attempt(
+      'El código no es correcto o ha caducado. Revísalo o pide otro.',
+      async () => {
+        const opened = await openAccount();
+        await opened.verifyEmailCode(view.signIn.email, code);
+        await connect(opened);
+      },
+      'signIn',
+    );
   },
 
   changeSignInEmail() {
@@ -309,27 +269,27 @@ export const accountActions = {
   },
 
   accountSignOut: () =>
-    run('No se pudo salir. Inténtalo de nuevo.', async () => {
+    attempt('No se pudo salir. Inténtalo de nuevo.', async () => {
       await account.signOut();
       signedOut({ keptInAccount: true });
     }),
 
   uploadPending: () =>
-    run('No se pudieron subir las ofertas. Inténtalo de nuevo.', async () => {
+    attempt('No se pudieron subir las ofertas. Inténtalo de nuevo.', async () => {
       await account.uploadPending();
       view.pending = [];
       view.profile = await account.profile();
     }),
 
   discardPending: () =>
-    run('No se pudo cargar la cuenta.', async () => {
+    attempt('No se pudo cargar la cuenta.', async () => {
       account.discardPending();
       view.pending = [];
       view.profile = await account.profile();
     }),
 
   saveProfile: () =>
-    run('No se pudo guardar el perfil.', async () => {
+    attempt('No se pudo guardar el perfil.', async () => {
       const value = (id) => /** @type {HTMLInputElement} */ ($(id)).value.trim() || null;
       view.profile = await account.updateProfile({
         name: value('#profName'),
@@ -365,7 +325,7 @@ export const accountActions = {
     paint();
   },
   confirmDeleteAccount: () =>
-    run('No se pudo borrar la cuenta. Inténtalo de nuevo.', async () => {
+    attempt('No se pudo borrar la cuenta. Inténtalo de nuevo.', async () => {
       await account.deleteAccount();
       signedOut();
     }),

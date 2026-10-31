@@ -11,6 +11,14 @@ export const GUEST_TIPS = {
   settings: { title: 'Guarda tus ajustes en una cuenta.', text: 'Así los tienes en cualquier dispositivo.' },
 };
 
+/** What a signed-in user sees on Ofertas while the browser's offers wait for a decision. */
+export const PENDING_TIP = {
+  title: 'No se pudieron subir tus ofertas a la cuenta.',
+  go: 'Revisar',
+  action: 'openAccountPage',
+  dismissable: false,
+};
+
 /**
  * @param {{ title: string, text?: string, go: string, action: string, dismissable: boolean }} tip
  *   `go` is the label of the button that opens the account page; `action` says how (data-action).
