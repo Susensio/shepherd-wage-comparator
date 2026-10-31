@@ -8,9 +8,9 @@ import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
 import { GUEST_TIPS, tipView } from '../views/account-tip.js';
 import { othersView, shareTermsView } from '../views/others.js';
-import { paintAccount, paintAccountButton } from '../views/settings.js';
 import { signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
+import { paintAccount, paintAccountButton } from './settings-page.js';
 
 /** @type {any} */
 let account;

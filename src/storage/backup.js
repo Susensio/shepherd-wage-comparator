@@ -4,7 +4,8 @@ import { closeTemplates, select } from '../app.js';
 import { ingestSaved } from '../saved.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
-import { fillSettings, paintBackup } from '../views/settings.js';
+import { paintBackup } from '../ui/settings-page.js';
+import { fillSettings } from '../views/settings.js';
 import { backupText, markBackup } from './bundle.js';
 
 /** Writes a result into its box; `kind` is «ok» or «warn» (the box's style). */
@@ -71,7 +72,7 @@ export function loadBackup(content, msg) {
   if (takeCfg) {
     state.config = cfg;
     saveConfig();
-    fillSettings();
+    fillSettings(state.config);
   }
   const kept = hadOffers && saved.cfg ? ' «Tus datos» siguen como los tenías.' : '';
   if (!fresh.length) {

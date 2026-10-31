@@ -43,9 +43,10 @@ import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
 import { changePlace } from './ui/place-field.js';
+import { paintBackup } from './ui/settings-page.js';
 import { fillForm, form, paintEnd } from './views/form.js';
 import { stepPayslipMonth } from './views/season-end.js';
-import { fillSettings, paintBackup } from './views/settings.js';
+import { fillSettings } from './views/settings.js';
 
 /* --- The offer form --- */
 
@@ -143,7 +144,7 @@ function onSettingsInput(e) {
   else if (el.name === 'cfg_unemployment') cfg.unemployment = el.value === '1';
   else return;
   saveConfig();
-  fillSettings(el);
+  fillSettings(state.config, el);
   paintAll();
 }
 

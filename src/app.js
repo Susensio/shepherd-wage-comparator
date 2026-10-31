@@ -14,11 +14,11 @@ import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
+import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fillForm, fillVacation, paintForm } from './views/form.js';
 import { chipsView, templatesView } from './views/offers-bar.js';
 import { resultView } from './views/result.js';
-import { paintBackup } from './views/settings.js';
 import { sharedView } from './views/shared.js';
 
 /** What the page remembers while open, not saved. */

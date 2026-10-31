@@ -48,7 +48,7 @@ test.describe('the status card', () => {
     await page.evaluate(() => {
       app.state.offers[0].mine.name = 'Cambiada';
     });
-    await page.evaluate(async () => (await import('./src/views/settings.js')).paintBackup());
+    await page.evaluate(async () => (await import('./src/ui/settings-page.js')).paintBackup());
     await expect(page.locator('#backupAdvice')).toContainText('Has cambiado ofertas desde entonces');
     await expect(page.locator('#backupStatus')).toHaveClass(/warn/);
   });

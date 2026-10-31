@@ -36,7 +36,7 @@ setUpPlaceField({ commit, paint: paintAll });
 showTab(store.get(KEY.tab, 'offers'));
 scrollChipsNextPaint();
 fillForm(active());
-fillSettings();
+fillSettings(state.config);
 paintAll();
 if (state.firstRun) openTemplates();
 
@@ -49,7 +49,7 @@ setUpAccountSection({
     if (state.placeholderId) openTemplates();
     else if (templatesOpen()) closeTemplates();
     for (const o of state.offers) defaultVacation(o.terms);
-    fillSettings();
+    fillSettings(state.config);
     scrollChipsNextPaint();
     select(state.activeId);
   },
