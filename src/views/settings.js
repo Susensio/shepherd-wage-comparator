@@ -40,7 +40,7 @@ export function paintBackup() {
  * @typedef {{
  *   user: any, profile: any, pending: any[], message: string, confirm: 'share' | 'delete' | null,
  *   enabled: boolean, started: boolean, sync: 'saved' | 'saving' | 'error', offline: boolean,
- *   othersMessage: string, othersDeclined: boolean, dismissed: Set<string>, signIn: any,
+ *   othersMessage: string, othersDeclined: boolean, tipDismissed: boolean, signIn: any,
  * }} AccountView
  */
 

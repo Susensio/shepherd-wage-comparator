@@ -198,15 +198,17 @@ test.describe('the tooltip', () => {
     });
   const tip = (page) => page.locator('#accountTip .tip');
 
-  test('shows on Ofertas, not on Comparar, Leyes or the page', async ({ openApp }) => {
+  test('shows on Ofertas, Comparar and Ajustes, each with its own message; not on Leyes or the account page', async ({
+    openApp,
+  }) => {
     const page = await openGuest(openApp);
     await expect(tip(page)).toContainText('Guarda tus ofertas en una cuenta. Ahora solo están en este navegador.');
     await page.locator('.tabs [data-tab=compare]').click();
-    await expect(tip(page)).toHaveCount(0);
+    await expect(tip(page)).toContainText('Compara con otros pastores.');
     await page.locator('.tabs [data-tab=laws]').click();
     await expect(tip(page)).toHaveCount(0);
-    await page.locator('.tabs [data-tab=offers]').click();
-    await expect(tip(page)).toBeVisible();
+    await page.evaluate(() => app.openSettingsPage());
+    await expect(tip(page)).toContainText('Guarda tus ajustes en una cuenta.');
     await page.locator('#accountButton').click();
     await expect(tip(page)).toHaveCount(0);
   });
@@ -218,17 +220,31 @@ test.describe('the tooltip', () => {
     await expect(page.locator('#accountButton')).toBeVisible();
   });
 
-  test('«Ahora no» hides it for the visit; it is back after a reload', async ({ openApp }) => {
+  test('«Ahora no» on any of them hides it everywhere for the visit; it is back after a reload', async ({
+    openApp,
+  }) => {
     const page = await openGuest(openApp);
+    await page.locator('.tabs [data-tab=compare]').click();
     await tip(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(tip(page)).toHaveCount(0);
-    await page.locator('.tabs [data-tab=compare]').click();
     await page.locator('.tabs [data-tab=offers]').click();
+    await expect(tip(page)).toHaveCount(0);
+    await page.evaluate(() => app.openSettingsPage());
     await expect(tip(page)).toHaveCount(0);
     await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'guest');
     await page.reload();
     await page.waitForFunction(() => window.app);
     await expect(tip(page)).toBeVisible();
+  });
+
+  test('signing in from the tooltip on Ajustes goes back to Ajustes', async ({ openApp }) => {
+    const page = await openGuest(openApp, { google: true });
+    await page.evaluate(() => app.openSettingsPage());
+    await tip(page).getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.locator('[data-panel=account]')).toBeVisible();
+    await page.locator('#accountOut').getByRole('button', { name: 'Google (falso)' }).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
   });
 
   test('«Entrar» opens the page, with its sign-in', async ({ openApp }) => {

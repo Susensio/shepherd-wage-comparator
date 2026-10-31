@@ -30,6 +30,8 @@ const ui = {
   askedToSee: /** @type {string | null} */ (null),
   /** The account page was opened from a tooltip: leave it once signed in. */
   leaveAfterSignIn: false,
+  /** The page that tooltip was on (Ajustes), to go back to it instead of the tab. */
+  promptFromPage: /** @type {'account' | 'settings' | null} */ (null),
   scrollBeforePage: 0,
 };
 
@@ -289,6 +291,7 @@ export const pageOpen = () => PAGES.find((page) => !$(`[data-panel=${page}]`).hi
  */
 export function openPage(page, fromPrompt = false) {
   ui.leaveAfterSignIn = fromPrompt;
+  ui.promptFromPage = fromPrompt ? /** @type {'account' | 'settings' | undefined} */ (pageOpen() ?? null) : null; // a tooltip on Ajustes returns to Ajustes
   if (!pageOpen()) {
     ui.scrollBeforePage = scrollY;
     history.pushState({ page: true }, ''); // the phone's Back closes the page, not the site
@@ -321,8 +324,13 @@ export function onPopState() {
 
 /** A sign-in completed: if it began at the tooltip, back to where it began. */
 export function returnAfterSignIn() {
-  if (ui.leaveAfterSignIn && pageOpen() === 'account') closePage();
+  const back = ui.leaveAfterSignIn && pageOpen() === 'account';
+  const toPage = ui.promptFromPage;
   ui.leaveAfterSignIn = false;
+  ui.promptFromPage = null;
+  if (!back) return;
+  if (toPage) openPage(toPage);
+  else closePage();
 }
 
 /** Opens the named collapsibles of the static page as you left them. */

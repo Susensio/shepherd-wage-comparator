@@ -32,8 +32,8 @@ const view = {
   /** How the background saving goes. */
   /** @type {'saved' | 'saving' | 'error'} */ sync: 'saved',
   offline: false,
-  /** Tabs whose tooltip was sent away with «Ahora no» or a sign-out: for this visit only, back on the next. */
-  dismissed: /** @type {Set<string>} */ (new Set()),
+  /** The tooltip was sent away with «Ahora no» or a sign-out: gone from every tab for this visit, back on the next. */
+  tipDismissed: false,
   /** @type {import('../views/sign-in.js').SignIn} */
   signIn: { stage: 'email', email: '', busy: false, googleFailed: false, message: '' },
 };
@@ -68,6 +68,8 @@ function othersSection() {
 
 /** The tab shown, or the one a page was opened from. */
 const currentTab = () => /** @type {HTMLElement} */ ($('.tabs [aria-selected=true]')).dataset.tab ?? 'offers';
+/** The page open over the tabs, if any. */
+const openPageName = () => ['account', 'settings'].find((page) => !$(`[data-panel=${page}]`).hidden);
 
 /**
  * The button's status and the tooltip, which depend on the tab and on the page; Google's button where the page shows
@@ -76,13 +78,13 @@ const currentTab = () => /** @type {HTMLElement} */ ($('.tabs [aria-selected=tru
 export function paintAccountStatus({ chooser = false } = {}) {
   if (!view.enabled) return;
   const status = paintAccountButton(view);
-  const tab = currentTab();
-  const onPage = document.body.classList.contains('on-page');
+  const page = openPageName();
+  const where = page ?? currentTab();
   /** @type {Parameters<typeof tipView>[0] | null} */
   let tip = null;
-  if (!onPage && status === 'guest' && !view.dismissed.has(tab) && GUEST_TIPS[tab])
-    tip = { ...GUEST_TIPS[tab], go: 'Entrar', action: 'openAccountFromPrompt', dismissable: true };
-  else if (!onPage && status === 'pending' && tab === 'offers')
+  if (status === 'guest' && !view.tipDismissed && GUEST_TIPS[where])
+    tip = { ...GUEST_TIPS[where], go: 'Entrar', action: 'openAccountFromPrompt', dismissable: true };
+  else if (!page && status === 'pending' && where === 'offers')
     tip = {
       title: 'No se pudieron subir tus ofertas a la cuenta.',
       go: 'Revisar',
@@ -151,7 +153,7 @@ function onGoogleToken(token, nonce) {
 /** Signing out or deleting the account: no tooltip on any tab for this visit. */
 function signedOut() {
   forgetGoogleChoice();
-  for (const tab of Object.keys(GUEST_TIPS)) view.dismissed.add(tab);
+  view.tipDismissed = true;
   Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
 }
 
@@ -297,7 +299,7 @@ export const accountActions = {
   },
 
   dismissTip() {
-    view.dismissed.add(currentTab());
+    view.tipDismissed = true;
     paintAccountStatus();
   },
 
