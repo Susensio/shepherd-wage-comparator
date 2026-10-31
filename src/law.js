@@ -31,7 +31,8 @@ export const SOURCES = {
   granada: {
     cite: 'Convenio de Granada',
     title: 'Convenio Colectivo del Sector del Campo de Granada 2023–2025 (BOP Granada nº 229, 1 de diciembre de 2023)',
-    url: 'https://www.dipgra.es/',
+    // Read in a CCOO summary of the agreement, not in the BOP itself (31 October 2026)
+    url: 'https://ccoo.app/convenio/convenio-colectivo-campo-de-granada/',
   },
   smiDeduction2026: {
     cite: 'Hacienda',
