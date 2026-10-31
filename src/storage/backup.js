@@ -1,7 +1,6 @@
 /** Backups: downloading or copying one, and adding the offers of one you saved. */
 
 import { closeTemplates, select } from '../app.js';
-import { makeOffer } from '../offer.js';
 import { ingestSaved } from '../saved.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
@@ -64,41 +63,40 @@ export function loadBackup(content, msg) {
     return false;
   }
   const hadOffers = !state.placeholderId && myOffers().length > 0;
-  if (state.placeholderId) {
-    state.offers = [];
-    state.placeholderId = null;
-    closeTemplates();
-  }
   const { offers, cfg } = ingestSaved(saved, { fallbackCfg: state.config });
-  let added = 0;
-  let alreadyHad = 0;
-  for (const o of offers) {
-    if (state.offers.some((x) => x.id === o.id)) alreadyHad++;
-    else {
-      state.offers.push(o);
-      added++;
-    }
-  }
-  if (!state.offers.length) state.offers = [makeOffer()];
-  if (!hadOffers && saved.cfg) {
+  const owned = state.placeholderId ? [] : state.offers;
+  const fresh = offers.filter((o) => !owned.some((x) => x.id === o.id));
+  const alreadyHad = offers.length - fresh.length;
+  const takeCfg = !hadOffers && !!saved.cfg;
+  if (takeCfg) {
     state.config = cfg;
     saveConfig();
     fillSettings();
   }
-  select(state.offers.find((o) => o.id === state.activeId)?.id || state.offers[0].id);
   const kept = hadOffers && saved.cfg ? ' «Tus datos» siguen como los tenías.' : '';
-  if (added === 0) {
+  if (!fresh.length) {
     const reason = !alreadyHad
       ? 'la copia no tiene ofertas'
       : alreadyHad === 1
         ? 'la de la copia ya la tenías'
         : `las ${alreadyHad} de la copia ya las tenías`;
-    say(msg, `No se ha añadido ninguna oferta: ${reason}.${kept}`, 'warn');
+    say(
+      msg,
+      `No se ha añadido ninguna oferta: ${reason}.${takeCfg ? ' Se han tomado tus datos de la copia.' : kept}`,
+      'warn',
+    );
     return true;
   }
+  if (state.placeholderId) {
+    state.offers = [];
+    state.placeholderId = null;
+    closeTemplates();
+  }
+  state.offers.push(...fresh);
+  select(state.offers.find((o) => o.id === state.activeId)?.id || state.offers[0].id);
   const others = alreadyHad
     ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no ha cambiado' : `Otras ${alreadyHad} ya las tenías y no han cambiado`}.`
     : '';
-  say(msg, `${added === 1 ? 'Añadida 1 oferta' : `Añadidas ${added} ofertas`}.${others}${kept}`);
+  say(msg, `${fresh.length === 1 ? 'Añadida 1 oferta' : `Añadidas ${fresh.length} ofertas`}.${others}${kept}`);
   return true;
 }

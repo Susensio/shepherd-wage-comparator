@@ -35,14 +35,16 @@ export function paintBackup() {
   title.textContent = !last
     ? 'Aún no has guardado ninguna copia.'
     : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})`;
-  title.classList.toggle('ok', !status.changed);
-  title.classList.toggle('warn', status.changed);
+  // No copy yet is a warning too, for a guest; `changed` alone is true then, but by accident
+  const stale = !last || status.changed;
+  title.classList.toggle('ok', !stale);
+  title.classList.toggle('warn', stale);
   const since = !last
     ? ''
     : status.changed
       ? 'Has cambiado ofertas desde entonces. '
       : 'Incluye todo lo que tienes ahora. ';
-  $('#backupAdvice').textContent = `${since}El navegador puede borrarlas: guarda una copia de vez en cuando.`;
+  $('#backupAdvice').textContent = `${since}El navegador puede borrar tus ofertas: guarda una copia de vez en cuando.`;
 }
 
 /**

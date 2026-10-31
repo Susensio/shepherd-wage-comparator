@@ -29,7 +29,9 @@ test.describe('the status card', () => {
     await loadOffers(page, sample);
     await expect(page.locator('#backupStatus')).toHaveText('Aún no has guardado ninguna copia.');
     await expect(page.locator('#backupStatus')).toHaveClass(/warn/);
-    await expect(page.locator('#backupAdvice')).toContainText('El navegador puede borrarlas: guarda una copia');
+    await expect(page.locator('#backupAdvice')).toContainText(
+      'El navegador puede borrar tus ofertas: guarda una copia',
+    );
     await expect(page.locator('#backupAccount')).toBeHidden();
 
     const [download] = await Promise.all([
@@ -40,7 +42,8 @@ test.describe('the status card', () => {
     await expect(page.locator('#backupStatus')).toContainText('Última copia: hoy');
     await expect(page.locator('#backupStatus')).toHaveClass(/ok/);
     await expect(page.locator('#backupAdvice')).toContainText('Incluye todo lo que tienes ahora');
-    await expect(result(page)).toContainText('Copia guardada');
+    await expect(page.locator('#backupSaveResult')).toContainText('Copia guardada');
+    await expect(result(page)).toBeHidden();
 
     await page.evaluate(() => {
       app.state.offers[0].mine.name = 'Cambiada';
@@ -126,4 +129,36 @@ test.describe('recovering a copy', () => {
     await expect(result(page)).toHaveText(/^Añadidas 2 ofertas/);
     await expect(page.locator('#backupPaste')).toHaveValue('');
   });
+});
+
+test('the backup box styling stays off the offer result, and nothing-added keeps the first-run state', async ({
+  openApp,
+}) => {
+  const page = await openSettings(openApp, 'none');
+  const placeholder = await page.evaluate(() => app.state.placeholderId);
+  expect(placeholder).toBeTruthy();
+  const empty = JSON.stringify({ offers: [], cfg: sample.cfg });
+  await page.setInputFiles('#backupFile', { name: 'c.json', mimeType: 'application/json', buffer: Buffer.from(empty) });
+  await expect(result(page)).toHaveAttribute('data-kind', 'warn');
+  await expect(result(page)).toContainText('Se han tomado tus datos de la copia');
+  expect(await page.evaluate(() => app.state.placeholderId)).toBe(placeholder);
+  const style = await page.evaluate(() => {
+    const css = getComputedStyle(document.getElementById('result'));
+    return [css.backgroundColor, css.borderTopWidth];
+  });
+  expect(style).toEqual(['rgba(0, 0, 0, 0)', '0px']);
+});
+
+test('a file dropped on the paste box is loaded, not opened by the browser', async ({ openApp }) => {
+  const page = await openSettings(openApp, 'none');
+  await page.getByText('Pegar el texto de una copia').click();
+  const prevented = await page.evaluate((text) => {
+    const data = new DataTransfer();
+    data.items.add(new File([text], 'copia.json', { type: 'application/json' }));
+    const event = new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true });
+    document.getElementById('backupPaste').dispatchEvent(event);
+    return event.defaultPrevented;
+  }, backupText);
+  expect(prevented).toBe(true);
+  await expect(result(page)).toHaveText(/^Añadidas 2 ofertas/);
 });

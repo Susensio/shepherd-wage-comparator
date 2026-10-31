@@ -9,7 +9,7 @@ import { bisect, irpfAdded } from './tax.js';
  * The legal minimum, counted by months (what the paperwork shows): salary (the casual-worker daily minimum for short
  * temporary contracts), overnight bonus and the vacation you do not take.
  * @param {object} terms the offer's terms
- * @param {object} ctx `{cfg, wage}`: settings and the minimum wage of the offer's year
+ * @param {object} ctx `{wage}`: the minimum wage of the offer's year
  * @param {ReturnType<import('./time.js').schedule>} time
  */
 export function legalMinimum(terms, { wage }, time) {

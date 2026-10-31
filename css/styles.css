@@ -1870,7 +1870,7 @@ details.paste > summary {
   font-weight: 600;
   color: var(--accent);
 }
-.result {
+.bk-result {
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 13.5px;
@@ -1879,11 +1879,11 @@ details.paste > summary {
   background: color-mix(in srgb, var(--c-pay) 14%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--c-pay) 40%, var(--surface));
 }
-.result[data-kind="warn"] {
+.bk-result[data-kind="warn"] {
   background: color-mix(in srgb, var(--c-cash) 14%, var(--surface));
   border-color: color-mix(in srgb, var(--c-cash) 50%, var(--surface));
 }
-.result:empty {
+.bk-result:empty {
   display: none;
 }
 .signin {

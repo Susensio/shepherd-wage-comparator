@@ -46,7 +46,8 @@ Two rules, and each extra hour counts once.
 
 ## Earnings and savings
 
-- The unemployment benefit a contribution generates counts as the worker's money, because a payroll gives it and cash does not. It can be switched off in the assumptions.
+- The unemployment benefit a contribution generates counts as the worker's money, because a payroll gives it and cash does not. It can be switched off in «Cómo se cuenta» (Ajustes).
+- The law's figures (Social Security rates, overnight bonus, vacation days, annual hours) are read from `src/law.js`, not from the settings; values saved for them are dropped on load (`ingestSaved`).
 - **Savings** is what the employer saves at the worker's expense, with their Social Security: the contributions on the cash part, the missing minimum, and the unpaid extra days and overtime. It is the worker's margin to negotiate.
 
 ## Agreed totals and net pay

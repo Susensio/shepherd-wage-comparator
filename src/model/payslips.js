@@ -6,7 +6,7 @@ import { endOf, parseDate } from '../offer.js';
 /**
  * Each calendar month gets its share of the salary (partial months by days at 1/30, adjusted so the sum is the
  * contract's); the vacation not taken and the severance go in the last one, the final settlement.
- * Contributions at the settings' rates.
+ * Contributions at the law's rates (law.js).
  */
 export function monthlyPayslips(terms, r) {
   const end = endOf(terms);

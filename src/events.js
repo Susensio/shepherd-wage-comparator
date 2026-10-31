@@ -309,12 +309,12 @@ const ACTIONS = {
   ...accountActions,
 
   /* Backups */
-  download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#backupResult')),
+  download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#backupSaveResult')),
   snoozeBackup() {
     snoozeReminder();
     paintBackup();
   },
-  copyBackupText: () => copyBackup($('#backupResult')),
+  copyBackupText: () => copyBackup($('#backupSaveResult')),
   loadBackupText() {
     const box = /** @type {HTMLTextAreaElement} */ ($('#backupPaste'));
     if (!box.value.trim()) {
@@ -348,16 +348,20 @@ function onSummaryClick(e) {
   toggleFold(details, !details.open);
 }
 
-/** The backup file, picked or dropped on the drop area. */
+/** The backup file, picked or dropped anywhere in the section (a file dropped on the text box would be opened by the browser). */
 function setUpBackupFile() {
+  const section = $('#backup');
   const drop = $('#backupDrop');
-  drop.addEventListener('dragover', (e) => {
-    if (![...e.dataTransfer.types].includes('Files')) return;
+  const hasFile = (e) => [...e.dataTransfer.types].includes('Files');
+  section.addEventListener('dragover', (e) => {
+    if (!hasFile(e)) return;
     e.preventDefault();
     drop.classList.add('dragging');
   });
-  drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
-  drop.addEventListener('drop', async (e) => {
+  section.addEventListener('dragleave', (e) => {
+    if (!section.contains(/** @type {Node} */ (e.relatedTarget))) drop.classList.remove('dragging');
+  });
+  section.addEventListener('drop', async (e) => {
     const file = e.dataTransfer.files?.[0];
     drop.classList.remove('dragging');
     if (!file) return;
