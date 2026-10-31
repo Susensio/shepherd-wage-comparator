@@ -131,7 +131,7 @@ export function paintCompare() {
   if (includesOthers()) for (const { o } of state.others.items) needPlacesFor(o);
   const others = includesOthers() ? comparedOthers() : null;
   const all = others ? [...own, ...others] : own;
-  const { picker, body, more } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
+  const { picker, body, more } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others, state.pairing);
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
   render(more, $('#cmpMore'));

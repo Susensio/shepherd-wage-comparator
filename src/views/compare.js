@@ -11,9 +11,6 @@ import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../un
 import { voiceOf } from '../voice.js';
 import { incomeBar, legend, swatch } from './parts.js';
 
-/** «Comparar dos»: whether it is on and which offers are picked. Not saved: every visit starts without it. */
-export const pairing = { on: false, ids: /** @type {string[]} */ ([]) };
-
 /** «Comparar por»: the unit that sorts and measures the Comparar rows. */
 const unitPicker = (unit) =>
   html`<div class="view"><span class="view-l">Comparar por</span><div class="seg" role="radiogroup" aria-label="Comparar por">${UNIT_ORDER.map(
@@ -104,7 +101,7 @@ function medals(list, unit) {
 }
 
 /** Head to head: the two offers picked, row by row and in blocks; the better one in each row, in green. */
-function headToHead(list) {
+function headToHead(list, pairing) {
   if (!pairing.on || list.length < 2) return nothing;
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
@@ -244,9 +241,10 @@ function hoursView(list) {
  * @param {string} unit
  * @param {boolean} termsOnly show the figures of the terms alone
  * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
+ * @param {{on: boolean, ids: string[]}} pairing «Comparar dos»: whether it is on and which offers are picked
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
-export function compareView(all, unit, termsOnly, others) {
+export function compareView(all, unit, termsOnly, others, pairing) {
   const U = UNITS[unit];
   // Without a duration there is no total: those go last
   const sortValue = (r) => {
@@ -304,7 +302,7 @@ export function compareView(all, unit, termsOnly, others) {
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
 `,
     // After the «Otros pastores» section, which sits right under the ranking
-    more: html`${headToHead(list)}${hoursView(list)}`,
+    more: html`${headToHead(list, pairing)}${hoursView(list)}`,
   };
 }
 

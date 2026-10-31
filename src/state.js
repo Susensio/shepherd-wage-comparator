@@ -57,6 +57,8 @@ export const state = {
     items: /** @type {{ o: any, sharer: any }[]} */ ([]),
     viewId: /** @type {string | null} */ (null),
   },
+  /** «Comparar dos»: whether it is on and which offers are picked (not saved: every visit starts without it). */
+  pairing: { on: false, ids: /** @type {string[]} */ ([]) },
   /** Named collapsibles (data-fold) and whether they are open. */
   folds: /** @type {Record<string, boolean>} */ ({}),
 };

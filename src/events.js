@@ -43,7 +43,6 @@ import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
 import { changePlace } from './ui/place-field.js';
-import { pairing } from './views/compare.js';
 import { fillForm, form, paintEnd } from './views/form.js';
 import { stepPayslipMonth } from './views/season-end.js';
 import { fillSettings, paintBackup } from './views/settings.js';
@@ -196,18 +195,19 @@ const ACTIONS = {
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out
   pickPair(b) {
     const id = b.dataset.id;
+    const { pairing } = state;
     pairing.ids = pairing.ids.includes(id) ? pairing.ids.filter((x) => x !== id) : [...pairing.ids, id].slice(-2);
     paintAll();
-    if (pairing.ids.length === 2) scrollToElement($('#pairBlk'), 'center');
+    if (state.pairing.ids.length === 2) scrollToElement($('#pairBlk'), 'center');
   },
   startPair() {
-    pairing.on = true;
-    pairing.ids = [];
+    state.pairing.on = true;
+    state.pairing.ids = [];
     paintAll();
   },
   closePair() {
-    pairing.on = false;
-    pairing.ids = [];
+    state.pairing.on = false;
+    state.pairing.ids = [];
     paintAll();
   },
   viewShared: (b) => viewShared(b.dataset.id),
