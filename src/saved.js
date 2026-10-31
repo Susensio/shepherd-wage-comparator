@@ -9,17 +9,35 @@ export const normalizeOffer = (saved) => ({
   mine: { ...DEF_MINE, ...saved.mine },
 });
 
-/** The offer shape since ADR-0007; earlier flat offers have no `terms` and are not converted (ADR-0005). */
+/** The offer shape since ADR-0007. */
 const isCurrentShape = (saved) => saved && typeof saved.terms === 'object' && saved.terms !== null;
+
+/**
+ * An offer saved before ADR-0007, with every field at the top level, split into terms and own figures. Kept for
+ * backups made before 30 October 2026: every field survived the split, it only moved.
+ */
+function fromFlat(saved) {
+  const { id, cmp, ...fields } = saved;
+  const terms = {};
+  const mine = {};
+  for (const [key, value] of Object.entries(fields)) (key in DEF_MINE ? mine : terms)[key] = value;
+  return { id, cmp, terms, mine };
+}
+
+/** An offer in either shape, or null if it is not one. */
+const toCurrentShape = (saved) => {
+  if (isCurrentShape(saved)) return saved;
+  return saved && typeof saved === 'object' && typeof saved.id === 'string' ? fromFlat(saved) : null;
+};
 
 /**
  * `{ offers, cfg }` from a saved bundle (browser, backup or account), completed with defaults.
  * `fallbackCfg` (the caller's current settings) is the base when the bundle has none. The input is not touched.
- * Offers in the old flat shape are left out.
+ * Offers in the old flat shape are converted.
  */
 export function ingestSaved(data, { fallbackCfg }) {
   return {
-    offers: (data.offers ?? []).filter(isCurrentShape).map(normalizeOffer),
+    offers: (data.offers ?? []).map(toCurrentShape).filter(Boolean).map(normalizeOffer),
     cfg: data.cfg ? { ...DEF_CFG, ...data.cfg } : { ...fallbackCfg },
   };
 }

@@ -26,6 +26,7 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 
 - Signed in, the account is the source of truth and `localStorage` its cache (`storage/account.js`). Changes are written after a pause, and only the offers whose `terms`, `mine` or `cmp` changed.
 - The first sign-in of a user on a browser uploads the offers the account lacks and keeps both sets, merged by id; ids that are not uuids get a new one first, in the browser too. Only a failed upload asks (ADR-0009). An empty account starts like a first visit, with the templates, and its placeholder offer is never written.
+- Backups made before ADR-0007 hold flat offers; `ingestSaved` splits them by `DEF_MINE` (own figures) and puts the rest in `terms`. The browser's own storage of that time (`cj.ofertas`) is still not read.
 - A browser that has synced with that user before takes the account's copy as it is: an offer missing from the account was deleted on another device.
 - The blank placeholder offer of a first visit is never written.
 

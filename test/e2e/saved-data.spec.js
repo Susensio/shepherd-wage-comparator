@@ -42,19 +42,19 @@ test('a backup file', async ({ page }) => {
   expect(names(loaded)).toEqual(names(sample.offers));
 });
 
-test('offers saved in the old flat shape do not break the page', async ({ openApp }) => {
+test('offers saved in the old flat shape are converted, from the browser and from a backup', async ({ openApp }) => {
   const page = await openApp({
-    init: () => {
-      localStorage.setItem('cj.ofertas', JSON.stringify([{ id: 'x', name: 'Vieja', payAmount: 1000 }]));
-      localStorage.setItem('cj.ofertas2', JSON.stringify([{ id: 'x', name: 'Vieja', payAmount: 1000 }]));
-    },
+    init: () => localStorage.setItem('cj.ofertas2', JSON.stringify([{ id: 'x', name: 'Vieja', payAmount: 1000 }])),
   });
-  expect(await page.evaluate(() => app.state.offers.length)).toBe(1);
+  expect(await page.evaluate(() => app.state.offers.map((o) => [o.mine.name, o.terms.payAmount]))).toEqual([
+    ['Vieja', 1000],
+  ]);
   const message = await page.evaluate(async () => {
     const { loadBackup } = await import('./src/storage/backup.js');
     const msg = document.createElement('p');
-    loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Vieja' }] }), msg);
+    loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Otra vieja', kmHome: 30 }] }), msg);
     return msg.textContent;
   });
-  expect(message).toBe('Añadidas 0 ofertas.');
+  expect(message).toBe('Añadida 1 oferta.');
+  expect(await page.evaluate(() => app.state.offers.find((o) => o.id === 'y').mine.kmHome)).toBe(30);
 });

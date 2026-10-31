@@ -17,8 +17,21 @@ test('defaults fill the fields a saved offer lacks', () => {
   assert.deepEqual(offers, [{ id: 'a', terms: { ...DEF_TERMS, payAmount: 5 }, mine: { ...DEF_MINE, name: 'X' } }]);
 });
 
-test('offers in the old flat shape are left out', () => {
-  const { offers } = ingestSaved({ offers: [{ id: 'a', name: 'X', payAmount: 5 }] }, { fallbackCfg });
+test('offers in the old flat shape are split into terms and own figures', () => {
+  const flat = { id: 'a', cmp: false, name: 'X', payAmount: 5, kmHome: 30, vacationAuto: true };
+  const { offers } = ingestSaved({ offers: [flat] }, { fallbackCfg });
+  assert.deepEqual(offers, [
+    {
+      id: 'a',
+      cmp: false,
+      terms: { ...DEF_TERMS, payAmount: 5, vacationAuto: true },
+      mine: { ...DEF_MINE, name: 'X', kmHome: 30 },
+    },
+  ]);
+});
+
+test('entries that are not offers are left out', () => {
+  const { offers } = ingestSaved({ offers: [null, 7, { name: 'no id' }] }, { fallbackCfg });
   assert.deepEqual(offers, []);
 });
 
