@@ -11,28 +11,44 @@ export function ledgerProblems(root) {
     return m ? Number.parseFloat(m[0].replace(/\./g, '').replace(',', '.')) : null;
   };
   for (const rows of document.querySelectorAll(`${root} .rows`)) {
-    let sum = null;
+    // One running sum per column: a row with two figures (day, month) adds up in each
+    const sums = [];
     const title = (rows.closest('section,details')?.querySelector('h4,summary,.lev-t')?.textContent || '')
       .trim()
       .slice(0, 40);
     for (const row of rows.querySelectorAll(':scope > .row')) {
       if (row.classList.contains('hd')) continue;
       const figure = row.lastElementChild;
-      const op = figure.querySelector('.op')?.textContent;
+      // The breakdown has no signs: its rows are added (those starting with «−» taken off) up to «Cobras» and «Ganas»
+      const op =
+        figure.querySelector('.op')?.textContent ||
+        (rows.closest('[data-fold="breakdown2"]')
+          ? /\b(subt|tot)\b/.test(row.className)
+            ? '='
+            : figure.textContent.trim().startsWith('−')
+              ? '−'
+              : sums.length
+                ? '+'
+                : undefined
+          : undefined);
       const number = figure.querySelector('.nm') || figure;
-      const value = parse((number.querySelector('.two > span') || number).textContent);
-      const label = row.firstElementChild.firstChild?.textContent?.trim();
-      if (value == null) continue;
-      if (!op) sum = value;
-      else if (op === '+') sum += value;
-      else if (op === '−') sum -= value;
-      else if (op === '×') sum *= value;
-      else if (op === '=') {
-        const tolerance = Math.max(1.01, Math.abs(value) * 0.006);
-        if (sum != null && Math.abs(sum - value) > tolerance && !(value === 0 && sum < 0))
-          problems.push(`[${title}] «${label}» = ${value}, but the rows give ${Math.round(sum * 100) / 100}`);
-        sum = value;
-      }
+      const cells = number.querySelectorAll('.two > span');
+      const values = (cells.length ? [...cells] : [number]).map((cell) => parse(cell.textContent));
+      const label = row.children[row.children.length - 2].textContent.trim();
+      values.forEach((value, i) => {
+        if (value == null) return;
+        if (!op) sums[i] = value;
+        else if (op === '+') sums[i] += value;
+        else if (op === '−') sums[i] -= value;
+        else if (op === '×') sums[i] *= value;
+        else if (op === '=') {
+          if (sums[i] != null && Math.abs(sums[i] - value) > 0.001 && !(value === 0 && sums[i] < 0))
+            problems.push(
+              `[${title}] «${label}» = ${value}, but the rows give ${Math.round(sums[i] * 100) / 100} (column ${i + 1})`,
+            );
+          sums[i] = value;
+        }
+      });
     }
   }
   for (const bar of document.querySelectorAll(`${root} .br`)) {

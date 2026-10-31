@@ -121,7 +121,7 @@ function breakdown(o, r, unit, third) {
   const grossPay = netPay / (r.pay.netFactor || 1);
   const payrollTip = [
     `Nómina bruta: ${money.figure(grossPay)}${p.extraPays > 0.5 ? ' (con las pagas extra)' : ''}`,
-    `− Seguridad Social (${fN(r.pay.rates.workerPct, 1)}\u00a0%)${r.pay.irpf > 0.5 ? ` y retención de IRPF (${fN(r.pay.irpfPct * 100, 1)}\u00a0%)` : ''}: ${money.figure(grossPay - netPay)}`,
+    `− Seguridad Social (${fN(r.pay.rates.workerPct, 1)}\u00a0%)${r.pay.irpf > 0.5 ? ` y retención de IRPF (${fN(r.pay.irpfPct * 100, 1)}\u00a0%)` : ''}: ${fUnit(Math.round((num(money.figure(grossPay)) - num(money.figure(netPay))) * 100) / 100, unit)}`,
     `= Nómina neta: ${money.figure(netPay)}`,
     r.pay.irpf < 0.5
       ? say('Con lo que ganas en el año no te retienen IRPF.', 'Con lo que se gana en el año no se retiene IRPF.')
@@ -149,9 +149,9 @@ function breakdown(o, r, unit, third) {
   const fuelPerKm = (num(cfg.fuelUse) / 100) * num(cfg.fuelPrice);
   const carTip = `${fN(r.car.km)}\u00a0km ${r.time.noDuration ? 'al mes' : 'en todo el contrato'}. ${o.mine.car === 'noCar' ? '' : `${trip}: ${fN(num(o.mine.kmHome))}\u00a0km de ida y otros tantos de vuelta.`}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ` Más ${fN(num(o.mine.kmWorkPerDay))}\u00a0km por día trabajado moviéndote con tu coche.` : ''} Cada km: ${fE(fuelPerKm, 2)} de gasolina (${fN(num(cfg.fuelUse), 1)} l/100 km a ${fE(num(cfg.fuelPrice), 2)}/l) + ${fE(num(cfg.wear), 2)} de desgaste. Tu coche se cambia en «Tus datos».`;
 
-  // Rows that round to 0 € in this unit are not shown
-  const shows = (x) => inUnit(x, r, unit) >= (unit === 'hour' ? 0.005 : 0.5);
+  // Rows that round to 0 € in both columns are not shown
   const cols = columns(r);
+  const shows = (x) => cols.shown(x).some((shown) => shown !== 0);
   const partRow = (part) =>
     row(withTip(part.label, tips[part.key]), cols.value(part.value(p)), {
       swatch: part.color,
@@ -162,24 +162,27 @@ function breakdown(o, r, unit, third) {
   const position = (part) => (part.key === 'vacationPay' ? 0.5 : PARTS.indexOf(part));
   const moneyParts = present.filter((part) => part.money).sort((a, b) => position(a) - position(b));
   const others = present.filter((part) => !part.money);
-  const received = moneyParts.reduce((sum, part) => sum + part.value(p), 0);
+  const received = moneyParts.map((part) => part.value(p));
+  const earned = present.map((part) => part.value(p));
+  const [showCar, showOther] = [shows(r.car.cost), shows(r.expenses.other)];
+  const expenses = [showCar && r.car.cost, showOther && r.expenses.other].filter(Boolean);
   return {
     earnTip,
     html: html`
-    <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">${say('cobras', 'se cobra')} <b>${fUnit(inUnit(r.earnings.received, r, cols.other), cols.other)}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
+    <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">${say('cobras', 'se cobra')} <b>${cols.sumTexts(received)[1]}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
     ${incomeBar(r, incomeOf(r) || 1)}
     <div class="rows">
       ${row('', cols.header, { swatch: '', cls: 'hd' })}
       ${[
         ...moneyParts.map(partRow),
         ...(moneyParts.length > 1 && others.length
-          ? [row(say('Cobras', 'Se cobra'), cols.value(received), { swatch: '', cls: 'subt' })]
+          ? [row(say('Cobras', 'Se cobra'), cols.sum(received), { swatch: '', cls: 'subt' })]
           : []),
         ...others.map(partRow),
       ]}
-      ${shows(r.car.cost) ? row(withTip('Coche', carTip), cols.minus(r.car.cost), { swatch: 'expense', valueCls: 'minus' }) : nothing}
-      ${shows(r.expenses.other) ? row('Otros', cols.minus(r.expenses.other), { swatch: 'expense', valueCls: 'minus' }) : nothing}
-      ${row(say('Ganas', 'Se gana'), cols.value(r.earnings.total), { swatch: '', cls: 'tot' })}
+      ${showCar ? row(withTip('Coche', carTip), cols.minus(r.car.cost), { swatch: 'expense', valueCls: 'minus' }) : nothing}
+      ${showOther ? row('Otros', cols.minus(r.expenses.other), { swatch: 'expense', valueCls: 'minus' }) : nothing}
+      ${row(say('Ganas', 'Se gana'), cols.sum(earned, expenses), { swatch: '', cls: 'tot' })}
     </div>
     </details>`,
   };

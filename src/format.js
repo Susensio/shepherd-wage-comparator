@@ -40,6 +40,15 @@ export const euroDecimals = (x, decimals) =>
 /** «1.234 €», «3,40 €», with a non-breaking space. */
 export const fE = (x, decimals) => `${fN(x, euroDecimals(x, decimals))}\u00a0€`;
 
+/** A euro figure as it is written: the amount that is read, so sums of what is shown add up. */
+export const shownEuros = (x) => num(fE(x));
+
+/** A sum of shown figures: cents appear only if one of the figures had them. */
+export const fSumE = (sum) => {
+  const rounded = Math.round(sum * 100) / 100;
+  return fE(rounded, Number.isInteger(rounded) ? undefined : 2);
+};
+
 /** For inputs: «1234,5», without thousands separator. */
 export const fInputValue = (x, minDigits, maxDigits = minDigits) => formatter(minDigits, maxDigits, false).format(x);
 

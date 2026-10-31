@@ -1,7 +1,19 @@
 /** «Las cuentas, paso a paso»: what is behind each figure of the offer, in € over the whole contract. */
 
 import { html, nothing } from 'lit-html';
-import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
+import {
+  f1,
+  fCount,
+  fDays,
+  fDaysSpoken,
+  fE,
+  fN,
+  fSumE,
+  fTyped,
+  isWorthCounting,
+  joinAnd,
+  shownEuros,
+} from '../format.js';
 import { LAW } from '../law.js';
 import { hoursWeek } from '../model/time.js';
 import { voiceOf } from '../voice.js';
@@ -10,9 +22,13 @@ import { row } from './parts.js';
 const section = (title, rows, note) =>
   html`<section class="workings-sec"><h4>${title}</h4><div class="rows">${rows.filter(Boolean)}</div>${note ? html`<p class="hint">${note}</p>` : nothing}</section>`;
 
-/** «Sin pagar» or «nada», with the net amount under it. */
+/** `first` minus the others, each as it is shown: a result that adds up on screen. */
+const shownDiff = (first, ...others) =>
+  Math.round((shownEuros(first) - others.reduce((total, x) => total + shownEuros(x), 0)) * 100) / 100;
+
+/** «Sin pagar» or «nada», with the net amount under it. `unpaid` is already the difference of shown figures. */
 const unpaidRow = (label, unpaid, net, cls = 'tot') =>
-  row(label, isWorthCounting(unpaid) ? fE(unpaid) : 'nada', {
+  row(label, isWorthCounting(unpaid) ? fSumE(unpaid) : 'nada', {
     cls,
     valueCls: isWorthCounting(unpaid) ? 'bad' : 'ok',
     sub: isWorthCounting(unpaid) ? `unos ${net(unpaid)} netos` : '',
@@ -44,6 +60,7 @@ function payrollSection(r, third) {
   const say = voiceOf(third);
   const { pay, others } = r;
   const severance = r.employer.severance;
+  const net = shownDiff(pay.gross, pay.ss, pay.irpf);
   const parts = [
     r.earnings.parts.extraPays > 0.5 && 'las pagas extra',
     r.earnings.parts.vacationPay > 0.5 && 'las vacaciones pagadas',
@@ -67,13 +84,16 @@ function payrollSection(r, third) {
       row('Nómina bruta', fE(pay.gross), { sub: parts.length ? `con ${joinAnd(parts)}` : '' }),
       row(`− Seguridad Social (${fN(pay.rates.workerPct, 1)}\u00a0%)`, fE(pay.ss)),
       row(`− Retención de IRPF (${fN(pay.irpfPct * 100, 1)}\u00a0%)`, fE(pay.irpf)),
-      row('= Nómina neta', fE(pay.net), { cls: severance > 0.5 ? 'strong' : 'tot' }),
+      row('= Nómina neta', fSumE(net), { cls: severance > 0.5 ? 'strong' : 'tot' }),
       severance > 0.5 &&
         row('+ Indemnización por fin de contrato', fE(severance), {
           sub: `${LAW.severanceDaysPerYear} días por año trabajado, en el finiquito`,
         }),
       severance > 0.5 &&
-        row('= Cobrado en nómina', fE(pay.net + severance), { cls: 'tot', sub: 'como en «Final de campaña»' }),
+        row('= Cobrado en nómina', fSumE(net + shownEuros(severance)), {
+          cls: 'tot',
+          sub: 'como en «Final de campaña»',
+        }),
     ],
     note,
   );
@@ -94,28 +114,35 @@ function minimumSection(o, r, net, third) {
   const say = voiceOf(third);
   if (!(r.min.total > 0 && r.time.daysWorked > 0)) return nothing;
   const { min, pay, debt } = r;
-  const withBonus = min.salary + min.overnight;
+  const bonusShown = min.overnight > 0.5 ? shownEuros(min.overnight) : 0;
+  const shortOf = (...taken) => Math.max(0, shownDiff(min.salary, ...taken) + bonusShown);
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
       : `SMI ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
   });
   const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(LAW.overnightPct)} %)`, fE(min.overnight));
-  const salaryShort = (sub) =>
-    row('= Falta de sueldo', isWorthCounting(debt.salary) ? fE(debt.salary) : 'nada', { cls: 'strong', sub });
+  const salaryShort = (short, sub) =>
+    row('= Falta de sueldo', isWorthCounting(short) ? fSumE(short) : 'nada', { cls: 'strong', sub });
   if (r.noContract) {
     const factor = 1 - r.pay.rates.workerPct / 100;
+    const cashShort = shortOf(r.cash.total / factor);
     return section('Mínimo legal, contado por meses', [
       minimum,
       bonus,
       row(say('− Te pagan en mano, pasado a bruto', '− Se paga en mano, pasado a bruto'), fE(r.cash.total / factor)),
-      salaryShort(''),
+      salaryShort(cashShort, ''),
       min.vacation > 0.5 &&
         row('Vacaciones sin pagar', fE(debt.vacation), { sub: fDays(r.time.vacationDays), cls: 'strong' }),
-      unpaidRow(say('Te deben', 'Se le deben'), debt.owed, net),
+      unpaidRow(say('Te deben', 'Se le deben'), cashShort + (min.vacation > 0.5 ? shownEuros(debt.vacation) : 0), net),
     ]);
   }
   const vacation = min.vacation > 0.5 && o.terms.vacation !== 'taken';
+  const payShort = shortOf(pay.salary);
+  const surplus = shownEuros(pay.salary) - shownEuros(min.salary) - bonusShown;
+  const vacationShort = vacation ? Math.max(0, shownDiff(min.vacation, pay.vacationPay)) : 0;
+  const shortTotal = (isWorthCounting(payShort) ? payShort : 0) + (isWorthCounting(vacationShort) ? vacationShort : 0);
+  const cashCover = Math.min(shortTotal, shownEuros(Math.min(debt.total, r.cash.grossEq)));
   const covered = isWorthCounting(debt.total) && r.cash.total > 0;
   return section(
     'Mínimo legal, contado por meses',
@@ -123,37 +150,33 @@ function minimumSection(o, r, net, third) {
       minimum,
       bonus,
       row('− Sueldo en nómina', fE(pay.salary), { sub: 'sin las vacaciones' }),
-      salaryShort(
-        !isWorthCounting(debt.salary) && isWorthCounting(pay.salary - withBonus)
-          ? `sobran ${fE(pay.salary - withBonus)}`
-          : '',
-      ),
+      salaryShort(payShort, !isWorthCounting(payShort) && isWorthCounting(surplus) ? `sobran ${fSumE(surplus)}` : ''),
       vacation &&
         row('Vacaciones mínimas', fE(min.vacation), {
           sub: `${fDays(r.time.vacationDays)} que ${say('no libras', 'no se libran')}`,
         }),
       vacation && row('− Vacaciones en nómina', fE(pay.vacationPay)),
       vacation &&
-        row('= Falta de vacaciones', isWorthCounting(debt.vacation) ? fE(debt.vacation) : 'nada', {
+        row('= Falta de vacaciones', isWorthCounting(vacationShort) ? fSumE(vacationShort) : 'nada', {
           cls: 'strong',
           sub:
-            !isWorthCounting(debt.vacation) && isWorthCounting(pay.vacationPay - min.vacation)
-              ? `sobran ${fE(pay.vacationPay - min.vacation)}`
+            !isWorthCounting(vacationShort) && isWorthCounting(-shownDiff(min.vacation, pay.vacationPay))
+              ? `sobran ${fSumE(-shownDiff(min.vacation, pay.vacationPay))}`
               : '',
         }),
-      row('Faltan en nómina', isWorthCounting(debt.total) ? fE(debt.total) : 'nada', {
+      row('Faltan en nómina', isWorthCounting(shortTotal) ? fSumE(shortTotal) : 'nada', {
         cls: 'subt',
-        valueCls: isWorthCounting(debt.total) ? 'bad' : 'ok',
+        valueCls: isWorthCounting(shortTotal) ? 'bad' : 'ok',
       }),
       covered &&
         row(
           say('− Lo que cobras en negro, pasado a bruto', '− Lo que se cobra en negro, pasado a bruto'),
-          fE(Math.min(debt.total, r.cash.grossEq)),
+          fSumE(cashCover),
           {
             sub: 'lo cubre, pero no cotiza',
           },
         ),
-      covered && unpaidRow(say('= Te deben', '= Se le deben'), debt.owed, net),
+      covered && unpaidRow(say('= Te deben', '= Se le deben'), shortTotal - cashCover, net),
     ],
     'Cada cosa se cuenta por separado: lo que sobra en el sueldo no compensa lo que falta en vacaciones, ni al revés.',
   );
@@ -181,6 +204,7 @@ function extraDaysSection(o, r, net, third) {
   const restWorked = round2(days.extra - holidaysWorked);
   const split = holidaysWorked >= 0.5 && restWorked >= 0.5;
   const paid = Math.max(0, x.daysValue - x.daysUnpaid);
+  const unpaid = shownDiff(x.daysValue, paid > 0.5 ? paid : 0);
   return section(
     'Jornadas de más',
     [
@@ -204,7 +228,7 @@ function extraDaysSection(o, r, net, third) {
         row(say('− Te pagan por encima del mínimo', '− Se paga por encima del mínimo'), fE(paid), {
           sub: r.cash.total > 0 ? say('contando lo que cobras en negro', 'contando lo que se cobra en negro') : '',
         }),
-      unpaidRow('= Sin pagar', x.daysUnpaid, net),
+      unpaidRow('= Sin pagar', unpaid, net),
     ],
     say(
       'Si no libras las vacaciones, esos días cuentan como laborables: los paga el dinero de las vacaciones, no son de más.',
@@ -221,6 +245,7 @@ function overtimeSection(r, net, third) {
   const hours = (v) => `${fN(v, 1)} h`;
   const restDays = week.restDays >= 0.05;
   const paid = Math.max(0, x.overtimeValue - x.overtimeUnpaid);
+  const unpaid = shownDiff(x.overtimeValue, paid > 0.5 ? paid : 0);
   return section(
     'Horas extra',
     [
@@ -236,7 +261,7 @@ function overtimeSection(r, net, third) {
           third ? '− Se paga, de lo que sobra tras las jornadas' : '− Te pagan, de lo que sobra tras las jornadas',
           fE(paid),
         ),
-      unpaidRow('= Sin pagar', x.overtimeUnpaid, net),
+      unpaidRow('= Sin pagar', unpaid, net),
     ],
     'Es una estimación: en el monte no todas las horas son iguales.',
   );

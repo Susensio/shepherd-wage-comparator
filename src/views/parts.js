@@ -1,8 +1,8 @@
 /** Small pieces the views are built from: rows of figures, figure cards, bars and explanations on tap. */
 
 import { html, nothing, svg } from 'lit-html';
-import { capitalize, fCount, fE } from '../format.js';
-import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS } from '../units.js';
+import { capitalize, euroDecimals, fCount, fE, fN, fSumE, num } from '../format.js';
+import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS, UNITS } from '../units.js';
 
 /** Content that explains itself when tapped (dotted underline). */
 export const withTip = (content, tip) =>
@@ -20,15 +20,31 @@ export const two = (a, b) => html`<span class="two"><span>${a}</span><span>${b}<
 /**
  * Figure columns: per day and, next to it, per month (the total for contracts shorter than a month, where a month
  * would be made up). The same for every offer, so they compare. Per day with cents, so the sums add up.
+ * `shown(x)` is the figure of each column as it is written; `sum(plus, minus)` (`sumTexts` as strings) adds those, not the exact amounts, so a
+ * row with «=» comes out of the rows above it on screen.
  */
 export function columns(r) {
   const other = isUnderAMonth(r) ? 'total' : 'month';
   const cell = (x, unit) => (unit === 'day' ? fE(inUnit(x, r, unit), 2) : fUnit(inUnit(x, r, unit), unit));
+  const shown = (x) => {
+    const month = inUnit(x, r, other);
+    return [num(fN(inUnit(x, r, 'day'), 2)), num(fN(month, euroDecimals(month, UNITS[other].decimals || undefined)))];
+  };
+  const texts = (plus, minus = []) => {
+    const signed = [...plus.map((x) => [x, 1]), ...minus.map((x) => [x, -1])];
+    const [day, month] = [0, 1].map(
+      (i) => Math.round(signed.reduce((t, [x, sign]) => t + sign * shown(x)[i], 0) * 100) / 100,
+    );
+    return [fE(day, 2), fSumE(month)];
+  };
   return {
     other,
     header: two('Día', other === 'month' ? 'Mes' : 'Total'),
     value: (x) => two(cell(x, 'day'), cell(x, other)),
     minus: (x) => two(`−${cell(x, 'day')}`, `−${cell(x, other)}`),
+    shown,
+    sumTexts: texts,
+    sum: (plus, minus) => two(...texts(plus, minus)),
   };
 }
 

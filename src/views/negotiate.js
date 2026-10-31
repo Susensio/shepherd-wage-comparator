@@ -10,7 +10,6 @@ import { columns, row, two } from './parts.js';
 function costDetails(o, r) {
   const cols = columns(r);
   const vacation = r.pay.vacationPay > 0.5 ? r.pay.vacationPay : 0;
-  const money = r.employer.cost - r.inKind.total;
   const { housing, food } = r.inKind;
   const inKindLabel = housing > 0.5 && food > 0.5 ? 'Casa y comida' : housing > 0.5 ? 'Casa' : 'Comida';
   const items = [
@@ -35,16 +34,18 @@ function costDetails(o, r) {
       `${LAW.severanceDaysPerYear} días por año trabajado`,
     ],
   ].filter(Boolean);
+  const parts = items.map(([, value]) => value);
+  const inKind = r.inKind.total > 0.5;
   return html`<details class="plg" data-fold="cost"><summary>Cuánto le cuestas</summary><p class="hint">Por día trabajado y ${cols.other === 'month' ? 'al mes' : 'en todo el contrato'}.</p>
   <div class="rows">
     ${row('', cols.header, { cls: 'hd' })}
     ${items.map(([label, value, sub], i) => row(`${i ? '+ ' : ''}${label}`, cols.value(value), { sub }))}
     ${
-      r.inKind.total > 0.5
-        ? html`${row('= Dinero que pone', cols.value(money), { cls: 'strong' })}${row(`+ ${inKindLabel}`, cols.value(r.inKind.total), { sub: 'lo que vale, no lo que le cuesta' })}`
+      inKind
+        ? html`${row('= Dinero que pone', cols.sum(parts), { cls: 'strong' })}${row(`+ ${inKindLabel}`, cols.value(r.inKind.total), { sub: 'lo que vale, no lo que le cuesta' })}`
         : nothing
     }
-    ${row('= Le cuestas', cols.value(r.employer.cost), { cls: 'tot' })}
+    ${row('= Le cuestas', cols.sum(inKind ? [...parts, r.inKind.total] : parts), { cls: 'tot' })}
   </div>
   </details>`;
 }
