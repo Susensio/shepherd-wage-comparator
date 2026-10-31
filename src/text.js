@@ -30,7 +30,15 @@ export const fSplit = (v, unit) =>
       : `${fE(v)}/mes`;
 
 /**
- * Where the job is: «Yebra de Basa (Huesca)», or «Sarvisé, Yebra de Basa (Huesca)» with a village of its own. Names come
+ * «Municipio de Yebra de Basa · Huesca»; the municipality itself is just «Municipio · Huesca». A place with no `name`
+ * (an offer's, not a search result) always says the municipality.
+ * @param {{ name?: string, municipality: string, province: string }} place
+ */
+export const areaLine = (place) =>
+  `${place.name === place.municipality ? 'Municipio' : `Municipio de ${place.municipality}`} · ${place.province}`;
+
+/**
+ * Where the job is: «Municipio de Yebra de Basa · Huesca», or «Sarvisé · Municipio de Yebra de Basa · Huesca» with a village of its own. Names come
  * from the places list, so without it (not loaded yet) only the village is left. Empty if there is nothing to say.
  * @param {object} terms
  * @param {import('./places.js').PlacesIndex | null} places
@@ -40,17 +48,9 @@ export function whereText(terms, places, village = '') {
   const found = places && placeOfTerms(places, terms);
   const name = village.trim();
   if (!found) return name;
-  const area = found.municipality ? `${found.municipality} (${found.province})` : found.province;
-  return !name || fold(name) === fold(found.municipality) ? area : `${name}, ${area}`;
+  const area = found.municipality ? areaLine(found) : found.province;
+  return !name || fold(name) === fold(found.municipality) ? area : `${name} · ${area}`;
 }
-
-/**
- * «Municipio de Yebra de Basa · Huesca»; the municipality itself is just «Municipio · Huesca». A place with no `name`
- * (an offer's, not a search result) always says the municipality.
- * @param {{ name?: string, municipality: string, province: string }} place
- */
-export const areaLine = (place) =>
-  `${place.name === place.municipality ? 'Municipio' : `Municipio de ${place.municipality}`} · ${place.province}`;
 
 /**
  * What to call each shared offer: the sharer's name and, where two or more offers carry the same name, what tells them

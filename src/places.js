@@ -15,6 +15,24 @@
 /** Lower case without accents, for matching what people type. */
 export const fold = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 
+const ARTICLE_LAST = /^(.+), (L'|El|La|Los|Las|A|O|As|Os|Es|Sa|Ses|Els|Les)(\/.*)?$/i;
+
+/**
+ * INE writes the article last («Ènova, l'», «Puerto, El», «Pinós, el/Pinoso»): it goes back to the front, as people say
+ * it. In a bilingual name («Lorcha/Orxa, l'») it belongs to the last variant.
+ * @param {string} name
+ */
+export function articleFirst(name) {
+  const match = ARTICLE_LAST.exec(name);
+  if (!match) return name;
+  const [, head, article, rest = ''] = match;
+  const withArticle = (text) => `${article}${article.endsWith("'") ? '' : ' '}${text}`;
+  const variants = head.split('/');
+  if (variants.length > 1) return [...variants.slice(0, -1), withArticle(variants.at(-1))].join('/') + rest;
+  const spoken = withArticle(head) + rest;
+  return article.endsWith("'") ? spoken : spoken[0].toUpperCase() + spoken.slice(1);
+}
+
 export const MAX_SUGGESTIONS = 8;
 const MIN_QUERY = 2;
 

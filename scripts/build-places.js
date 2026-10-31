@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fold } from '../src/places.js';
+import { articleFirst, fold } from '../src/places.js';
 import { PLACES_VERSION } from '../src/storage/places.js';
 
 const DUMP = 'https://download.geonames.org/export/dump';
@@ -46,13 +46,13 @@ const rows = lines(join(dir, 'ES.txt')).map((line) => line.split('\t'));
 const municipalities = new Map();
 for (const row of rows)
   if (row[COL.featureCode] === 'ADM3' && row[COL.ineCode] && provinceNames.has(row[COL.province]))
-    municipalities.set(row[COL.ineCode], { name: row[COL.name], province: row[COL.province] });
+    municipalities.set(row[COL.ineCode], { name: articleFirst(row[COL.name]), province: row[COL.province] });
 
 /** Populated places inside a known municipality, and each municipality's own name (people type it too). */
 const places = [];
 for (const row of rows)
   if (row[COL.featureClass] === 'P' && municipalities.has(row[COL.ineCode]))
-    places.push({ name: row[COL.name], ineCode: row[COL.ineCode] });
+    places.push({ name: articleFirst(row[COL.name]), ineCode: row[COL.ineCode] });
 for (const [ineCode, { name }] of municipalities) places.push({ name, ineCode });
 
 const collator = new Intl.Collator('es');

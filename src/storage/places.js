@@ -3,7 +3,7 @@
 import { buildIndex } from '../places.js';
 
 /** Month of the GeoNames dump the file was built from. Changing it means `npm run places` and a new download for everyone. */
-export const PLACES_VERSION = '2026-10';
+export const PLACES_VERSION = '2026-10.1';
 
 const CACHE_PREFIX = 'places-';
 const FILE_URL = new URL(`../../data/places-${PLACES_VERSION}.json`, import.meta.url).href;

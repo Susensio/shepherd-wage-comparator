@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { buildIndex, fold, MAX_SUGGESTIONS, placeOfTerms, searchPlaces } from '../../src/places.js';
+import { articleFirst, buildIndex, fold, MAX_SUGGESTIONS, placeOfTerms, searchPlaces } from '../../src/places.js';
 import { createPlacesLoader, defersPreload, PLACES_VERSION } from '../../src/storage/places.js';
 
 const real = JSON.parse(readFileSync(new URL(`../../data/places-${PLACES_VERSION}.json`, import.meta.url), 'utf8'));
@@ -33,6 +33,24 @@ const names = (index, query) => searchPlaces(index, query).map((p) => p.name);
 test('fold drops accents and case', () => {
   assert.equal(fold('  Aínsa-Sobrarbe '), 'ainsa-sobrarbe');
   assert.equal(fold('ÑÁÉÍÓÚÜ'), 'naeiouu');
+});
+
+test('the article goes back to the front of a name', () => {
+  assert.equal(articleFirst("Ènova, l'"), "l'Ènova");
+  assert.equal(articleFirst('Puerto de Santa María, El'), 'El Puerto de Santa María');
+  assert.equal(articleFirst('Coruña, A'), 'A Coruña');
+  assert.equal(articleFirst('Pinós, el/Pinoso'), 'El Pinós/Pinoso');
+  assert.equal(articleFirst("Lorcha/Orxa, l'"), "Lorcha/l'Orxa");
+  assert.equal(articleFirst('Yebra de Basa'), 'Yebra de Basa');
+  assert.equal(articleFirst('Santa Caterina i La Ribera'), 'Santa Caterina i La Ribera');
+});
+
+test('the built list has no trailing articles', () => {
+  const names = [...real.municipalities.map(([name]) => name), ...real.places.map(([name]) => name)];
+  assert.deepEqual(
+    names.filter((name) => articleFirst(name) !== name),
+    [],
+  );
 });
 
 test('search: starts with, then word start, then contains; accents and case do not matter', () => {
@@ -166,7 +184,7 @@ test('the file is downloaded once per version: a later visit reads Cache Storage
   const first = environment({ caches });
   await createPlacesLoader(first).load();
   assert.equal(first.requests, 1);
-  assert.deepEqual([...caches.stores.keys()].sort(), ['places-2026-10', 'unrelated']); // the old version is gone
+  assert.deepEqual([...caches.stores.keys()].sort(), [`places-${PLACES_VERSION}`, 'unrelated']); // the old version is gone
 
   const later = environment({ caches });
   const places = createPlacesLoader(later);

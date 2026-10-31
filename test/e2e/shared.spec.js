@@ -183,7 +183,7 @@ test.describe('the read-only view', () => {
     await include(page);
     await page.locator('.lr.other').first().click();
     const conditions = page.locator('#sharedBlk .editinfo');
-    await expect(conditions).toContainText('Yebra de Basa (Huesca)'); // named once the list arrives
+    await expect(conditions).toContainText('Municipio de Yebra de Basa · Huesca'); // named once the list arrives
     await expect(conditions).toContainText('800 ovejas · 1 vaca');
     expect(await page.evaluate(() => app.state.others.items[0].o.mine)).toEqual(
       expect.not.objectContaining({ place: expect.stringMatching(/./) }),
@@ -283,7 +283,7 @@ test.describe('two sharers with the same name', () => {
     });
     await include(page);
     await expect(page.locator('.lr.other b').first()).toContainText('Luis Rebaño');
-    await expect(page.locator('.lr.other', { hasText: 'Yebra de Basa (Huesca)' })).toHaveCount(1);
+    await expect(page.locator('.lr.other', { hasText: 'Municipio de Yebra de Basa · Huesca' })).toHaveCount(1);
     await expect(page.locator('.lr.other', { hasText: 'Teruel' })).toHaveCount(1);
     await page.getByRole('button', { name: 'Comparar dos' }).click();
     await page.locator('.lr.pickable', { hasText: 'Luis Rebaño' }).nth(0).click();

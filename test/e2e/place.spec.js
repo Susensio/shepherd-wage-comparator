@@ -2,7 +2,7 @@
 
 import { expect, test } from './fixtures.js';
 
-const PLACES_FILE = /\/data\/places-[\d-]+\.json$/;
+const PLACES_FILE = /\/data\/places-[\d.-]+\.json$/;
 
 /** Collects the requests for the place list into `requests`. */
 const watchPlacesRequests = (page, requests) =>
@@ -47,7 +47,7 @@ test('the list is downloaded once: a later visit reads it from Cache Storage', a
   await page.reload();
   await page.waitForFunction(() => window.app);
   await page.locator('#editBtn').click();
-  await expect(page.locator('#editInfo')).toContainText('Yebra de Basa (Huesca)');
+  await expect(page.locator('#editInfo')).toContainText('Municipio de Yebra de Basa · Huesca');
   expect(requests).toHaveLength(1);
 });
 
@@ -105,7 +105,7 @@ test('a village inside a municipality names both', async ({ page }) => {
   const option = page.getByRole('option', { name: /^Sarvisé/ });
   await expect(option).toContainText('Municipio de Broto · Huesca'); // accents do not matter
   await option.click();
-  await expect(page.locator('#sum-place')).toHaveText('Sarvisé, Broto (Huesca)');
+  await expect(page.locator('#sum-place')).toHaveText('Sarvisé · Municipio de Broto · Huesca');
 });
 
 test('keyboard: arrows move, Enter picks, Escape closes', async ({ page }) => {
@@ -161,7 +161,7 @@ test('head counts go to the terms, empty stays empty, and the summaries show the
   let offer = await page.evaluate(() => app.active());
   expect(offer.terms).toMatchObject({ sheep: 600, goats: '', cattle: 1 });
   expect(offer.mine).not.toHaveProperty('sheep');
-  await expect(page.locator('#sum-place')).toHaveText('Yebra de Basa (Huesca) · 600 ovejas · 1 vaca');
+  await expect(page.locator('#sum-place')).toHaveText('Municipio de Yebra de Basa · Huesca · 600 ovejas · 1 vaca');
 
   await page.fill('#cattle', '');
   offer = await page.evaluate(() => app.active());
@@ -169,7 +169,7 @@ test('head counts go to the terms, empty stays empty, and the summaries show the
 
   const info = page.locator('#editInfo');
   await expect(info).toContainText('Dónde');
-  await expect(info).toContainText('Yebra de Basa (Huesca)');
+  await expect(info).toContainText('Municipio de Yebra de Basa · Huesca');
   await expect(info).toContainText('Ganado');
   await expect(info).toContainText('600 ovejas');
 });
@@ -197,7 +197,7 @@ test('a saved offer is named once the list arrives, with the page not waiting fo
       );
     },
   });
-  await expect(page.locator('#editInfo')).toContainText('Sarvisé, Yebra de Basa (Huesca)');
+  await expect(page.locator('#editInfo')).toContainText('Sarvisé · Municipio de Yebra de Basa · Huesca');
   await expect(page.locator('#editInfo')).toContainText('40 cabras');
 });
 

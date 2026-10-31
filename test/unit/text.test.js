@@ -71,9 +71,9 @@ const places = buildIndex({
 
 test('where: municipality and province from the list, with your village if it differs', () => {
   const terms = { municipality: '22252', province: 'HU' };
-  assert.equal(whereText(terms, places), 'Yebra de Basa (Huesca)');
-  assert.equal(whereText(terms, places, 'Yebra de Basa'), 'Yebra de Basa (Huesca)');
-  assert.equal(whereText(terms, places, ' Sarvisé '), 'Sarvisé, Yebra de Basa (Huesca)');
+  assert.equal(whereText(terms, places), 'Municipio de Yebra de Basa · Huesca');
+  assert.equal(whereText(terms, places, 'Yebra de Basa'), 'Municipio de Yebra de Basa · Huesca');
+  assert.equal(whereText(terms, places, ' Sarvisé '), 'Sarvisé · Municipio de Yebra de Basa · Huesca');
   assert.equal(whereText({ municipality: '', province: 'HU' }, places), 'Huesca');
 });
 
@@ -97,7 +97,7 @@ test('summaries: the place line joins where and herd', () => {
     mine: { name: 'X' },
   });
   const r = resultOf(o);
-  assert.equal(summaries(o, r, places).place, 'Yebra de Basa (Huesca) · 600 ovejas');
+  assert.equal(summaries(o, r, places).place, 'Municipio de Yebra de Basa · Huesca · 600 ovejas');
   assert.equal(summaries(o, r).place, '600 ovejas');
   assert.equal(summaries(normalizeOffer({ id: 'y', terms: {}, mine: {} }), r).place, 'Sin poner');
 });
