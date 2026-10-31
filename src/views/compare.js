@@ -8,6 +8,7 @@ import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } 
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, MISSING_TEXT_THIRD, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
+import { voiceOf } from '../voice.js';
 import { incomeBar, legend, swatch } from './parts.js';
 
 /** «Comparar dos»: whether it is on and which offers are picked. Not saved: every visit starts without it. */
@@ -108,7 +109,7 @@ function headToHead(list) {
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
   const [a, b] = pairing.ids.map((id) => list.find((x) => x.o.id === id));
-  const say = (you, they) => (a.sharer || b.sharer ? they : you); // a column of another shepherd's: impersonal
+  const say = voiceOf(a.sharer || b.sharer); // a column of another shepherd's: impersonal
   const debt = (x) => (isWorthCounting(x.r.debt.owed) ? x.r.debt.owed * x.r.netFactor : 0);
   // Totals only compare when both last about the same (under 10 % apart): otherwise the longer one always wins
   const similar =

@@ -8,6 +8,7 @@ import { endOf, parseDate } from '../offer.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
 import { inUnit, UNITS } from '../units.js';
+import { voiceOf } from '../voice.js';
 import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './parts.js';
 
 /** Deadline to claim: each payment, one year from when it was due (Estatuto, art. 59.2). Only with dates. */
@@ -86,7 +87,7 @@ function minimumBar(r, money) {
  * owed, counting cash; and if cash covers it, the payroll still below the minimum.
  */
 function owedCard(o, r, money, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const per = UNITS[money.unit].short;
   const debt = r.debt.total;
   if (r.noContract) {

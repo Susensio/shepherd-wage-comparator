@@ -9,6 +9,7 @@ import { citeOf, LAW } from './law.js';
 import { isShortContract } from './offer.js';
 import { moneyIn, UNITS } from './units.js';
 import { withTip } from './views/parts.js';
+import { voiceOf } from './voice.js';
 
 /** Weekly-hours thresholds, with half an hour of slack for rounding. */
 export const H_ORDINARY = LAW.weeklyHours + 0.5;
@@ -58,8 +59,7 @@ export function rightsOf(o, r, unit = 'month', third = false) {
   const vacationDays = fCount(r.time.vacationDays);
   const pct = fN(LAW.overnightPct);
   const rights = [];
-  /** The sentence in the reader's voice, or in the impersonal one for another shepherd's offer. */
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const add = (id, status, title, text) => rights.push({ id, status, title, text });
 
   const salaryOk = r.pay.salary >= r.min.salary - 1;

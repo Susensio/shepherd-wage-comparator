@@ -4,6 +4,7 @@ import { html, nothing } from 'lit-html';
 import { f1, fCount, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { hoursWeek } from '../model/time.js';
+import { voiceOf } from '../voice.js';
 import { row } from './parts.js';
 
 const section = (title, rows, note) =>
@@ -18,7 +19,7 @@ const unpaidRow = (label, unpaid, net, cls = 'tot') =>
   });
 
 function timeSection(o, r, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const t = r.time;
   const days = (x) => `${fCount(x)} días`;
   return section('Tiempo', [
@@ -40,7 +41,7 @@ function timeSection(o, r, third) {
 }
 
 function payrollSection(r, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const { pay, others } = r;
   const severance = r.employer.severance;
   const parts = [
@@ -90,7 +91,7 @@ function earningsSection(r, third) {
 
 /** The legal minimum, item by item: a surplus in one does not cover a shortfall in another. */
 function minimumSection(o, r, net, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   if (!(r.min.total > 0 && r.time.daysWorked > 0)) return nothing;
   const { min, pay, debt } = r;
   const withBonus = min.salary + min.overnight;
@@ -163,7 +164,7 @@ function minimumSection(o, r, net, third) {
  * work above them is extra. Rounded so it adds up on screen: the weekly rest absorbs the rounding.
  */
 function extraDaysSection(o, r, net, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const x = r.extra;
   const days = r.extraDays;
   if (!(x.daysValue > 0 && days.extra >= 1)) return nothing;

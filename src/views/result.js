@@ -19,6 +19,7 @@ import {
   UNIT_TEXT,
   UNITS,
 } from '../units.js';
+import { voiceOf } from '../voice.js';
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
@@ -45,7 +46,7 @@ const PILL_RANK = { bad: 0, warn: 1, '': 2, ok: 3 };
 
 /** The offer's pills: hours, days off, contract and cash, coloured like their right in «¿Es legal?». Wrong first. */
 function pills(o, r, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const hoursPerWeek = r.time.hoursPerWeek;
   const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
   const explain = explanations(o, r, third);
@@ -109,7 +110,7 @@ function pills(o, r, third) {
 
 /** Breakdown: from what you are paid to what you earn. Returns it with the explanation of the headline figure. */
 function breakdown(o, r, unit, third) {
-  const say = (you, they) => (third ? they : you);
+  const say = voiceOf(third);
   const cfg = r.cfg;
   const p = r.earnings.parts;
   const money = moneyIn(r, unit);
