@@ -140,7 +140,7 @@ function breakdown(o, r, unit, third) {
       o.terms.vacation === 'included'
         ? `Los ${vacationDays} días de vacaciones que ${say('no disfrutas', 'no se disfrutan')} van dentro de lo que ${say('te pagan', 'se paga')}: unos ${fE(p.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`
         : `Los ${vacationDays} días de vacaciones que ${say('no disfrutas te los pagan', 'no se disfrutan se pagan')} al acabar: unos ${fE(p.vacationPay)} netos, aquí repartidos entre lo que ${say('trabajas', 'se trabaja')}.`,
-    unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. ${say('Lo cobras cuando juntes', 'Se cobra al juntar')} ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que ${say('trabajas', 'se trabaja')}.${third ? '' : ' Se puede quitar en «Supuestos del cálculo».'}`,
+    unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. ${say('Lo cobras cuando juntes', 'Se cobra al juntar')} ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que ${say('trabajas', 'se trabaja')}.${third ? '' : ' Se puede quitar en «Cómo se cuenta».'}`,
   };
   const trip =
     o.mine.commute === 'daily'

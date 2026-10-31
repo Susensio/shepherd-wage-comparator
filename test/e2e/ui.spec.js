@@ -114,6 +114,20 @@ test('law figures are not settings: «Cómo se cuenta» has only the two choices
   await expect(page.locator('#assumptions .hint')).toContainText('no se cambian aquí');
 });
 
+test('the page never calls the settings «Supuestos del cálculo»', async ({ loaded: page }) => {
+  await page.evaluate(() => {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+  });
+  const text = await page.evaluate(() => document.body.textContent);
+  expect(text).not.toContain('Supuestos del cálculo');
+  expect(text).toContain('Cómo se cuenta');
+  // The tips are not in the text until they are tapped
+  const tips = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-tip]')].map((e) => e.dataset.tip).join(' '),
+  );
+  expect(tips).not.toContain('Supuestos del cálculo');
+});
+
 test('«Hecho» with data missing takes you to it', async ({ page }) => {
   await page.click(".tcard:has-text('Temporada')");
   await page.evaluate(() => window.scrollTo(0, 0));
