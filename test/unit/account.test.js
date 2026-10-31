@@ -399,7 +399,7 @@ describe('saving changes', () => {
     state.offers[1].terms.payAmount = 1200;
     state.offers[1].cmp = false;
     await account.flush();
-    assert.equal(calls.length, 2);
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
     const [offers, mine] = calls;
     assert.deepEqual([offers.table, offers.op, mine.table, mine.op], ['offers', 'upsert', 'offer_mine', 'upsert']);
     assert.equal(offers.rows.length, 1);
@@ -498,13 +498,18 @@ describe('saving changes', () => {
 });
 
 describe('signing out', () => {
-  test('clears the browser copy and starts like a first visit, writing nothing to the account', async () => {
+  test('saves what is pending, clears the browser copy and starts like a first visit, writing nothing after', async () => {
     const { account, state, store, calls, replaced } = setUp({ tables: accountTables(accountRow(1)) });
     await account.connect();
     store.set('cj.ofertas2', 'x');
     state.config.inKind = false;
     calls.length = 0;
     await account.signOut();
+    assert.deepEqual(
+      calls.map((c) => c.table),
+      ['settings'],
+    );
+    calls.length = 0;
     assert.equal(state.offers.length, 1);
     assert.equal(state.placeholderId, state.offers[0].id);
     assert.equal(state.firstRun, true);
@@ -520,8 +525,9 @@ describe('signing out', () => {
   test("the next user does not receive the first one's offers", async () => {
     const first = setUp({ tables: accountTables(accountRow(1)) });
     await first.account.connect();
-    first.state.offers.push({ ...makeOffer(), id: id(5) }); // not yet in the account
+    first.state.offers.push({ ...makeOffer(), id: id(5) }); // not yet in the account: saved by the sign-out
     await first.account.signOut();
+    assert.ok(first.data.offers.some((o) => o.id === id(5)));
     assert.ok(!ids(first.state).includes(id(5)));
     const second = fakeClient({ session: { user: { id: OTHER } } });
     const account = createAccount({
@@ -538,6 +544,142 @@ describe('signing out', () => {
       [],
     );
     assert.deepEqual(second.data.offers, []);
+  });
+});
+
+describe('signing out, when it cannot', () => {
+  test('a failed save keeps the session, the offers and the saving', async () => {
+    const { account, state, fake, calls, statuses, errors } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    state.offers[0].terms.payAmount = 7;
+    fake.failNext = true;
+    await assert.rejects(account.signOut(), /network/);
+    assert.equal(fake.signedOut, false);
+    assert.equal(account.currentUser()?.id, ME);
+    assert.equal(state.offers[0].terms.payAmount, 7);
+    assert.equal(statuses.at(-1), 'error');
+    assert.deepEqual(errors, []);
+    await account.flush(); // still syncing
+    assert.equal(calls.find((c) => c.table === 'offers').rows[0].terms.payAmount, 7);
+  });
+
+  test('a failed sign-out leaves the page as it was, still saving', async () => {
+    const { account, state, fake, client, calls, store } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    const real = client.auth.signOut;
+    client.auth.signOut = async () => ({ error: new Error('offline') });
+    await assert.rejects(account.signOut(), /offline/);
+    client.auth.signOut = real;
+    assert.equal(account.currentUser()?.id, ME);
+    assert.equal(store.get('cj.accountUser'), ME);
+    assert.equal(ids(state)[0], id(1));
+    assert.equal(fake.signedOut, false);
+    state.offers[0].terms.payAmount = 3;
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
+  });
+});
+
+describe('changes that have not reached the account', () => {
+  /** A second page load on the same browser: same storage and offers, a client that may differ. */
+  const reload = (first, tables) => {
+    const next = fakeClient({ tables });
+    const state = JSON.parse(JSON.stringify(first.state));
+    const account = createAccount({
+      client: next.client,
+      state,
+      store: {
+        get: (key, fallback) => first.store.get(key) ?? fallback,
+        set: (key, value) => first.store.set(key, value),
+      },
+      persist: () => {},
+      debounceMs: 5,
+    });
+    return { account, state, ...next };
+  };
+
+  test('an edit made during a write is written next time', async () => {
+    const { account, state, client, calls } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    let release = () => {};
+    const gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const from = client.from;
+    client.from = (table) => {
+      const query = from(table);
+      if (table !== 'offer_mine') return query;
+      const run = query.run.bind(query);
+      query.run = () => gate.then(run);
+      return query;
+    };
+    state.offers[0].terms.payAmount = 1;
+    const writing = account.flush();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    state.offers[0].terms.payAmount = 2; // while the request is out
+    release();
+    await writing;
+    assert.equal(calls[0].rows[0].terms.payAmount, 1);
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').at(-1).rows[0].terms.payAmount, 2);
+  });
+
+  test('offline edits survive a reload and reach the account', async () => {
+    const first = setUp({ tables: accountTables(accountRow(1), accountRow(2)) });
+    await first.account.connect();
+    first.state.offers[0].terms.payAmount = 11;
+    first.state.offers.push({ ...makeOffer(), id: id(3) });
+    first.state.config = { ...first.state.config, others: 500 };
+    first.fake.failNext = true;
+    first.account.changed();
+    await new Promise((resolve) => setTimeout(resolve, 30)); // the save fails
+    const accountNow = {
+      offers: structuredClone(first.data.offers),
+      offer_mine: structuredClone(first.data.offer_mine),
+      settings: [{ user_id: ME, cfg: {} }],
+    };
+    const second = reload(first, accountNow);
+    await second.account.connect();
+    assert.equal(second.state.offers.find((o) => o.id === id(1)).terms.payAmount, 11);
+    assert.deepEqual(ids(second.state).sort(), [id(1), id(2), id(3)]);
+    assert.equal(second.state.config.others, 500);
+    assert.deepEqual(second.data.offers.map((o) => o.id).sort(), [id(1), id(2), id(3)]);
+    assert.equal(second.data.offers.find((o) => o.id === id(1)).terms.payAmount, 11);
+    assert.equal(second.data.settings[0].cfg.others, 500);
+    assert.equal(first.store.get('cj.accountUnsynced'), null);
+  });
+
+  test('a deletion made offline is applied to the account', async () => {
+    const first = setUp({ tables: accountTables(accountRow(1), accountRow(2)) });
+    await first.account.connect();
+    first.state.offers.splice(0, 1);
+    first.fake.failNext = true;
+    first.account.changed();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const second = reload(first, {
+      offers: structuredClone(first.data.offers),
+      offer_mine: structuredClone(first.data.offer_mine),
+    });
+    await second.account.connect();
+    assert.deepEqual(ids(second.state), [id(2)]);
+    assert.deepEqual(
+      second.data.offers.map((o) => o.id),
+      [id(2)],
+    );
+  });
+
+  test('an account change made elsewhere is kept where nothing was edited here', async () => {
+    const first = setUp({ tables: accountTables(accountRow(1), accountRow(2)) });
+    await first.account.connect();
+    first.state.offers[0].terms.payAmount = 11;
+    first.fake.failNext = true;
+    first.account.changed();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const elsewhere = accountTables(accountRow(1), accountRow(2, { payAmount: 99 }));
+    const second = reload(first, elsewhere);
+    await second.account.connect();
+    assert.equal(second.state.offers.find((o) => o.id === id(2)).terms.payAmount, 99);
+    assert.equal(second.state.offers.find((o) => o.id === id(1)).terms.payAmount, 11);
   });
 });
 

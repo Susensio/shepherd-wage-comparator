@@ -14,6 +14,8 @@ const SESSION_KEY = 'cj.session';
 const RETURNING_KEY = 'cj.accountReturn';
 /** The user whose account this browser's offers last matched. */
 const SYNCED_KEY = 'cj.accountUser';
+/** What this browser holds that the account does not, `{ user, changed: ids, removed: ids, cfg }`: survives a reload. */
+const UNSYNCED_KEY = 'cj.accountUnsynced';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROFILE_FIELDS = ['name', 'email', 'phone', 'sharing'];
@@ -91,12 +93,17 @@ export function createAccount({
     return { offers, cfg: unwrap(settingsRow)?.cfg ?? null };
   }
 
+  /** Snapshots first: an edit made during the request must not be recorded as written. */
   async function writeOffers(offers) {
     if (!offers.length) return;
     const updatedAt = new Date().toISOString();
+    const written = structuredClone(
+      offers.map((o) => ({ id: o.id, terms: o.terms, mine: o.mine, cmp: o.cmp !== false })),
+    );
+    const fingerprints = offers.map((o) => [o.id, fingerprint(o)]);
     unwrap(
       await client.from('offers').upsert(
-        offers.map((o) => ({
+        written.map((o) => ({
           id: o.id,
           user_id: user?.id,
           terms: o.terms,
@@ -105,46 +112,77 @@ export function createAccount({
         })),
       ),
     );
-    unwrap(
-      await client
-        .from('offer_mine')
-        .upsert(offers.map((o) => ({ offer_id: o.id, mine: o.mine, cmp: o.cmp !== false }))),
-    );
-    for (const o of offers) known.offers.set(o.id, fingerprint(o));
+    unwrap(await client.from('offer_mine').upsert(written.map((o) => ({ offer_id: o.id, mine: o.mine, cmp: o.cmp }))));
+    for (const [offerId, print] of fingerprints) known.offers.set(offerId, print);
   }
 
   async function writeConfig() {
-    unwrap(
-      await client
-        .from('settings')
-        .upsert({ user_id: user?.id, cfg: state.config, updated_at: new Date().toISOString() }),
-    );
-    known.cfg = JSON.stringify(state.config);
+    const cfg = structuredClone(state.config);
+    unwrap(await client.from('settings').upsert({ user_id: user?.id, cfg, updated_at: new Date().toISOString() }));
+    known.cfg = JSON.stringify(cfg);
   }
 
-  /** The account's offers and settings become the browser's, and changes start being written. */
-  function replaceWith(account) {
+  /** What differs between the browser and what the account holds. */
+  function unsynced() {
+    const offers = ownOffers();
+    return {
+      changed: offers.filter((o) => known.offers.get(o.id) !== fingerprint(o)),
+      removed: [...known.offers.keys()].filter((offerId) => !offers.some((o) => o.id === offerId)),
+      cfg: known.cfg !== JSON.stringify(state.config),
+    };
+  }
+
+  /** Records `unsynced()` where a reload finds it, so offline edits and deletions still reach the account. */
+  function saveUnsynced() {
+    const { changed, removed, cfg } = unsynced();
+    const any = changed.length || removed.length || cfg;
+    store.set(UNSYNCED_KEY, any ? { user: user?.id, changed: changed.map((o) => o.id), removed, cfg } : null);
+  }
+
+  /**
+   * The account's offers and settings become the browser's, and changes start being written. `left` (from
+   * `saveUnsynced`) are local changes the account lacks: they are kept over the account's copy, and written next.
+   */
+  function replaceWith(account, left = null) {
     const position = (id) => {
       const at = state.offers.findIndex((o) => o.id === id);
       return at < 0 ? Number.POSITIVE_INFINITY : at;
     };
     const ingested = ingestSaved(account, { fallbackCfg: state.config });
-    const offers = ingested.offers.sort((a, b) => position(a.id) - position(b.id));
+    const accountIds = new Set(ingested.offers.map((o) => o.id));
+    let { cfg } = ingested;
+    let merged = ingested.offers;
+    if (left) {
+      const local = new Map(ownOffers().map((o) => [o.id, o]));
+      const kept = left.changed.filter((offerId) => local.has(offerId));
+      merged = merged
+        .filter((o) => !left.removed.includes(o.id))
+        .map((o) => (kept.includes(o.id) ? local.get(o.id) : o));
+      merged.push(...kept.filter((offerId) => !accountIds.has(offerId)).map((offerId) => local.get(offerId)));
+      if (left.cfg) cfg = state.config;
+    }
+    const offers = merged.sort((a, b) => position(a.id) - position(b.id));
     syncing = false;
     // An empty account starts like a first visit: a placeholder, replaced by the template picked
     const empty = !offers.length;
     state.offers = empty ? [makeOffer()] : offers;
     if (!state.offers.some((o) => o.id === state.activeId)) state.activeId = state.offers[0].id;
-    state.config = ingested.cfg;
+    state.config = cfg;
     state.placeholderId = empty ? state.offers[0].id : null;
     state.firstRun = empty;
     persist();
     onReplaced();
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
     known.offers = new Map(ownOffers().map((o) => [o.id, fingerprint(o)]));
-    known.cfg = account.cfg ? JSON.stringify(state.config) : null;
+    known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
+    if (left) {
+      for (const offerId of left.changed) known.offers.delete(offerId);
+      for (const offerId of left.removed) if (accountIds.has(offerId)) known.offers.set(offerId, '');
+      if (left.cfg) known.cfg = null;
+    }
     store.set(SYNCED_KEY, user?.id);
     syncing = true;
+    saveUnsynced();
   }
 
   /** Writes whatever differs from what the account holds. */
@@ -152,14 +190,15 @@ export function createAccount({
     if (!syncing) return;
     const offers = ownOffers();
     remapIds(offers);
-    const changed = offers.filter((o) => known.offers.get(o.id) !== fingerprint(o));
-    const removed = [...known.offers.keys()].filter((id) => !offers.some((o) => o.id === id));
+    saveUnsynced(); // after remapIds, so the ids kept are the ones written
+    const { changed, removed } = unsynced();
     await writeOffers(changed);
     if (removed.length) {
       unwrap(await client.from('offers').delete().in('id', removed));
       for (const id of removed) known.offers.delete(id);
     }
-    if (known.cfg !== JSON.stringify(state.config)) await writeConfig();
+    if (unsynced().cfg) await writeConfig();
+    saveUnsynced();
   }
 
   function flush() {
@@ -168,6 +207,17 @@ export function createAccount({
     // The caller of `run` gets the error; the chain must stay usable for the retry.
     queue = run.catch(() => {});
     return run;
+  }
+
+  /** A flush whose failure is reported, not thrown; the changes stay unsynced and go with the next one. */
+  function saveInBackground() {
+    return flush().then(
+      () => onStatus('saved'),
+      (error) => {
+        onError(error);
+        onStatus('error');
+      },
+    );
   }
 
   /** Uploads the pending offers (merge by id) and keeps them next to the account's offers. */
@@ -203,6 +253,7 @@ export function createAccount({
     clearTimeout(timer);
     pending = null;
     store.set(SYNCED_KEY, null);
+    store.set(UNSYNCED_KEY, null);
   }
 
   return {
@@ -237,10 +288,17 @@ export function createAccount({
       );
     },
 
+    /** Saves what is pending, then signs out; if either fails nothing changes and the error is thrown. */
     async signOut() {
+      try {
+        await flush();
+      } catch (error) {
+        onStatus('error');
+        throw error;
+      }
+      unwrap(await client.auth.signOut());
       stop();
       user = null;
-      unwrap(await client.auth.signOut());
       forgetBrowserCopy();
     },
 
@@ -267,7 +325,13 @@ export function createAccount({
         }
         return { user, pending: [] };
       }
-      replaceWith(account);
+      const left = store.get(UNSYNCED_KEY, null);
+      const unsyncedHere = left?.user === user.id ? left : null;
+      replaceWith(account, unsyncedHere);
+      if (unsyncedHere) {
+        onStatus('saving');
+        await saveInBackground();
+      }
       return { user, pending: [] };
     },
 
@@ -289,18 +353,9 @@ export function createAccount({
     changed() {
       if (!syncing) return;
       clearTimeout(timer);
+      saveUnsynced();
+      timer = setTimeout(saveInBackground, debounceMs);
       onStatus('saving');
-      timer = setTimeout(
-        () =>
-          flush().then(
-            () => onStatus('saved'),
-            (error) => {
-              onError(error);
-              onStatus('error');
-            },
-          ),
-        debounceMs,
-      );
     },
 
     /** Writes the pending changes now. */
