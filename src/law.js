@@ -163,7 +163,7 @@ const UNEMPLOYMENT_OF = {
   temporary: UNEMPLOYMENT_RATES.temporary,
 };
 
-export const ssTotal = (items) => Math.round(items.reduce((s, [, p]) => s + p, 0) * 100) / 100;
+const ssTotal = (items) => Math.round(items.reduce((s, [, p]) => s + p, 0) * 100) / 100;
 
 /**
  * The contributions of a contract: items and totals, % of the gross. Without a contract (`none`) it is what a
@@ -180,7 +180,7 @@ export const ssOf = (contract) => {
 };
 
 /** Unemployment benefit (SEPE): no children; monthly limits in € before the benefit's own contribution. */
-export const UNEMPLOYMENT = {
+const UNEMPLOYMENT = {
   contribPerDay: 3, // days contributed per day of benefit (360 → 120)
   minDaysContributed: 360, // needed to get any benefit…
   windowYears: 6, // …within this many years
@@ -231,7 +231,7 @@ export const citeOf = (source, art) => ({
 });
 
 /** The minimum-wage years in the table, as numbers. */
-export const WAGE_YEARS = Object.keys(MIN_WAGE).map(Number);
+const WAGE_YEARS = Object.keys(MIN_WAGE).map(Number);
 /** The minimum wage of a year: its own, or the closest year in the table. */
 export const minWageOf = (year) => {
   const y = Math.min(WAGE_YEARS.at(-1), Math.max(WAGE_YEARS[0], year));

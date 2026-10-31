@@ -76,7 +76,7 @@ export const termsOnly = (offer) => ({
 export const sideOf = (offer, field) => (field in DEF_MINE ? offer.mine : offer.terms);
 
 /** Your own figures, the same for every offer («Tus datos»). */
-export const YOUR_DATA = {
+const YOUR_DATA = {
   rentValue: 350,
   mealBreakfastP: 2,
   mealSnackP: 3,
@@ -95,7 +95,7 @@ export const DEF_CFG = {
   ...YOUR_DATA,
 };
 
-export const CONTRACTS = {
+const CONTRACTS = {
   temporary: { stat: 'Temporal', phrase: 'temporal', pill: 'Contrato temporal' },
   seasonal: { stat: 'Fijo discontinuo', phrase: 'fijo discontinuo', pill: 'Fijo discontinuo' },
   permanent: { stat: 'Fijo', phrase: 'fijo', pill: 'Contrato fijo' },
@@ -161,7 +161,7 @@ export const HERD = [
  * Meals you may be given: [field, name, default price (€)]. Prices are in the settings, under field + «P».
  * @type {[string, string, number][]}
  */
-export const MEALS = [
+const MEALS = [
   ['mealBreakfast', 'desayuno', 2],
   ['mealSnack', 'almuerzo', 3],
   ['mealLunch', 'comida', 4],

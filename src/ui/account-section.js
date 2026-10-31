@@ -75,7 +75,7 @@ const paint = () => {
  * Draws Google's button where a sign-in is on screen; Google's script is loaded only then (ADR-0009). Called again
  * whenever the prompts are repainted.
  */
-export function showSignInButtons({ chooser = false } = {}) {
+function showSignInButtons({ chooser = false } = {}) {
   const clientId = ACCOUNT_CONFIG.googleClientId;
   if (!clientId || view.user || view.signIn.googleFailed) return;
   const slots = /** @type {HTMLElement[]} */ ($$('.gsi-slot')).filter((slot) => slot.offsetParent);

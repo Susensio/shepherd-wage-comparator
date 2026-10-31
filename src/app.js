@@ -83,7 +83,7 @@ const MISSING_FIELD = {
 };
 
 /** Marks in the form what is missing to see the result, once you have asked to see it. */
-export function markMissing() {
+function markMissing() {
   const o = active();
   const shortfall = ui.askedToSee === o.id ? missing(o.terms) : [];
   for (const [what, selector] of Object.entries(MISSING_FIELD))

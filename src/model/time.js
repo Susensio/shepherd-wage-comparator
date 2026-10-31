@@ -5,9 +5,9 @@ import { LAW } from '../law.js';
 import { DAYS_PER_MONTH, endOf, parseDate } from '../offer.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest (5.5). */
-export const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
+const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
 /** The normal workday: 40 h over 5.5 days (7.27 h). */
-export const NORMAL_WORKDAY = LAW.weeklyHours / WORK_DAYS_WEEK;
+const NORMAL_WORKDAY = LAW.weeklyHours / WORK_DAYS_WEEK;
 
 /** Payroll months of a contract of `days` calendar days from `start`: whole calendar months and the rest at 1/30. */
 export function payrollMonths(start, days) {
@@ -143,7 +143,7 @@ export function extraTime(time) {
 }
 
 /** The normal workday in a typical week: 40 h over the working days you work (at most 5.5), up to 9 h. */
-export const weekWorkday = (extra) =>
+const weekWorkday = (extra) =>
   Math.min(
     extra.hoursPerDay,
     LAW.workdayMaxHours,
