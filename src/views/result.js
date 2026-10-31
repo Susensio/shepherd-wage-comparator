@@ -2,7 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { explanations } from '../explanations.js';
-import { euroDecimals, fCount, fE, fN, fTyped, joinAnd, num } from '../format.js';
+import { euroDecimals, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
@@ -123,7 +123,7 @@ function breakdown(o, r, unit, third) {
     `= Nómina neta: ${money.figure(netPay)}`,
     r.pay.irpf < 0.5
       ? say('Con lo que ganas en el año no te retienen IRPF.', 'Con lo que se gana en el año no se retiene IRPF.')
-      : r.pay.irpf - r.pay.irpfYear > 1
+      : isWorthCounting(r.pay.irpf - r.pay.irpfYear)
         ? `Es la retención: en la renta ${say('te devolverían', 'devolverían')} unos ${fE(r.pay.irpf - r.pay.irpfYear)}.`
         : say('Es la retención de IRPF de tu nómina.', 'Es la retención de IRPF de la nómina.'),
     p.vacationPay > 0.5 ? 'Las vacaciones pagadas van en su fila.' : '',
