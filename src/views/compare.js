@@ -283,7 +283,7 @@ export function compareView(all, unit, termsOnly, others) {
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
-    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${nameOf(x)}${o.terms.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
+    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${nameOf(x)}${o.mine.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
@@ -384,8 +384,8 @@ export function trendView(all, unit, width) {
           return svg`<text class="axis" x=${X((a + b) / 2)} y=${H - 6} text-anchor="middle">${y}</text>`;
         })
       : svg`<text class="axis" x=${M.l} y=${H - 6} text-anchor="start">${fDate(new Date(x0 + pad))}</text><text class="axis" x=${W - M.r} y=${H - 6} text-anchor="end">${fDate(new Date(x1 - pad - DAY_MS))}</text>`;
-  const jobs = points.filter((p) => !p.o.terms.offerOnly);
-  const offersOnly = points.filter((p) => p.o.terms.offerOnly);
+  const jobs = points.filter((p) => !p.o.mine.offerOnly);
+  const offersOnly = points.filter((p) => p.o.mine.offerOnly);
   const xEnd = (p) => Math.max(X(p.b - DAY_MS), X(p.a) + 3);
   const steps = jobs
     .slice(1)
@@ -400,7 +400,7 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.terms.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, SMI ${p.r.wage.year}).`;
+    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.mine.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, SMI ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que ganas ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que ganas ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
@@ -408,7 +408,7 @@ export function trendView(all, unit, width) {
         '',
       )}/>${offersOnly.map((p) => svg`<path class="offer-only" d="M${X(p.a)},${Y(p.y)}H${xEnd(p)}"/>`)}${points.map(
       (p) =>
-        svg`<text class=${p.o.terms.offerOnly ? 'nm offer-only-t' : 'nm'} x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
+        svg`<text class=${p.o.mine.offerOnly ? 'nm offer-only-t' : 'nm'} x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
     )}${points.map(
       (p) =>
         svg`<rect class="hit" data-tip=${tip(p)} tabindex="0" role="button" x=${X(p.a) - 4} y=${Y(p.y) - 16} width=${xEnd(p) - X(p.a) + 8} height="28"/>`,

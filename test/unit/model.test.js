@@ -172,7 +172,7 @@ test('months as on the payslip: 102 days from 21 June are 3 months and 10 days',
 
 test('the payslips add up to the gross', () => {
   for (const o of offers) {
-    if (!o.terms.start || o.terms.offerOnly) continue;
+    if (!o.terms.start || o.mine.offerOnly) continue;
     const r = calc(o, { cfg, offers });
     const payslips = monthlyPayslips(o.terms, r);
     if (!payslips.length) continue;

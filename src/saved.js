@@ -2,25 +2,37 @@
 
 import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation } from './offer.js';
 
-/** A saved offer, complete. */
-export const normalizeOffer = (saved) => ({
-  ...saved,
-  terms: { ...DEF_TERMS, ...saved.terms },
-  mine: { ...DEF_MINE, ...saved.mine },
-});
+/**
+ * A saved offer, complete. `offerOnly` describes the shepherd, not the job (it was a term until 30 October 2026): a
+ * saved `terms.offerOnly` moves to `mine`, unless `mine` has its own.
+ */
+export const normalizeOffer = (saved) => {
+  const { offerOnly, ...terms } = saved.terms ?? {};
+  return {
+    ...saved,
+    terms: { ...DEF_TERMS, ...terms },
+    mine: { ...DEF_MINE, ...(offerOnly === undefined ? {} : { offerOnly }), ...saved.mine },
+  };
+};
 
 /** The offer shape since ADR-0007. */
 const isCurrentShape = (saved) => saved && typeof saved.terms === 'object' && saved.terms !== null;
 
 /**
  * An offer saved before ADR-0007, with every field at the top level, split into terms and own figures. Kept for
- * backups made before 30 October 2026: every field survived the split, it only moved.
+ * backups made before 30 October 2026. Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped
+ * (`vacationAuto` is a flag set at runtime, so it stays); `offerOnly` goes to `terms` here and `normalizeOffer` moves it.
  */
+const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'offerOnly', 'vacationAuto']);
+
 function fromFlat(saved) {
   const { id, cmp, ...fields } = saved;
   const terms = {};
   const mine = {};
-  for (const [key, value] of Object.entries(fields)) (key in DEF_MINE ? mine : terms)[key] = value;
+  for (const [key, value] of Object.entries(fields)) {
+    if (key in DEF_MINE) mine[key] = value;
+    else if (TERM_KEYS.has(key)) terms[key] = value;
+  }
   return { id, cmp, terms, mine };
 }
 
@@ -55,7 +67,9 @@ export function ingestSaved(data, { fallbackCfg }) {
  */
 export function ingestShared({ offer, sharer }) {
   if (typeof offer?.terms !== 'object' || offer.terms === null) return null;
-  const o = normalizeOffer({ id: offer.id, terms: offer.terms, mine: { name: sharer?.name || 'Otro pastor' } });
+  // Never read `offerOnly` from a shared row: it is the sharer's own, and old rows still carry it.
+  const { offerOnly: _ignored, ...terms } = offer.terms;
+  const o = normalizeOffer({ id: offer.id, terms, mine: { name: sharer?.name || 'Otro pastor' } });
   defaultVacation(o.terms);
   return { o, sharer: sharer ?? {} };
 }

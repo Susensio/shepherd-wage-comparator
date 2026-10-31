@@ -93,7 +93,7 @@ function simulator(o, r, months) {
 /** «Final de campaña». */
 export function seasonEndSection(o, r) {
   const end = endOf(o.terms);
-  if (!o.terms.start || o.terms.offerOnly || r.time.noDuration || !end) return nothing;
+  if (!o.terms.start || o.mine.offerOnly || r.time.noDuration || !end) return nothing;
   const months = monthlyPayslips(o.terms, r);
   const payroll = months.reduce((sum, x) => sum + x.net, 0);
   const cash = r.cash.total;

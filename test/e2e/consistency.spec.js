@@ -32,7 +32,7 @@ async function invariantProblems() {
     if (Math.abs(shown - onPayroll) > 2)
       problems.push(`season end: on payroll ${shown} ≠ net payroll ${Math.round(onPayroll)}`);
   }
-  if (o.terms.start && !r.noContract && !o.terms.offerOnly) {
+  if (o.terms.start && !r.noContract && !o.mine.offerOnly) {
     const payslips = monthlyPayslips(o.terms, r);
     const net = payslips.reduce((sum, p) => sum + p.net, 0);
     if (payslips.length && Math.abs(net - onPayroll) > 3)

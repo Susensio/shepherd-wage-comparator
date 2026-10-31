@@ -26,7 +26,6 @@
         "duration": 102,
         "payrollMin": false,
         "overnight": "yes",
-        "offerOnly": true,
         "totalAmount": 2205,
         "totalUnit": "month",
         "vacation": "paidAtEnd"
@@ -39,7 +38,8 @@
         "kmHome": 108,
         "kmWorkPerDay": 6,
         "name": "Puerto A",
-        "commute": "liveIn"
+        "commute": "liveIn",
+        "offerOnly": true
       },
       "cmp": true
     },
@@ -69,7 +69,6 @@
         "duration": 102,
         "payrollMin": false,
         "overnight": "yes",
-        "offerOnly": false,
         "totalAmount": 2205,
         "totalUnit": "month",
         "vacation": "included"
@@ -82,7 +81,8 @@
         "kmHome": 108,
         "kmWorkPerDay": 6,
         "name": "Puerto A, otra cuenta",
-        "commute": "liveIn"
+        "commute": "liveIn",
+        "offerOnly": false
       },
       "cmp": true
     },
@@ -112,7 +112,6 @@
         "duration": 11,
         "payrollMin": true,
         "overnight": "no",
-        "offerOnly": false,
         "totalAmount": 63,
         "totalUnit": "day",
         "vacation": "paidAtEnd"
@@ -125,7 +124,8 @@
         "kmHome": 14,
         "kmWorkPerDay": 0,
         "name": "Campaña B",
-        "commute": "daily"
+        "commute": "daily",
+        "offerOnly": false
       },
       "cmp": true
     },
@@ -154,7 +154,6 @@
         "duration": 1,
         "payrollMin": false,
         "overnight": "no",
-        "offerOnly": false,
         "totalUnit": "day",
         "vacation": "taken"
       },
@@ -164,7 +163,8 @@
         "irpfMode": "auto",
         "kmHome": 27,
         "name": "Invernada C",
-        "commute": "daily"
+        "commute": "daily",
+        "offerOnly": false
       },
       "cmp": true
     },
@@ -192,7 +192,6 @@
         "duration": 1.4,
         "payrollMin": false,
         "overnight": "no",
-        "offerOnly": false,
         "totalUnit": "day",
         "vacation": "taken"
       },
@@ -202,7 +201,8 @@
         "irpfMode": "auto",
         "kmHome": 9,
         "name": "Sin contrato D",
-        "commute": "daily"
+        "commute": "daily",
+        "offerOnly": false
       },
       "cmp": true
     },
@@ -230,7 +230,6 @@
         "duration": 1,
         "payrollMin": false,
         "overnight": "no",
-        "offerOnly": false,
         "totalUnit": "day",
         "vacation": "included"
       },
@@ -240,7 +239,8 @@
         "irpfMode": "manual",
         "kmHome": 33,
         "name": "Temporada E",
-        "commute": "daily"
+        "commute": "daily",
+        "offerOnly": false
       },
       "cmp": true
     },
@@ -268,7 +268,6 @@
         "duration": 3,
         "payrollMin": false,
         "overnight": "no",
-        "offerOnly": true,
         "totalAmount": 78.75,
         "totalUnit": "day",
         "vacation": "included"
@@ -279,7 +278,8 @@
         "irpfMode": "auto",
         "kmHome": 24,
         "name": "Temporada F",
-        "commute": "daily"
+        "commute": "daily",
+        "offerOnly": true
       },
       "cmp": true
     },
@@ -306,7 +306,6 @@
         "duration": 7,
         "payrollMin": false,
         "overnight": "no",
-        "offerOnly": false,
         "totalUnit": "day",
         "vacationAuto": true,
         "vacation": "paidAtEnd"
@@ -317,7 +316,8 @@
         "irpfManual": 2,
         "irpfMode": "auto",
         "name": "Sin contrato G",
-        "commute": "liveIn"
+        "commute": "liveIn",
+        "offerOnly": false
       },
       "cmp": true
     }

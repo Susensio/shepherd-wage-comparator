@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, SCHEMA_VERSION } from '../../src/offer.js';
-import { ingestSaved } from '../../src/saved.js';
+import { ingestSaved, ingestShared } from '../../src/saved.js';
 
 const current = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const fallbackCfg = { ...DEF_CFG, mealLunchP: 99 };
@@ -28,6 +28,40 @@ test('offers in the old flat shape are split into terms and own figures', () => 
       mine: { ...DEF_MINE, name: 'X', kmHome: 30 },
     },
   ]);
+});
+
+test('unknown legacy keys of a flat offer are dropped', () => {
+  const { offers } = ingestSaved({ offers: [{ id: 'a', oldThing: 1, payAmount: 5 }] }, { fallbackCfg });
+  assert.equal('oldThing' in offers[0].terms, false);
+  assert.equal('oldThing' in offers[0].mine, false);
+  assert.equal(offers[0].terms.payAmount, 5);
+});
+
+test('offerOnly in saved terms or a flat offer moves to mine', () => {
+  const { offers } = ingestSaved(
+    {
+      offers: [
+        { id: 'a', terms: { offerOnly: true }, mine: {} },
+        { id: 'b', offerOnly: true },
+        { id: 'c', terms: { offerOnly: true }, mine: { offerOnly: false } },
+      ],
+    },
+    { fallbackCfg },
+  );
+  assert.deepEqual(
+    offers.map((o) => [o.mine.offerOnly, 'offerOnly' in o.terms]),
+    [
+      [true, false],
+      [true, false],
+      [false, false],
+    ],
+  );
+});
+
+test('offerOnly is never read from a shared row', () => {
+  const shared = ingestShared({ offer: { id: 'a', terms: { offerOnly: true } }, sharer: { name: 'X' } });
+  assert.equal(shared?.o.mine.offerOnly, false);
+  assert.equal('offerOnly' in (shared?.o.terms ?? {}), false);
 });
 
 test('entries that are not offers are left out', () => {
