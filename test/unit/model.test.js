@@ -8,7 +8,7 @@ import { MIN_WAGE } from '../../src/law.js';
 import { calc, calcTermsOnly } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
-import { payrollMonths } from '../../src/model/time.js';
+import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
 import { DEF_CFG, DEF_MINE, parseDate } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/saved.js';
 import { incomeOf } from '../../src/units.js';
@@ -229,4 +229,12 @@ test('terms-only drops what depends on the worker: travel, expenses and other ea
   const bare = calcTermsOnly(o, { cfg });
   assert.equal(bare.car.cost, 0);
   assert.ok(full.car.cost > 0 || num(o.mine.expenses) > 0);
+});
+
+test('claim deadlines: a year after the first month ends and after the last day', () => {
+  const terms = { start: '2026-03-10', duration: 60, durationUnit: 'days' };
+  const { from, until } = claimDeadlines(terms);
+  assert.equal(from.toDateString(), parseDate('2027-03-31').toDateString());
+  assert.equal(until.toDateString(), parseDate('2027-05-08').toDateString());
+  assert.equal(claimDeadlines({ ...terms, start: '' }), null);
 });

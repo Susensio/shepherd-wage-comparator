@@ -2,7 +2,7 @@
 
 import { clamp, num } from '../format.js';
 import { LAW } from '../law.js';
-import { DAYS_PER_MONTH, parseDate } from '../offer.js';
+import { DAYS_PER_MONTH, endOf, parseDate } from '../offer.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest (5.5). */
 export const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
@@ -21,6 +21,26 @@ export function payrollMonths(start, days) {
   let n = 0;
   while (monthsLater(n + 1) <= after) n++;
   return n + Math.min(30, Math.round((+after - +monthsLater(n)) / 864e5)) / 30;
+}
+
+/**
+ * When each payment stops being claimable: `{ from, until }`, the first payment's and the last's, or null without dates.
+ * Each payment is claimable `LAW.claimYears` after it was due; the first falls at the end of the first month.
+ * @param {object} terms the offer's terms
+ */
+export function claimDeadlines(terms) {
+  const end = endOf(terms);
+  if (!terms.start || !end) return null;
+  const start = parseDate(terms.start);
+  const last = new Date(end);
+  const firstPay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+  if (firstPay > last) firstPay.setTime(last.getTime());
+  const yearsLater = (d) => {
+    const x = new Date(d);
+    x.setFullYear(x.getFullYear() + LAW.claimYears);
+    return x;
+  };
+  return { from: yearsLater(firstPay), until: yearsLater(last) };
 }
 
 /**

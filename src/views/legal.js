@@ -2,35 +2,25 @@
 
 import { html, nothing } from 'lit-html';
 import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
-import { LAW } from '../law.js';
-import { hoursWeek } from '../model/time.js';
-import { endOf, parseDate } from '../offer.js';
+import { citeOf, LAW } from '../law.js';
+import { claimDeadlines, hoursWeek } from '../model/time.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
 import { inUnit, UNITS } from '../units.js';
 import { voiceOf } from '../voice.js';
 import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './parts.js';
 
-/** Deadline to claim: each payment, one year from when it was due (Estatuto, art. 59.2). Only with dates. */
+/** Deadline to claim: each payment, `LAW.claimYears` after it was due. Only with dates. */
 function claimDeadline(o, debt, third) {
-  const end = endOf(o.terms);
-  if (!o.terms.start || !isWorthCounting(debt) || !end) return nothing;
-  const start = parseDate(o.terms.start);
-  const last = new Date(end);
-  const firstPay = new Date(start.getFullYear(), start.getMonth() + 1, 0); // the first payment, at the end of the first month
-  if (firstPay > last) firstPay.setTime(last.getTime());
-  const yearLater = (d) => {
-    const x = new Date(d);
-    x.setFullYear(x.getFullYear() + 1);
-    return x;
-  };
-  const until = yearLater(last);
-  const from = yearLater(firstPay);
+  const deadlines = claimDeadlines(o.terms);
+  if (!deadlines || !isWorthCounting(debt)) return nothing;
+  const { from, until } = deadlines;
+  const period = LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`;
   const expired = until < new Date();
   return html`<details class="detail deadline"><summary>Hasta cuándo ${third ? 'se puede' : 'puedes'} reclamar</summary><p class=${expired ? 'hint bad' : 'hint'}>${
     expired
-      ? `El plazo para reclamarlo acabó el ${fDate(until)}: cada pago se puede reclamar durante un año.`
-      : `Cada pago se puede reclamar durante un año (Estatuto, art. 59): ${+from === +until ? `hasta el ${fDate(until)}` : `lo del primer mes, hasta el ${fDate(from)}; lo del último, hasta el ${fDate(until)}`}.`
+      ? `El plazo para reclamarlo acabó el ${fDate(until)}: cada pago se puede reclamar durante ${period}.`
+      : `Cada pago se puede reclamar durante ${period} (${citeOf('et', '59.2').label}): ${+from === +until ? `hasta el ${fDate(until)}` : `lo del primer mes, hasta el ${fDate(from)}; lo del último, hasta el ${fDate(until)}`}.`
   }</p></details>`;
 }
 
@@ -240,7 +230,7 @@ function extraTimeCards(r, third) {
       html`<details class="owed warn" data-fold="law-hours"><summary>${figureCard(
         html`${fN(x.over40PerWeek)}<small> h</small><small class="u">/sem</small>`,
         'Horas extra',
-        html`Por encima de 40 h a la semana · ${payMark(status, third)}`,
+        html`Por encima de ${LAW.weeklyHours} h a la semana · ${payMark(status, third)}`,
         'Estimado',
       )}</summary>${hoursBar(r)}</details>`,
     );
