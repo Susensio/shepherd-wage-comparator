@@ -7,6 +7,7 @@ import { openAccount, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
 import { GUEST_TIPS, tipView } from '../views/account-tip.js';
+import { othersView, shareTermsView } from '../views/others.js';
 import { paintAccount, paintAccountButton } from '../views/settings.js';
 import { signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
@@ -19,6 +20,10 @@ const view = {
   /** @type {any} */ profile: null,
   /** @type {any[]} */ pending: [],
   message: '',
+  /** The line in Comparar's section: a failure there is not the account page's business. */
+  othersMessage: '',
+  /** «Ahora no» in Comparar's section: it shrinks to a button for this visit. */
+  othersDeclined: false,
   /** @type {'share' | 'delete' | null} */ confirm: null,
   /** Accounts are configured: without a project nothing of this shows. */
   enabled: false,
@@ -43,8 +48,23 @@ function syncAvailability() {
   const available = !!(view.user && view.profile?.sharing && !view.pending.length);
   if (available === state.others.available) return;
   state.others.available = available;
-  if (!available) Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
+  if (!available) {
+    Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
+    view.othersDeclined = false;
+  } else state.others.include = true; // sharing means seeing the others, until hidden with the checkbox
   onOthersChange();
+  if (available && currentTab() === 'compare') loadOthers();
+}
+
+/** Comparar's section, from the account: nothing until the saved session has been looked at, or while uploads wait. */
+/** @returns {import('../views/others.js').OthersSection | null} */
+function othersSection() {
+  if (!view.enabled || !view.started || view.pending.length) return null;
+  const message = view.othersMessage;
+  if (!view.user) return { stage: 'guest', message, noPhone: false };
+  if (!view.profile) return null;
+  if (view.profile.sharing) return { stage: 'sharing', message, noPhone: !view.profile.phone };
+  return { stage: view.othersDeclined ? 'declined' : 'ask', message, noPhone: false };
 }
 
 /** The tab shown, or the one the account page was opened from. */
@@ -78,6 +98,9 @@ const paint = () => {
   paintAccount(view);
   render(view.user ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
   paintAccountStatus();
+  const section = othersSection();
+  $('#othersBlk').hidden = !section;
+  render(section ? othersView(section) : '', $('#othersBlk'));
   syncAvailability();
 };
 
@@ -162,14 +185,15 @@ export async function loadOthers() {
   onOthersChange();
 }
 
-/** Runs an account call; its failure becomes `failure`, a short line in the section, never an alert. */
-async function run(failure, call) {
+/** Runs an account call; its failure becomes `failure`, a short line in `line`'s section, never an alert. */
+async function run(failure, call, line = 'message') {
   view.message = '';
+  view.othersMessage = '';
   try {
     await call();
   } catch (error) {
     console.error(error);
-    view.message = failure;
+    view[line] = failure;
   }
   paint();
 }
@@ -200,6 +224,7 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
     account?.changed(); // what failed while offline is written now
     paint();
   });
+  render(shareTermsView(), $('#shareTerms'));
   paint();
   await run('No se pudo conectar con la cuenta.', async () => {
     try {
@@ -294,6 +319,30 @@ export const accountActions = {
       view.profile = await account.updateProfile({ sharing: true });
       view.confirm = null;
     }),
+  shareFromCompare: () =>
+    run(
+      'No se pudo activar. Inténtalo de nuevo.',
+      async () => {
+        view.profile = await account.updateProfile({ sharing: true });
+      },
+      'othersMessage',
+    ),
+  declineShare() {
+    view.othersDeclined = true;
+    paint();
+  },
+  reopenShare() {
+    view.othersDeclined = false;
+    paint();
+  },
+  stopSharing: () =>
+    run(
+      'No se pudo desactivar. Inténtalo de nuevo.',
+      async () => {
+        view.profile = await account.updateProfile({ sharing: false });
+      },
+      'othersMessage',
+    ),
   cancelShare() {
     view.confirm = null;
     paint();

@@ -325,6 +325,7 @@
   <div id="cmpMain">
   <div id="cmpView"></div>
   <section class="blk cmp" id="cmpBlk" aria-label="Comparación de ofertas"></section>
+  <section class="blk others" id="othersBlk" aria-label="Otros pastores" hidden></section>
   <section class="blk" id="tlBlk" hidden aria-label="Cuándo es cada oferta">
     <div id="trend"></div>
     <div id="yearly"></div>
@@ -431,9 +432,7 @@
       <p class="hint" id="sharingState"></p>
       <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
         <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
-        <p>Se mostrarán todas las condiciones de todas tus ofertas, junto con tu nombre, tu correo y tu teléfono. Las verá cualquier usuario con sesión iniciada que también comparta al menos una oferta.</p>
-        <p>No se muestran tus km, tus gastos, los nombres que has puesto a las ofertas ni tus ajustes.</p>
-        <p>Si lo desactivas, tus datos dejan de verse y tú dejas de ver los de los demás.</p>
+        <div id="shareTerms"></div>
         <div class="actions">
           <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
           <button type="button" class="sm" data-action="cancelShare">Cancelar</button>

@@ -56,9 +56,7 @@ test('hidden while sharing is off', async ({ openApp }) => {
 
 test('their offers appear with the sharer, and terms-only is forced on', async ({ openApp }) => {
   const page = await openCompare(openApp);
-  await expect(page.locator('.lr.other')).toHaveCount(0);
-  await include(page);
-  await expect(page.locator('.lr.other')).toHaveCount(2);
+  await expect(page.locator('.lr.other')).toHaveCount(2); // included by default once sharing
   await expect(page.locator('.lr.other').first()).toContainText('Luis Rebaño');
   await expect(page.locator('.lr.other').first()).toContainText('otro pastor');
   await expect(page.locator('input[name=termsOnly]')).toBeChecked();
@@ -105,7 +103,6 @@ test('a line says when nobody else has shared', async ({ openApp }) => {
 test('refetched on entering Comparar and on demand, not on repaints', async ({ openApp }) => {
   const page = await openCompare(openApp);
   const reads = () => page.evaluate(() => window.fake.sharedReads);
-  expect(await reads()).toBe(0);
   await include(page);
   expect(await reads()).toBe(1);
   await page.getByText('mes', { exact: true }).click();
@@ -133,6 +130,7 @@ test('a failed fetch shows a line and can be retried', async ({ openApp }) => {
   });
   const logged = [];
   page.on('console', (m) => m.type() === 'error' && logged.push(m.text()));
+  await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
   await page.getByLabel('Incluir ofertas de otros pastores').check();
   await expect(page.locator('.others-ctl')).toContainText('No se pudieron cargar las ofertas de otros pastores.');
   await page.evaluate(() => {
@@ -208,6 +206,132 @@ test.describe('the read-only view', () => {
     await page.evaluate(() => app.showTab('compare'));
     await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
     expect(await page.evaluate(() => app.state.others.items.length)).toBe(0);
+  });
+});
+
+const section = (page) => page.locator('#othersBlk');
+const ask = { name: 'Compartir y comparar' };
+
+test.describe('the «Otros pastores» section', () => {
+  test('no project: no section', async ({ openApp }) => {
+    const page = await openApp({ beforeLoad: withoutProject });
+    await loadOffers(page, sample);
+    await page.evaluate(() => app.showTab('compare'));
+    await expect(section(page)).toBeHidden();
+  });
+
+  test('guest: placeholders and a way in, no request, no figures', async ({ openApp }) => {
+    const page = await openApp({
+      init: installFake,
+      arg: { signedOut: true, tables: tables() },
+      beforeLoad: withProject,
+    });
+    await page.evaluate(() => app.showTab('compare'));
+    await expect(section(page)).toContainText('Compara tus ofertas con las de otros pastores.');
+    await expect(section(page).locator('.skel-row')).toHaveCount(3);
+    await expect(section(page)).not.toContainText('Luis');
+    await expect(section(page)).not.toContainText('€');
+    expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
+    await section(page).getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+  });
+
+  test('guest: signing in from it returns to Comparar', async ({ openApp }) => {
+    const page = await openApp({
+      init: installFake,
+      arg: { signedOut: true, tables: tables(), google: true },
+      beforeLoad: withProject,
+    });
+    await page.evaluate(() => app.showTab('compare'));
+    await section(page).getByRole('button', { name: 'Entrar' }).click();
+    await page.getByRole('button', { name: 'Google (falso)' }).first().click();
+    await expect(page.locator('[data-panel=compare]')).toBeVisible();
+    await expect(section(page).getByRole('button', { name: 'Dejar de compartir' })).toBeVisible();
+    await expect(page.locator('.lr.other')).toHaveCount(2);
+  });
+
+  test('not sharing: the consent says what is seen; accepting shares and ranks the others', async ({ openApp }) => {
+    const page = await openCompare(openApp, { sharing: false });
+    await expect(page.locator('.lr.other')).toHaveCount(0);
+    expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
+    for (const phrase of [
+      'todas las condiciones de todas tus ofertas',
+      'tu nombre, tu correo y tu teléfono',
+      'usuario con sesión iniciada que también comparta al menos una oferta',
+      'tus km, tus gastos, los nombres que has puesto a las ofertas ni tus ajustes',
+      'dejas de ver los de los demás',
+    ])
+      await expect(section(page)).toContainText(phrase);
+    await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
+    await expect(page.locator('.lr.other')).toHaveCount(2);
+    expect(await page.evaluate((id) => window.fake.data.profiles.find((p) => p.user_id === id).sharing, ME)).toBe(true);
+    await expect(page.getByLabel('Incluir ofertas de otros pastores')).toBeChecked();
+  });
+
+  test('the account page shows the same text', async ({ openApp }) => {
+    const page = await openCompare(openApp, { sharing: false });
+    const text = await section(page).locator('.account-confirm p').allTextContents();
+    await page.evaluate(() => app.openAccountPage());
+    await page.getByLabel('Compartir mis ofertas').click();
+    for (const paragraph of text.slice(1)) await expect(page.locator('#shareConfirm')).toContainText(paragraph);
+  });
+
+  test('«Ahora no» leaves one button that reopens the consent', async ({ openApp }) => {
+    const page = await openCompare(openApp, { sharing: false });
+    await section(page).getByRole('button', { name: 'Ahora no' }).click();
+    await expect(section(page).getByRole('button', ask)).toHaveCount(0);
+    await expect(section(page).getByRole('button', { name: 'Compartir para comparar' })).toBeVisible();
+    await expect(section(page)).not.toContainText('Antes de compartir');
+    await section(page).getByRole('button', { name: 'Compartir para comparar' }).click();
+    await expect(section(page)).toContainText('Antes de compartir, esto es lo que se verá');
+    expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
+  });
+
+  test('a failed activation shows a line in the section', async ({ openApp }) => {
+    const page = await openApp({
+      init: installFake,
+      arg: { tables: tables({ sharing: false }), failProfile: true },
+      beforeLoad: withProject,
+    });
+    await page.evaluate(() => app.showTab('compare'));
+    await section(page).getByRole('button', ask).click();
+    await expect(section(page)).toContainText('No se pudo activar. Inténtalo de nuevo.');
+    await expect(page.locator('.lr.other')).toHaveCount(0);
+  });
+
+  test('sharing: others are included after a reload too', async ({ openApp }) => {
+    const page = await openCompare(openApp);
+    await expect(page.getByLabel('Incluir ofertas de otros pastores')).toBeChecked();
+    await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
+    await expect(page.locator('.lr.other')).toHaveCount(0);
+    const again = await openCompare(openApp);
+    await expect(again.locator('.lr.other')).toHaveCount(2);
+  });
+
+  test('«Dejar de compartir» turns it off and the consent comes back', async ({ openApp }) => {
+    const page = await openCompare(openApp);
+    await section(page).getByRole('button', { name: 'Dejar de compartir' }).click();
+    await expect(section(page).getByRole('button', ask)).toBeVisible();
+    await expect(page.locator('.lr.other')).toHaveCount(0);
+    await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+    expect(await page.evaluate((id) => window.fake.data.profiles.find((p) => p.user_id === id).sharing, ME)).toBe(
+      false,
+    );
+  });
+
+  test('without a phone a hint links to the account page; with one, no hint', async ({ openApp }) => {
+    const page = await openCompare(openApp);
+    await expect(section(page)).toContainText('Añade un teléfono en tu cuenta para que te puedan contactar.');
+    await section(page).getByRole('button', { name: 'Abrir la cuenta' }).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await page.locator('#profPhone').fill('600 000 000');
+    await page.getByRole('button', { name: 'Guardar perfil' }).click();
+    await page
+      .getByRole('button', { name: /Volver/ })
+      .first()
+      .click();
+    await expect(section(page)).not.toContainText('Añade un teléfono');
   });
 });
 

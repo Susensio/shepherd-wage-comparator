@@ -824,6 +824,34 @@ details.plg > summary:has(.stat)::after {
 .others-ctl {
   margin: 10px 0 12px;
 }
+#shareTerms {
+  display: contents;
+}
+section.others {
+  gap: 8px;
+  margin-top: 18px;
+}
+section.others h3,
+section.others p {
+  margin: 0;
+}
+.others-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skel-row {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.skel-row i {
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--line);
+}
 .lr .det .who {
   color: var(--accent);
   font-weight: 600;
