@@ -1566,6 +1566,29 @@ body.on-page :is(.tabs, #intro) {
   align-items: flex-start;
   gap: 6px;
 }
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  margin-left: -13px; /* the chevron's own padding, so its stroke lines up with the page edge */
+  padding: 0 12px 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+.back svg {
+  width: 20px;
+  height: 20px;
+}
+.back:hover {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.back:active {
+  background: color-mix(in srgb, var(--ink) 13%, transparent);
+}
 .account-sync {
   margin: 0;
   font-size: 13px;

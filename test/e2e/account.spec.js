@@ -163,7 +163,7 @@ test.describe('the account button', () => {
     await expect(page.locator('[data-panel=account]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeHidden();
     await expect(page.locator('[data-panel=laws]')).toBeHidden();
-    await page.getByRole('button', { name: '← Volver' }).click();
+    await page.getByRole('button', { name: 'Volver' }).click();
     await expect(page.locator('[data-panel=laws]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeVisible();
     await expect(page.locator('[data-panel=account]')).toBeHidden();
