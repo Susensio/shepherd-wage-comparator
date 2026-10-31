@@ -3,7 +3,7 @@
  * out, the page never touches the network and the bundle is not even loaded.
  */
 
-import { DEF_CFG, DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../offer.js';
+import { DEF_CFG, makeOffer, SCHEMA_VERSION } from '../offer.js';
 import { ingestSaved } from '../saved.js';
 import { KEY, onSave, saveConfig, saveOffers, state, store } from '../state.js';
 import { ACCOUNT_CONFIG } from './account-config.js';
@@ -369,7 +369,7 @@ export function createAccount({
       ]);
       const sharers = new Map(unwrap(profileRows).map((p) => [p.user_id, p]));
       return unwrap(offerRows).map((row) => ({
-        offer: { id: row.id, terms: { ...DEF_TERMS, ...row.terms } },
+        offer: { id: row.id, terms: row.terms },
         sharer: sharers.get(row.user_id) ?? { user_id: row.user_id },
       }));
     },

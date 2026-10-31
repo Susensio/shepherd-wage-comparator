@@ -700,7 +700,7 @@ describe('other users and the profile', () => {
     await account.connect();
     const shared = await account.sharedOffers();
     assert.equal(shared.length, 1);
-    assert.deepEqual(shared[0].offer, { id: id(5), terms: { ...DEF_TERMS, payAmount: 80 } });
+    assert.deepEqual(shared[0].offer, { id: id(5), terms: { payAmount: 80 } });
     assert.equal('mine' in shared[0].offer, false);
     assert.deepEqual(shared[0].sharer, { user_id: OTHER, name: 'Ana', email: 'ana@example.com', phone: '600' });
   });
