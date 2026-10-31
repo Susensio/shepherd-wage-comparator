@@ -20,7 +20,6 @@ import {
 import { placeOfTerms } from '../places.js';
 import { areaLine, fSplit, summaries } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
-import { fadeIn } from '../ui/motion.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
@@ -77,14 +76,15 @@ export function fillVacation(o) {
     el.checked = el.value === o.terms.vacation;
 }
 
-/** Shows only the fields that apply. With `animate`, those that appear fade in (only when you touch the form). */
-function applyShow(o, animate) {
+/** Shows only the fields that apply. Returns those that appeared, for the caller to animate. */
+function applyShow(o) {
+  const appeared = [];
   for (const el of /** @type {HTMLElement[]} */ ($$('[data-show]'))) {
     const visible = !!SHOW[el.dataset.show](o);
-    const appears = el.hidden && visible;
+    if (el.hidden && visible) appeared.push(el);
     el.hidden = !visible;
-    if (appears && animate) fadeIn(el);
   }
+  return appeared;
 }
 
 const text = (selector, value) => {
@@ -186,12 +186,12 @@ function yearHint(o, r) {
  * @param {object} o the active offer
  * @param {object} r its figures
  * @param {object[]} offers your offers, to warn about overlapping dates
- * @param {boolean} animate fade in the fields that appear
  * @param {{ index: import('../places.js').PlacesIndex | null, status: string }} places the place list, to name the municipality
+ * @returns {HTMLElement[]} the fields that appeared
  */
-export function paintForm(o, r, offers, animate, places) {
+export function paintForm(o, r, offers, places) {
   const cfg = r.cfg;
-  applyShow(o, animate);
+  const appeared = applyShow(o);
   text(
     '#vacationHint',
     o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd'
@@ -243,4 +243,5 @@ export function paintForm(o, r, offers, animate, places) {
   );
   text('#daysOffHint', daysOffHint(o, r));
   text('#carHint', carHint(o, r));
+  return appeared;
 }

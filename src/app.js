@@ -13,7 +13,7 @@ import { MISSING_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
-import { cancelScroll, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
+import { cancelScroll, fadeIn, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fillForm, fillVacation, paintForm } from './views/form.js';
@@ -174,7 +174,8 @@ export function paintAll() {
   const r = calcOffer(o);
   paintChips();
   needPlacesFor(o);
-  paintForm(o, r, myOffers(), ui.animateFields, placesNow());
+  const appeared = paintForm(o, r, myOffers(), placesNow());
+  if (ui.animateFields) for (const el of appeared) fadeIn(el);
   ui.animateFields = false;
   markMissing();
   render(resultView(o, r), $('#result'));
