@@ -9,7 +9,7 @@ import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
 import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
-import { MISSING_TEXT } from './text.js';
+import { MISSING_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
@@ -102,11 +102,15 @@ const termsOnlyNow = () => state.termsOnly || includesOthers();
 const compared = () =>
   myOffers().map((o) => ({ o, r: termsOnlyNow() ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
 
-/** Other shepherds' offers with their terms-only figures. One that cannot be calculated is left out, not fatal. */
+/**
+ * Other shepherds' offers with their terms-only figures and the label that tells same-named ones apart. One that
+ * cannot be calculated is left out, not fatal.
+ */
 function comparedOthers() {
+  const labels = sharedLabels(state.others.items, placesIfLoaded());
   return state.others.items.flatMap(({ o, sharer }) => {
     try {
-      return [{ o, sharer, r: calcTermsOnly(o, { cfg: state.config }) }];
+      return [{ o, sharer, label: labels.get(o.id), r: calcTermsOnly(o, { cfg: state.config }) }];
     } catch (error) {
       console.error(error);
       return [];
@@ -124,6 +128,7 @@ const needPlacesFor = (o) => {
 
 export function paintCompare() {
   const own = compared();
+  if (includesOthers()) for (const { o } of state.others.items) needPlacesFor(o);
   const all = includesOthers() ? [...own, ...comparedOthers()] : own;
   const { picker, body, more } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
   render(picker, $('#cmpView'));

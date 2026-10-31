@@ -270,6 +270,55 @@ test.describe('whose voice an offer speaks in', () => {
   });
 });
 
+test.describe('two sharers with the same name', () => {
+  const twin = (n, terms) => ({ id: sharedId(n), user_id: OTHER, terms });
+
+  test('are told apart by where the job is, in the ranking, the head to head and the title', async ({ openApp }) => {
+    const base = byName('Puerto A').terms;
+    const page = await openCompare(openApp, {
+      others: [
+        twin(1, { ...base, municipality: '22252', province: 'HU' }),
+        twin(2, { ...base, municipality: '', province: 'TE' }),
+      ],
+    });
+    await include(page);
+    await expect(page.locator('.lr.other b').first()).toContainText('Luis Rebaño');
+    await expect(page.locator('.lr.other', { hasText: 'Yebra de Basa (Huesca)' })).toHaveCount(1);
+    await expect(page.locator('.lr.other', { hasText: 'Teruel' })).toHaveCount(1);
+    await page.getByRole('button', { name: 'Comparar dos' }).click();
+    await page.locator('.lr.pickable', { hasText: 'Luis Rebaño' }).nth(0).click();
+    await page.locator('.lr.pickable', { hasText: 'Luis Rebaño' }).nth(1).click();
+    const heads = await page.locator('#pairBlk thead th button').allTextContents();
+    expect(new Set(heads).size).toBe(2);
+    expect(heads.every((h) => h.startsWith('Luis Rebaño · '))).toBe(true);
+    await page.locator('#pairBlk thead th button').first().click();
+    await expect(page.locator('#sharedBlk h3.q').first()).toContainText(`Oferta de ${heads[0]}`);
+  });
+
+  test('fall back to the dates, then to an ordinal', async ({ openApp }) => {
+    const base = byName('Puerto A').terms;
+    const dated = await openCompare(openApp, {
+      others: [twin(1, { ...base, start: '2026-06-01' }), twin(2, { ...base, start: '2026-07-01' })],
+    });
+    await include(dated);
+    const labels = await dated.locator('.lr.other b').allTextContents();
+    expect(new Set(labels).size).toBe(2);
+    expect(labels.join(' ')).toMatch(/jun|jul/);
+
+    const alike = await openCompare(openApp, { others: [twin(1, base), twin(2, base)] });
+    await include(alike);
+    await expect(alike.locator('.lr.other b').nth(0)).toContainText('Luis Rebaño · n.º 1');
+    await expect(alike.locator('.lr.other b').nth(1)).toContainText('Luis Rebaño · n.º 2');
+  });
+
+  test('a lone sharer keeps the plain name', async ({ openApp }) => {
+    const page = await openCompare(openApp, { others: [twin(1, byName('Puerto A').terms)] });
+    await include(page);
+    await expect(page.locator('.lr.other b')).toContainText('Luis Rebaño');
+    await expect(page.locator('.lr.other b')).not.toContainText('·');
+  });
+});
+
 const section = (page) => page.locator('#othersBlk');
 const ask = { name: 'Compartir y comparar' };
 

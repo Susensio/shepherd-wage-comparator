@@ -19,10 +19,10 @@ const contact = (sharer) => {
 };
 
 /**
- * @param {{ o: any, r: any, sharer: any }} item the offer with its terms-only figures
+ * @param {{ o: any, r: any, sharer: any, label: string }} item the offer with its terms-only figures and its name for display
  * @param {import('../places.js').PlacesIndex | null} places to name the municipality and province, once loaded
  */
-export function sharedView({ o, r, sharer }, places) {
+export function sharedView({ o, r, sharer, label }, places) {
   const s = summaries(o, r, null, true);
   const conditions = [
     ['Dónde', whereText(o.terms, places)], // never the village: it is not theirs to share
@@ -34,7 +34,7 @@ export function sharedView({ o, r, sharer }, places) {
     ['Contrato', contractOf(o.terms).stat],
   ].filter(([, v]) => v);
   return html`<button type="button" class="linkbtn" data-action="closeShared">← Volver a Comparar</button>
-    <h3 class="q">Oferta de ${o.mine.name}</h3>
+    <h3 class="q">Oferta de ${label}</h3>
     <p class="hint">Solo se ven las condiciones de la oferta, sin desplazamientos ni gastos.</p>
     <h4 class="sub">Quién la comparte</h4>
     ${contact(sharer)}

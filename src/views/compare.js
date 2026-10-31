@@ -51,6 +51,9 @@ const othersControl = ({ available, include, status, items }) =>
 /** The button action that opens a row: your offer in the offers tab, another shepherd's read-only. */
 const openAction = (x) => (x.sharer ? 'viewShared' : 'view');
 
+/** What the offer is called: another shepherd's offers carry what tells same-named ones apart. */
+const nameOf = (x) => x.label ?? x.o.mine.name;
+
 /** How much of what you receive is cash: all on payroll, part, or all in cash. */
 const cashText = (r) =>
   r.cash.total <= 0.5
@@ -204,7 +207,7 @@ function headToHead(list) {
     return shown.length ? html`<tr class="group"><th colspan="3">${title}</th></tr>${shown}` : nothing;
   });
   const header = (x) =>
-    html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}>${x.o.mine.name}</button></th>`;
+    html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}>${nameOf(x)}</button></th>`;
   return html`<div class="pair" id="pairBlk"><div class="pair-head"><h4 class="sub">Cara a cara</h4><button type="button" class="linkbtn" data-action="closePair">Cerrar</button></div>
     <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -222,7 +225,7 @@ function hoursView(list) {
       const total = r.time.hoursPerWeek;
       const extra = Math.min(total, weeks > 0 ? r.extra.hours / weeks : 0);
       const normal = total - extra;
-      return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><b>${o.mine.name}</b><span class="v">${fN(total)} h</span>
+      return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><b>${nameOf(x)}</b><span class="v">${fN(total)} h</span>
       <span class="hbar"><i class="ok" style="left:0;width:${pct(normal)}%"></i>${
         extra >= 0.5 ? html`<i class="unpaid" style="left:${pct(normal)}%;width:${pct(extra)}%"></i>` : nothing
       }<s style="left:${pct(limit)}%"></s></span></button>`;
@@ -258,7 +261,7 @@ export function compareView(all, unit, termsOnly, others) {
       body: html`${controls}<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
-          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${x.o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => (x.sharer ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}.`).join(' ')}`
+          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => (x.sharer ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}.`).join(' ')}`
       }</p>`,
       more: nothing,
     };
@@ -280,7 +283,7 @@ export function compareView(all, unit, termsOnly, others) {
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
-    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${o.mine.name}${o.terms.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
+    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><b>${nameOf(x)}${o.terms.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)

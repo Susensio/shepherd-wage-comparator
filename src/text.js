@@ -44,6 +44,37 @@ export function whereText(terms, places, village = '') {
   return !name || fold(name) === fold(found.municipality) ? area : `${name}, ${area}`;
 }
 
+/**
+ * What to call each shared offer: the sharer's name and, where two or more offers carry the same name, what tells them
+ * apart: where the job is, else its dates, else both, else an ordinal.
+ * @param {{ o: { id: string, mine: { name: string }, terms: object } }[]} items
+ * @param {import('./places.js').PlacesIndex | null} places
+ * @returns {Map<string, string>} by offer id
+ */
+export function sharedLabels(items, places) {
+  const labels = new Map(items.map(({ o }) => [o.id, o.mine.name]));
+  const byName = new Map();
+  for (const item of items) {
+    const key = fold(item.o.mine.name);
+    byName.set(key, [...(byName.get(key) ?? []), item]);
+  }
+  const tiers = [
+    (terms) => whereText(terms, places),
+    (terms) => datesText(terms),
+    (terms) => [whereText(terms, places), datesText(terms)].filter(Boolean).join(' · '),
+  ];
+  for (const group of byName.values()) {
+    if (group.length < 2) continue;
+    const tier = tiers.find((detail) => new Set(group.map(({ o }) => detail(o.terms))).size === group.length);
+    const ordered = [...group].sort((a, b) => (a.o.id < b.o.id ? -1 : 1));
+    ordered.forEach(({ o }, i) => {
+      const detail = tier ? tier(o.terms) : `n.º ${i + 1}`;
+      if (detail) labels.set(o.id, `${o.mine.name} · ${detail}`);
+    });
+  }
+  return labels;
+}
+
 /** The herd: «600 ovejas · 1 vaca». Empty if no head count is set. */
 export const herdText = (terms) =>
   HERD.filter(([field]) => num(terms[field]) > 0)
