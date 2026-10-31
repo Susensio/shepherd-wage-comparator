@@ -45,6 +45,14 @@ export function whereText(terms, places, village = '') {
 }
 
 /**
+ * «Municipio de Yebra de Basa · Huesca»; the municipality itself is just «Municipio · Huesca». A place with no `name`
+ * (an offer's, not a search result) always says the municipality.
+ * @param {{ name?: string, municipality: string, province: string }} place
+ */
+export const areaLine = (place) =>
+  `${place.name === place.municipality ? 'Municipio' : `Municipio de ${place.municipality}`} · ${place.province}`;
+
+/**
  * What to call each shared offer: the sharer's name and, where two or more offers carry the same name, what tells them
  * apart: where the job is, else its dates, else both, else an ordinal.
  * @param {{ o: { id: string, mine: { name: string }, terms: object } }[]} items

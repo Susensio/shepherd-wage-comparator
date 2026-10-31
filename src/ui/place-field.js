@@ -4,6 +4,7 @@ import { html, render } from 'lit-html';
 import { searchPlaces } from '../places.js';
 import { active } from '../state.js';
 import { loadPlaces, onPlacesChange, placesIfLoaded } from '../storage/places.js';
+import { areaLine } from '../text.js';
 import { $ } from './dom.js';
 
 /** @type {import('../places.js').Place[]} */
@@ -14,10 +15,6 @@ let commit = () => {};
 
 const input = () => /** @type {HTMLInputElement} */ ($('#place'));
 const optionId = (i) => `placeOption${i}`;
-
-/** «Municipio de Yebra de Basa · Huesca»; the municipality itself is just «Municipio · Huesca». */
-export const areaLine = (place) =>
-  `${place.name === place.municipality ? 'Municipio' : `Municipio de ${place.municipality}`} · ${place.province}`;
 
 function paintList() {
   const open = suggestions.length > 0;

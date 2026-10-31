@@ -18,7 +18,7 @@ import {
   sideOf,
 } from '../offer.js';
 import { placeOfTerms } from '../places.js';
-import { fSplit, summaries } from '../text.js';
+import { areaLine, fSplit, summaries } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
 import { fadeIn } from '../ui/motion.js';
 
@@ -99,7 +99,7 @@ const text = (selector, value) => {
 function paintPlace(o, { index, status }) {
   const found = index && placeOfTerms(index, o.terms);
   $('#placePicked').hidden = !found?.municipality;
-  text('#placePickedText', found?.municipality ? `Municipio de ${found.municipality} · ${found.province}` : '');
+  text('#placePickedText', found?.municipality ? areaLine(found) : '');
   text(
     '#placeHint',
     status === 'loading'
