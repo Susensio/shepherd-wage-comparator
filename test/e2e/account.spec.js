@@ -376,6 +376,29 @@ test('signed in: who, and signing out', async ({ openApp }) => {
   await expect(page.locator('#accountTip .tip')).toHaveCount(0); // signing out is not asked about again this visit
 });
 
+test('signing out clears the browser copy, shows the welcome and says the offers are in the account', async ({
+  openApp,
+}) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() } },
+    beforeLoad: withProject,
+  });
+  await page.evaluate(() => app.openAccountPage());
+  const inAccount = await page.evaluate(() => window.fake.data.offers.map((o) => o.id));
+  await page.getByRole('button', { name: 'Salir' }).click();
+  await expect(page.locator('#accountMsg')).toHaveText('Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.');
+  await page.getByRole('button', { name: 'Volver' }).first().click();
+  await expect(page.locator('#welcome')).toBeVisible();
+  await expect(page.locator('#signedOutNotice')).toHaveText(
+    'Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.',
+  );
+  expect(await page.evaluate(() => app.state.offers.length)).toBe(1);
+  expect(await page.evaluate(() => app.state.placeholderId)).not.toBeNull();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('cj.ofertas2')))).toBeNull(); // a first visit on reload
+  expect(await page.evaluate(() => window.fake.data.offers.map((o) => o.id))).toEqual(inAccount); // nothing deleted
+});
+
 test('signed in: online on the button and in the section, and no tooltip', async ({ openApp }) => {
   const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
   await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');

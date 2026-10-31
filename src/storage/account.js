@@ -3,9 +3,9 @@
  * out, the page never touches the network and the bundle is not even loaded.
  */
 
-import { DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../offer.js';
+import { DEF_CFG, DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../offer.js';
 import { ingestSaved } from '../saved.js';
-import { onSave, saveConfig, saveOffers, state, store } from '../state.js';
+import { KEY, onSave, saveConfig, saveOffers, state, store } from '../state.js';
 import { ACCOUNT_CONFIG } from './account-config.js';
 
 /** Where supabase-js keeps its session in localStorage; known, so a saved session is found without loading it. */
@@ -180,6 +180,24 @@ export function createAccount({
     replaceWith({ offers: [...account.offers, ...extras], cfg: account.cfg });
   }
 
+  /**
+   * Signed out, the browser starts like a first visit: the next user must not inherit (and upload) these offers.
+   * Not persisted through `persist`, whose placeholder would be saved as a real offer.
+   */
+  function forgetBrowserCopy() {
+    const placeholder = makeOffer();
+    Object.assign(state, {
+      offers: [placeholder],
+      activeId: placeholder.id,
+      placeholderId: placeholder.id,
+      firstRun: true,
+      config: { ...DEF_CFG },
+    });
+    onReplaced();
+    // After onReplaced: showing the placeholder saves it, and a saved one is no longer a first visit.
+    for (const key of [KEY.offers, KEY.active, KEY.cfg]) store.set(key, null);
+  }
+
   function stop() {
     syncing = false;
     clearTimeout(timer);
@@ -223,6 +241,7 @@ export function createAccount({
       stop();
       user = null;
       unwrap(await client.auth.signOut());
+      forgetBrowserCopy();
     },
 
     /**

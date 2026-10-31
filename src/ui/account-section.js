@@ -152,10 +152,16 @@ function onGoogleToken(token, nonce) {
   });
 }
 
-/** Signing out or deleting the account: no tooltip on any tab for this visit. */
-function signedOut() {
+/**
+ * Signing out or deleting the account: no tooltip on any tab for this visit. `keptInAccount`: the offers were cleared
+ * from the browser but remain in the account, which the welcome says.
+ */
+function signedOut({ keptInAccount = false } = {}) {
   forgetGoogleChoice();
   view.tipDismissed = true;
+  $('#signedOutNotice').hidden = !keptInAccount;
+  view.message = keptInAccount ? $('#signedOutNotice').textContent : '';
+  view.messageOk = keptInAccount;
   Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
 }
 
@@ -203,6 +209,7 @@ async function run(failure, call, line = 'message') {
 
 /** Takes a connected account: the signed-in user, the offers waiting for a decision, and the profile. */
 async function enter(started) {
+  $('#signedOutNotice').hidden = true;
   account = started.account;
   view.user = started.user;
   view.pending = started.pending;
@@ -308,7 +315,7 @@ export const accountActions = {
   accountSignOut: () =>
     run('No se pudo salir. Inténtalo de nuevo.', async () => {
       await account.signOut();
-      signedOut();
+      signedOut({ keptInAccount: true });
     }),
 
   uploadPending: () =>

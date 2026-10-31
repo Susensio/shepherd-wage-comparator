@@ -497,6 +497,50 @@ describe('saving changes', () => {
   });
 });
 
+describe('signing out', () => {
+  test('clears the browser copy and starts like a first visit, writing nothing to the account', async () => {
+    const { account, state, store, calls, replaced } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    store.set('cj.ofertas2', 'x');
+    state.config.inKind = false;
+    calls.length = 0;
+    await account.signOut();
+    assert.equal(state.offers.length, 1);
+    assert.equal(state.placeholderId, state.offers[0].id);
+    assert.equal(state.firstRun, true);
+    assert.equal(state.config.inKind, DEF_CFG.inKind);
+    assert.equal(store.get('cj.ofertas2'), null);
+    assert.equal(store.get('cj.accountUser'), null);
+    assert.equal(replaced.length, 2); // connect, then the sign-out
+    account.changed();
+    await account.flush();
+    assert.deepEqual(calls, []);
+  });
+
+  test("the next user does not receive the first one's offers", async () => {
+    const first = setUp({ tables: accountTables(accountRow(1)) });
+    await first.account.connect();
+    first.state.offers.push({ ...makeOffer(), id: id(5) }); // not yet in the account
+    await first.account.signOut();
+    assert.ok(!ids(first.state).includes(id(5)));
+    const second = fakeClient({ session: { user: { id: OTHER } } });
+    const account = createAccount({
+      client: second.client,
+      state: first.state,
+      store: first.store,
+      persist: () => {},
+      debounceMs: 5,
+    });
+    const result = await account.connect();
+    assert.deepEqual(result.pending, []);
+    assert.deepEqual(
+      second.calls.filter((c) => c.op !== 'select'),
+      [],
+    );
+    assert.deepEqual(second.data.offers, []);
+  });
+});
+
 describe('other users and the profile', () => {
   const tables = () => ({
     ...accountTables(accountRow(1)),
