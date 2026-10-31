@@ -203,7 +203,7 @@ test.describe('the read-only view', () => {
   test('signing out forgets them', async ({ openApp }) => {
     const page = await openCompare(openApp);
     await include(page);
-    await page.evaluate(() => app.showTab('settings'));
+    await page.evaluate(() => app.openAccountPage());
     await page.getByRole('button', { name: 'Salir' }).click();
     await page.evaluate(() => app.showTab('compare'));
     await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);

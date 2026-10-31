@@ -101,7 +101,7 @@ test('Comparar can show the terms alone, without your travel and expenses', asyn
 
 test('settings apply to every offer', async ({ page }) => {
   await page.locator('.tcard').first().click();
-  await page.click('.tabs [data-tab=settings]');
+  await page.click('#accountButton');
   await page.fill('#cfg_overnight', '30');
   expect(await page.evaluate(() => app.state.config.overnightPct)).toBe(30);
 });

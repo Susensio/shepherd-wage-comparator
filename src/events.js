@@ -3,10 +3,12 @@
 import {
   animateNextPaint,
   chipEdges,
+  closeAccountPage,
   closeTemplates,
   commit,
   done,
   fillVacation,
+  openAccountPage,
   openFirstSections,
   openTemplates,
   paintAll,
@@ -177,6 +179,9 @@ let deleteButton;
 /** Everything done with a button: the button says what with data-action, and data-id if it is about an offer. */
 const ACTIONS = {
   tab: (b) => showTab(b.dataset.tab, true),
+  openAccountPage: () => openAccountPage(),
+  openAccountFromPrompt: () => openAccountPage(true),
+  closeAccountPage,
 
   /* Comparar */
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out

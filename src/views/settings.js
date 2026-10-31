@@ -1,4 +1,4 @@
-/** The Ajustes (or Cuenta) tab: the account, «Tus datos», the calculation assumptions and the backup. */
+/** The account page (Ajustes without a project): the account, «Tus datos», the calculation assumptions and the backup. */
 
 import { fInputValue, num } from '../format.js';
 import { DEF_CFG, isComplete } from '../offer.js';
@@ -25,10 +25,10 @@ export function fillSettings(skip) {
     input.checked = (input.value === '1') === (cfg.unemployment !== false);
 }
 
-/** The backup reminder above the offers, and the backup status in Ajustes. */
+/** The backup reminder above the offers, and the backup status on the account page. */
 export function paintBackup() {
   const status = backupStatus(myOffers().some((o) => isComplete(o.terms)));
-  // With accounts, the sign-in card says it instead, and an account keeps the offers anyway
+  // With accounts, the offers are kept in the account instead
   $('#backupNotice').hidden = !status.remind || !!(ACCOUNT_CONFIG.url && ACCOUNT_CONFIG.anonKey);
   const { last, days } = status;
   $('#backupStatus').textContent = !last
@@ -40,12 +40,11 @@ export function paintBackup() {
  * @typedef {{
  *   user: any, profile: any, pending: any[], message: string, confirm: 'share' | 'delete' | null,
  *   enabled: boolean, started: boolean, sync: 'saved' | 'saving' | 'error', offline: boolean,
- *   pitchDismissed: boolean,
  * }} AccountView
  */
 
-/** Where the account stands, as the dot on its tab shows it. */
-function accountStatus(/** @type {AccountView} */ view) {
+/** Where the account stands, as the dot on its button shows it. */
+export function accountStatus(/** @type {AccountView} */ view) {
   if (!view.enabled) return 'off';
   if (!view.started) return 'connecting';
   if (!view.user) return 'guest';
@@ -66,29 +65,41 @@ const STATUS_TEXT = {
   online: 'Conectado: tus ofertas y ajustes se guardan en tu cuenta.',
 };
 
+/** Up to two capitals: the first letters of the first two words of the name, or of the email's name part. */
+const initialsOf = (/** @type {string} */ text) =>
+  text
+    .split('@')[0]
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+
 /**
- * The account's status on its tab, and where the sign-in shows for a guest: on the welcome, and under the tabs on
- * every tab but Cuenta, as the card or, after «Ahora no», a line. Returns which sign-ins are on screen.
+ * The account button (a cog without a project, a person for a guest, the initials once signed in) with its status dot,
+ * and what depends on the account being there or not. Returns the status.
  * @param {AccountView} view
  */
-export function paintAccountPrompts(view) {
+export function paintAccountButton(view) {
   const status = accountStatus(view);
-  const tab = $('#settingsTab');
-  tab.dataset.status = status;
-  tab.title = STATUS_TEXT[status];
+  const button = $('#accountButton');
+  const who = view.user && (view.profile?.name || view.user.user_metadata?.name || view.user.email);
+  button.dataset.status = status;
+  button.dataset.kind = status === 'off' ? 'cog' : who ? 'initials' : 'person';
+  $('#accountButton .initials').textContent = who ? initialsOf(who) : '';
+  if (status !== 'off') {
+    const label = `Cuenta. ${STATUS_TEXT[status]}`;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  }
   const guest = status === 'guest';
-  const welcome = guest && !!state.placeholderId;
-  const prompt = (guest || status === 'pending') && !state.placeholderId && $('[data-panel=settings]').hidden;
-  const card = prompt && guest && !view.pitchDismissed;
-  $('#welcomeAccount').hidden = !welcome;
-  $('#accountPrompt').hidden = !prompt;
-  $('#signInCard').hidden = !card;
-  $('#accountGuestStrip').hidden = !(prompt && guest && view.pitchDismissed);
-  $('#accountPendingStrip').hidden = status !== 'pending';
+  $('#guestNote').hidden = !guest;
+  $('#accountTitle').hidden = !guest;
+  $('#pageTitle').textContent = status === 'off' ? 'Ajustes' : 'Cuenta';
   const sync = $('#accountSync');
   sync.textContent = view.user && !view.pending.length ? STATUS_TEXT[status] : '';
   sync.dataset.status = status;
-  return { card, welcome };
+  return status;
 }
 
 /** The profile whose fields are in the inputs: they are filled when it changes, so typing is not overwritten. */

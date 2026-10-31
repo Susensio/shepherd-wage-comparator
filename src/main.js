@@ -2,10 +2,12 @@
 
 import {
   closeTemplates,
+  openAccountPage,
   openTemplates,
   paintAll,
   paintCompare,
   restoreStaticFolds,
+  returnAfterSignIn,
   scrollChipsNextPaint,
   select,
   showTab,
@@ -37,6 +39,7 @@ if (state.firstRun) openTemplates();
 // Hidden, and no request, while storage/account-config.js has no project.
 setUpAccountSection({
   onOthers: paintCompare,
+  onSignedIn: returnAfterSignIn,
   onReplaced() {
     // An empty account starts like a first visit, with the templates
     if (state.placeholderId) openTemplates();
@@ -49,4 +52,4 @@ setUpAccountSection({
 }).catch(console.error);
 
 /** For tests and the console: the state and a few ways in. Not used by the page. */
-window.app = { state, active, calcOffer, select, showTab, closeTemplates, cardText, claimText };
+window.app = { state, active, calcOffer, select, showTab, openAccountPage, closeTemplates, cardText, claimText };

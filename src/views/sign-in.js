@@ -1,4 +1,4 @@
-/** The ways in (ADR-0009): Google's button, or a code sent by email. Shown on the sign-in card, the welcome and the Cuenta tab. */
+/** The ways in (ADR-0009): Google's button, or a code sent by email. Shown on the account page. */
 
 import { html, nothing } from 'lit-html';
 
@@ -43,12 +43,3 @@ export const signInView = (signIn, withEmail) =>
     ${google(signIn)} ${withEmail ? email(signIn) : nothing}
     ${signIn.message ? html`<p class="hint account-msg" role="status">${signIn.message}</p>` : nothing}
   </div>`;
-
-/** The card under the tabs while signed out; «Ahora no» shrinks it to a line for the rest of the visit (ADR-0010). */
-export const signInCardView = (signIn, withEmail) =>
-  html`<h2>Guarda tus ofertas en una cuenta</h2>
-    <p>Sin cuenta, tus ofertas solo están en este navegador, que puede borrarlas. Con una cuenta se guardan en ella y las ves
-      desde cualquier dispositivo. Si quieres, también puedes comparar tus ofertas con las de otros pastores, compartiendo
-      las tuyas.</p>
-    ${signInView(signIn, withEmail)}
-    <div class="actions"><button type="button" class="sm" data-action="skipSignIn">Ahora no</button></div>`;

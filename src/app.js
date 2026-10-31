@@ -1,6 +1,6 @@
 /**
  * The controller: paints every view from the state, and the things the page does that more than one event needs
- * (choosing an offer, the templates panel, «Hecho», the tabs).
+ * (choosing an offer, the templates panel, «Hecho», the tabs, the account page).
  */
 
 import { render } from 'lit-html';
@@ -28,6 +28,8 @@ const ui = {
   scrollChips: false,
   /** The offer where you pressed «Hecho» with data missing: the missing fields are marked until you fill them in. */
   askedToSee: /** @type {string | null} */ (null),
+  /** The account page was opened from the tooltip: leave it once signed in. */
+  leaveAfterSignIn: false,
 };
 
 export const animateNextPaint = () => {
@@ -243,18 +245,21 @@ export function done(fromTop) {
 
 /* --- Tabs --- */
 
-const TABS = ['offers', 'compare', 'laws', 'settings'];
+const TABS = ['offers', 'compare', 'laws'];
+
+/** Hides every panel but `shown`; the account page is the `settings` panel, reached from the account button only. */
+function showPanel(shown) {
+  for (const t of [...TABS, 'settings']) $(`[data-panel=${t}]`).hidden = t !== shown;
+  document.body.classList.toggle('on-page', shown === 'settings');
+}
 
 /** Shows a tab. With `scrollUp`, if the page is further down, it goes back up to the tabs. */
 export function showTab(tab, scrollUp) {
-  const shown = TABS.includes(tab) ? tab : 'offers';
-  for (const t of TABS) {
-    $(`[data-panel=${t}]`).hidden = t !== shown;
-    $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
-  }
+  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the account page opens Ofertas
+  showPanel(shown);
+  for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   saveTab(shown);
   paintAccountStatus();
-  if (shown === 'settings') paintBackup();
   if (shown === 'compare') {
     paintTimeline(); // the trend fits the width, which is only known once shown
     if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
@@ -265,6 +270,28 @@ export function showTab(tab, scrollUp) {
   }
   const tabs = $('.tabs');
   if (scrollUp && tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: tabs.offsetTop });
+}
+
+/**
+ * Opens the account page (the settings alone without a project) over the tab shown, which stays selected so «Volver»
+ * knows where to go. `fromPrompt`: opened from the tooltip, so signing in sends the reader back at once; from the
+ * button, the page stays, since whoever went there may want the profile or sharing next.
+ */
+export function openAccountPage(fromPrompt = false) {
+  ui.leaveAfterSignIn = fromPrompt;
+  showPanel('settings');
+  paintBackup();
+  paintAccountStatus({ chooser: fromPrompt });
+  window.scrollTo({ top: 0 });
+}
+
+/** «Volver»: the tab the page was opened from. */
+export const closeAccountPage = () => showTab(/** @type {string} */ ($('.tabs [aria-selected=true]').dataset.tab));
+
+/** A sign-in completed: if it began at the tooltip, back to where it began. */
+export function returnAfterSignIn() {
+  if (ui.leaveAfterSignIn && !$('[data-panel=settings]').hidden) closeAccountPage();
+  ui.leaveAfterSignIn = false;
 }
 
 /** Opens the named collapsibles of the static page as you left them. */

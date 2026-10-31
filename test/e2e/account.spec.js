@@ -1,5 +1,5 @@
-// The account, against a fake supabase-js client: no real project is needed. The «Cuenta» tab (Ajustes without a
-// project), the status on it, and the sign-in on the welcome and under the tabs (ADR-0009, ADR-0010).
+// The account, against a fake supabase-js client: no real project is needed. The account button (a cog without a
+// project) with its status, the page it opens, and the tooltip that leads to it (ADR-0009, ADR-0011).
 //
 // The fake client and its seam are in fake-account.js.
 
@@ -11,14 +11,14 @@ const ME = '00000000-0000-0000-0000-00000000000a';
 const ACCOUNT_OFFER = '10000000-0000-0000-0000-000000000001';
 const PROFILE = { user_id: ME, name: 'Ana Pastora', email: 'ana@example.com', phone: null, sharing: false };
 
-/** The page on the Cuenta tab, with the fake account. */
+/** The page on the account page, with the fake account. */
 async function openAccount(openApp, options = {}) {
   const arg = {
     tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] },
     ...options,
   };
   const page = await openApp({ init: installFake, arg, beforeLoad: withProject });
-  await page.evaluate(() => app.showTab('settings'));
+  await page.evaluate(() => app.openAccountPage());
   return page;
 }
 
@@ -27,31 +27,105 @@ const accountRows = () => ({
   offer_mine: [{ offer_id: ACCOUNT_OFFER, mine: { name: 'De la cuenta' }, cmp: true }],
 });
 
-test('with no project configured the section is hidden', async ({ openApp }) => {
+test('with no project configured: a cog opens the settings alone, and nothing asks to sign in', async ({ openApp }) => {
   const page = await openApp({ beforeLoad: withoutProject });
-  await page.evaluate(() => app.showTab('settings'));
+  const button = page.locator('#accountButton');
+  await expect(button).toHaveAttribute('aria-label', 'Ajustes');
+  await expect(button.locator('.ic-cog')).toBeVisible();
+  await expect(button.locator('.status-dot')).toBeHidden();
+  await expect(page.locator('#accountTip .tip')).toHaveCount(0);
+  await button.click();
+  await expect(page.locator('#pageTitle')).toHaveText('Ajustes');
+  await expect(page.locator('#yourdata')).toBeVisible();
   await expect(page.locator('#account')).toBeHidden();
-  await expect(page.locator('#settingsTab')).toHaveText('Ajustes');
-  await expect(page.locator('#settingsTab .status-dot')).toBeHidden();
-  await expect(page.locator('#accountPrompt')).toBeHidden();
-  await expect(page.locator('#welcomeAccount')).toBeHidden();
+  await expect(page.locator('#guestNote')).toBeHidden();
 });
 
-test('signed out: what an account gives, and Google through the redirect when its script does not load', async ({
+test('signed out: the page lists how to sign in, with Google through the redirect when its script does not load', async ({
   openApp,
 }) => {
   const page = await openAccount(openApp, { signedOut: true });
+  await expect(page.locator('#pageTitle')).toHaveText('Cuenta');
   await expect(page.locator('#account')).toBeVisible();
+  await expect(page.locator('#accountTitle')).toHaveText('Entrar');
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
   await expect(page.locator('#accountOut')).toContainText('compartiendo las tuyas');
+  await expect(page.locator('#guestNote')).toHaveText('Sin cuenta, se guardan solo en este navegador.');
   await expect(page.locator('#accountIn')).toBeHidden();
   await page.locator('#accountOut').getByRole('button', { name: 'Continuar con Google' }).click();
   await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
 });
 
-test.describe('the sign-in card', () => {
+test.describe('the account button', () => {
+  const open = (openApp, options = {}) =>
+    openApp({
+      init: installFake,
+      arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() }, ...options },
+      beforeLoad: withProject,
+    });
+  const button = (page) => page.locator('#accountButton');
+
+  test('a guest has a person and an amber dot', async ({ openApp }) => {
+    const page = await open(openApp, { signedOut: true });
+    await expect(button(page)).toHaveAttribute('data-status', 'guest');
+    await expect(button(page).locator('.ic-person')).toBeVisible();
+    await expect(button(page).locator('.status-dot')).toBeVisible();
+    await expect(button(page)).toHaveAttribute('aria-label', /Sin cuenta/);
+  });
+
+  test('signed in: the initials, and the status in words', async ({ openApp }) => {
+    const page = await open(openApp);
+    await expect(button(page).locator('.initials')).toHaveText('AP');
+    await expect(button(page)).toHaveAttribute('data-status', 'online');
+    await expect(button(page)).toHaveAttribute('aria-label', /Conectado/);
+    await page.context().setOffline(true);
+    await page.evaluate(() => dispatchEvent(new Event('offline')));
+    await expect(button(page)).toHaveAttribute('data-status', 'offline');
+    await expect(button(page)).toHaveAttribute('aria-label', /Sin conexión/);
+    await page.context().setOffline(false);
+    await page.evaluate(() => dispatchEvent(new Event('online')));
+    await expect(button(page)).toHaveAttribute('data-status', 'online');
+  });
+
+  test('the initials come from the email when there is no name', async ({ openApp }) => {
+    const page = await open(openApp, { tables: { profiles: [{ ...PROFILE, name: null }], ...accountRows() } });
+    await expect(button(page).locator('.initials')).toHaveText('A');
+  });
+
+  test('a failed first upload is amber, in words', async ({ openApp }) => {
+    const page = await open(openApp, { failUpload: true });
+    await expect(button(page)).toHaveAttribute('data-status', 'pending');
+    await expect(button(page)).toHaveAttribute('aria-label', /No se pudieron subir/);
+  });
+
+  test('it opens the page, and «Volver» returns to the tab it came from', async ({ openApp }) => {
+    const page = await open(openApp);
+    await page.locator('.tabs [data-tab=laws]').click();
+    await button(page).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('.tabs')).toBeHidden();
+    await expect(page.locator('[data-panel=laws]')).toBeHidden();
+    await page.getByRole('button', { name: '← Volver' }).click();
+    await expect(page.locator('[data-panel=laws]')).toBeVisible();
+    await expect(page.locator('.tabs')).toBeVisible();
+    await expect(page.locator('[data-panel=settings]')).toBeHidden();
+  });
+
+  test('the top bar is on the welcome too, and a stored «settings» tab opens Ofertas', async ({ openApp }) => {
+    const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
+    await expect(page.locator('#welcome')).toBeVisible();
+    await expect(page.locator('.topbar .kicker')).toBeVisible();
+    await expect(button(page)).toBeVisible();
+    await page.evaluate(() => localStorage.setItem('cj.tab', 'settings'));
+    await page.reload();
+    await page.waitForFunction(() => window.app);
+    await expect(page.locator('.tabs [data-tab=offers]')).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test.describe('the tooltip', () => {
   /** The page on Ofertas, signed out, with offers in the browser (a first visit has the welcome instead). */
-  const openCard = (openApp, options = {}) =>
+  const openGuest = (openApp, options = {}) =>
     openApp({
       init: installFake,
       arg: {
@@ -62,22 +136,56 @@ test.describe('the sign-in card', () => {
       },
       beforeLoad: withProject,
     });
+  const tip = (page) => page.locator('#accountTip .tip');
 
-  test('the tab is Cuenta, with the guest status', async ({ openApp }) => {
-    const page = await openCard(openApp);
-    await expect(page.locator('#settingsTab')).toHaveText('Cuenta');
-    await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'guest');
-    await expect(page.locator('#settingsTab .status-dot')).toBeVisible();
+  test('shows on Ofertas, not on Comparar, Leyes or the page', async ({ openApp }) => {
+    const page = await openGuest(openApp);
+    await expect(tip(page)).toContainText('Guarda tus ofertas en tu cuenta. Ahora solo están en este navegador.');
+    await page.locator('.tabs [data-tab=compare]').click();
+    await expect(tip(page)).toHaveCount(0);
+    await page.locator('.tabs [data-tab=laws]').click();
+    await expect(tip(page)).toHaveCount(0);
+    await page.locator('.tabs [data-tab=offers]').click();
+    await expect(tip(page)).toBeVisible();
+    await page.locator('#accountButton').click();
+    await expect(tip(page)).toHaveCount(0);
   });
 
-  test("heads the page, with Google's button and its account chooser", async ({ openApp }) => {
-    const page = await openCard(openApp, { google: true });
-    const card = page.locator('#signInCard');
-    await expect(card).toBeVisible();
-    await expect(card).toContainText('desde cualquier dispositivo');
+  test('shows on the welcome', async ({ openApp }) => {
+    const page = await openGuest(openApp, { localOffers: undefined });
+    await expect(page.locator('#welcome')).toBeVisible();
+    await expect(tip(page)).toBeVisible();
+    await expect(page.locator('#accountButton')).toBeVisible();
+  });
+
+  test('«Ahora no» hides it for the visit; it is back after a reload', async ({ openApp }) => {
+    const page = await openGuest(openApp);
+    await tip(page).getByRole('button', { name: 'Ahora no' }).click();
+    await expect(tip(page)).toHaveCount(0);
+    await page.locator('.tabs [data-tab=compare]').click();
+    await page.locator('.tabs [data-tab=offers]').click();
+    await expect(tip(page)).toHaveCount(0);
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'guest');
+    await page.reload();
+    await page.waitForFunction(() => window.app);
+    await expect(tip(page)).toBeVisible();
+  });
+
+  test('«Entrar» opens the page, with its sign-in', async ({ openApp }) => {
+    const page = await openGuest(openApp);
+    await tip(page).getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await expect(page.locator('#accountOut')).toBeVisible();
+  });
+
+  test("signing in from it returns to the tab, after Google's account chooser", async ({ openApp }) => {
+    const page = await openGuest(openApp, { google: true });
+    await page.locator('.tabs [data-tab=offers]').click();
+    await tip(page).getByRole('button', { name: 'Entrar' }).click();
     await expect.poll(() => page.evaluate(() => window.fake.google.prompts)).toBe(1);
-    await card.getByRole('button', { name: 'Google (falso)' }).click();
-    await expect(card).toBeHidden();
+    await page.locator('#accountSignIn').getByRole('button', { name: 'Google (falso)' }).click();
+    await expect(page.locator('[data-panel=offers]')).toBeVisible();
+    await expect(page.locator('#accountButton .initials')).toHaveText('AP');
     const { idToken, google } = await page.evaluate(() => window.fake);
     expect(idToken.token).toBe('google-jwt');
     const hashed = await page.evaluate(async (raw) => {
@@ -85,62 +193,38 @@ test.describe('the sign-in card', () => {
       return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
     }, idToken.nonce);
     expect(hashed).toBe(google.nonce);
-    await page.evaluate(() => app.showTab('settings'));
+    await expect(tip(page)).toHaveCount(0);
+  });
+
+  test('signing in from the button stays on the page', async ({ openApp }) => {
+    const page = await openGuest(openApp, { google: true });
+    await page.locator('#accountButton').click();
+    await page.locator('#accountSignIn').getByRole('button', { name: 'Google (falso)' }).click();
     await expect(page.locator('#accountWho')).toContainText('Ana Pastora');
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
   });
 
   test('signs in with a code sent by email', async ({ openApp }) => {
-    const page = await openCard(openApp);
-    const card = page.locator('#signInCard');
-    await card.getByLabel('Tu correo').fill('ana@example.com');
-    await card.getByRole('button', { name: 'Enviarme un código' }).click();
-    await expect(card).toContainText('Se ha enviado un código a ana@example.com');
+    const page = await openGuest(openApp);
+    await page.locator('#accountButton').click();
+    const form = page.locator('#accountSignIn');
+    await form.getByLabel('Tu correo').fill('ana@example.com');
+    await form.getByRole('button', { name: 'Enviarme un código' }).click();
+    await expect(form).toContainText('Se ha enviado un código a ana@example.com');
     expect(await page.evaluate(() => window.fake.otp.email)).toBe('ana@example.com');
 
-    await card.getByLabel('Código').fill('999999');
-    await card.getByRole('button', { name: 'Entrar' }).click();
-    await expect(card).toContainText('El código no vale');
+    await form.getByLabel('Código').fill('999999');
+    await form.getByRole('button', { name: 'Entrar' }).click();
+    await expect(form).toContainText('El código no vale');
 
-    await card.getByLabel('Código').fill('123456');
-    await card.getByLabel('Código').press('Enter');
-    await expect(card).toBeHidden();
+    await form.getByLabel('Código').fill('123456');
+    await form.getByLabel('Código').press('Enter');
+    await expect(page.locator('#accountWho')).toBeVisible();
   });
 
-  test('«Ahora no» shrinks it to a line on every tab, and the card is back on the next visit', async ({ openApp }) => {
-    const page = await openCard(openApp);
-    await page.getByRole('button', { name: 'Ahora no' }).click();
-    await expect(page.locator('#signInCard')).toBeHidden();
-    await expect(page.locator('#accountGuestStrip')).toBeVisible();
-    await page.locator('.tabs [data-tab=compare]').click();
-    await expect(page.locator('#accountGuestStrip')).toBeVisible();
-    await page.locator('#accountGuestStrip').getByRole('button', { name: 'Entrar' }).click();
-    await expect(page.locator('#signInCard')).toBeVisible();
-    await page.getByRole('button', { name: 'Ahora no' }).click();
-    await page.reload();
-    await page.waitForFunction(() => window.app);
-    await expect(page.locator('#signInCard')).toBeVisible();
-  });
-
-  test('not on the Cuenta tab, which has its own sign-in', async ({ openApp }) => {
-    const page = await openCard(openApp);
-    await page.locator('.tabs [data-tab=settings]').click();
-    await expect(page.locator('#accountPrompt')).toBeHidden();
-    await expect(page.locator('#accountOut')).toBeVisible();
-  });
-
-  test('the backup reminder gives way to it', async ({ openApp }) => {
-    const page = await openCard(openApp);
-    await expect(page.locator('#signInCard')).toBeVisible();
+  test('the backup reminder gives way to the account', async ({ openApp }) => {
+    const page = await openGuest(openApp);
     await expect(page.locator('#backupNotice')).toBeHidden();
-  });
-
-  test('a first visit has it on the welcome, above the templates', async ({ openApp }) => {
-    const page = await openCard(openApp, { localOffers: undefined });
-    await expect(page.locator('#welcomeAccount')).toBeVisible();
-    await expect(page.locator('#tplGrid button').first()).toBeVisible();
-    await expect(page.locator('#accountPrompt')).toBeHidden();
-    await page.locator('#welcomeAccount').getByRole('button', { name: 'Continuar con Google' }).click();
-    await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
   });
 });
 
@@ -187,15 +271,17 @@ test('signed in: who, and signing out', async ({ openApp }) => {
   await expect(page.locator('#accountIn')).toBeHidden();
   expect(await page.evaluate(() => window.fake.signedOut)).toBe(true);
   await page.evaluate(() => app.showTab('offers'));
-  await expect(page.locator('#signInCard')).toBeHidden();
+  await expect(page.locator('#accountTip .tip')).toHaveCount(0); // signing out is not asked about again this visit
 });
 
-test('signed in: online on the tab and in the section, and no prompt', async ({ openApp }) => {
+test('signed in: online on the button and in the section, and no tooltip', async ({ openApp }) => {
   const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
-  await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'online');
+  await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
   await expect(page.locator('#accountSync')).toContainText('se guardan en tu cuenta');
+  await expect(page.locator('#accountTitle')).toBeHidden();
+  await expect(page.locator('#guestNote')).toBeHidden();
   await page.evaluate(() => app.showTab('offers'));
-  await expect(page.locator('#accountPrompt')).toBeHidden();
+  await expect(page.locator('#accountTip .tip')).toHaveCount(0);
 });
 
 test('an empty account opens the templates, like a first visit', async ({ openApp }) => {
@@ -205,18 +291,23 @@ test('an empty account opens the templates, like a first visit', async ({ openAp
     beforeLoad: withProject,
   });
   await expect(page.locator('#welcome')).toBeVisible();
-  await expect(page.locator('#welcomeAccount')).toBeHidden();
   await expect(page.locator('#tplGrid button').first()).toBeVisible();
 });
 
-test('a failed first upload: a line under the tabs that leads to it', async ({ openApp }) => {
+test('a failed first upload: a tooltip on Ofertas that leads to it, and cannot be sent away', async ({ openApp }) => {
   const page = await openApp({
     init: installFake,
     arg: { tables: { profiles: [{ ...PROFILE }], ...accountRows() }, localOffers: sample.offers, failUpload: true },
     beforeLoad: withProject,
   });
-  await expect(page.locator('#settingsTab')).toHaveAttribute('data-status', 'pending');
-  await page.locator('#accountPendingStrip').getByRole('button', { name: 'Revisar' }).click();
+  const tip = page.locator('#accountTip .tip');
+  await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'pending');
+  await expect(tip).toContainText('No se pudieron subir tus ofertas a la cuenta.');
+  await expect(tip.getByRole('button', { name: 'Ahora no' })).toHaveCount(0);
+  await page.locator('.tabs [data-tab=compare]').click();
+  await expect(tip).toHaveCount(0);
+  await page.locator('.tabs [data-tab=offers]').click();
+  await tip.getByRole('button', { name: 'Revisar' }).click();
   await expect(page.locator('#accountPending')).toBeVisible();
 });
 

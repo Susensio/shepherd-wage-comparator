@@ -258,7 +258,6 @@ header {
   filter: drop-shadow(0 0 1.2px rgba(229, 236, 228, 0.55));
 }
 header h1,
-header .kicker,
 #intro {
   padding-right: 88px;
 }
@@ -1005,7 +1004,7 @@ details.plg > summary:has(.stat)::after {
   border-style: dashed;
 }
 /* While picking a template only the templates and the backup are shown (to restore your offers in another browser) */
-body.choosing :is(#main, #results, #backupNotice, .tabs, #accountPrompt) {
+body.choosing :is(#main, #results, #backupNotice, .tabs) {
   display: none !important;
 }
 
@@ -1394,18 +1393,63 @@ section.blk {
   color: var(--bg);
 }
 
-/* The account's status, as a dot on its tab (ADR-0010). No dot without accounts. */
+/* The top bar: the kicker, and the account button with its status dot (ADR-0011) */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -8px;
+}
+.topbar .kicker {
+  margin: 0;
+}
+.acct {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  font-family: var(--f-display);
+  font-weight: 750;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+.acct svg {
+  width: 20px;
+  height: 20px;
+}
+.acct[data-kind="initials"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.acct[data-kind="cog"] > :is(.ic-person, .initials),
+.acct[data-kind="person"] > :is(.ic-cog, .initials),
+.acct[data-kind="initials"] > :is(.ic-cog, .ic-person) {
+  display: none;
+}
+/* The account's status, as a dot on the button; none without accounts */
 .status-dot {
   display: none;
   width: 8px;
   height: 8px;
-  margin-right: 5px;
   border-radius: 50%;
-  vertical-align: 1px;
   background: var(--status, var(--muted));
 }
-#settingsTab:not([data-status="off"]) .status-dot {
-  display: inline-block;
+.acct .status-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--bg);
+}
+.acct:not([data-status="off"]) .status-dot {
+  display: block;
 }
 [data-status="guest"],
 [data-status="pending"] {
@@ -1436,41 +1480,74 @@ section.blk {
   }
 }
 
-/* Under the tabs: the sign-in card pointing at Cuenta, or a line once dismissed */
-.account-prompt {
-  margin-top: -16px;
+/* The tooltip hanging from the account button: inverted colours, an arrow towards it */
+.tip-slot:empty {
+  display: none;
 }
-.account-prompt[hidden],
-.account-prompt [hidden] {
-  display: none !important;
+.tip-slot {
+  margin-bottom: -12px;
 }
-.account-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 12px;
-  border: 1px solid color-mix(in srgb, var(--c-cash) 40%, var(--surface));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--c-cash) 10%, var(--surface));
-  font-size: 13px;
-}
-.account-strip p {
-  flex: 1;
-}
-.account-strip button {
-  flex: none;
-}
-.welcome-account {
+.tip {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 4px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
+  max-width: 300px;
+  margin-left: auto;
+  padding: 10px 12px;
   border-radius: 12px;
-  background: var(--bg);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13.5px;
+  line-height: 1.35;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
-.welcome-account[hidden] {
+.tip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 13px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+.tip-actions {
+  display: flex;
+  gap: 8px;
+}
+.tip-actions button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.tip .go {
+  background: var(--tag);
+  color: var(--tag-ink);
+  border-color: var(--tag);
+}
+.tip .later {
+  background: transparent;
+  color: var(--bg);
+  border-color: color-mix(in srgb, var(--bg) 35%, transparent);
+}
+
+/* The account page replaces the tabs */
+body.on-page :is(.tabs, header) {
+  display: none;
+}
+.page-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+#accountTitle[hidden] {
+  display: none;
+}
+.guest-note {
+  font-weight: 600;
+}
+.guest-note[hidden] {
   display: none;
 }
 .account-sync {
@@ -1711,41 +1788,6 @@ details.fixed > summary::-webkit-details-marker {
   border-color: var(--accent);
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
-}
-.signin-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--surface));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  font-size: 14px;
-}
-.signin-card[hidden] {
-  display: none;
-}
-/* The arrow, over the middle of the fourth tab, Cuenta */
-.signin-card::before {
-  content: "";
-  position: absolute;
-  top: -7px;
-  right: calc(12.5% - 7px);
-  width: 12px;
-  height: 12px;
-  background: inherit;
-  border: inherit;
-  border-right: 0;
-  border-bottom: 0;
-  transform: rotate(45deg);
-}
-.signin-card h2 {
-  margin: 0;
-  font-size: 18px;
-}
-.signin-card p {
-  margin: 0;
 }
 .signin {
   display: flex;

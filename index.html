@@ -12,6 +12,17 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="topbar">
+    <p class="kicker">Para pastores y pastoras</p>
+    <button type="button" class="acct" id="accountButton" data-action="openAccountPage" data-kind="cog" data-status="off" aria-label="Ajustes" title="Ajustes">
+      <svg class="ic-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      <svg class="ic-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+      <span class="initials" aria-hidden="true"></span>
+      <span class="status-dot" aria-hidden="true"></span>
+    </button>
+  </div>
+  <div class="tip-slot" id="accountTip" aria-live="polite"></div>
+
   <header>
     <button type="button" class="sheep" data-action="beee" aria-label="Una oveja" title="Beee">
       <svg viewBox="0 0 64 48" aria-hidden="true">
@@ -22,7 +33,6 @@
       </svg>
       <span class="beee" aria-live="polite"></span>
     </button>
-    <p class="kicker">Para pastores y pastoras</p>
     <h1>Comparador de jornales</h1>
     <p id="intro">Apunta las ofertas de pastoreo tal como te las proponen y mira cuánto ganas de verdad y si es legal.</p>
   </header>
@@ -31,20 +41,7 @@
     <button type="button" role="tab" data-action="tab" data-tab="offers">Ofertas</button>
     <button type="button" role="tab" data-action="tab" data-tab="compare">Comparar</button>
     <button type="button" role="tab" data-action="tab" data-tab="laws">Leyes</button>
-    <button type="button" role="tab" data-action="tab" data-tab="settings" id="settingsTab"><span class="status-dot" aria-hidden="true"></span><span id="settingsTabLabel">Ajustes</span></button>
   </div>
-
-  <aside class="account-prompt" id="accountPrompt" aria-label="Cuenta" hidden>
-    <section class="signin-card" id="signInCard" aria-label="Entrar en tu cuenta" hidden></section>
-    <div class="account-strip" id="accountGuestStrip" hidden>
-      <p>Sin cuenta: tus ofertas solo están en este navegador.</p>
-      <button type="button" class="sm pri" data-action="expandSignIn">Entrar</button>
-    </div>
-    <div class="account-strip" id="accountPendingStrip" hidden>
-      <p>No se pudieron subir a tu cuenta las ofertas de este navegador.</p>
-      <button type="button" class="sm pri" data-action="tab" data-tab="settings">Revisar</button>
-    </div>
-  </aside>
 
   <div class="panel" data-panel="offers">
   <div class="backup-notice" id="backupNotice" hidden>
@@ -69,11 +66,6 @@
         <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
       </ul>
       <p class="hint">Tus ofertas son solo tuyas: nadie más las ve.</p>
-      <div class="welcome-account" id="welcomeAccount" hidden>
-        <p>Entra y tus ofertas se guardan en tu cuenta, para verlas en cualquier dispositivo.</p>
-        <div id="welcomeSignIn"></div>
-        <p class="hint">O empieza sin cuenta: elige abajo el tipo de trabajo. Se puede entrar más tarde, sin perder nada.</p>
-      </div>
     </div>
     <h2 id="tplTitle">¿Qué tipo de trabajo es?</h2>
     <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
@@ -397,8 +389,12 @@
   </div>
 
   <div class="panel" data-panel="settings" hidden>
+  <div class="page-head">
+    <button type="button" class="linkbtn" data-action="closeAccountPage">← Volver</button>
+    <h2 id="pageTitle">Ajustes</h2>
+  </div>
   <details id="account" class="sec fixed" open hidden>
-    <summary>Cuenta</summary>
+    <summary id="accountTitle" hidden>Entrar</summary>
     <p class="hint account-msg" id="accountMsg" role="status" aria-live="polite"></p>
 
     <div id="accountOut" class="account-body" hidden>
@@ -458,6 +454,7 @@
   </details>
   <details id="yourdata" class="sec fixed" open>
     <summary>Tus datos</summary>
+    <p class="hint guest-note" id="guestNote" hidden>Sin cuenta, se guardan solo en este navegador.</p>
     <p class="hint">Lo que no depende de la oferta sino de ti. Vale para todas las ofertas. Las cifras que ves son las de por defecto: cámbialas si las tuyas son otras.</p>
     <h4>Casa y comida</h4>
     <div class="assump">

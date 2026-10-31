@@ -1,7 +1,4 @@
-/**
- * The account (ADR-0006, ADR-0009, ADR-0010): the «Cuenta» section, the status on its tab, and the sign-in card under
- * the tabs and on the welcome.
- */
+/** The account (ADR-0006, ADR-0009, ADR-0011): the account page's section, the button's status, and the tooltip. */
 
 import { render } from 'lit-html';
 import { ingestShared } from '../saved.js';
@@ -9,8 +6,9 @@ import { state } from '../state.js';
 import { openAccount, startAccount } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in.js';
-import { paintAccount, paintAccountPrompts } from '../views/settings.js';
-import { signInCardView, signInView } from '../views/sign-in.js';
+import { GUEST_TIPS, tipView } from '../views/account-tip.js';
+import { paintAccount, paintAccountButton } from '../views/settings.js';
+import { signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
 
 /** @type {any} */
@@ -24,19 +22,21 @@ const view = {
   /** @type {'share' | 'delete' | null} */ confirm: null,
   /** Accounts are configured: without a project nothing of this shows. */
   enabled: false,
-  /** The saved session has been looked at: until then the sign-in card would only flash. */
+  /** The saved session has been looked at: until then the tooltip would only flash. */
   started: false,
   /** How the background saving goes. */
   /** @type {'saved' | 'saving' | 'error'} */ sync: 'saved',
   offline: false,
-  /** «Ahora no» on the card, or a sign-out: a line instead, for this visit only, so the card is back on the next. */
-  pitchDismissed: false,
+  /** Tabs whose tooltip was sent away with «Ahora no» or a sign-out: for this visit only, back on the next. */
+  dismissed: /** @type {Set<string>} */ (new Set()),
   /** @type {import('../views/sign-in.js').SignIn} */
   signIn: { stage: 'email', email: '', busy: false, googleFailed: false, message: '' },
 };
 
 /** Called when what other shepherds' offers show changes: availability, loading, result. */
 let onOthersChange = () => {};
+/** Called when a sign-in is complete. */
+let onSignedIn = () => {};
 
 /** Other shepherds' offers can be read only when signed in with sharing on (ADR-0006). */
 function syncAvailability() {
@@ -47,14 +47,31 @@ function syncAvailability() {
   onOthersChange();
 }
 
-/** The tab's status and the sign-in prompts, which also depend on the page: the welcome, the tab shown. */
-export function paintAccountStatus() {
+/** The tab shown, or the one the account page was opened from. */
+const currentTab = () => /** @type {HTMLElement} */ ($('.tabs [aria-selected=true]')).dataset.tab ?? 'offers';
+
+/**
+ * The button's status and the tooltip, which depend on the tab and on the page; Google's button where the page shows
+ * a sign-in. `chooser`: also open Google's account chooser.
+ */
+export function paintAccountStatus({ chooser = false } = {}) {
   if (!view.enabled) return;
-  const { card, welcome } = paintAccountPrompts(view);
-  const withEmail = !!ACCOUNT_CONFIG.emailSignIn;
-  render(card ? signInCardView(view.signIn, withEmail) : '', $('#signInCard'));
-  render(welcome ? signInView(view.signIn, withEmail) : '', $('#welcomeSignIn'));
-  showSignInButtons();
+  const status = paintAccountButton(view);
+  const tab = currentTab();
+  const onPage = !$('[data-panel=settings]').hidden;
+  /** @type {Parameters<typeof tipView>[0] | null} */
+  let tip = null;
+  if (!onPage && status === 'guest' && !view.dismissed.has(tab) && GUEST_TIPS[tab])
+    tip = { ...GUEST_TIPS[tab], go: 'Entrar', action: 'openAccountFromPrompt', dismissable: true };
+  else if (!onPage && status === 'pending' && tab === 'offers')
+    tip = {
+      title: 'No se pudieron subir tus ofertas a la cuenta.',
+      go: 'Revisar',
+      action: 'openAccountPage',
+      dismissable: false,
+    };
+  render(tip ? tipView(tip) : '', $('#accountTip'));
+  showSignInButtons({ chooser });
 }
 
 const paint = () => {
@@ -97,6 +114,7 @@ async function signInStep(failure, call) {
 /** Signed in by whatever way: read the account, upload this browser's offers, show who is in. */
 async function connect(opened) {
   await enter({ account: opened, ...(await opened.connect()) });
+  if (!view.pending.length) onSignedIn(); // offers waiting for a decision keep the page open
   view.signIn = { stage: 'email', email: '', busy: false, googleFailed: view.signIn.googleFailed, message: '' };
 }
 
@@ -108,10 +126,10 @@ function onGoogleToken(token, nonce) {
   });
 }
 
-/** Signing out or deleting the account: the line, not the card, until the next visit. */
+/** Signing out or deleting the account: no tooltip for this visit. */
 function signedOut() {
   forgetGoogleChoice();
-  view.pitchDismissed = true;
+  view.dismissed.add(currentTab());
   Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
 }
 
@@ -166,13 +184,13 @@ async function enter(started) {
 }
 
 /** Called once at startup. With no project configured the section stays hidden and nothing else happens. */
-export async function setUpAccountSection({ onReplaced, onOthers }) {
+export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: signedIn }) {
   onOthersChange = onOthers;
+  onSignedIn = signedIn;
   if (!ACCOUNT_CONFIG.url || !ACCOUNT_CONFIG.anonKey) return;
   view.enabled = true;
   view.offline = navigator.onLine === false;
   $('#account').hidden = false;
-  $('#settingsTabLabel').textContent = 'Cuenta';
   addEventListener('offline', () => {
     view.offline = true;
     paint();
@@ -198,7 +216,6 @@ export async function setUpAccountSection({ onReplaced, onOthers }) {
       view.started = true;
     }
   });
-  if (!view.user) showSignInButtons({ chooser: true });
 }
 
 /** For the buttons, by data-action. */
@@ -236,14 +253,9 @@ export const accountActions = {
     paint();
   },
 
-  skipSignIn() {
-    view.pitchDismissed = true;
-    paint();
-  },
-
-  expandSignIn() {
-    view.pitchDismissed = false;
-    paint();
+  dismissTip() {
+    view.dismissed.add(currentTab());
+    paintAccountStatus();
   },
 
   accountSignOut: () =>
