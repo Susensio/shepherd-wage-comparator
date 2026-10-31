@@ -6,6 +6,7 @@
    · Motion: --t (duration) and --ease; in JS, ANIM with the same values
    ========================================================================= */
 :root {
+  --tap: 40px; /* smallest height of what is tapped */
   --bg: #ecefe8;
   --surface: #f8faf5;
   --ink: #18231d;
@@ -599,6 +600,7 @@ button,
   font-weight: 600;
   border-radius: 8px;
   padding: 9px 14px;
+  min-height: var(--tap);
   cursor: pointer;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -614,6 +616,7 @@ button.sm,
   font-size: 12.5px;
   padding: 6px 10px;
 }
+
 button.danger {
   color: var(--neg);
 }
@@ -621,6 +624,7 @@ button.danger {
   border: 0;
   background: none;
   padding: 0;
+  min-height: 0; /* a link inside a sentence stays as tall as the text */
   color: var(--accent);
   text-decoration: underline;
   font-size: inherit;
@@ -653,6 +657,7 @@ button.danger {
 /* --- Collapsibles: a title with an arrow; the three classes only change the type --- */
 details > summary {
   list-style: none;
+  min-height: var(--tap);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -956,6 +961,8 @@ section.others p {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
+  min-height: var(--tap);
   max-width: 220px;
   text-align: left;
   padding: 7px 12px;
@@ -1447,6 +1454,7 @@ section.blk {
   flex: 1 1 0;
   min-width: 0;
   padding: 9px 0;
+  min-height: var(--tap);
   border-radius: 9px;
   border: 0;
   background: transparent;
@@ -1488,8 +1496,8 @@ section.blk {
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--tap);
+  height: var(--tap);
   padding: 0;
   border-radius: 50%;
   font-family: var(--f-display);
