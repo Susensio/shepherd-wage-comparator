@@ -69,6 +69,7 @@ test('their offers appear with the sharer, and terms-only is forced on', async (
 test('every row uses the terms-only figures', async ({ openApp }) => {
   const page = await openCompare(openApp);
   await include(page);
+  await page.click("#cmpView label:has-text('hora')");
   const rows = await page.evaluate(async () => {
     const { calcTermsOnly } = await import('./src/model/calc.js');
     const { fUnit, UNITS } = await import('./src/units.js');
@@ -227,7 +228,7 @@ test.describe('the «Otros pastores» section', () => {
       beforeLoad: withProject,
     });
     await page.evaluate(() => app.showTab('compare'));
-    await expect(section(page)).toContainText('Compara tus ofertas con las de otros pastores.');
+    await expect(section(page)).toContainText('¿Pagan mejor en otros sitios? Entra y compara tus ofertas');
     await expect(section(page).locator('.skel-row')).toHaveCount(3);
     await expect(section(page)).not.toContainText('Luis');
     await expect(section(page)).not.toContainText('€');
@@ -256,10 +257,10 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.locator('.lr.other')).toHaveCount(0);
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     for (const phrase of [
-      'Se ven las condiciones de todas tus ofertas',
-      'tu nombre, tu correo y tu teléfono',
-      'pastores que han entrado y comparten al menos una oferta',
-      'tus km, tus gastos, los nombres de tus ofertas ni tus ajustes',
+      '¿Pagan mejor en otros sitios?',
+      'se comparten las tuyas: sus condiciones, tu nombre, tu correo y tu teléfono',
+      'solo con quien también comparte',
+      'tus gastos, los nombres de tus ofertas ni tus ajustes',
       'dejas de ver las ofertas de otros pastores',
     ])
       await expect(section(page)).toContainText(phrase);
@@ -269,12 +270,17 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.getByLabel('Incluir ofertas de otros pastores')).toBeChecked();
   });
 
-  test('the account page shows the same text', async ({ openApp }) => {
+  test('Comparar states what is seen and by whom in one line; the account page has it in full', async ({ openApp }) => {
     const page = await openCompare(openApp, { sharing: false });
-    const text = await section(page).locator('.account-confirm p').allTextContents();
+    const visible = section(page).locator('.account-confirm > p').nth(1);
+    await expect(visible).toBeVisible();
+    await expect(visible).toContainText('tu nombre, tu correo y tu teléfono');
+    await expect(visible).toContainText('solo con quien también comparte');
+    await expect(section(page).locator('.share-more p')).toBeHidden();
     await page.evaluate(() => app.openAccountPage());
     await page.getByLabel('Compartir tus ofertas').click();
-    for (const paragraph of text.slice(2)) await expect(page.locator('#shareConfirm')).toContainText(paragraph);
+    await expect(page.locator('#shareConfirm')).toContainText('Las ven los pastores que han entrado y comparten');
+    await expect(page.locator('#shareConfirm')).toContainText('No se ven tus km');
   });
 
   test("accepting in Comparar closes the account page's own confirmation", async ({ openApp }) => {
@@ -307,10 +313,10 @@ test.describe('the «Otros pastores» section', () => {
     await section(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(section(page).getByRole('button', ask)).toHaveCount(1);
     await expect(section(page).getByRole('button', { name: 'Compartir y comparar' })).toBeVisible();
-    await expect(section(page)).not.toContainText('Para verlas, comparte las tuyas');
+    await expect(section(page)).not.toContainText('se comparten las tuyas');
     await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
-    await expect(section(page)).toContainText('Compara tus ofertas con las de otros pastores.');
-    await expect(section(page)).toContainText('Para verlas, comparte las tuyas.');
+    await expect(section(page)).toContainText('¿Pagan mejor en otros sitios?');
+    await expect(section(page)).toContainText('se comparten las tuyas');
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
   });
 

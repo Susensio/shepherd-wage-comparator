@@ -2,7 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 
-/** What sharing shows and to whom; the account page's confirmation and the Comparar consent both draw it. */
+/** What sharing shows and to whom, in full: the account page's confirmation and the fold under Comparar's consent. */
 export const shareTermsView = () => html`
   <p>Se ven las condiciones de todas tus ofertas, con tu nombre, tu correo y tu teléfono. Las ven los pastores que han entrado y comparten al menos una oferta.</p>
   <p>No se ven tus km, tus gastos, los nombres de tus ofertas ni tus ajustes.</p>
@@ -16,6 +16,17 @@ export const shareTermsView = () => html`
  * }} OthersSection
  */
 
+/** Comparar's consent in one line: what is seen and by whom stays on screen (ADR-0006); the rest is in a fold. */
+const shareShortView = () => html`<p>
+    A cambio, se comparten las tuyas: sus condiciones, tu nombre, tu correo y tu teléfono, solo con quien también
+    comparte.
+  </p>
+  <details class="share-more">
+    <summary>Qué no se comparte</summary>
+    <p>Tus km, tus gastos, los nombres de tus ofertas ni tus ajustes. Si dejas de compartir, tus datos dejan de verse
+      y dejas de ver las ofertas de otros pastores.</p>
+  </details>`;
+
 const skeleton = html`<div class="others-skel" aria-hidden="true">${[78, 62, 46].map(
   (width) => html`<div class="skel-row"><i style="width:${width}%"></i></div>`,
 )}</div>`;
@@ -24,12 +35,11 @@ const skeleton = html`<div class="others-skel" aria-hidden="true">${[78, 62, 46]
 export function othersView({ stage, message, noPhone }) {
   const body = {
     guest: html`${skeleton}
-      <p>Compara tus ofertas con las de otros pastores.</p>
+      <p><strong>¿Pagan mejor en otros sitios?</strong> Entra y compara tus ofertas con las de otros pastores.</p>
       <div class="actions"><button type="button" class="sm pri" data-action="openAccountFromPrompt">Entrar</button></div>`,
     ask: html`<div class="account-confirm" role="group" aria-labelledby="othersConsentTitle">
-        <p id="othersConsentTitle"><strong>Compara tus ofertas con las de otros pastores.</strong></p>
-        <p>Para verlas, comparte las tuyas. Esto es lo que se ve:</p>
-        ${shareTermsView()}
+        <p id="othersConsentTitle"><strong>¿Pagan mejor en otros sitios?</strong> Mira las ofertas de otros pastores.</p>
+        ${shareShortView()}
         <div class="actions">
           <button type="button" class="sm pri" data-action="shareFromCompare">Compartir y comparar</button>
           <button type="button" class="sm" data-action="declineShare">Ahora no</button>
