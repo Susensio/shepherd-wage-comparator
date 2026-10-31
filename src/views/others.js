@@ -27,7 +27,8 @@ export function othersView({ stage, message, noPhone }) {
       <p>Compara tus ofertas con las de otros pastores.</p>
       <div class="actions"><button type="button" class="sm pri" data-action="openAccountFromPrompt">Entrar</button></div>`,
     ask: html`<div class="account-confirm" role="group" aria-labelledby="othersConsentTitle">
-        <p id="othersConsentTitle"><strong>Antes de compartir, esto es lo que se verá</strong></p>
+        <p id="othersConsentTitle"><strong>Compara tus ofertas con las de otros pastores.</strong></p>
+        <p>Para verlas, se comparten las tuyas. Esto es lo que se verá:</p>
         ${shareTermsView()}
         <div class="actions">
           <button type="button" class="sm pri" data-action="shareFromCompare">Compartir y comparar</button>

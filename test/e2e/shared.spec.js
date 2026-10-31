@@ -274,7 +274,32 @@ test.describe('the «Otros pastores» section', () => {
     const text = await section(page).locator('.account-confirm p').allTextContents();
     await page.evaluate(() => app.openAccountPage());
     await page.getByLabel('Compartir mis ofertas').click();
-    for (const paragraph of text.slice(1)) await expect(page.locator('#shareConfirm')).toContainText(paragraph);
+    for (const paragraph of text.slice(2)) await expect(page.locator('#shareConfirm')).toContainText(paragraph);
+  });
+
+  test("accepting in Comparar closes the account page's own confirmation", async ({ openApp }) => {
+    const page = await openCompare(openApp, { sharing: false });
+    await page.evaluate(() => app.openAccountPage());
+    await page.getByLabel('Compartir mis ofertas').click();
+    await expect(page.locator('#shareConfirm')).toBeVisible();
+    await page
+      .getByRole('button', { name: /Volver/ })
+      .first()
+      .click();
+    await section(page).getByRole('button', ask).click();
+    await expect(page.locator('.lr.other')).toHaveCount(2);
+    await page.evaluate(() => app.openAccountPage());
+    await expect(page.locator('#shareConfirm')).toBeHidden();
+    await expect(page.getByLabel('Compartir mis ofertas')).toBeChecked();
+  });
+
+  test('the section sits right under the ranking, before the weekly hours', async ({ openApp }) => {
+    const page = await openCompare(openApp);
+    const order = await page.evaluate(() => {
+      const y = (s) => document.querySelector(s).getBoundingClientRect().top;
+      return [y('#cmpBlk .lst'), y('#othersBlk'), y('#cmpMore .hours')];
+    });
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   test('«Ahora no» leaves one button that reopens the consent', async ({ openApp }) => {
@@ -282,9 +307,10 @@ test.describe('the «Otros pastores» section', () => {
     await section(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(section(page).getByRole('button', ask)).toHaveCount(0);
     await expect(section(page).getByRole('button', { name: 'Compartir para comparar' })).toBeVisible();
-    await expect(section(page)).not.toContainText('Antes de compartir');
+    await expect(section(page)).not.toContainText('Para verlas, se comparten las tuyas');
     await section(page).getByRole('button', { name: 'Compartir para comparar' }).click();
-    await expect(section(page)).toContainText('Antes de compartir, esto es lo que se verá');
+    await expect(section(page)).toContainText('Compara tus ofertas con las de otros pastores.');
+    await expect(section(page)).toContainText('Para verlas, se comparten las tuyas.');
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
   });
 

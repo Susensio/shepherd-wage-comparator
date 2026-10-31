@@ -1569,14 +1569,8 @@ body.on-page :is(.tabs, header) {
   align-items: flex-start;
   gap: 6px;
 }
-#accountTitle[hidden] {
-  display: none;
-}
 .guest-note {
   font-weight: 600;
-}
-.guest-note[hidden] {
-  display: none;
 }
 .account-sync {
   margin: 0;
@@ -2866,4 +2860,7 @@ details.plg > summary .stat.dt b {
 }
 .terms-only .hint {
   margin: 2px 0 0 26px;
+}
+#cmpMore:not(:empty) {
+  margin-top: 18px;
 }

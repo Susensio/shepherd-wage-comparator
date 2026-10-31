@@ -40,11 +40,12 @@ export function paintBackup() {
  * @typedef {{
  *   user: any, profile: any, pending: any[], message: string, confirm: 'share' | 'delete' | null,
  *   enabled: boolean, started: boolean, sync: 'saved' | 'saving' | 'error', offline: boolean,
+ *   othersMessage: string, othersDeclined: boolean, dismissed: Set<string>, signIn: any,
  * }} AccountView
  */
 
 /** Where the account stands, as the dot on its button shows it. */
-export function accountStatus(/** @type {AccountView} */ view) {
+function accountStatus(/** @type {AccountView} */ view) {
   if (!view.enabled) return 'off';
   if (!view.started) return 'connecting';
   if (!view.user) return 'guest';
@@ -68,11 +69,12 @@ const STATUS_TEXT = {
 /** Up to two capitals: the first letters of the first two words of the name, or of the email's name part. */
 const initialsOf = (/** @type {string} */ text) =>
   text
+    .trim()
     .split('@')[0]
     .split(/[\s._-]+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((word) => word[0].toUpperCase())
+    .map((word) => Array.from(word)[0].toUpperCase())
     .join('');
 
 /**
@@ -84,9 +86,10 @@ export function paintAccountButton(view) {
   const status = accountStatus(view);
   const button = $('#accountButton');
   const who = view.user && (view.profile?.name || view.user.user_metadata?.name || view.user.email);
+  const initials = who ? initialsOf(who) : '';
   button.dataset.status = status;
-  button.dataset.kind = status === 'off' ? 'cog' : who ? 'initials' : 'person';
-  $('#accountButton .initials').textContent = who ? initialsOf(who) : '';
+  button.dataset.kind = status === 'off' ? 'cog' : initials ? 'initials' : 'person';
+  $('#accountButton .initials').textContent = initials;
   if (status !== 'off') {
     const label = `Cuenta. ${STATUS_TEXT[status]}`;
     button.setAttribute('aria-label', label);

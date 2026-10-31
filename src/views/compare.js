@@ -230,7 +230,7 @@ function hoursView(list) {
  * @param {string} unit
  * @param {boolean} termsOnly show the figures of the terms alone
  * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
- * @returns {{picker: unknown, body: unknown}}
+ * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
 export function compareView(all, unit, termsOnly, others) {
   const U = UNITS[unit];
@@ -250,6 +250,7 @@ export function compareView(all, unit, termsOnly, others) {
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map(({ o }) => `A «${o.mine.name || 'Oferta'}» le falta ${joinAnd(missing(o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>`,
+      more: nothing,
     };
   }
   const atRate = (r) => unit === 'month' && isUnderAMonth(r); // shorter than a month: «al mes» is at that rate
@@ -287,7 +288,9 @@ export function compareView(all, unit, termsOnly, others) {
     picker: unitPicker(unit),
     body: html`${controls}${termsOnlySwitch(termsOnly, others.available && others.include)}${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
-    ${headToHead(list)}${hoursView(list)}`,
+`,
+    // After the «Otros pastores» section, which sits right under the ranking
+    more: html`${headToHead(list)}${hoursView(list)}`,
   };
 }
 

@@ -50,10 +50,9 @@ function syncAvailability() {
   state.others.available = available;
   if (!available) {
     Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
-    view.othersDeclined = false;
   } else state.others.include = true; // sharing means seeing the others, until hidden with the checkbox
   onOthersChange();
-  if (available && currentTab() === 'compare') loadOthers();
+  if (available && !$('[data-panel=compare]').hidden) loadOthers(); // else showTab loads on arrival
 }
 
 /** Comparar's section, from the account: nothing until the saved session has been looked at, or while uploads wait. */
@@ -149,10 +148,10 @@ function onGoogleToken(token, nonce) {
   });
 }
 
-/** Signing out or deleting the account: no tooltip for this visit. */
+/** Signing out or deleting the account: no tooltip on any tab for this visit. */
 function signedOut() {
   forgetGoogleChoice();
-  view.dismissed.add(currentTab());
+  for (const tab of Object.keys(GUEST_TIPS)) view.dismissed.add(tab);
   Object.assign(view, { user: null, profile: null, pending: [], confirm: null });
 }
 
@@ -187,8 +186,7 @@ export async function loadOthers() {
 
 /** Runs an account call; its failure becomes `failure`, a short line in `line`'s section, never an alert. */
 async function run(failure, call, line = 'message') {
-  view.message = '';
-  view.othersMessage = '';
+  view[line] = '';
   try {
     await call();
   } catch (error) {
@@ -242,6 +240,18 @@ export async function setUpAccountSection({ onReplaced, onOthers, onSignedIn: si
     }
   });
 }
+
+/** Turns sharing on or off through the account; a failure goes to `line`. */
+const setSharing = (on, line) =>
+  run(
+    on ? 'No se pudo activar. Inténtalo de nuevo.' : 'No se pudo desactivar. Inténtalo de nuevo.',
+    async () => {
+      view.profile = await account.updateProfile({ sharing: on });
+      view.confirm = null;
+      if (!on) view.othersDeclined = false;
+    },
+    line,
+  );
 
 /** For the buttons, by data-action. */
 export const accountActions = {
@@ -314,19 +324,8 @@ export const accountActions = {
       view.message = 'Perfil guardado.';
     }),
 
-  confirmShare: () =>
-    run('No se pudo activar. Inténtalo de nuevo.', async () => {
-      view.profile = await account.updateProfile({ sharing: true });
-      view.confirm = null;
-    }),
-  shareFromCompare: () =>
-    run(
-      'No se pudo activar. Inténtalo de nuevo.',
-      async () => {
-        view.profile = await account.updateProfile({ sharing: true });
-      },
-      'othersMessage',
-    ),
+  confirmShare: () => setSharing(true, 'message'),
+  shareFromCompare: () => setSharing(true, 'othersMessage'),
   declineShare() {
     view.othersDeclined = true;
     paint();
@@ -335,14 +334,7 @@ export const accountActions = {
     view.othersDeclined = false;
     paint();
   },
-  stopSharing: () =>
-    run(
-      'No se pudo desactivar. Inténtalo de nuevo.',
-      async () => {
-        view.profile = await account.updateProfile({ sharing: false });
-      },
-      'othersMessage',
-    ),
+  stopSharing: () => setSharing(false, 'othersMessage'),
   cancelShare() {
     view.confirm = null;
     paint();
@@ -370,8 +362,5 @@ export function onSharingToggled(checked) {
     paint();
     return;
   }
-  run('No se pudo desactivar. Inténtalo de nuevo.', async () => {
-    view.profile = await account.updateProfile({ sharing: false });
-    view.confirm = null;
-  });
+  setSharing(false, 'message');
 }

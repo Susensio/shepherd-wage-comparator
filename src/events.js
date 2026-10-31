@@ -8,6 +8,7 @@ import {
   commit,
   done,
   fillVacation,
+  onPopState,
   openAccountPage,
   openFirstSections,
   openTemplates,
@@ -375,6 +376,7 @@ export function setUpEvents() {
   form().addEventListener('focusout', onFormFocusOut);
   $('#yourdata').addEventListener('input', onSettingsInput);
   $('#assumptions').addEventListener('input', onSettingsInput);
+  addEventListener('popstate', onPopState);
   document.addEventListener('click', onSummaryClick);
   document.addEventListener('click', (e) => {
     const button = /** @type {HTMLElement | null} */ (/** @type {Element} */ (e.target).closest('[data-action]'));

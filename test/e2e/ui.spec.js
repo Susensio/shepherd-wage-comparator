@@ -125,7 +125,7 @@ test('copy the claim', async ({ loaded: page }) => {
   expect(text).toContain('Comparador de jornales');
 });
 
-// With accounts the reminder gives way to the sign-in card (account.spec.js)
+// With accounts the reminder gives way to the account button and its tooltip (account.spec.js)
 test('without accounts, a backup, downloaded and loaded in another browser', async ({ openApp, browser }) => {
   const page = await openApp({ beforeLoad: withoutProject });
   await page.locator('.tcard').first().click();

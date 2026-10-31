@@ -30,6 +30,7 @@ const ui = {
   askedToSee: /** @type {string | null} */ (null),
   /** The account page was opened from the tooltip: leave it once signed in. */
   leaveAfterSignIn: false,
+  scrollBeforePage: 0,
 };
 
 export const animateNextPaint = () => {
@@ -113,10 +114,12 @@ function comparedOthers() {
 export function paintCompare() {
   const own = compared();
   const all = includesOthers() ? [...own, ...comparedOthers()] : own;
-  const { picker, body } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
+  const { picker, body, more } = compareView(all, state.cmpUnit, termsOnlyNow(), state.others);
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
+  render(more, $('#cmpMore'));
   restoreFolds($('#cmpBlk'));
+  restoreFolds($('#cmpMore'));
   paintTimeline(own);
   paintShared();
 }
@@ -279,18 +282,38 @@ export function showTab(tab, scrollUp) {
  */
 export function openAccountPage(fromPrompt = false) {
   ui.leaveAfterSignIn = fromPrompt;
+  if (!accountPageOpen()) {
+    ui.scrollBeforePage = scrollY;
+    history.pushState({ accountPage: true }, ''); // the phone's Back closes the page, not the site
+  }
   showPanel('settings');
   paintBackup();
   paintAccountStatus({ chooser: fromPrompt });
   window.scrollTo({ top: 0 });
 }
 
-/** «Volver»: the tab the page was opened from. */
-export const closeAccountPage = () => showTab(/** @type {string} */ ($('.tabs [aria-selected=true]').dataset.tab));
+const accountPageOpen = () => !$('[data-panel=settings]').hidden;
+
+/** Back to the tab the page was opened from, where it was scrolled. */
+function leaveAccountPage() {
+  showTab(/** @type {string} */ ($('.tabs [aria-selected=true]').dataset.tab));
+  window.scrollTo({ top: ui.scrollBeforePage, behavior: 'instant' });
+}
+
+/** «Volver»: through the history when the page pushed an entry, so Back and «Volver» stay in step. */
+export function closeAccountPage() {
+  if (history.state?.accountPage) history.back();
+  else leaveAccountPage();
+}
+
+/** Back (or forward) with the page open closes it. */
+export function onPopState() {
+  if (accountPageOpen()) leaveAccountPage();
+}
 
 /** A sign-in completed: if it began at the tooltip, back to where it began. */
 export function returnAfterSignIn() {
-  if (ui.leaveAfterSignIn && !$('[data-panel=settings]').hidden) closeAccountPage();
+  if (ui.leaveAfterSignIn && accountPageOpen()) closeAccountPage();
   ui.leaveAfterSignIn = false;
 }
 

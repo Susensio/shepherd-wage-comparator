@@ -92,6 +92,17 @@ test.describe('the account button', () => {
     await expect(button(page).locator('.initials')).toHaveText('A');
   });
 
+  test('a name of only spaces falls back to the person icon', async ({ openApp }) => {
+    const page = await open(openApp, { tables: { profiles: [{ ...PROFILE, name: '   ' }], ...accountRows() } });
+    await expect(button(page)).toHaveAttribute('data-kind', 'person');
+    await expect(button(page).locator('.initials')).toHaveText('');
+  });
+
+  test('the initials take whole characters', async ({ openApp }) => {
+    const page = await open(openApp, { tables: { profiles: [{ ...PROFILE, name: '😀 Ñandú' }], ...accountRows() } });
+    await expect(button(page).locator('.initials')).toHaveText('😀Ñ');
+  });
+
   test('a failed first upload is amber, in words', async ({ openApp }) => {
     const page = await open(openApp, { failUpload: true });
     await expect(button(page)).toHaveAttribute('data-status', 'pending');
@@ -376,4 +387,60 @@ test('deleting the account asks first and keeps the browser offers', async ({ op
   await expect(page.locator('#accountOut')).toBeVisible();
   expect(await page.evaluate(() => window.fake.rpc)).toEqual(['delete_my_account']);
   expect(await page.evaluate(() => app.state.offers.map((o) => o.id))).toEqual(before);
+});
+
+test('signing out from the page opened over Comparar silences the tooltip on every tab', async ({ openApp }) => {
+  const page = await openApp({
+    init: installFake,
+    arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() } },
+    beforeLoad: withProject,
+  });
+  await page.evaluate(() => app.showTab('compare'));
+  await page.evaluate(() => app.openAccountPage());
+  await page.getByRole('button', { name: 'Salir' }).click();
+  await page.evaluate(() => app.showTab('offers'));
+  await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'guest');
+  await expect(page.locator('#accountTip .tip')).toHaveCount(0);
+});
+
+test.describe('the account page and the history', () => {
+  const openOnCompare = async (openApp) => {
+    const page = await openApp({
+      init: installFake,
+      arg: { localOffers: sample.offers, tables: { profiles: [{ ...PROFILE }], ...accountRows() } },
+      beforeLoad: withProject,
+    });
+    await page.evaluate(() => app.showTab('compare'));
+    await page.evaluate(() => window.scrollTo(0, 200));
+    return page;
+  };
+
+  test("the browser's Back closes the page, stays in the app, and restores the scroll", async ({ openApp }) => {
+    const page = await openOnCompare(openApp);
+    const before = await page.evaluate(() => scrollY);
+    expect(before).toBeGreaterThan(0);
+    const url = page.url();
+    await page.evaluate(() => app.openAccountPage()); // the bar is not sticky: a click would scroll up first
+    await expect(page.locator('[data-panel=settings]')).toBeVisible();
+    await page.goBack();
+    await expect(page.locator('[data-panel=settings]')).toBeHidden();
+    await expect(page.locator('[data-panel=compare]')).toBeVisible();
+    expect(page.url()).toBe(url);
+    expect(await page.evaluate(() => scrollY)).toBe(before);
+  });
+
+  test('«Volver» goes back through the history and restores the scroll', async ({ openApp }) => {
+    const page = await openOnCompare(openApp);
+    const before = await page.evaluate(() => scrollY);
+    const length = await page.evaluate(() => history.length);
+    await page.evaluate(() => app.openAccountPage());
+    await page
+      .getByRole('button', { name: /Volver/ })
+      .first()
+      .click();
+    await expect(page.locator('[data-panel=compare]')).toBeVisible();
+    expect(await page.evaluate(() => scrollY)).toBe(before);
+    await expect.poll(() => page.evaluate(() => history.state?.accountPage ?? false)).toBe(false);
+    expect(await page.evaluate(() => history.length)).toBe(length + 1); // the entry stays forward, not stacked
+  });
 });
