@@ -3,16 +3,12 @@
 import {
   closeTemplates,
   commit,
-  openAccountPage,
-  openSettingsPage,
   openTemplates,
   paintAll,
   paintCompare,
   restoreStaticFolds,
-  returnAfterSignIn,
   scrollChipsNextPaint,
   select,
-  showTab,
   templatesOpen,
 } from './app.js';
 import { setUpEvents } from './events.js';
@@ -20,6 +16,7 @@ import { defaultVacation } from './offer.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
 import { setUpAccountSection } from './ui/account-section.js';
+import { openAccountPage, openSettingsPage, returnAfterSignIn, showTab } from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';

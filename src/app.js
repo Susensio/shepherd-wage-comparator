@@ -1,19 +1,20 @@
 /**
  * The controller: paints every view from the state, and the things the page does that more than one event needs
- * (choosing an offer, the templates panel, «Hecho», the tabs, the account and settings pages).
+ * (choosing an offer, the templates panel, «Hecho», what the tabs and pages paint).
  */
 
 import { render } from 'lit-html';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
-import { active, calcOffer, myOffers, saveOffers, saveTab, state } from './state.js';
+import { active, calcOffer, myOffers, saveOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, fadeIn, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
+import { onNavigate } from './ui/navigation.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fillForm, fillVacation, paintForm } from './views/form.js';
@@ -29,11 +30,6 @@ const ui = {
   scrollChips: false,
   /** The offer where you pressed «Hecho» with data missing: the missing fields are marked until you fill them in. */
   askedToSee: /** @type {string | null} */ (null),
-  /** The account page was opened from a tooltip: leave it once signed in. */
-  leaveAfterSignIn: false,
-  /** The page that tooltip was on (Ajustes), to go back to it instead of the tab. */
-  promptFromPage: /** @type {'account' | 'settings' | null} */ (null),
-  scrollBeforePage: 0,
 };
 
 export const animateNextPaint = () => {
@@ -269,88 +265,23 @@ export function done(fromTop) {
 
 /* --- Tabs --- */
 
-const TABS = ['offers', 'compare', 'laws'];
-
-/** The pages opened from the bar's buttons, over the tab shown: each is a panel of its own. */
-const PAGES = ['account', 'settings'];
-
-/** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
-function showPanel(shown) {
-  for (const t of [...TABS, ...PAGES]) $(`[data-panel=${t}]`).hidden = t !== shown;
-  document.body.classList.toggle('on-page', PAGES.includes(shown));
-}
-
-/** Shows a tab. With `scrollUp`, if the page is further down, it goes back up to the tabs. */
-export function showTab(tab, scrollUp) {
-  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the pages opens Ofertas
-  showPanel(shown);
-  for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
-  saveTab(shown);
-  paintAccountStatus();
-  if (shown === 'compare') {
-    paintTimeline(); // the trend fits the width, which is only known once shown
-    if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
-  }
-  if (shown === 'offers') {
-    ui.scrollChips = true;
-    paintChips();
-  }
-  const tabs = $('.tabs');
-  if (scrollUp && tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: tabs.offsetTop });
-}
-
-/** The page open, or undefined on a tab. */
-export const pageOpen = () => PAGES.find((page) => !$(`[data-panel=${page}]`).hidden);
-
-/**
- * Opens a page over the tab shown, which stays selected so «Volver» knows where to go. `fromPrompt`: the account page
- * was opened from a tooltip, so signing in sends the reader back at once; from the button, the page stays, since
- * whoever went there may want the profile or sharing next.
- * @param {'account' | 'settings'} page
- */
-export function openPage(page, fromPrompt = false) {
-  ui.leaveAfterSignIn = fromPrompt;
-  ui.promptFromPage = fromPrompt ? /** @type {'account' | 'settings' | undefined} */ (pageOpen() ?? null) : null; // a tooltip on Ajustes returns to Ajustes
-  if (!pageOpen()) {
-    ui.scrollBeforePage = scrollY;
-    history.pushState({ page: true }, ''); // the phone's Back closes the page, not the site
-  }
-  showPanel(page);
-  paintBackup();
-  paintAccountStatus({ chooser: fromPrompt });
-  window.scrollTo({ top: 0 });
-}
-
-export const openAccountPage = (fromPrompt = false) => openPage('account', fromPrompt);
-export const openSettingsPage = () => openPage('settings');
-
-/** Back to the tab the page was opened from, where it was scrolled. */
-function leavePage() {
-  showTab(/** @type {string} */ ($('.tabs [aria-selected=true]').dataset.tab));
-  window.scrollTo({ top: ui.scrollBeforePage, behavior: 'instant' });
-}
-
-/** «Volver»: through the history when the page pushed an entry, so Back and «Volver» stay in step. */
-export function closePage() {
-  if (history.state?.page) history.back();
-  else leavePage();
-}
-
-/** Back (or forward) with a page open closes it. */
-export function onPopState() {
-  if (pageOpen()) leavePage();
-}
-
-/** A sign-in completed: if it began at the tooltip, back to where it began. */
-export function returnAfterSignIn() {
-  const back = ui.leaveAfterSignIn && pageOpen() === 'account';
-  const toPage = ui.promptFromPage;
-  ui.leaveAfterSignIn = false;
-  ui.promptFromPage = null;
-  if (!back) return;
-  if (toPage) openPage(toPage);
-  else closePage();
-}
+onNavigate({
+  tabShown(tab) {
+    paintAccountStatus();
+    if (tab === 'compare') {
+      paintTimeline(); // the trend fits the width, which is only known once shown
+      if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
+    }
+    if (tab === 'offers') {
+      ui.scrollChips = true;
+      paintChips();
+    }
+  },
+  pageOpened(fromPrompt) {
+    paintBackup();
+    paintAccountStatus({ chooser: fromPrompt });
+  },
+});
 
 /** Opens the named collapsibles of the static page as you left them. */
 export const restoreStaticFolds = () => restoreFolds(document);

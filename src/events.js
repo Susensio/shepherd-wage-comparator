@@ -3,20 +3,15 @@
 import {
   animateNextPaint,
   chipEdges,
-  closePage,
   closeTemplates,
   commit,
   done,
   fillVacation,
-  onPopState,
-  openAccountPage,
   openFirstSections,
-  openSettingsPage,
   openTemplates,
   paintAll,
   scrollChipsNextPaint,
   select,
-  showTab,
   templatesOpen,
   viewShared,
 } from './app.js';
@@ -42,6 +37,7 @@ import { accountActions, loadOthers, onSharingToggled } from './ui/account-secti
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
+import { closePage, onPopState, openAccountPage, openSettingsPage, showTab } from './ui/navigation.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
 import { fillForm, form, paintEnd } from './views/form.js';

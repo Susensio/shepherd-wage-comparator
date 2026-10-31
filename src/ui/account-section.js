@@ -10,6 +10,7 @@ import { GUEST_TIPS, tipView } from '../views/account-tip.js';
 import { othersView, shareTermsView } from '../views/others.js';
 import { signInView } from '../views/sign-in.js';
 import { $, $$ } from './dom.js';
+import { currentTab, openPageName, tabInView } from './navigation.js';
 import { paintAccount, paintAccountButton } from './settings-page.js';
 
 /** @type {any} */
@@ -54,7 +55,7 @@ function syncAvailability() {
     Object.assign(state.others, { include: false, status: 'idle', items: [], viewId: null });
   } else state.others.include = true; // sharing means seeing the others, until hidden with the checkbox
   onOthersChange();
-  if (available && !$('[data-panel=compare]').hidden) loadOthers(); // else showTab loads on arrival
+  if (available && tabInView('compare')) loadOthers(); // else showTab loads on arrival
 }
 
 /** Comparar's section, from the account: nothing until the saved session has been looked at, or while uploads wait. */
@@ -68,11 +69,6 @@ function othersSection() {
   return { stage: view.othersDeclined ? 'declined' : 'ask', message, noPhone: false };
 }
 
-/** The tab shown, or the one a page was opened from. */
-const currentTab = () => /** @type {HTMLElement} */ ($('.tabs [aria-selected=true]')).dataset.tab ?? 'offers';
-/** The page open over the tabs, if any. */
-const openPageName = () => ['account', 'settings'].find((page) => !$(`[data-panel=${page}]`).hidden);
-
 /**
  * The button's status and the tooltip, which depend on the tab and on the page; Google's button where the page shows
  * a sign-in. `chooser`: also open Google's account chooser.
@@ -80,7 +76,7 @@ const openPageName = () => ['account', 'settings'].find((page) => !$(`[data-pane
 export function paintAccountStatus({ chooser = false } = {}) {
   if (!view.enabled) return;
   const status = paintAccountButton(view);
-  const page = openPageName();
+  const page = openPageName() ?? undefined;
   const where = page ?? currentTab();
   /** @type {Parameters<typeof tipView>[0] | null} */
   let tip = null;
