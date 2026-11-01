@@ -6,6 +6,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 - Code is in English: identifiers, comments, CSS classes, ids, data attributes, saved field names, commit messages.
 - What the user sees is in Spanish (Spain). The page speaks to the reader as «tú», in the imperative when it asks for something ("Apunta", "Compara"). It never talks about itself: what the page does goes in the impersonal «se» ("Se rellenan…"), never as a verb that could be read as an order to the reader. Concise, neutral tone: no first person, no colloquialisms (no «tocan», «al banco»), no «gratis». «En mano» and «en negro» are fine for undeclared pay.
+- One term per concept, as listed in `docs/glossary.md` (with the code identifier behind each). Check new text against it, and add a new concept there before using it.
 
 ## Structure
 
