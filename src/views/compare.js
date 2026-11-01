@@ -4,12 +4,15 @@ import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
-import { DAYS_PER_MONTH, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
+import { datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, MISSING_TEXT_THIRD, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
 import { voiceOf } from '../voice.js';
 import { incomeBar, legend, swatch } from './parts.js';
+
+/** Days in a normal working week: the week minus the legal weekly rest. */
+const WEEK_WORK_DAYS = 7 - LAW.weeklyRest;
 
 /** «Comparar por»: the unit that sorts and measures the Comparar rows. */
 const unitPicker = (unit) =>
@@ -213,7 +216,19 @@ function headToHead(list, pairing) {
     <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** Hours per week: the normal ones and, in a stronger colour, the extra ones (extra days and overtime). */
+/** Hours of the extra part of a typical week that go unpaid: the unpaid share of the contract's extra time. */
+function unpaidHoursPerWeek(r) {
+  const x = r.extra;
+  const total = r.time.hoursPerWeek;
+  const normal = Math.min(total, x.workday * Math.min(x.workDaysWeek, WEEK_WORK_DAYS));
+  const overtimeUnpaid =
+    x.overtimeValue > 0 && isWorthCounting(r.savings.overtime) ? x.overtime * (x.overtimeUnpaid / x.overtimeValue) : 0;
+  const extraTotal = x.days * x.workday + x.overtime;
+  const share = extraTotal > 0 ? (unpaidTime(r).days * x.workday + overtimeUnpaid) / extraTotal : 0;
+  return (total - normal) * Math.min(1, Math.max(0, share));
+}
+
+/** Hours per week in a typical working week: what is paid, then what is not; the 40 h line is where the extra hours begin. */
 function hoursView(list) {
   const limit = LAW.weeklyHours;
   const cap = Math.max(limit, ...list.map((x) => x.r.time.hoursPerWeek));
@@ -222,20 +237,20 @@ function hoursView(list) {
     .sort((a, b) => a.r.time.hoursPerWeek - b.r.time.hoursPerWeek)
     .map((x) => {
       const { o, r } = x;
-      const weeks = (r.time.noDuration ? DAYS_PER_MONTH : r.time.natDays) / 7;
       const total = r.time.hoursPerWeek;
-      const extra = Math.min(total, weeks > 0 ? r.extra.hours / weeks : 0);
-      const normal = total - extra;
+      const unpaid = unpaidHoursPerWeek(r);
+      const paid = total - unpaid;
       return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v">${fN(total)} h</span>
-      <span class="hbar"><i class="ok" style="left:0;width:${pct(normal)}%"></i>${
-        extra >= 0.5 ? html`<i class="unpaid" style="left:${pct(normal)}%;width:${pct(extra)}%"></i>` : nothing
+      <span class="hbar"><i class="paid" style="left:0;width:${pct(paid)}%"></i>${
+        unpaid >= 0.5 ? html`<i class="unpaid" style="left:${pct(paid)}%;width:${pct(unpaid)}%"></i>` : nothing
       }<s style="left:${pct(limit)}%"></s></span></button>`;
     });
-  const anyExtra = list.some((x) => x.r.extra.hours > 0.5);
+  const anyUnpaid = list.some((x) => unpaidHoursPerWeek(x.r) >= 0.5);
   return html`<h4 class="sub">Horas a la semana</h4><div class="lst hours">${rows}</div>
-    <p class="legend"><span>${swatch('--c-work')}Horas normales</span>${
-      anyExtra ? html`<span>${swatch('--c-work-extra')}Horas de más</span>` : nothing
-    }<span><i class="lg-line"></i>${limit} h, máximo legal</span></p>`;
+    <p class="legend"><span>${swatch('--c-work')}Horas pagadas</span>${
+      anyUnpaid ? html`<span><span class="sw unpaid"></span>Horas sin pagar</span>` : nothing
+    }<span><i class="lg-line"></i>${limit} h, máximo legal</span></p>
+    <p class="hint">Una semana de trabajo típica. Las cuentas de todo el contrato están en cada oferta.</p>`;
 }
 
 /**

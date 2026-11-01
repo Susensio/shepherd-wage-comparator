@@ -2264,11 +2264,15 @@ details.paste > summary {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
-.hbar i.ok {
+.hbar i.paid {
   background: var(--c-work);
 }
-.hbar i.unpaid {
-  background: var(--c-work-extra);
+/* Hatched like the rest of the page marks what is missing */
+.hbar i.unpaid,
+.sw.unpaid {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--surface) 70%, transparent) 2px 4px),
+    var(--c-work-extra);
 }
 .hbar s {
   position: absolute;
