@@ -161,13 +161,16 @@ const UNEMPLOYMENT_OF = {
   permanent: UNEMPLOYMENT_RATES.indefinite,
   seasonal: UNEMPLOYMENT_RATES.indefinite,
   temporary: UNEMPLOYMENT_RATES.temporary,
+  // Without a contract, what the most common contract in shepherding would pay: fijo discontinuo (owner, 1 November 2026)
+  none: UNEMPLOYMENT_RATES.indefinite,
 };
 
 const ssTotal = (items) => Math.round(items.reduce((s, [, p]) => s + p, 0) * 100) / 100;
 
 /**
  * The contributions of a contract: items and totals, % of the gross. Without a contract (`none`) it is what a
- * legal temporary contract would pay, which is what the model compares the cash against.
+ * fijo discontinuo, the most common contract in shepherding, would pay, which is what the model compares the cash
+ * against.
  * @param {string} [contract] `terms.contract`
  */
 export const ssOf = (contract) => {

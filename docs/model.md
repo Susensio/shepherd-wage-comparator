@@ -58,7 +58,7 @@ Two rules, and each extra hour counts once.
 
 ## Rules added in November 2026
 
-- Social Security rates depend on the contract: `ssOf(contract)` in `law.js` (Orden PJC/297/2026), read through `r.pay.rates`. An offer without a contract uses the temporary rates to turn cash into gross and to price what the employer saves.
+- Social Security rates depend on the contract: `ssOf(contract)` in `law.js` (Orden PJC/297/2026), read through `r.pay.rates`. An offer without a contract uses the fijo discontinuo rates, the most common contract in shepherding, to turn cash into gross and to price what the employer saves (owner, 1 November 2026).
 - Every ledger's «=» row is the sum of its rows as shown: rows are rounded first, then added, per column (`test/e2e/ledger.js` checks exact equality). A total can therefore differ by a cent or a euro from the same figure computed elsewhere.
 - Places: `data/places-<version>.json`, built by `npm run places` from GeoNames (ADR-0015), is fetched when an offer's form opens and kept in Cache Storage under its version; data saving or a 2G line defers it to the location field. `src/places.js` folds names and searches them; a municipality code is named through the list once it has arrived.
 - Account sync keeps unsynced changes in `localStorage` (`cj.accountUnsynced`: changed and removed offer ids, settings), so offline edits survive a reload and are written first on the next connect; fingerprints are taken before each write. Signing out writes pending changes first, then clears the browser's copy (ADR-0017).

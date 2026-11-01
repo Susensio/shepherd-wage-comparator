@@ -51,6 +51,6 @@ test('Social Security rates depend on the contract (Orden PJC/297/2026)', () => 
   assert.deepEqual(unemployment(ssOf('temporary')), [1.6, 6.7]);
   near(ssOf('temporary').workerPct, 4.7 + 1.6 + 0.03 + 0.15);
   near(ssOf('temporary').employerPct, 21.2 + 6.7 + 3.3 + 0.15 + 0.1 + 0.75);
-  assert.deepEqual(ssOf('none'), ssOf('temporary'), 'without a contract, the temporary rates are the reference');
+  assert.deepEqual(ssOf('none'), ssOf('seasonal'), 'without a contract, the fijo discontinuo rates are the reference');
   assert.deepEqual(ssOf(undefined), ssOf('temporary'));
 });
