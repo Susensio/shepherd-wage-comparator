@@ -47,7 +47,7 @@ test('signed out: the account page lists how to sign in, with Google through the
   const page = await openAccount(openApp, { signedOut: true });
   await expect(page.locator('[data-panel=account] h2')).toHaveText('Cuenta');
   await expect(page.locator('#account')).toBeVisible();
-  await expect(page.locator('#accountTitle')).toHaveText('Entrar');
+  await expect(page.locator('#account summary')).toHaveCount(0); // one heading: «Cuenta»
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
   await expect(page.locator('#accountOut')).toContainText('Si compartes las tuyas');
   await expect(page.locator('#accountIn')).toBeHidden();
@@ -367,13 +367,26 @@ test.describe('first sign-in with offers only in this browser', () => {
 
 test('signed in: who, and signing out', async ({ openApp }) => {
   const page = await openAccount(openApp);
-  await expect(page.locator('#accountWho')).toHaveText('Has entrado como Ana Pastora · ana@example.com.');
+  await expect(page.locator('#accountWho')).toHaveText('Has entrado como Ana Pastora.');
   await page.getByRole('button', { name: 'Salir' }).click();
   await expect(page.locator('#accountOut')).toBeVisible();
   await expect(page.locator('#accountIn')).toBeHidden();
   expect(await page.evaluate(() => window.fake.signedOut)).toBe(true);
   await page.evaluate(() => app.showTab('offers'));
   await expect(page.locator('#accountTip .tip')).toHaveCount(0); // signing out is not asked about again this visit
+});
+
+test('signed in: deleting the account is a section of its own, after «Otros pastores»', async ({ openApp }) => {
+  const page = await openAccount(openApp);
+  const headings = await page.locator('#accountIn h4').allTextContents();
+  expect(headings).toEqual(['Tu perfil', 'Otros pastores', 'Borrar la cuenta']);
+  const under = await page.evaluate(() => {
+    const heading = [...document.querySelectorAll('#accountIn h4')].find((h) => h.textContent === 'Borrar la cuenta');
+    const sharing = document.querySelector('#profSharing').getBoundingClientRect();
+    const button = document.querySelector('[data-action=askDeleteAccount]').getBoundingClientRect();
+    return heading.getBoundingClientRect().top > sharing.bottom && button.top > heading.getBoundingClientRect().bottom;
+  });
+  expect(under).toBe(true);
 });
 
 test('signing out clears the browser copy, shows the welcome and says the offers are in the account', async ({

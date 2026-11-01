@@ -88,7 +88,6 @@ export function paintAccountButton(view) {
   const label = status === 'guest' ? STATUS_TEXT.guest : `Cuenta. ${STATUS_TEXT[status]}`;
   button.setAttribute('aria-label', label);
   button.title = label;
-  $('#accountTitle').hidden = status !== 'guest';
   // Signed in, the account keeps the offers: the backup card says so instead of warning about the browser
   // Neither until the saved session is known, so a signed-in user does not see the guest version first
   $('#backupGuest').hidden = !view.started || !!view.user;
@@ -121,7 +120,8 @@ export function paintAccount({ user, profile, pending, message, messageOk, confi
   if (!user) return;
   const name = profile?.name || user.user_metadata?.name;
   const email = profile?.email || user.email;
-  $('#accountWho').textContent = `Has entrado como ${[name, email].filter(Boolean).join(' · ')}.`;
+  // The profile below already shows the email and the phone
+  $('#accountWho').textContent = `Has entrado como ${name || email}.`;
   if (!profile) return;
   if (filledProfile !== profile) {
     filledProfile = profile;

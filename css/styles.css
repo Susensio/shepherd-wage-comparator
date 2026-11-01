@@ -1984,6 +1984,16 @@ details.paste > summary {
 .account-body[hidden] {
   display: none;
 }
+/* The page title «Cuenta» is the only heading of the sign-in */
+#account {
+  border-top: 0;
+}
+/* Deleting the account: a section of its own, at the end */
+.account-body h4.account-delete {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
 .account-who {
   margin: 0;
   font-size: 14px;
