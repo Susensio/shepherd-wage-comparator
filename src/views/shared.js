@@ -33,7 +33,7 @@ export function sharedView({ o, r, sharer, label }, places) {
     ['Casa y comida', s.housing],
     ['Contrato', contractOf(o.terms).stat],
   ].filter(([, v]) => v);
-  return html`<button type="button" class="linkbtn" data-action="closeShared">← Volver a Comparar</button>
+  return html`<button type="button" class="back" data-action="closeShared"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Volver a Comparar</button>
     <h3 class="q">Oferta de ${label}</h3>
     <p class="hint">Solo se ven las condiciones de la oferta, sin desplazamientos ni gastos.</p>
     <h4 class="sub">Quién la comparte</h4>

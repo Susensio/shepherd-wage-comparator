@@ -172,7 +172,7 @@ test.describe('the read-only view', () => {
     for (const action of ['edit', 'complete', 'copyCard', 'copyClaim', 'done', 'payslipMonth'])
       await expect(view.locator(`[data-action="${action}"]`)).toHaveCount(0);
     await expect(view).not.toContainText('Para negociar');
-    await view.getByRole('button', { name: '← Volver a Comparar' }).click();
+    await view.getByRole('button', { name: 'Volver a Comparar' }).click();
     await expect(page.locator('#cmpMain')).toBeVisible();
     await expect(view).toBeHidden();
   });
@@ -205,7 +205,7 @@ test.describe('the read-only view', () => {
     const page = await openCompare(openApp);
     await include(page);
     await page.locator('.lr.other').first().click();
-    await page.getByRole('button', { name: '← Volver a Comparar' }).click();
+    await page.getByRole('button', { name: 'Volver a Comparar' }).click();
     const saved = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(localStorage))));
     for (const secret of [sharedId(1), sharedId(2), SHARER.email, SHARER.phone, 'Luis Rebaño'])
       expect(saved).not.toContain(secret);
