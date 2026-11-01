@@ -9,7 +9,7 @@ const CACHE_PREFIX = 'places-';
 const FILE_URL = new URL(`../../data/places-${PLACES_VERSION}.json`, import.meta.url).href;
 
 /**
- * Data saving or a 2G line: the list (about 430 KB) waits until the location field is used.
+ * Data saving or a 2G line: the list (about 890 KB, 280 KB compressed) waits until the location field is used.
  * @param {{ saveData?: boolean, effectiveType?: string } | undefined} connection `navigator.connection`, where there is one
  */
 export const defersPreload = (connection) =>

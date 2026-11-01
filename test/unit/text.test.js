@@ -168,3 +168,17 @@ test('claim: a compliant offer reports no pay shortfall', () => {
   assert.match(claim, /^Oferta: Cumplidora/);
   assert.doesNotMatch(claim, /no llega al mínimo/);
 });
+
+test('same-named sharers each get a detail, even when only one names a place', async () => {
+  const { sharedLabels } = await import('../../src/text.js');
+  const { makeOffer } = await import('../../src/offer.js');
+  const offer = (id, terms) => ({ o: { ...makeOffer(terms, { name: 'Luis' }), id } });
+  const items = [
+    offer('a', { province: 'HU', start: '2026-06-01', duration: 30, durationUnit: 'days' }),
+    offer('b', { start: '2026-09-01', duration: 30, durationUnit: 'days' }),
+  ];
+  const labels = sharedLabels(items, null);
+  const details = items.map(({ o }) => labels.get(o.id).detail);
+  assert.ok(details.every(Boolean), `every offer has a detail: ${JSON.stringify(details)}`);
+  assert.equal(new Set(details).size, 2);
+});

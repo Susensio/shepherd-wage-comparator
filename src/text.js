@@ -72,14 +72,19 @@ export function sharedLabels(items, places) {
     const key = fold(item.o.mine.name);
     byName.set(key, [...(byName.get(key) ?? []), item]);
   }
+  // A tier is used only when it names every offer of the group, each differently
   const tiers = [
     (terms) => placeLabel(terms, places),
+    (terms) => placeLabel(terms, places) || datesText(terms),
     (terms) => datesText(terms),
     (terms) => [placeLabel(terms, places), datesText(terms)].filter(Boolean).join(' · '),
   ];
   for (const group of byName.values()) {
     if (group.length < 2) continue;
-    const tier = tiers.find((detail) => new Set(group.map(({ o }) => detail(o.terms))).size === group.length);
+    const tier = tiers.find((detail) => {
+      const details = group.map(({ o }) => detail(o.terms));
+      return details.every(Boolean) && new Set(details).size === group.length;
+    });
     const ordered = [...group].sort((a, b) => (a.o.id < b.o.id ? -1 : 1));
     ordered.forEach(({ o }, i) => {
       const detail = tier ? tier(o.terms) : `n.º ${i + 1}`;
