@@ -40,5 +40,5 @@ export function sharedView({ o, r, sharer, label }, places) {
     ${contact(sharer)}
     <h4 class="sub">Condiciones</h4>
     <dl class="editinfo readonly">${conditions.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`)}</dl>
-    <div id="sharedResult">${resultView(o, r, { readOnly: true })}</div>`;
+    <div id="sharedResult" class="result">${resultView(o, r, { readOnly: true })}</div>`;
 }

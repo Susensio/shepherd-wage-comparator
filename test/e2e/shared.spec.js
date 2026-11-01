@@ -177,6 +177,22 @@ test.describe('the read-only view', () => {
     await expect(view).toBeHidden();
   });
 
+  test('the blocks of the result are spaced as in your own', async ({ openApp }) => {
+    const page = await openCompare(openApp);
+    await include(page);
+    await page.locator(`.lr.other[data-id="${sharedId(1)}"]`).click();
+    const gaps = await page.evaluate(() => {
+      const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+      const result = '#sharedResult';
+      return {
+        pillsToBreakdown: box(`${result} [data-fold=breakdown2]`).top - box(`${result} .pills`).bottom,
+        legalToWorkings: box(`${result} [data-fold=workings]`).top - box(`${result} .legal`).bottom,
+      };
+    });
+    expect(gaps.pillsToBreakdown).toBeGreaterThanOrEqual(12);
+    expect(gaps.legalToWorkings).toBeGreaterThanOrEqual(12);
+  });
+
   test('municipality, province and herd show, never the village', async ({ openApp }) => {
     const terms = { ...byName('Puerto A').terms, municipality: '22252', province: 'HU', sheep: 800, cattle: 1 };
     const page = await openCompare(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });

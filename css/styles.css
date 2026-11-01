@@ -1688,7 +1688,8 @@ body.on-page :is(.tabs, #intro) {
   letter-spacing: 0;
   color: var(--ink);
 }
-#result > .q:first-child {
+#result > .q:first-child,
+#sharedResult > .q:first-child {
   margin-bottom: -4px;
 }
 .legal .q {
