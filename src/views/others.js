@@ -16,16 +16,11 @@ export const shareTermsView = () => html`
  * }} OthersSection
  */
 
-/** Comparar's consent in one line: what is seen and by whom stays on screen (ADR-0006); the rest is in a fold. */
+/** Comparar's consent in one line: what is seen and by whom (ADR-0006); the full text is in the account page. */
 const shareShortView = () => html`<p>
     A cambio, se comparten las tuyas: sus condiciones, tu nombre, tu correo y tu teléfono, solo con quien también
     comparte.
-  </p>
-  <details class="share-more">
-    <summary>Qué no se comparte</summary>
-    <p>Tus km, tus gastos, los nombres de tus ofertas ni tus ajustes. Si dejas de compartir, tus datos dejan de verse
-      y dejas de ver las ofertas de otros pastores.</p>
-  </details>`;
+  </p>`;
 
 const skeleton = html`<div class="others-skel" aria-hidden="true">${[78, 62, 46].map(
   (width) => html`<div class="skel-row"><i style="width:${width}%"></i></div>`,

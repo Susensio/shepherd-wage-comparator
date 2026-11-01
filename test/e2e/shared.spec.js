@@ -389,8 +389,6 @@ test.describe('the «Otros pastores» section', () => {
       '¿Pagan mejor en otros sitios?',
       'se comparten las tuyas: sus condiciones, tu nombre, tu correo y tu teléfono',
       'solo con quien también comparte',
-      'tus gastos, los nombres de tus ofertas ni tus ajustes',
-      'dejas de ver las ofertas de otros pastores',
     ])
       await expect(section(page)).toContainText(phrase);
     await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
@@ -405,7 +403,7 @@ test.describe('the «Otros pastores» section', () => {
     await expect(visible).toBeVisible();
     await expect(visible).toContainText('tu nombre, tu correo y tu teléfono');
     await expect(visible).toContainText('solo con quien también comparte');
-    await expect(section(page).locator('.share-more p')).toBeHidden();
+    await expect(section(page).locator('details')).toHaveCount(0);
     await page.evaluate(() => app.openAccountPage());
     await page.getByLabel('Compartir tus ofertas').click();
     await expect(page.locator('#shareConfirm')).toContainText('Las ven los pastores que han entrado y comparten');
