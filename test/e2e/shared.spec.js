@@ -299,7 +299,7 @@ test.describe('two sharers with the same name', () => {
     });
     await include(page);
     await expect(page.locator('.lr.other b').first()).toContainText('Luis Rebaño');
-    await expect(page.locator('.lr.other', { hasText: 'Municipio de Yebra de Basa · Huesca' })).toHaveCount(1);
+    await expect(page.locator('.lr.other', { hasText: 'Yebra de Basa · Huesca' })).toHaveCount(1);
     await expect(page.locator('.lr.other', { hasText: 'Teruel' })).toHaveCount(1);
     await page.getByRole('button', { name: 'Comparar dos' }).click();
     await page.locator('.lr.pickable', { hasText: 'Luis Rebaño' }).nth(0).click();

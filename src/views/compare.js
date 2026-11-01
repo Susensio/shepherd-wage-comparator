@@ -208,7 +208,7 @@ function headToHead(list, pairing) {
     return shown.length ? html`<tr class="group"><th colspan="3">${title}</th></tr>${shown}` : nothing;
   });
   const header = (x) =>
-    html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}>${x.o.mine.name}${detailOf(x)}</button></th>`;
+    html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}><span>${x.o.mine.name}</span>${detailOf(x)}</button></th>`;
   return html`<div class="pair" id="pairBlk"><div class="pair-head"><h4 class="sub">Cara a cara</h4><button type="button" class="linkbtn" data-action="closePair">Cerrar</button></div>
     <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }

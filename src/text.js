@@ -52,6 +52,12 @@ export function whereText(terms, places, village = '') {
   return !name || fold(name) === fold(found.municipality) ? area : `${name} · ${area}`;
 }
 
+/** «Yebra de Basa · Huesca»: the short place that tells a sharer's offers apart. Empty until the list is loaded. */
+const placeLabel = (terms, places) => {
+  const found = places && placeOfTerms(places, terms);
+  return found ? [found.municipality, found.province].filter(Boolean).join(' · ') : '';
+};
+
 /**
  * What to call each shared offer: the sharer's name and, where two or more offers carry the same name, what tells them
  * apart: where the job is, else its dates, else both, else an ordinal.
@@ -67,9 +73,9 @@ export function sharedLabels(items, places) {
     byName.set(key, [...(byName.get(key) ?? []), item]);
   }
   const tiers = [
-    (terms) => whereText(terms, places),
+    (terms) => placeLabel(terms, places),
     (terms) => datesText(terms),
-    (terms) => [whereText(terms, places), datesText(terms)].filter(Boolean).join(' · '),
+    (terms) => [placeLabel(terms, places), datesText(terms)].filter(Boolean).join(' · '),
   ];
   for (const group of byName.values()) {
     if (group.length < 2) continue;
