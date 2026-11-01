@@ -1,8 +1,8 @@
-// The weekly-hours chart in Comparar: one typical working week, paid then unpaid, and the 40 h line.
+// The weekly-hours chart in Comparar: one typical working week, paid then unpaid.
 
 import { expect, loadOffers, sample, test } from './fixtures.js';
 
-/** Per offer on the chart: the figures of its result and the boxes of its bar, its segments and the 40 h line. */
+/** Per offer on the chart: the figures of its result and the boxes of its bar and its segments. */
 async function chartRows(page) {
   await page.click('.tabs [data-tab=compare]');
   return page.evaluate(() => {
@@ -24,18 +24,16 @@ async function chartRows(page) {
         bar: box(row.querySelector('.hbar')),
         paid: box(paid),
         unpaid: unpaid && box(unpaid),
-        line: box(row.querySelector('.hbar s')),
       };
     });
   });
 }
 
-test('paid and unpaid hours add up to the total, and the 40 h line sits at 40 h', async ({ loaded: page }) => {
+test('paid and unpaid hours add up to the total', async ({ loaded: page }) => {
   const rows = await chartRows(page);
   expect(rows.length).toBeGreaterThan(1);
   const cap = await page.evaluate(() =>
     Math.max(
-      40,
       ...[...document.querySelectorAll('#cmpMore .hours .hr .v')].map((v) =>
         Number.parseFloat(v.textContent.replace(',', '.')),
       ),
@@ -45,15 +43,17 @@ test('paid and unpaid hours add up to the total, and the 40 h line sits at 40 h'
     const bars = r.paid.width + (r.unpaid?.width ?? 0);
     expect(Math.abs(bars - (r.total / cap) * r.bar.width), r.name).toBeLessThanOrEqual(1);
     if (r.unpaid) expect(Math.abs(r.unpaid.left - r.paid.right), r.name).toBeLessThanOrEqual(1);
-    expect(Math.abs(r.line.left - (r.bar.left + (40 / cap) * r.bar.width)), r.name).toBeLessThanOrEqual(1.5);
   }
 });
 
-test('the unpaid part never starts before the 40 h line when the week is a full one', async ({ loaded: page }) => {
+test('in a full week the unpaid hours start at 40 h or later', async ({ loaded: page }) => {
   const rows = await chartRows(page);
   const full = rows.filter((r) => r.days >= 5.5 && r.perDay >= r.workday);
   expect(full.length).toBeGreaterThan(0);
-  for (const r of full) if (r.unpaid) expect(r.unpaid.right, r.name).toBeGreaterThanOrEqual(r.line.left - 1);
+  for (const r of full) {
+    const hoursPaid = (r.paid.width / (r.paid.width + (r.unpaid?.width ?? 0))) * r.total;
+    expect(hoursPaid, r.name).toBeGreaterThanOrEqual(40 - 0.5);
+  }
 });
 
 test('an offer with nothing unpaid shows no «sin pagar» segment', async ({ loaded: page }) => {
@@ -68,5 +68,5 @@ test('an offer with nothing unpaid shows no «sin pagar» segment', async ({ loa
   const legend = page.locator('#cmpMore .hours + .legend');
   await expect(legend).toContainText('Horas pagadas');
   await expect(legend).toContainText('Horas sin pagar');
-  await expect(legend).toContainText('40 h, máximo legal');
+  await expect(legend).not.toContainText('máximo legal');
 });

@@ -230,8 +230,7 @@ function unpaidHoursPerWeek(r) {
 
 /** Hours per week in a typical working week: what is paid, then what is not; the 40 h line is where the extra hours begin. */
 function hoursView(list) {
-  const limit = LAW.weeklyHours;
-  const cap = Math.max(limit, ...list.map((x) => x.r.time.hoursPerWeek));
+  const cap = Math.max(...list.map((x) => x.r.time.hoursPerWeek));
   const pct = (v) => (v / cap) * 100;
   const rows = [...list]
     .sort((a, b) => a.r.time.hoursPerWeek - b.r.time.hoursPerWeek)
@@ -243,13 +242,13 @@ function hoursView(list) {
       return html`<button type="button" class="hr" data-action=${openAction(x)} data-id=${o.id}><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v">${fN(total)} h</span>
       <span class="hbar"><i class="paid" style="left:0;width:${pct(paid)}%"></i>${
         unpaid >= 0.5 ? html`<i class="unpaid" style="left:${pct(paid)}%;width:${pct(unpaid)}%"></i>` : nothing
-      }<s style="left:${pct(limit)}%"></s></span></button>`;
+      }</span></button>`;
     });
   const anyUnpaid = list.some((x) => unpaidHoursPerWeek(x.r) >= 0.5);
   return html`<h4 class="sub">Horas a la semana</h4><div class="lst hours">${rows}</div>
     <p class="legend"><span>${swatch('--c-work')}Horas pagadas</span>${
-      anyUnpaid ? html`<span><span class="sw unpaid"></span>Horas sin pagar</span>` : nothing
-    }<span><i class="lg-line"></i>${limit} h, máximo legal</span></p>
+      anyUnpaid ? html`<span>${swatch('--c-work-extra')}Horas sin pagar</span>` : nothing
+    }</p>
     <p class="hint">Una semana de trabajo típica. Las cuentas de todo el contrato están en cada oferta.</p>`;
 }
 

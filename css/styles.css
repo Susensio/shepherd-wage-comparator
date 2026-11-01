@@ -1205,20 +1205,6 @@ section.blk {
   font-size: 12px;
   color: var(--muted);
 }
-/* The 40 h line on the weekly-hours bars, and its legend */
-.hours .hbar s {
-  border-left: 2px solid var(--ink);
-  opacity: 0.8;
-}
-.legend .lg-line {
-  display: inline-block;
-  width: 0;
-  height: 11px;
-  margin-right: 5px;
-  vertical-align: -1px;
-  border-left: 2px solid var(--ink);
-  opacity: 0.8;
-}
 .legend span {
   display: inline-flex;
   align-items: center;
@@ -2267,12 +2253,8 @@ details.paste > summary {
 .hbar i.paid {
   background: var(--c-work);
 }
-/* Hatched like the rest of the page marks what is missing */
-.hbar i.unpaid,
-.sw.unpaid {
-  background:
-    repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--surface) 70%, transparent) 2px 4px),
-    var(--c-work-extra);
+.hbar i.unpaid {
+  background: var(--c-work-extra);
 }
 .hbar s {
   position: absolute;
