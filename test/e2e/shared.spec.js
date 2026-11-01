@@ -306,9 +306,12 @@ test.describe('two sharers with the same name', () => {
     await page.locator('.lr.pickable', { hasText: 'Luis Rebaño' }).nth(1).click();
     const heads = await page.locator('#pairBlk thead th button').allTextContents();
     expect(new Set(heads).size).toBe(2);
-    expect(heads.every((h) => h.startsWith('Luis Rebaño · '))).toBe(true);
+    expect(heads.every((h) => h.startsWith('Luis Rebaño'))).toBe(true);
+    // The name on the first line, the place on a second, smaller one
+    await expect(page.locator('#pairBlk thead .detail')).toHaveCount(2);
+    const detail = await page.locator('#pairBlk thead .detail').first().textContent();
     await page.locator('#pairBlk thead th button').first().click();
-    await expect(page.locator('#sharedBlk h3.q').first()).toContainText(`Oferta de ${heads[0]}`);
+    await expect(page.locator('#sharedBlk h3.q').first()).toContainText(`Oferta de Luis Rebaño · ${detail}`);
   });
 
   test('fall back to the dates, then to an ordinal', async ({ openApp }) => {
@@ -317,14 +320,15 @@ test.describe('two sharers with the same name', () => {
       others: [twin(1, { ...base, start: '2026-06-01' }), twin(2, { ...base, start: '2026-07-01' })],
     });
     await include(dated);
-    const labels = await dated.locator('.lr.other b').allTextContents();
+    const labels = await dated.locator('.lr.other .detail').allTextContents();
     expect(new Set(labels).size).toBe(2);
     expect(labels.join(' ')).toMatch(/jun|jul/);
 
     const alike = await openCompare(openApp, { others: [twin(1, base), twin(2, base)] });
     await include(alike);
-    await expect(alike.locator('.lr.other b').nth(0)).toContainText('Luis Rebaño · n.º 1');
-    await expect(alike.locator('.lr.other b').nth(1)).toContainText('Luis Rebaño · n.º 2');
+    await expect(alike.locator('.lr.other b').nth(0)).toHaveText('Luis Rebaño');
+    await expect(alike.locator('.lr.other .detail').nth(0)).toHaveText('n.º 1');
+    await expect(alike.locator('.lr.other .detail').nth(1)).toHaveText('n.º 2');
   });
 
   test('a lone sharer keeps the plain name', async ({ openApp }) => {

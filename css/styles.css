@@ -2178,6 +2178,20 @@ details.paste > summary {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.nm {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* What tells a shepherd's offers apart, under the name */
+.detail {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: normal;
+}
 .lr b small {
   font-weight: 500;
   color: var(--muted);

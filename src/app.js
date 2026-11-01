@@ -107,7 +107,10 @@ function comparedOthers() {
   const labels = sharedLabels(state.others.items, placesIfLoaded());
   return state.others.items.flatMap(({ o, sharer }) => {
     try {
-      return [{ o, sharer, label: labels.get(o.id), r: calcTermsOnly(o, { cfg: state.config }) }];
+      const { name, detail } = labels.get(o.id);
+      return [
+        { o, sharer, label: detail ? `${name} · ${detail}` : name, detail, r: calcTermsOnly(o, { cfg: state.config }) },
+      ];
     } catch (error) {
       console.error(error);
       return [];

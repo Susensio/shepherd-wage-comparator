@@ -57,10 +57,10 @@ export function whereText(terms, places, village = '') {
  * apart: where the job is, else its dates, else both, else an ordinal.
  * @param {{ o: { id: string, mine: { name: string }, terms: object } }[]} items
  * @param {import('./places.js').PlacesIndex | null} places
- * @returns {Map<string, string>} by offer id
+ * @returns {Map<string, { name: string, detail: string }>} by offer id; `detail` is empty for a name that is alone
  */
 export function sharedLabels(items, places) {
-  const labels = new Map(items.map(({ o }) => [o.id, o.mine.name]));
+  const labels = new Map(items.map(({ o }) => [o.id, { name: o.mine.name, detail: '' }]));
   const byName = new Map();
   for (const item of items) {
     const key = fold(item.o.mine.name);
@@ -77,7 +77,7 @@ export function sharedLabels(items, places) {
     const ordered = [...group].sort((a, b) => (a.o.id < b.o.id ? -1 : 1));
     ordered.forEach(({ o }, i) => {
       const detail = tier ? tier(o.terms) : `n.º ${i + 1}`;
-      if (detail) labels.set(o.id, `${o.mine.name} · ${detail}`);
+      if (detail) labels.set(o.id, { name: o.mine.name, detail });
     });
   }
   return labels;
