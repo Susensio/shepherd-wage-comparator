@@ -5,8 +5,8 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 ## The offer
 
 - An offer is `{ id, terms, mine }` (ADR-0007), plus `cmp`, the Comparar toggle, which is a view choice and stays at the top.
-- `terms` is what the employer offers and the only part ever shared: dates, duration, hours, days off, contract, pay, extra pays, vacation, cash, agreed total, overnight, housing, meals given and the km rate paid. `DEF_TERMS` in `src/offer.js` lists them.
-- `mine` is the worker's own figures for that offer: `name`, distance and trips, car, commute, other expenses, the rent override and the IRPF choice. `DEF_MINE` lists them. A field belongs to exactly one of the two.
+- `terms` is what the employer offers and the only part ever shared: dates, duration, hours, days off, contract, pay, extra pays, vacation, cash, agreed total, overnight, housing, meals given, the km rate paid, where the job is (INE municipality code and province code) and the herd (head counts of sheep, goats and cattle). `DEF_TERMS` in `src/offer.js` lists them.
+- `mine` is the worker's own figures for that offer: `name`, the village (`place`), whether it was only an offer and never worked (`offerOnly`, ADR-0017), distance and trips, car, commute, other expenses, the rent override and the IRPF choice. `DEF_MINE` lists them. A field belongs to exactly one of the two.
 - Whatever the employer's terms alone decide (schedule, legal minimum, the questions in `offer.js`) takes `terms`; only the car, the other expenses, the rent and the IRPF choice read `mine`.
 - `vacationAuto` (vacation set for a short contract, not by the user) sits in `terms` with `vacation`.
 
@@ -55,3 +55,12 @@ Two rules, and each extra hour counts once.
 - An agreed total is split into payroll and cash: the cash part is the total minus what reaches the worker on payroll, net, and never below zero.
 - A net pay is turned into the gross that gives it, because IRPF depends on the gross. The same conversion says what gross would bring the cash part net.
 - IRPF counts the worker's other worked offers in the same year. Those are calculated on their own to avoid circular references.
+
+## Rules added in November 2026
+
+- Social Security rates depend on the contract: `ssOf(contract)` in `law.js` (Orden PJC/297/2026), read through `r.pay.rates`. An offer without a contract uses the temporary rates to turn cash into gross and to price what the employer saves.
+- Every ledger's «=» row is the sum of its rows as shown: rows are rounded first, then added, per column (`test/e2e/ledger.js` checks exact equality). A total can therefore differ by a cent or a euro from the same figure computed elsewhere.
+- Places: `data/places-<version>.json`, built by `npm run places` from GeoNames (ADR-0015), is fetched when an offer's form opens and kept in Cache Storage under its version; data saving or a 2G line defers it to the location field. `src/places.js` folds names and searches them; a municipality code is named through the list once it has arrived.
+- Account sync keeps unsynced changes in `localStorage` (`cj.accountUnsynced`: changed and removed offer ids, settings), so offline edits survive a reload and are written first on the next connect; fingerprints are taken before each write. Signing out writes pending changes first, then clears the browser's copy (ADR-0017).
+- Shared rows: `ingestShared` fills the defaults and drops `offerOnly`; same-named sharers get a detail (place, then place or dates, then dates, then both, then «n.º N») from `sharedLabels` in `text.js`.
+- The schema lives in `supabase/migrations/` (ADR-0016), applied in order by `test/unit/rls.test.js` and by `.github/workflows/db.yml`.

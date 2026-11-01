@@ -18,6 +18,8 @@ node test/serve.js
 
 and open http://localhost:8000. Any static server works (`python3 -m http.server` too).
 
+The list of Spanish villages used to place each offer comes from [GeoNames](https://www.geonames.org/) (CC BY 4.0), built into `data/` by `npm run places`. The account database schema is in `supabase/migrations/`.
+
 `index.html` holds the static markup and `src/` the code, with the calculations in `src/model/` and every legal figure in `src/law.js`. `vendor/` has lit-html (BSD-3-Clause) and supabase-js (MIT) as published. Unit tests are in `test/unit/`, browser tests in `test/e2e/`.
 
 ## Development
