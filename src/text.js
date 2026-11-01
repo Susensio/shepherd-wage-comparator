@@ -14,12 +14,12 @@ export const MISSING_TEXT = {
   hoursPerDay: 'las horas por día',
   pay: 'el sueldo',
   agreedTotal: 'el total pactado',
-  cashInHand: 'lo que te pagan en mano',
+  cashInHand: 'lo que te pagan en negro',
   vacation: 'qué pasa con las vacaciones',
 };
 
 /** The same for another shepherd's offer: impersonal. */
-export const MISSING_TEXT_THIRD = { ...MISSING_TEXT, cashInHand: 'lo que se paga en mano' };
+export const MISSING_TEXT_THIRD = { ...MISSING_TEXT, cashInHand: 'lo que se paga en negro' };
 
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
 export const fSplit = (v, unit) =>
@@ -143,7 +143,7 @@ export function summaries(o, r, places = null, third = false) {
     time: `${datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : ''}${duration} · ${daysOff} · ${num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner'}`,
     payroll:
       o.terms.contract === 'none'
-        ? 'Sin contrato: todo en mano'
+        ? 'Sin contrato: todo en negro'
         : o.terms.payrollMin
           ? `El mínimo · ${vacation}`
           : num(o.terms.payAmount) > 0
@@ -269,10 +269,10 @@ export function claimText(o, r) {
   add('SALARIO');
   if (r.noContract) {
     add(
-      `Sin contrato ni alta en la Seguridad Social (${citeOf('et', '8').label}). Se pagan ${fE(cash)} en mano en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
+      `Sin contrato ni alta en la Seguridad Social (${citeOf('et', '8').label}). Se pagan ${fE(cash)} en negro en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
     );
     add(
-      `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (SMI ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(LAW.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
+      `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (salario mínimo ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(LAW.overnightPct)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
     );
     if (isWorthCounting(r.debt.vacation))
       add(
@@ -285,7 +285,7 @@ export function claimText(o, r) {
     );
     add(`Mínimo en todo el contrato, contado por meses: ${fE(r.min.total)} brutos.`);
     add(
-      `- SMI ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.`,
+      `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.`,
     );
     if (r.min.overnight > 0)
       add(
@@ -319,7 +319,7 @@ export function claimText(o, r) {
     add('', 'DESCANSO Y JORNADAS DE MÁS');
     if (r.rest.short >= 1)
       add(
-        `Descanso semanal: ${fN(r.time.daysOffTotal)} días libres frente a un mínimo de ${fN(r.rest.legal)} (${fDaysSpoken(LAW.weeklyRest)} por semana; ${citeOf('et', '37.1').label}).`,
+        `Descanso semanal: ${fN(r.time.daysOffTotal)} libranzas frente a un mínimo de ${fN(r.rest.legal)} (${fDaysSpoken(LAW.weeklyRest)} por semana; ${citeOf('et', '37.1').label}).`,
       );
     if (o.terms.holidays !== 'yes' && x.holidays >= 0.5)
       add(

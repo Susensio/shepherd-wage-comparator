@@ -104,7 +104,7 @@ test('summaries: the place line joins where and herd', () => {
 
 test('summaries: a no-contract offer says everything is paid in hand', () => {
   const o = byId('o5');
-  assert.equal(summaries(o, resultOf(o)).payroll, 'Sin contrato: todo en mano');
+  assert.equal(summaries(o, resultOf(o)).payroll, 'Sin contrato: todo en negro');
 });
 
 test('card: starts with the offer name and shows the verdict line', () => {
@@ -160,7 +160,7 @@ test('claim: without a contract it cites article 8 and the cash paid', () => {
   const o = byId('o5');
   const claim = claimText(o, resultOf(o));
   assert.match(claim, /Sin contrato ni alta en la Seguridad Social \(Estatuto, art\. 8\)/);
-  assert.match(claim, /Se pagan .* en mano en todo el contrato/);
+  assert.match(claim, /Se pagan .* en negro en todo el contrato/);
 });
 
 test('claim: a compliant offer reports no pay shortfall', () => {

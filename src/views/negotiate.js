@@ -26,7 +26,7 @@ function costDetails(o, r) {
       r.employer.ss,
       `aprox. ${fN(r.pay.rates.employerPct, 1)} % del bruto`,
     ],
-    r.cash.total > 0 && [r.noContract ? 'En mano, sin contrato' : 'En negro', r.cash.total, ''],
+    r.cash.total > 0 && [r.noContract ? 'En negro, sin contrato' : 'En negro', r.cash.total, ''],
     r.car.kmPaid > 0.5 && ['Kilometraje que te paga', r.car.kmPaid, ''],
     r.employer.severance > 0.5 && [
       'Indemnización por fin de contrato',

@@ -69,7 +69,7 @@ export function rightsOf(o, r, unit = 'month', third = false) {
       'salary',
       !isWorthCounting(r.debt.salary),
       'Salario mínimo',
-      `${say('Te pagan', 'Se pagan')} ${money.figure(r.cash.total)} en mano ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus por dormir en el monte' : ''}.`,
+      `${say('Te pagan', 'Se pagan')} ${money.figure(r.cash.total)} en negro ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus de pernocta' : ''}.`,
     );
     if (isWorthCounting(r.min.vacation))
       add(
@@ -87,7 +87,7 @@ export function rightsOf(o, r, unit = 'month', third = false) {
     );
     if (o.terms.overnight === 'yes') {
       const short = r.min.salary + r.min.overnight - r.pay.salary;
-      const title = 'Plus por dormir en el monte';
+      const title = 'Plus de pernocta';
       if (!salaryOk)
         add(
           'overnight',

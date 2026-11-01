@@ -164,8 +164,8 @@
               <label><input type="radio" name="contract" value="permanent">Fijo</label>
               <label><input type="radio" name="contract" value="none">Sin contrato</label>
             </div>
-            <p class="hint" data-show="withContract">Cambia el mínimo legal: el SMI de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
-            <p class="hint" data-show="noContract">Sin contrato, todo lo que cobras va en mano: se pone en «En negro». No hace falta poner nómina ni vacaciones.</p>
+            <p class="hint" data-show="withContract">Cambia el mínimo legal: el salario mínimo de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
+            <p class="hint" data-show="noContract">Sin contrato, todo lo que cobras va en negro: se pone en «En negro». No hace falta poner nómina ni vacaciones.</p>
           </div>
           </fieldset>
         </details>
@@ -175,7 +175,7 @@
           <fieldset aria-label="En nómina">
           <div class="fld full">
             <div class="row-fld" data-show="fixedPayroll">
-              <label for="payAmount">Salario en nómina</label>
+              <label for="payAmount">Sueldo en nómina</label>
               <div class="seg" role="radiogroup" aria-label="Bruto o neto">
                 <label><input type="radio" name="payType" value="gross">Bruto</label>
                 <label><input type="radio" name="payType" value="net">Neto</label>
@@ -234,7 +234,7 @@
             <p class="hint" id="cashAuto"></p>
           </div>
           <div class="fld full" data-show="cashByAmount">
-            <label class="fld" for="cashAmount">Dinero en negro, en mano</label>
+            <label class="fld" for="cashAmount">Dinero en negro</label>
             <div class="combo">
               <input class="n" type="text" inputmode="decimal" id="cashAmount" name="cashAmount">
               <div class="seg" role="radiogroup" aria-label="Unidad de lo que cobras en negro">
@@ -363,7 +363,7 @@
     <dl class="docs">
       <dt>Salario mínimo</dt>
       <dd>Cambia cada año; se usa el del año que pongas en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. El mínimo por hora se calcula con <span data-law="annualHours"></span> horas de jornada al año, la del <a data-source="granada" data-art="5">convenio del campo de Granada</a> (artículo 5), que se usa de referencia: no hay una cifra estatal y otras provincias tienen otra. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
-      <dt>Plus por dormir en el monte</dt>
+      <dt>Plus de pernocta</dt>
       <dd>Si pernoctas fuera por pastoreo (borda, cabaña), al menos un <span data-law="overnightPct"></span> % más de salario. <span class="source"><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a>, art. 29. Es el último publicado que se ha podido consultar: puede haber uno más reciente, y sus tablas salariales pueden fijar un sueldo mayor que el SMI.</span></dd>
       <dt>Vacaciones</dt>
       <dd><span data-law="vacationDaysPerYear"></span> días naturales al año (<span data-law="vacationPerMonth"></span> por mes). Se disfrutan: solo se pueden pagar en vez de librarlas si el contrato acaba antes de poder disfrutarlas. En los contratos cortos se pueden cobrar dentro del jornal, en proporción, siempre que lo que queda llegue al salario mínimo; en la nómina tienen que salir como concepto aparte. <span class="source"><a data-source="et" data-art="38" target="_blank" rel="noopener">Estatuto de los Trabajadores, art. 38</a>.</span></dd>

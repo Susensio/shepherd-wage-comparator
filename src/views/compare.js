@@ -19,7 +19,7 @@ const unitPicker = (unit) =>
 
 /** Switch to the figures of the offers' terms alone, as they would be for anyone. Forced on by other shepherds' offers. */
 const termsOnlySwitch = (on, forced) =>
-  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on} ?disabled=${forced}>Solo las condiciones de la oferta</label>
+  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on} ?disabled=${forced}>Solo las condiciones</label>
     <p class="hint">${
       forced
         ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
@@ -89,7 +89,7 @@ function medals(list, unit) {
       'menos sin pagar',
     ],
     [(x) => x.r.time.hoursPerWeek, 'min', 'menos horas'],
-    [(x) => x.r.time.daysOffMonth, 'max', 'más días libres'],
+    [(x) => x.r.time.daysOffMonth, 'max', 'más libranzas'],
     [(x) => x.r.cash.share, 'min', 'menos en negro'],
   ].filter(Boolean);
   for (const [value, best, title] of kinds) {
@@ -138,7 +138,7 @@ function headToHead(list, pairing) {
           'max',
         ],
         [
-          say('Te entra al mes', 'Entra al mes'),
+          say('Cobras al mes', 'Se cobra al mes'),
           (x) => (perMonthOk(x) ? x.r.earnings.received / (x.r.time.months || 1) : Number.NaN),
           orDash(fE),
           'max',
@@ -150,7 +150,7 @@ function headToHead(list, pairing) {
           'max',
         ],
         similar && [
-          say('Te entra en total', 'Entra en total'),
+          say('Cobras en total', 'Se cobra en total'),
           (x) => (x.r.time.noDuration ? Number.NaN : x.r.earnings.received),
           orDash(fE),
           'max',
@@ -174,7 +174,7 @@ function headToHead(list, pairing) {
           (v) => (v >= 0.5 ? `${fN(v)} h` : 'ninguna'),
           'min',
         ],
-        ['Días libres al mes', (x) => x.r.time.daysOffMonth, (v) => fCount(v), 'max'],
+        ['Libranzas al mes', (x) => x.r.time.daysOffMonth, (v) => fCount(v), 'max'],
       ],
     ],
     [
@@ -402,7 +402,7 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.mine.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, SMI ${p.r.wage.year}).`;
+    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.mine.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que ganas ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que ganas ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)

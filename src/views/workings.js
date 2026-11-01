@@ -73,7 +73,7 @@ function payrollSection(r, third) {
     others.count
       ? `Para el IRPF se suman también ${fE(others.gross)} brutos de ${others.count === 1 ? say('tu otra oferta trabajada', 'otra oferta trabajada') : say(`tus otras ${others.count} ofertas trabajadas`, `otras ${others.count} ofertas trabajadas`)} en ${years ? 'esos años' : 'ese año'}. `
       : '',
-    `IRPF de esta oferta en el año, con la deducción para sueldos cerca del SMI: ${fE(pay.irpfYear)}.`,
+    `IRPF de esta oferta en el año, con la deducción para sueldos cerca del salario mínimo: ${fE(pay.irpfYear)}.`,
     isWorthCounting(pay.irpf - pay.irpfYear)
       ? ` En la renta ${say('te devolverían', 'devolverían')} unos ${fE(pay.irpf - pay.irpfYear)}; no se suma a lo que ${say('ganas', 'se gana')}.`
       : '',
@@ -119,7 +119,7 @@ function minimumSection(o, r, net, third) {
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
-      : `SMI ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
   });
   const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(LAW.overnightPct)} %)`, fE(min.overnight));
   const salaryShort = (short, sub) =>
@@ -130,7 +130,7 @@ function minimumSection(o, r, net, third) {
     return section('Mínimo legal, contado por meses', [
       minimum,
       bonus,
-      row(say('− Te pagan en mano, pasado a bruto', '− Se paga en mano, pasado a bruto'), fE(r.cash.total / factor)),
+      row(say('− Te pagan en negro, pasado a bruto', '− Se paga en negro, pasado a bruto'), fE(r.cash.total / factor)),
       salaryShort(cashShort, ''),
       min.vacation > 0.5 &&
         row('Vacaciones sin pagar', fE(debt.vacation), { sub: fDays(r.time.vacationDays), cls: 'strong' }),

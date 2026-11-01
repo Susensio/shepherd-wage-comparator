@@ -170,7 +170,7 @@ const BLEATS = [
   'Meee… ¿vacaciones?',
   '¡Sindicato, beee!',
   'Ni un día sin contrato',
-  'Bee… 1,5 días libres por semana',
+  'Bee… día y medio de descanso semanal',
   'Contigo hasta la majada',
   'Más hierba y menos horas',
   'Mi pastor no se regala',
