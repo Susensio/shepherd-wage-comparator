@@ -58,3 +58,16 @@ for (const offer of sample.offers) {
     expect(crossed).toEqual([]);
   });
 }
+
+test('«o arrástralo aquí» shows with a mouse and not on a touch screen', async ({ page, browser, baseURL }) => {
+  await page.evaluate(() => app.openSettingsPage());
+  await expect(page.locator('#backupDrop span')).toBeVisible();
+  const touch = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 800 } });
+  const phone = await touch.newPage();
+  await phone.goto(baseURL ?? '/');
+  await phone.waitForFunction(() => window.app);
+  await phone.evaluate(() => app.openSettingsPage());
+  await expect(phone.locator('#backupDrop span')).toBeHidden();
+  await expect(phone.locator('#backupDrop .filebtn')).toBeVisible();
+  await touch.close();
+});

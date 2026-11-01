@@ -1921,6 +1921,12 @@ details.fixed > summary::-webkit-details-marker {
   font-size: 13px;
   color: var(--muted);
 }
+/* Nothing to drop a file on with a finger */
+@media (pointer: coarse) {
+  .drop > span {
+    display: none;
+  }
+}
 .drop.dragging {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
