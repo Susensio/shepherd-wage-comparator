@@ -28,6 +28,7 @@ import {
   sideOf,
   TEMPLATES,
 } from './offer.js';
+import { answersOf, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
@@ -75,10 +76,32 @@ function endDateTyped(value) {
   return false;
 }
 
+/** Reads what changed in «Lo que te pagan» into the terms, through the answers they give. */
+function payAnswerTyped(el, terms) {
+  const answers = answersOf(terms);
+  const amount = el.value.trim() === '' ? '' : num(el.value);
+  if (el.dataset.answer === 'amount') answers.amount = amount;
+  else if (el.dataset.answer === 'part') answers.part = amount;
+  else if (el.dataset.answer === 'unit') answers.unit = /** @type {'day' | 'month' | 'total'} */ (el.value);
+  else {
+    answers.payroll = /** @type {'all' | 'min' | 'part' | 'none'} */ (el.value);
+    // The part starts empty, as a payslip amount told about everything is not a part of it
+    if (answers.payroll === 'part') Object.assign(answers, { part: '', partType: 'net' });
+  }
+  writeAnswers(terms, answers);
+}
+
 function onFormInput(e) {
   const el = /** @type {HTMLInputElement} */ (e.target);
   const o = active();
   const { terms } = o;
+  if (el.dataset.answer) {
+    payAnswerTyped(el, terms);
+    animateNextPaint();
+    if (defaultVacation(terms)) fillVacation(o);
+    commit();
+    return;
+  }
   if (el.id === 'end') {
     if (!endDateTyped(el.value)) return;
     animateNextPaint();
@@ -110,11 +133,6 @@ function onFormInput(e) {
   else side[el.name] = num(el.value);
   animateNextPaint();
   if (el.name === 'vacation') delete terms.vacationAuto;
-  if (el.name === 'cashMode' && el.value === 'total') {
-    if (!(num(terms.totalAmount) > 0))
-      terms.totalUnit = ['day', 'month'].includes(terms.payUnit) ? terms.payUnit : 'month';
-    fillForm(o);
-  }
   if (defaultVacation(terms)) fillVacation(o);
   if (['start', 'duration', 'durationUnit'].includes(el.name)) paintEnd(terms);
   commit();

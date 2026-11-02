@@ -124,6 +124,6 @@ export function load() {
     placeholderId: firstRun ? offers[0].id : null,
     config,
     cmpUnit: UNITS[unit] ? unit : 'day',
-    folds: { time: true, payroll: true, breakdown: true, ...store.get(KEY.folds, {}) },
+    folds: { time: true, pay: true, breakdown: true, ...store.get(KEY.folds, {}) },
   });
 }

@@ -462,6 +462,32 @@ summary:focus-visible,
   align-items: stretch;
 }
 
+/* «Lo que te pagan»: the offer told back, and what goes en negro */
+.told {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  font-size: 14.5px;
+}
+.told b {
+  font-weight: 700;
+}
+.cashline {
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c-cash) 14%, var(--surface));
+  color: var(--c-cash-t);
+  font-size: 14px;
+  font-weight: 600;
+}
+.cashline[hidden] {
+  display: none;
+}
+.payper {
+  align-self: center;
+}
+
 /* Picking one option: segmented buttons (.seg) or cards with an explanation (.opts) */
 .seg {
   display: flex;

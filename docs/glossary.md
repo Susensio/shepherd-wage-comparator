@@ -33,6 +33,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | paro | unemployment benefit earned by contributing | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
 | Seguridad Social | contributions, worker and employer | `ssOf(contract)`, `r.pay.rates` | Orden PJC/297/2026 | cotización (in explanations only) |
 | retención de IRPF | | `r.pay.irpf`, `irpfPct` | | |
+| te pagan | everything the offer pays together, payslip and en negro: the first answer of «Lo que te pagan», what reaches the shepherd | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | cobras (that is the Desglose figure) |
 | casa y comida | housing and meals given by the employer | `terms.housing`, `terms.meal*` | | |
 
 ## Contract

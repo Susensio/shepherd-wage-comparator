@@ -56,9 +56,22 @@ test('no sample offer prints NaN or undefined in any text', () => {
 test('summaries: one line per form section', () => {
   const o = byId('o1');
   const s = summaries(o, resultOf(o));
-  assert.deepEqual(Object.keys(s), ['where', 'herd', 'place', 'time', 'payroll', 'b', 'housing', 'car', 'others']);
+  assert.deepEqual(Object.keys(s), [
+    'where',
+    'herd',
+    'place',
+    'time',
+    'payroll',
+    'b',
+    'housing',
+    'car',
+    'others',
+    'pay',
+  ]);
   assert.match(s.time, /102 días/);
   assert.match(s.payroll, /neto/);
+  assert.match(s.pay, /^1\.785 €\/mes neto/);
+  assert.match(s.pay, /· en negro: el resto hasta/);
   assert.match(s.housing, /^Duermes en borda/);
   assert.match(s.car, /^Tu coche/);
 });

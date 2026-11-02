@@ -7,6 +7,7 @@ import { render } from 'lit-html';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
+import { toAnswerable } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
@@ -74,11 +75,11 @@ function paintChips() {
 
 /** The form field where each thing `missing()` reports goes. */
 const MISSING_FIELD = {
-  agreedTotal: '#totalAmount',
+  agreedTotal: '#payTotal',
   duration: '#duration',
   hoursPerDay: '#hoursPerDay',
-  pay: '#payAmount',
-  cashInHand: '#cashAmount',
+  pay: '#payTotal',
+  cashInHand: '#payTotal',
   vacation: 'input[name=vacation]',
 };
 
@@ -86,8 +87,14 @@ const MISSING_FIELD = {
 function markMissing() {
   const o = active();
   const shortfall = ui.askedToSee === o.id ? missing(o.terms) : [];
-  for (const [what, selector] of Object.entries(MISSING_FIELD))
-    $(selector).closest('.fld').classList.toggle('missing', shortfall.includes(what));
+  // Several things can point at one field (the pay questions have a single amount)
+  for (const selector of new Set(Object.values(MISSING_FIELD)))
+    $(selector)
+      .closest('.fld')
+      .classList.toggle(
+        'missing',
+        shortfall.some((what) => MISSING_FIELD[what] === selector),
+      );
   $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
 }
 
@@ -171,6 +178,8 @@ function paintTimeline(all = compared()) {
 export function paintAll() {
   setTimeout(setNavHeight);
   const o = active();
+  // An offer saved in a shape the pay questions cannot say is converted when it is shown, keeping its figures
+  if (toAnswerable(o, { cfg: state.config, offers: myOffers() })) saveOffers();
   const r = calcOffer(o);
   paintChips();
   needPlacesFor(o);
@@ -292,7 +301,7 @@ export const restoreStaticFolds = () => restoreFolds(document);
 
 /** The fields of «Datos de la oferta» that open with a new offer. */
 export const openFirstSections = () => {
-  for (const d of /** @type {HTMLDetailsElement[]} */ ($$('[data-fold=time],[data-fold=payroll]'))) d.open = true;
+  for (const d of /** @type {HTMLDetailsElement[]} */ ($$('[data-fold=time],[data-fold=pay]'))) d.open = true;
 };
 
 export { fillVacation };

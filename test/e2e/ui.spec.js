@@ -8,7 +8,7 @@ async function fillOffer(page, { duration = '4', hours = '11', pay = '70' } = {}
   await page.fill('#duration', duration);
   await page.fill('#hoursPerDay', hours);
   await page.check('input[name=vacation][value=included]');
-  await page.fill('#payAmount', pay);
+  await page.fill('#payTotal', pay);
 }
 
 const offerNames = (page) => page.evaluate(() => app.state.offers.map((o) => o.mine.name));

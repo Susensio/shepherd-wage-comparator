@@ -12,14 +12,19 @@ import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js'
 export const MISSING_TEXT = {
   duration: 'la duración',
   hoursPerDay: 'las horas por día',
-  pay: 'el sueldo',
-  agreedTotal: 'el total pactado',
-  cashInHand: 'lo que te pagan en negro',
+  pay: 'lo que te pagan',
+  agreedTotal: 'lo que te pagan',
+  cashInHand: 'lo que te pagan',
   vacation: 'qué pasa con las vacaciones',
 };
 
 /** The same for another shepherd's offer: impersonal. */
-export const MISSING_TEXT_THIRD = { ...MISSING_TEXT, cashInHand: 'lo que se paga en negro' };
+export const MISSING_TEXT_THIRD = {
+  ...MISSING_TEXT,
+  pay: 'el sueldo',
+  agreedTotal: 'el total pactado',
+  cashInHand: 'lo que se paga en negro',
+};
 
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
 export const fSplit = (v, unit) =>
@@ -136,7 +141,7 @@ export function summaries(o, r, places = null, third = false) {
   const split = r.split;
   const where = whereText(o.terms, places, o.mine.place);
   const herd = herdText(o.terms);
-  return {
+  const lines = {
     where,
     herd,
     place: [where, herd].filter(Boolean).join(' · ') || 'Sin poner',
@@ -160,6 +165,12 @@ export function summaries(o, r, places = null, third = false) {
     car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
     others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
+  // «Lo que te pagan» is one section: the payslip, and the en negro money when there is any
+  const pay =
+    lines.b === 'Nada' || o.terms.contract === 'none'
+      ? lines.payroll
+      : `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`;
+  return { ...lines, pay };
 }
 
 /** «al mes», «por día»… or, over the whole contract, «en los 100 días». */

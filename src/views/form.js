@@ -6,28 +6,20 @@
 import { html, render } from 'lit-html';
 import { fCount, fE, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import {
-  actualYear,
-  contractOf,
-  endOf,
-  foodPerDay,
-  fromTotal,
-  isoOf,
-  mealsGiven,
-  overlapsOf,
-  sideOf,
-} from '../offer.js';
+import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
+import { answersOf, askExtraPays, isAnswerable, isCasualLength } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
-import { areaLine, fSplit, summaries } from '../text.js';
+import { areaLine, summaries } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
-  hasExtraPays: (o) => !o.terms.payrollMin && !['year', 'total'].includes(o.terms.payUnit),
-  fixedPayroll: (o) => !o.terms.payrollMin,
-  cashByTotal: (o) => fromTotal(o.terms),
-  cashByAmount: (o) => !fromTotal(o.terms),
+  payPart: (o) => answersOf(o.terms).payroll === 'part',
+  payLegacy: (o) => !isAnswerable(o.terms),
+  hasExtraPays: (o) => askExtraPays(o.terms),
+  // «Las libro» makes no sense on a short contract; one already saved with it keeps showing, with a hint
+  vacationTaken: (o) => !isCasualLength(o.terms) || o.terms.vacation === 'taken',
   overnight: (o) => o.terms.overnight === 'yes',
   showRent: (o) => o.terms.housing === 'yes',
   showMeals: (o) => mealsGiven(o.terms).length > 0,
@@ -42,7 +34,6 @@ const SHOW = {
   kmRate: (o) => o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0,
   irpfManual: (o) => o.mine.irpfMode === 'manual',
   withContract: (o) => o.terms.contract !== 'none',
-  noContract: (o) => o.terms.contract === 'none',
 };
 
 export const form = () => /** @type {HTMLFormElement} */ ($('#f'));
@@ -58,7 +49,7 @@ export function fillForm(o) {
   paintEnd(o.terms);
   /** @type {HTMLInputElement} */ ($('#place')).value = o.mine.place;
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
-    if (!el.name) continue;
+    if (!el.name || el.dataset.answer) continue; // «Lo que te pagan» is read from the terms by paintAnswers
     const side = sideOf(o, el.name);
     if (el.type === 'radio') el.checked = String(side[el.name]) === el.value;
     else if (el.type === 'date') el.value = side[el.name] || '';
@@ -109,9 +100,83 @@ function paintPlace(o, { index, status }) {
   );
 }
 
+const UNIT_PER = { day: 'al día', month: 'al mes', total: 'en total' };
+
+/** Under the vacation options: why one is missing, or has to change, on a short contract; or the automatic choice. */
+function vacationHint(o) {
+  if (isCasualLength(o.terms) && o.terms.vacation === 'taken')
+    return 'En un contrato corto no da tiempo a librarlas: cambia a «Me las pagan aparte, al acabar» o «Van dentro de lo que me pagan».';
+  if (o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd')
+    return 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.';
+  return isCasualLength(o.terms)
+    ? 'En un contrato corto no da tiempo a librarlas: se pagan al acabar o van dentro.'
+    : '';
+}
+
+/** An amount typed in the form, as an input shows it. */
+const inputValue = (value) => (value === '' || value == null ? '' : fInputValue(num(value), 0, 2));
+
+/** The offer told back as answered. The figures are the model's, rounded as the result shows them. */
+function payTold(o, r, a) {
+  const amount = num(a.amount);
+  if (!(amount > 0)) return html`Responde abajo y aquí se resume la oferta.`;
+  const per = UNIT_PER[a.unit];
+  /** @type {(string | import('lit-html').TemplateResult)[]} */
+  const parts = [html`Te pagan <b>${fE(amount, Number.isInteger(amount) ? 0 : 2)} ${per}</b>`];
+  if (a.payroll === 'none') parts.push('todo en negro, sin contrato');
+  else {
+    if (a.payroll === 'all') parts.push('todo en nómina');
+    else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
+    else if (num(a.part) > 0) parts.push(`${fE(r.split.payrollNet)} en nómina`);
+    else parts.push('una parte en nómina');
+    if (r.split?.cash > 0.5 && (a.payroll === 'min' || num(a.part) > 0))
+      parts.push(`unos ${fE(r.split.cash)} en negro`);
+    parts.push(`contrato ${contractOf(o.terms).phrase}`);
+    if (askExtraPays(o.terms) && o.terms.extraPays === 'separate') parts.push('dos pagas extra aparte');
+    parts.push(
+      { paidAtEnd: 'vacaciones aparte', taken: 'vacaciones libradas', included: 'vacaciones incluidas' }[
+        o.terms.vacation
+      ] || 'vacaciones sin poner',
+    );
+  }
+  return html`${parts.map((p, i) => html`${i ? ' · ' : ''}${p}`)}.`;
+}
+
+/** What goes en negro, said under the question about the payslip; null while there is nothing to say. */
+function cashLine(r, a) {
+  const amount = num(a.amount);
+  if (!(amount > 0) || a.payroll === 'all' || (a.payroll === 'part' && !(num(a.part) > 0))) return null;
+  const per = UNIT_PER[a.unit];
+  if (a.payroll === 'none') return `Todo en negro: ${fE(amount, Number.isInteger(amount) ? 0 : 2)} ${per}.`;
+  if (r.split?.shortfall) return 'Lo que va en nómina supera lo que te pagan: no queda nada en negro.';
+  return r.split?.cash > 0.5 ? `Unos ${fE(r.split.cash)} ${per} van en negro.` : 'Nada en negro.';
+}
+
+/** «Lo que te pagan»: the answers read from the terms, and what is told from them. Inputs being typed in are not touched. */
+function paintAnswers(o, r) {
+  const a = answersOf(o.terms);
+  const set = (selector, value) => {
+    const el = /** @type {HTMLInputElement} */ ($(selector));
+    if (document.activeElement !== el) el.value = value;
+  };
+  for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[data-answer]')))
+    if (el.type === 'radio') el.checked = el.value === a[el.dataset.answer];
+  // The contract radios have no «none»: leaving «Nada, sin contrato» has to uncheck and check them
+  for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[name=contract]')))
+    el.checked = el.value === o.terms.contract;
+  set('#payTotal', inputValue(a.amount));
+  set('#payPart', inputValue(a.part));
+  text('#payPartPer', UNIT_PER[a.unit]);
+  render(payTold(o, r, a), $('#payTold'));
+  const line = cashLine(r, a);
+  $('#payCash').hidden = line === null;
+  text('#payCash', line ?? '');
+}
+
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
-  if (o.terms.payrollMin && o.terms.contract !== 'none') {
+  if (o.terms.contract === 'none') return '';
+  if (o.terms.payrollMin) {
     const monthly = r.min.salary / r.time.months;
     return `En nómina, el mínimo${r.min.casual ? ` de temporero (el contrato dura ${LAW.casualMaxDays} días o menos)` : ''}: unos ${fE(monthly)} brutos al mes, ${fE(monthly * r.netFactor)} netos.`;
   }
@@ -135,19 +200,6 @@ function payHint(o, r) {
       ? ' Pon lo que cobraste sin las vacaciones: las vacaciones pagadas se suman aparte.'
       : '',
   ].join('');
-}
-
-/** With an agreed total: how the cash part comes out of it, over the whole contract (vacation is paid once). */
-function cashHint(r) {
-  const split = r.split;
-  if (!split) return '';
-  if (!(split.agreed > 0)) return 'Lo de en negro es lo que queda del total pactado tras la nómina y las vacaciones.';
-  const times = split.unit === 'day' ? r.time.daysWorked : split.unit === 'month' ? r.time.months : 1;
-  const all = (x) => fE(x * times);
-  if (split.shortfall)
-    return `El total pactado no llega ni a la nómina (${all(split.included ? split.net : split.payrollNet)} netos): no queda nada en negro.`;
-  const vacation = split.vacationNet > 0.5;
-  return `${all(split.agreed)} pactados − ${all(split.payrollNet)} de nómina${vacation && split.included ? ` − ${all(split.vacationNet)} de vacaciones` : ''} = ${fE(split.cashTotal)} en negro${split.unit !== 'total' && !r.time.noDuration ? ` (${fSplit(split.cash, split.unit)})` : ''}.${vacation && !split.included ? ` Las vacaciones (${all(split.vacationNet)}), aparte.` : ''} Todo en neto.`;
 }
 
 function daysOffHint(o, r) {
@@ -200,12 +252,7 @@ export function paintForm(o, r, offers, places) {
     '#offerOnlyHint',
     noDate ? 'Sin fecha de inicio cuenta como solo oferta. Para contarla como trabajada, pon cuándo empezó.' : '',
   );
-  text(
-    '#vacationHint',
-    o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd'
-      ? 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.'
-      : '',
-  );
+  text('#vacationHint', vacationHint(o));
   const s = summaries(o, r, places.index);
   render(
     [
@@ -228,7 +275,7 @@ export function paintForm(o, r, offers, places) {
   }
   paintPlace(o, places);
   text('#payHint', payHint(o, r));
-  text('#cashAuto', cashHint(r));
+  paintAnswers(o, r);
   const food = foodPerDay(o.terms, cfg);
   text(
     '#mealsHint',

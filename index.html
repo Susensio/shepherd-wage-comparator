@@ -157,94 +157,69 @@
             </div>
             <p class="hint">Son unos <span data-law="holidaysPerYear"></span> al año. Si ya los cuentas en las libranzas, pon «No».</p>
           </div>
+          </fieldset>
+        </details>
+
+        <details class="sec" data-fold="pay">
+          <summary><span class="st">Lo que te pagan</span><span class="ss" id="sum-pay"></span></summary>
+          <fieldset aria-label="Lo que te pagan">
+          <p class="told full" id="payTold" aria-live="polite"></p>
           <div class="fld full">
-            <span>Tipo de contrato</span>
-            <div class="seg" role="radiogroup" aria-label="Tipo de contrato">
+            <label for="payTotal">¿Cuánto te pagan?</label>
+            <p class="hint">Todo junto, lo que te llega a ti.</p>
+            <div class="combo">
+              <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
+              <div class="seg" role="radiogroup" aria-label="Por">
+                <label><input type="radio" name="payPer" data-answer="unit" value="day">al día</label>
+                <label><input type="radio" name="payPer" data-answer="unit" value="month">al mes</label>
+                <label data-show="withDuration"><input type="radio" name="payPer" data-answer="unit" value="total">en total</label>
+              </div>
+            </div>
+          </div>
+          <div class="fld full">
+            <span>¿Cuánto va en nómina?</span>
+            <div class="seg" role="radiogroup" aria-label="En nómina">
+              <label><input type="radio" name="payroll" data-answer="payroll" value="all">Todo</label>
+              <label><input type="radio" name="payroll" data-answer="payroll" value="min">El salario mínimo</label>
+              <label><input type="radio" name="payroll" data-answer="payroll" value="part">Una parte</label>
+              <label><input type="radio" name="payroll" data-answer="payroll" value="none">Nada, sin contrato</label>
+            </div>
+            <div class="combo" data-show="payPart">
+              <input class="n" type="text" inputmode="decimal" id="payPart" data-answer="part" aria-label="Lo que va en nómina">
+              <span class="hint payper" id="payPartPer"></span>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="Bruto o neto" data-show="payPart">
+              <label><input type="radio" name="payType" value="net">neto, lo que llega</label>
+              <label><input type="radio" name="payType" value="gross">bruto, como en la nómina</label>
+            </div>
+            <p class="hint" id="payHint"></p>
+            <p class="cashline" id="payCash" hidden></p>
+            <p class="hint" data-show="payLegacy">Esta oferta se guardó con otra forma de contar lo que te pagan. Las cifras son las de antes hasta que cambies una respuesta.</p>
+          </div>
+          <div class="fld full" data-show="withContract">
+            <span>¿Qué contrato?</span>
+            <div class="seg" role="radiogroup" aria-label="Contrato">
               <label><input type="radio" name="contract" value="temporary">Temporal</label>
               <label><input type="radio" name="contract" value="seasonal">Fijo discontinuo</label>
               <label><input type="radio" name="contract" value="permanent">Fijo</label>
-              <label><input type="radio" name="contract" value="none">Sin contrato</label>
             </div>
-            <p class="hint" data-show="withContract">Cambia el mínimo legal: el salario mínimo de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
-            <p class="hint" data-show="noContract">Sin contrato, todo lo que cobras va en negro: se pone en «En negro». No hace falta poner nómina ni vacaciones.</p>
+            <p class="hint">Cambia el mínimo legal: el salario mínimo de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
           </div>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="payroll" data-show="withContract">
-          <summary><span class="st">En nómina</span><span class="ss" id="sum-payroll"></span></summary>
-          <fieldset aria-label="En nómina">
-          <div class="fld full">
-            <div class="row-fld" data-show="fixedPayroll">
-              <label for="payAmount">Sueldo en nómina</label>
-              <div class="seg" role="radiogroup" aria-label="Bruto o neto">
-                <label><input type="radio" name="payType" value="gross">Bruto</label>
-                <label><input type="radio" name="payType" value="net">Neto</label>
-              </div>
-            </div>
-            <div class="combo" data-show="fixedPayroll">
-              <input class="n" type="text" inputmode="decimal" id="payAmount" name="payAmount">
-              <div class="seg" role="radiogroup" aria-label="Unidad del salario">
-                <label><input type="radio" name="payUnit" value="day">€/día</label>
-                <label><input type="radio" name="payUnit" value="month">€/mes</label>
-                <label><input type="radio" name="payUnit" value="year">€/año</label>
-                <label data-show="withDuration"><input type="radio" name="payUnit" value="total">total</label>
-              </div>
-            </div>
-            <div class="multi"><label><input type="checkbox" name="payrollMin">Usar el salario mínimo</label></div>
-            <p class="hint" id="payHint"></p>
-          </div>
-          <div class="fld full" data-show="hasExtraPays">
-            <span>Pagas extra</span>
-            <div class="seg" role="radiogroup" aria-label="Pagas extra">
-              <label><input type="radio" name="extraPays" value="included">Prorrateadas / incluidas</label>
-              <label><input type="radio" name="extraPays" value="separate">Dos pagas aparte</label>
-            </div>
-          </div>
-          <div class="fld full">
-            <span>Vacaciones: ¿las libras? ¿te las pagan?</span>
+          <div class="fld full" data-show="withContract">
+            <span>¿Y las vacaciones?</span>
             <div class="opts">
-              <label class="opt"><input type="radio" name="vacation" value="included"><div><b>Incluidas en lo pactado</b><span>Trabajas esos días y no se cobran aparte. Lo más habitual.</span></div></label>
-              <label class="opt"><input type="radio" name="vacation" value="taken"><div><b>Disfrutadas</b><span>Libras esos días, cobrando.</span></div></label>
-              <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><div><b>Pagadas aparte</b><span>Trabajas esos días y te los pagan al acabar, además de lo pactado.</span></div></label>
+              <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><div><b>Me las pagan aparte, al acabar</b><span>Trabajas esos días y te los pagan al acabar, además de lo pactado.</span></div></label>
+              <label class="opt"><input type="radio" name="vacation" value="included"><div><b>Van dentro de lo que me pagan</b><span>Trabajas esos días y no se cobran aparte. Lo más habitual.</span></div></label>
+              <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><div><b>Las libro, cobrando</b><span>Libras esos días, cobrando.</span></div></label>
             </div>
             <p class="hint" id="vacationHint"></p>
           </div>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="b">
-          <summary><span class="st">En negro</span><span class="ss" id="sum-b"></span></summary>
-          <fieldset aria-label="En negro">
-          <div class="fld full" data-show="withContract">
-            <div class="seg" role="radiogroup" aria-label="Lo de en negro">
-              <label><input type="radio" name="cashMode" value="amount">Cantidad</label>
-              <label><input type="radio" name="cashMode" value="total">Total pactado</label>
+          <div class="fld full" data-show="hasExtraPays">
+            <span>¿Y las pagas extra?</span>
+            <div class="seg" role="radiogroup" aria-label="Pagas extra">
+              <label><input type="radio" name="extraPays" value="included">Van dentro, prorrateadas</label>
+              <label><input type="radio" name="extraPays" value="separate">Dos pagas aparte</label>
             </div>
-          </div>
-          <div class="fld full" data-show="cashByTotal">
-            <label for="totalAmount">Todo junto, nómina y en negro</label>
-            <div class="combo">
-              <input class="n" type="text" inputmode="decimal" id="totalAmount" name="totalAmount">
-              <div class="seg" role="radiogroup" aria-label="Unidad del total pactado">
-                <label><input type="radio" name="totalUnit" value="day">€/día</label>
-                <label><input type="radio" name="totalUnit" value="month">€/mes</label>
-                <label data-show="withDuration"><input type="radio" name="totalUnit" value="total">total</label>
-              </div>
-            </div>
-            <p class="hint" id="cashAuto"></p>
-          </div>
-          <div class="fld full" data-show="cashByAmount">
-            <label class="fld" for="cashAmount">Dinero en negro</label>
-            <div class="combo">
-              <input class="n" type="text" inputmode="decimal" id="cashAmount" name="cashAmount">
-              <div class="seg" role="radiogroup" aria-label="Unidad de lo que cobras en negro">
-                <label><input type="radio" name="cashUnit" value="day">€/día</label>
-                <label><input type="radio" name="cashUnit" value="month">€/mes</label>
-                <label><input type="radio" name="cashUnit" value="total">total</label>
-              </div>
-            </div>
-            <p class="hint">No cotiza: no genera paro, ni jubilación, ni cuenta para vacaciones o finiquito.</p>
           </div>
           </fieldset>
         </details>
