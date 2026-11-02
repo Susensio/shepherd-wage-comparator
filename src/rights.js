@@ -6,7 +6,7 @@ import { html } from 'lit-html';
 import { explanations } from './explanations.js';
 import { fCount, fDaysSpoken, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
 import { citeOf, LAW } from './law.js';
-import { isShortContract } from './offer.js';
+import { vacationPayable } from './pay-answers.js';
 import { moneyIn, UNITS } from './units.js';
 import { withTip } from './views/parts.js';
 import { voiceOf } from './voice.js';
@@ -119,7 +119,7 @@ export function rightsOf(o, r, unit = 'month', third = false) {
           `Si se duerme fuera por pastoreo (borda, cabaña), el convenio da al menos un ${pct}\u00a0% más de salario.`,
         ),
       );
-    const mayBePaid = r.time.noDuration || isShortContract(o.terms);
+    const mayBePaid = r.time.noDuration || vacationPayable(o.terms, r.time);
     const onlyIfShort = mayBePaid
       ? ''
       : ` Pero solo se pueden pagar en vez de disfrutar si el contrato acaba antes de poder librarlas: en un contrato así de largo, ${say('tienes', 'se tiene')} derecho a librarlas.`;

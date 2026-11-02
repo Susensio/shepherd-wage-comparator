@@ -133,7 +133,9 @@ test('extra pays are asked only for a monthly amount with a payslip', async ({ p
   await expect(page.locator('#payTold')).toContainText('dos pagas extra aparte');
 });
 
-test('«Las libro, cobrando» is not offered on a temporary contract of 120 days or less', async ({ page }) => {
+test('«Las libro, cobrando» is not offered on a temporary contract of 120 days or less, nor on one of a month or less', async ({
+  page,
+}) => {
   await newOffer(page, '3');
   await answer(page, 'contract', 'temporary');
   const taken = page.locator('input[name=vacation][value=taken]');
@@ -151,6 +153,10 @@ test('«Las libro, cobrando» is not offered on a temporary contract of 120 days
   await expect(taken).toBeHidden();
   await answer(page, 'contract', 'seasonal');
   await expect(taken).toBeVisible();
+  // A contract of a month or less, of any kind, ends before the vacation could be taken
+  await page.fill('#duration', '30');
+  await expect(taken).toBeHidden();
+  await expect(page.locator('#vacationHint')).toContainText('En un contrato de un mes o menos');
 });
 
 test('an offer that already takes its vacation keeps it, shown with a hint, when the contract is short', async ({

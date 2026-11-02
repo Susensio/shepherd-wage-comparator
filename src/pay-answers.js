@@ -9,7 +9,7 @@ import { num } from './format.js';
 import { LAW } from './law.js';
 import { calc } from './model/calc.js';
 import { schedule } from './model/time.js';
-import { DEF_TERMS } from './offer.js';
+import { DEF_TERMS, isShortContract } from './offer.js';
 
 /**
  * @typedef {object} Answers
@@ -80,6 +80,14 @@ export function isAnswerable(t) {
  */
 export const isCasual = (terms, time) =>
   terms.contract === 'temporary' && !time.noDuration && time.natDays > 0 && time.natDays <= LAW.casualMaxDays;
+
+/**
+ * Whether the vacation may be paid instead of taken: the contract ends before it could be taken (a month or less, any
+ * contract), or it is casual (RD 126/2026 art. 4). The one rule for offering «Las libro» and for whether paying it is legal.
+ * @param {object} terms
+ * @param {{natDays: number, noDuration: boolean}} time the schedule the model computed
+ */
+export const vacationPayable = (terms, time) => isShortContract(terms) || isCasual(terms, time);
 
 /** The extra pays can be apart: with a payslip, and a monthly amount (a daily one only if it already says so). */
 export const askExtraPays = (t) => {

@@ -111,3 +111,11 @@ test('unpaidTime counts all the extra days when none is paid', () => {
   assert.ok(r.extraDays.extra >= 1);
   assert.equal(unpaidTime(r).days, r.extraDays.extra);
 });
+
+test('vacation paid instead of taken passes on a casual contract and warns on a long one', () => {
+  const casual = { contract: 'temporary', duration: 90, durationUnit: 'days', vacation: 'paidAtEnd' };
+  assert.equal(verdicts(casual).vacation, true);
+  assert.equal(verdicts({ ...casual, contract: 'seasonal' }).vacation, 'warn');
+  assert.equal(verdicts({ ...casual, contract: 'seasonal', duration: 30 }).vacation, true);
+  assert.equal(verdicts({ vacation: 'paidAtEnd' }).vacation, 'warn');
+});

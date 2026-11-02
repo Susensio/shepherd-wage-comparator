@@ -6,7 +6,14 @@ import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
 import { schedule } from '../../src/model/time.js';
 import { DEF_CFG, makeOffer } from '../../src/offer.js';
-import { answersOf, isAnswerable, isCasual, toAnswerable, writeAnswers } from '../../src/pay-answers.js';
+import {
+  answersOf,
+  isAnswerable,
+  isCasual,
+  toAnswerable,
+  vacationPayable,
+  writeAnswers,
+} from '../../src/pay-answers.js';
 import { ingestSaved, normalizeOffer } from '../../src/saved.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
@@ -175,6 +182,19 @@ test('only a temporary contract of 120 days or less is casual', () => {
   assert.equal(casual({ contract: 'seasonal' }), false);
   assert.equal(casual({ durationUnit: 'unknown' }), false);
   assert.equal(casual({ duration: '' }), false);
+});
+
+test('the vacation may be paid instead of taken on a casual contract or one of a month or less', () => {
+  const payable = (terms) => {
+    const t = { durationUnit: 'days', duration: 120, contract: 'temporary', ...terms };
+    return vacationPayable(t, schedule(t));
+  };
+  assert.equal(payable({}), true);
+  assert.equal(payable({ duration: 121 }), false);
+  assert.equal(payable({ contract: 'seasonal' }), false);
+  assert.equal(payable({ contract: 'seasonal', duration: 31 }), true);
+  assert.equal(payable({ contract: 'permanent', durationUnit: 'months', duration: 1 }), true);
+  assert.equal(payable({ durationUnit: 'unknown' }), false);
 });
 
 test('the answers go to the terms by the mapping and read back', () => {

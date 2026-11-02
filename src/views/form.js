@@ -7,7 +7,7 @@ import { html, render } from 'lit-html';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
-import { answersOf, askExtraPays, isAnswerable, isCasual } from '../pay-answers.js';
+import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
 import { areaLine, summaries, VACATION_SAYS } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
@@ -18,8 +18,8 @@ const SHOW = {
   payPart: (o) => answersOf(o.terms).payroll === 'part',
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
-  // «Las libro» makes no sense on a short contract; one already saved with it keeps showing, with a hint
-  vacationTaken: (o, r) => !isCasual(o.terms, r.time) || o.terms.vacation === 'taken',
+  // «Las libro» makes no sense when the vacation may be paid instead; one already saved with it keeps showing, with a hint
+  vacationTaken: (o, r) => !vacationPayable(o.terms, r.time) || o.terms.vacation === 'taken',
   overnight: (o) => o.terms.overnight === 'yes',
   showRent: (o) => o.terms.housing === 'yes',
   showMeals: (o) => mealsGiven(o.terms).length > 0,
@@ -102,15 +102,17 @@ function paintPlace(o, { index, status }) {
 
 const UNIT_PER = { day: 'al día', month: 'al mes', total: 'en total' };
 
-/** Under the vacation options: why one is missing, or has to change, on a casual contract; or the automatic choice. */
+/** Under the vacation options: why one is missing, or has to change, when it may be paid instead; or the automatic choice. */
 function vacationHint(o, r) {
-  const casual = isCasual(o.terms, r.time);
-  const why = `En un contrato temporal de hasta ${LAW.casualMaxDays} días no da tiempo a librarlas`;
-  if (casual && o.terms.vacation === 'taken')
+  if (!vacationPayable(o.terms, r.time)) return '';
+  const why = isCasual(o.terms, r.time)
+    ? `En un contrato temporal de hasta ${LAW.casualMaxDays} días no da tiempo a librarlas`
+    : 'En un contrato de un mes o menos no da tiempo a librarlas';
+  if (o.terms.vacation === 'taken')
     return `${why}: cambia a «Me las pagan aparte, al acabar» o «Van dentro de lo que me pagan».`;
   if (o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd')
-    return 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.';
-  return casual ? `${why}: se pagan al acabar o van dentro.` : '';
+    return 'Marcado de forma automática: en un contrato de un mes o menos no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.';
+  return `${why}: se pagan al acabar o van dentro.`;
 }
 
 /** An amount typed in the form, as an input shows it. */
