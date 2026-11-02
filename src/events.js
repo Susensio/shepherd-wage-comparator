@@ -35,13 +35,12 @@ import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './s
 import { snoozeReminder } from './storage/bundle.js';
 import { preloadPlaces } from './storage/places.js';
 import { cardText, claimText } from './text.js';
-import { accountActions, onSharingToggled } from './ui/account-section.js';
+import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
 import { closePage, onPopState, openAccountPage, openSettingsPage, showTab } from './ui/navigation.js';
-import { loadOthers } from './ui/others.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
 import { fillForm, form, paintEnd } from './views/form.js';

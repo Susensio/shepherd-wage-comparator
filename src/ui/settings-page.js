@@ -28,23 +28,7 @@ export function paintBackup() {
   $('#backupAdvice').textContent = `${since}El navegador puede borrar tus ofertas: guarda una copia de vez en cuando.`;
 }
 
-/**
- * @typedef {{
- *   user: any, profile: any, pending: any[], message: string, messageOk: boolean, confirm: 'share' | 'delete' | null,
- *   enabled: boolean, started: boolean, sync: 'saved' | 'saving' | 'error', offline: boolean,
- *   othersMessage: string, othersDeclined: boolean, tipDismissed: boolean, signIn: any,
- * }} AccountView
- */
-
-/** Where the account stands, as the dot on its button shows it. */
-function accountStatus(/** @type {AccountView} */ view) {
-  if (!view.started) return 'connecting';
-  if (!view.user) return 'guest';
-  if (view.pending.length) return 'pending';
-  if (view.offline) return 'offline';
-  if (view.sync === 'error') return 'error';
-  return view.sync === 'saving' ? 'saving' : 'online';
-}
+/** @typedef {import('../account-state.js').AccountView} AccountView */
 
 const STATUS_TEXT = {
   connecting: 'Conectando con la cuenta…',
@@ -75,9 +59,9 @@ const storageLine = (/** @type {AccountView} */ view) =>
  * The account button (a person for a guest, the initials once signed in) with its status dot, and what depends on the
  * account being there or not. Only called with a project configured: without one the button stays hidden.
  * @param {AccountView} view
+ * @param {import('../account-state.js').AccountStatus} status
  */
-export function paintAccountButton(view) {
-  const status = accountStatus(view);
+export function paintAccountButton(view, status) {
   const button = $('#accountButton');
   const who = view.user && (view.profile?.name || view.user.user_metadata?.name || view.user.email);
   const initials = who ? initialsOf(who) : '';
@@ -98,7 +82,6 @@ export function paintAccountButton(view) {
   const sync = $('#accountSync');
   sync.textContent = view.user && !view.pending.length ? STATUS_TEXT[status] : '';
   sync.dataset.status = status;
-  return status;
 }
 
 /** The profile whose fields are in the inputs: they are filled when it changes, so typing is not overwritten. */
@@ -108,8 +91,18 @@ let filledProfile = null;
  * The «Cuenta» section: signed out, choosing what to do with the browser's offers, or signed in.
  * @param {AccountView} view
  */
-export function paintAccount({ user, profile, pending, message, messageOk, confirm }) {
-  $('#accountMsg').textContent = message;
+export function paintAccount({
+  user,
+  profile,
+  pending,
+  message,
+  messageOk,
+  messageIsSignedOutNotice,
+  signedOutNotice,
+  confirm,
+}) {
+  $('#signedOutNotice').hidden = !signedOutNotice;
+  $('#accountMsg').textContent = messageIsSignedOutNotice ? $('#signedOutNotice').textContent : message;
   $('#accountMsg').classList.toggle('ok', messageOk);
   $('#accountOut').hidden = !!user;
   $('#accountPending').hidden = !(user && pending.length);

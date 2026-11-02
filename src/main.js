@@ -16,7 +16,7 @@ import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
-import { setUpAccountSection } from './ui/account-section.js';
+import { accountState, setUpAccountSection } from './ui/account-section.js';
 import { openAccountPage, openSettingsPage, returnAfterSignIn, showTab } from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
 import { setUpTooltips } from './ui/tooltips.js';
@@ -39,20 +39,20 @@ fillSettings(state.config);
 paintAll();
 if (state.firstRun) openTemplates();
 
+accountState.subscribe((event) => {
+  if (event === 'others') paintCompare();
+  if (event === 'signedIn') returnAfterSignIn();
+  if (event !== 'replaced') return;
+  // An empty account starts like a first visit, with the templates
+  if (state.placeholderId) openTemplates();
+  else if (templatesOpen()) closeTemplates();
+  for (const o of state.offers) defaultVacation(o.terms);
+  fillSettings(state.config);
+  scrollChipsNextPaint();
+  select(state.activeId);
+});
 // Hidden, and no request, while storage/account-config.js has no project.
-setUpAccountSection({
-  onOthers: paintCompare,
-  onSignedIn: returnAfterSignIn,
-  onReplaced() {
-    // An empty account starts like a first visit, with the templates
-    if (state.placeholderId) openTemplates();
-    else if (templatesOpen()) closeTemplates();
-    for (const o of state.offers) defaultVacation(o.terms);
-    fillSettings(state.config);
-    scrollChipsNextPaint();
-    select(state.activeId);
-  },
-}).catch(console.error);
+setUpAccountSection().catch(console.error);
 
 /** For tests and the console: the state and a few ways in. Not used by the page. */
 window.app = {

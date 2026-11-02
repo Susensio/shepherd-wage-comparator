@@ -425,66 +425,70 @@ export function loadSupabase() {
   });
 }
 
-/** @type {Promise<ReturnType<typeof createAccount>> | null} */
-let opening = null;
-/** Called by the page when the account's offers replace the browser's. */
-let onReplacedByPage = () => {};
-/** Called by the page as background saves start, succeed or fail. */
-let onStatusByPage = (_status) => {};
-
-/** The account, created (and the bundle loaded) on first use. */
-function open({ config, loadBundle }) {
-  opening ??= loadBundle()
-    .then((supabase) => {
-      const client = supabase.createClient(config.url, config.anonKey, {
-        auth: { storageKey: SESSION_KEY, flowType: 'pkce' },
-      });
-      const account = createAccount({
-        client,
-        state,
-        offerList: pageOffers,
-        persist: () => {
-          pageOffers.save();
-          saveConfig();
-        },
-        store,
-        onReplaced: () => onReplacedByPage(),
-        onStatus: (status) => onStatusByPage(status),
-      });
-      onSave(account.changed);
-      return account;
-    })
-    .catch((error) => {
-      opening = null;
-      throw error;
-    });
-  return opening;
-}
+/**
+ * @typedef {object} AccountHooks
+ * @property {() => void} [onReplaced] the account's offers replace the browser's
+ * @property {(status: 'saving' | 'saved' | 'error') => void} [onStatus] background saves start, succeed or fail
+ */
 
 /**
- * Called once at startup. With no project configured, or no saved session and no login in progress, it does nothing
- * (no request, no bundle) and returns null. Otherwise `{ account, user, pending }` once connected.
- * `onReplaced` and `onStatus` also serve an account opened later by a sign-in button.
- * @param {{
- *   config?: typeof ACCOUNT_CONFIG,
- *   loadBundle?: () => Promise<any>,
- *   onReplaced?: () => void,
- *   onStatus?: (status: 'saving' | 'saved' | 'error') => void,
- * }} [options]
+ * The page's account, created (and the bundle loaded) on first use; `hooks` of that first use serve it from then on.
+ * @param {{ config?: typeof ACCOUNT_CONFIG, loadBundle?: () => Promise<any> }} [options]
  */
-export async function startAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase, onReplaced, onStatus } = {}) {
-  if (onReplaced) onReplacedByPage = onReplaced;
-  if (onStatus) onStatusByPage = onStatus;
-  if (!config.url || !config.anonKey) return null;
-  // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
-  const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');
-  if (!store.get(SESSION_KEY, null) && !store.get(RETURNING_KEY, null) && !linkFollowed) return null;
-  const account = await open({ config, loadBundle });
-  return { account, ...(await account.connect()) };
-}
+export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase } = {}) {
+  /** @type {Promise<ReturnType<typeof createAccount>> | null} */
+  let opening = null;
 
-/** The account for a sign-in button: loads the bundle on first use. */
-export function openAccount({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase } = {}) {
-  if (!config.url || !config.anonKey) throw new Error('Accounts are off: no project in account-config.js');
-  return open({ config, loadBundle });
+  /** @param {AccountHooks} hooks */
+  function open(hooks) {
+    opening ??= loadBundle()
+      .then((supabase) => {
+        const client = supabase.createClient(config.url, config.anonKey, {
+          auth: { storageKey: SESSION_KEY, flowType: 'pkce' },
+        });
+        const account = createAccount({
+          client,
+          state,
+          offerList: pageOffers,
+          persist: () => {
+            pageOffers.save();
+            saveConfig();
+          },
+          store,
+          ...hooks,
+        });
+        onSave(account.changed);
+        return account;
+      })
+      .catch((error) => {
+        opening = null;
+        throw error;
+      });
+    return opening;
+  }
+
+  return {
+    /**
+     * Called once at startup. With no project configured, or no saved session and no login in progress, it does
+     * nothing (no request, no bundle) and returns null. Otherwise `{ account, user, pending }` once connected.
+     * @param {AccountHooks} [hooks]
+     */
+    async start(hooks = {}) {
+      if (!config.url || !config.anonKey) return null;
+      // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
+      const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');
+      if (!store.get(SESSION_KEY, null) && !store.get(RETURNING_KEY, null) && !linkFollowed) return null;
+      const account = await open(hooks);
+      return { account, ...(await account.connect()) };
+    },
+
+    /**
+     * The account for a sign-in button: loads the bundle on first use.
+     * @param {AccountHooks} [hooks]
+     */
+    open(hooks = {}) {
+      if (!config.url || !config.anonKey) throw new Error('Accounts are off: no project in account-config.js');
+      return open(hooks);
+    },
+  };
 }
