@@ -83,6 +83,29 @@ test('head to head', async ({ loaded: page }) => {
   await page.locator('.lr').nth(0).click();
   await page.locator('.lr').nth(2).click();
   await expect(page.locator('#pairBlk')).toContainText('Cara a cara');
+  for (const label of ['Ganas por día', 'Para el ganadero', 'Dinero que pone al mes'])
+    await expect(page.locator('#pairBlk')).toContainText(label);
+  // What the employer pays a month is the model's own figure; «Le cuestas» appears only with housing or food given
+  const check = await page.evaluate(async () => {
+    const { fE } = await import('./src/format.js');
+    const ids = [...document.querySelectorAll('#pairBlk thead [data-id]')].map((b) => b.dataset.id);
+    const results = ids.map((id) => app.calcOffer(app.state.offers.find((o) => o.id === id)));
+    const cell = (label) =>
+      [...document.querySelectorAll('#pairBlk tbody tr')]
+        .find((tr) => tr.querySelector('th')?.textContent === label)
+        ?.querySelector('td')
+        .textContent.replace(/\s*✔\s*$/, '')
+        .trim();
+    const r = results[0];
+    return {
+      shown: cell('Dinero que pone al mes'),
+      expected: fE((r.employer.cost - r.inKind.total) / (r.time.months || 1)),
+      costRow: cell('Le cuestas al mes') !== undefined,
+      inKind: results.some((x) => x.inKind.total > 0.5),
+    };
+  });
+  expect(check.shown).toBe(check.expected);
+  expect(check.costRow).toBe(check.inKind);
   await page.click('#pairBlk [data-action=closePair]');
   await expect(page.locator('#pairBlk')).toHaveCount(0);
 });

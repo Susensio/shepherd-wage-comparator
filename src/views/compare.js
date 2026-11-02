@@ -119,6 +119,8 @@ function headToHead(list, pairing) {
     !a.r.time.noDuration &&
     !b.r.time.noDuration &&
     Math.abs(a.r.time.natDays - b.r.time.natDays) <= 0.1 * Math.max(a.r.time.natDays, b.r.time.natDays);
+  // «Le cuestas» adds the housing and food given; without them it repeats «Dinero que pone»
+  const inKind = [a, b].some((x) => x.r.inKind.total > 0.5);
   const duration = (x) =>
     x.r.time.noDuration
       ? 'sin saber'
@@ -134,6 +136,7 @@ function headToHead(list, pairing) {
       'Dinero',
       [
         [say('Ganas por hora', 'Se gana por hora'), (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
+        [say('Ganas por día', 'Se gana por día'), (x) => x.r.earnings.perDay, orDash(fE), 'max'],
         [
           say('Ganas al mes', 'Se gana al mes'),
           (x) => (perMonthOk(x) ? x.r.earnings.perMonth : Number.NaN),
@@ -158,6 +161,37 @@ function headToHead(list, pairing) {
           orDash(fE),
           'max',
         ],
+      ],
+    ],
+    [
+      'Para el ganadero',
+      [
+        // What the employer pays in money (payroll, Social Security, cash, km, severance), and with housing and food
+        [
+          'Dinero que pone al mes',
+          (x) => (perMonthOk(x) ? employerMoney(x.r) / (x.r.time.months || 1) : Number.NaN),
+          orDash(fE),
+          '',
+        ],
+        inKind && [
+          say('Le cuestas al mes', 'Le cuesta al mes'),
+          (x) => (perMonthOk(x) ? x.r.employer.cost / (x.r.time.months || 1) : Number.NaN),
+          orDash(fE),
+          '',
+        ],
+        similar && [
+          'Dinero que pone en total',
+          (x) => (x.r.time.noDuration ? Number.NaN : employerMoney(x.r)),
+          orDash(fE),
+          '',
+        ],
+        similar &&
+          inKind && [
+            say('Le cuestas en total', 'Le cuesta en total'),
+            (x) => (x.r.time.noDuration ? Number.NaN : x.r.employer.cost),
+            orDash(fE),
+            '',
+          ],
       ],
     ],
     [
@@ -229,6 +263,9 @@ function unpaidHoursPerWeek(r) {
 }
 
 /** Hours per week in a typical working week: what is paid, then what is not; the 40 h line is where the extra hours begin. */
+/** What the employer pays in money over the contract: everything it costs except the housing and food it gives. */
+const employerMoney = (r) => r.employer.cost - r.inKind.total;
+
 function hoursView(list) {
   const cap = Math.max(...list.map((x) => x.r.time.hoursPerWeek));
   const pct = (v) => (v / cap) * 100;
