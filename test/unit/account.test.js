@@ -574,6 +574,56 @@ describe('signing out', () => {
   });
 });
 
+describe('an edit made while the sign-out request runs', () => {
+  test('is kept in the browser, not cleared with the rest', async () => {
+    const { account, state, client, fake, store } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    let release = () => {};
+    let started = () => {};
+    const requested = new Promise((resolve) => {
+      started = resolve;
+    });
+    client.auth.signOut = async () => {
+      started();
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+      fake.signedOut = true;
+      return { error: null };
+    };
+    const signingOut = account.signOut();
+    await requested; // the flush before it is done
+    state.offers[0].terms.payAmount = 42;
+    account.changed();
+    release();
+    await signingOut;
+    assert.equal(fake.signedOut, true);
+    assert.equal(account.currentUser(), null);
+    assert.equal(state.offers[0].terms.payAmount, 42);
+    assert.equal(state.placeholderId, null);
+    assert.equal(store.get('cj.accountUnsynced'), null);
+  });
+
+  test('made while the flush before it writes is flushed too', async () => {
+    const { account, state, client, calls } = setUp({ tables: accountTables(accountRow(1)) });
+    await account.connect();
+    calls.length = 0;
+    state.offers[0].terms.payAmount = 5;
+    const from = client.from;
+    let edited = false;
+    client.from = (table) => {
+      if (table === 'offers' && !edited) {
+        edited = true;
+        state.offers[0].terms.payAmount = 6;
+      }
+      return from(table);
+    };
+    await account.signOut();
+    const written = calls.filter((c) => c.table === 'offers').map((c) => c.rows[0].terms.payAmount);
+    assert.deepEqual(written, [5, 6]);
+  });
+});
+
 describe('signing out, when it cannot', () => {
   test('a failed save keeps the session, the offers and the saving', async () => {
     const { account, state, fake, calls, statuses, errors } = setUp({ tables: accountTables(accountRow(1)) });

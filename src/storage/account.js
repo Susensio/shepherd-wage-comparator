@@ -132,11 +132,15 @@ export function createAccount({
     };
   }
 
+  const hasUnsynced = () => {
+    const { changed, removed, cfg } = unsynced();
+    return !!(changed.length || removed.length || cfg);
+  };
+
   /** Records `unsynced()` where a reload finds it, so offline edits and deletions still reach the account. */
   function saveUnsynced() {
     const { changed, removed, cfg } = unsynced();
-    const any = changed.length || removed.length || cfg;
-    store.set(UNSYNCED_KEY, any ? { user: user?.id, changed: changed.map((o) => o.id), removed, cfg } : null);
+    store.set(UNSYNCED_KEY, hasUnsynced() ? { user: user?.id, changed: changed.map((o) => o.id), removed, cfg } : null);
   }
 
   /**
@@ -279,18 +283,32 @@ export function createAccount({
       );
     },
 
-    /** Saves what is pending, then signs out; if either fails nothing changes and the error is thrown. */
+    /**
+     * Saves what is pending, then signs out; if either fails nothing changes and the error is thrown. Returns
+     * `{ keptEdits }`: an edit made while the sign-out request ran can no longer be written, so the browser copy is
+     * not cleared.
+     */
     async signOut() {
       try {
-        await flush();
+        // An edit made during a write is not in it: write again until nothing differs.
+        do await flush();
+        while (syncing && hasUnsynced());
       } catch (error) {
         onStatus('error');
         throw error;
       }
-      unwrap(await client.auth.signOut());
+      syncing = false; // edits from here on are not written, which would fail without the session
+      try {
+        unwrap(await client.auth.signOut());
+      } catch (error) {
+        syncing = true;
+        throw error;
+      }
+      const keptEdits = hasUnsynced();
       stop();
       user = null;
-      forgetBrowserCopy();
+      if (!keptEdits) forgetBrowserCopy();
+      return { keptEdits };
     },
 
     /**

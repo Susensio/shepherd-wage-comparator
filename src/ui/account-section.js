@@ -270,8 +270,8 @@ export const accountActions = {
 
   accountSignOut: () =>
     attempt('No se pudo salir. Inténtalo de nuevo.', async () => {
-      await account.signOut();
-      signedOut({ keptInAccount: true });
+      const { keptEdits } = await account.signOut();
+      signedOut({ keptInAccount: !keptEdits });
     }),
 
   uploadPending: () =>
