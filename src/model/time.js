@@ -167,12 +167,3 @@ export function hoursWeek(extra) {
   const beyond = Math.max(0, total - normal - restDays);
   return { days, hoursPerDay, total, normal, restDays, beyond, over: restDays + beyond };
 }
-
-/** Days worked, due workdays and extra days, rounded so the subtraction adds up on screen. */
-export function extraDaysRounded(time, extra) {
-  const k = time.daysWorked < 10 ? 10 : 1;
-  const round = (x) => Math.round(x * k) / k;
-  const worked = round(time.daysWorked);
-  const due = round(extra.due);
-  return { worked, due, extra: Math.max(0, round(worked - due)) };
-}

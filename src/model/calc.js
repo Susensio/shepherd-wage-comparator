@@ -5,6 +5,7 @@
 
 import { isWorthCounting, num } from '../format.js';
 import { LAW, minWageOf } from '../law.js';
+import { extraDaysRounded } from '../ledger.js';
 import {
   actualYear,
   DAYS_PER_MONTH,
@@ -19,7 +20,7 @@ import {
 } from '../offer.js';
 import { effectiveOffer, legalMinimum, payroll, travel } from './pay.js';
 import { bisect, unemploymentBenefit } from './tax.js';
-import { extraDaysRounded, extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
+import { extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
 
 /** Which share of an offer falls in each year, by days: {2025: 0.4, 2026: 0.6}. Without dates, all in its year. */
 export function yearShares(terms) {

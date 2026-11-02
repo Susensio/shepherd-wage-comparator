@@ -1,30 +1,15 @@
 /** «Las cuentas, paso a paso»: what is behind each figure of the offer, in € over the whole contract. */
 
 import { html, nothing } from 'lit-html';
-import {
-  f1,
-  fCount,
-  fDays,
-  fDaysSpoken,
-  fE,
-  fN,
-  fSumE,
-  fTyped,
-  isWorthCounting,
-  joinAnd,
-  shownEuros,
-} from '../format.js';
+import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
+import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
 import { hoursWeek } from '../model/time.js';
 import { voiceOf } from '../voice.js';
 import { row } from './parts.js';
 
 const section = (title, rows, note) =>
   html`<section class="workings-sec"><h4>${title}</h4><div class="rows">${rows.filter(Boolean)}</div>${note ? html`<p class="hint">${note}</p>` : nothing}</section>`;
-
-/** `first` minus the others, each as it is shown: a result that adds up on screen. */
-const shownDiff = (first, ...others) =>
-  Math.round((shownEuros(first) - others.reduce((total, x) => total + shownEuros(x), 0)) * 100) / 100;
 
 /** «Sin pagar» or «nada», with the net amount under it. `unpaid` is already the difference of shown figures. */
 const unpaidRow = (label, unpaid, net, cls = 'tot') =>
@@ -191,17 +176,15 @@ function extraDaysSection(o, r, net, third) {
   const x = r.extra;
   const days = r.extraDays;
   if (!(x.daysValue > 0 && days.extra >= 1)) return nothing;
-  const k = days.worked < 10 ? 10 : 1;
-  const round = (v) => Math.round(v * k) / k;
+  const { round, half } = dayRounder(days.worked);
   const contract = round(r.time.natDays);
   const vacation = round(r.time.vacationTaken || 0);
   const holidays = round(x.holidays || 0);
   const rest = round(contract - vacation - holidays - days.due);
   // Where they come from: the weekly rest you do not take and the holidays you work (rounding leftovers go to rest)
-  const k2 = days.extra < 10 ? 10 : 1;
-  const round2 = (v) => Math.round(v * k2) / k2;
-  const holidaysWorked = round2(Math.min(days.extra, o.terms.holidays !== 'yes' ? x.holidays : 0));
-  const restWorked = round2(days.extra - holidaysWorked);
+  const { round: roundExtra } = dayRounder(days.extra);
+  const holidaysWorked = roundExtra(Math.min(days.extra, o.terms.holidays !== 'yes' ? x.holidays : 0));
+  const restWorked = roundExtra(days.extra - holidaysWorked);
   const split = holidaysWorked >= 0.5 && restWorked >= 0.5;
   const paid = Math.max(0, x.daysValue - x.daysUnpaid);
   const unpaid = shownDiff(x.daysValue, paid > 0.5 ? paid : 0);
@@ -209,9 +192,9 @@ function extraDaysSection(o, r, net, third) {
     'Jornadas de más',
     [
       row('Días del contrato', fCount(contract)),
-      vacation >= 0.5 / k && row(say('− Vacaciones que libras', '− Vacaciones que se libran'), fCount(vacation)),
+      vacation >= half && row(say('− Vacaciones que libras', '− Vacaciones que se libran'), fCount(vacation)),
       row('− Descanso semanal', fCount(rest), { sub: `${fDaysSpoken(LAW.weeklyRest)} por semana` }),
-      holidays >= 0.5 / k && row('− Festivos', fCount(holidays)),
+      holidays >= half && row('− Festivos', fCount(holidays)),
       row('= Días laborables', fCount(days.due), { cls: 'strong' }),
       row(say('Trabajas', 'Se trabajan'), fCount(days.worked)),
       row('− Días laborables', fCount(days.due)),

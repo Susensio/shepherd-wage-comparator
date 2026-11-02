@@ -3,6 +3,7 @@
 import { html, nothing } from 'lit-html';
 import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { citeOf, LAW } from '../law.js';
+import { dayRounder } from '../ledger.js';
 import { claimDeadlines, hoursWeek } from '../model/time.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
@@ -143,8 +144,7 @@ function owedCard(o, r, money, third) {
 /** The extra days in one bar: due days worked, extra days and days off; the marker shows how far they are paid. */
 function extraDaysBar(r, third) {
   const days = r.extraDays;
-  const k = days.worked < 10 ? 10 : 1;
-  const round = (x) => Math.round(x * k) / k;
+  const { round } = dayRounder(days.worked);
   const contract = round(r.time.natDays);
   const regular = Math.min(days.worked, days.due);
   const free = Math.max(0, round(contract - days.worked));

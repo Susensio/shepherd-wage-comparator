@@ -1,7 +1,8 @@
 /** Small pieces the views are built from: rows of figures, figure cards, bars and explanations on tap. */
 
 import { html, nothing, svg } from 'lit-html';
-import { capitalize, euroDecimals, fCount, fE, fN, fSumE, num } from '../format.js';
+import { capitalize, euroDecimals, fCount, fE, fN, num } from '../format.js';
+import { fSumE, sum } from '../ledger.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS, UNITS } from '../units.js';
 
 /** Content that explains itself when tapped (dotted underline). */
@@ -31,9 +32,11 @@ export function columns(r) {
     return [num(fN(inUnit(x, r, 'day'), 2)), num(fN(month, euroDecimals(month, UNITS[other].decimals || undefined)))];
   };
   const texts = (plus, minus = []) => {
-    const signed = [...plus.map((x) => [x, 1]), ...minus.map((x) => [x, -1])];
-    const [day, month] = [0, 1].map(
-      (i) => Math.round(signed.reduce((t, [x, sign]) => t + sign * shown(x)[i], 0) * 100) / 100,
+    const [day, month] = [0, 1].map((i) =>
+      sum(
+        plus.map((x) => shown(x)[i]),
+        minus.map((x) => shown(x)[i]),
+      ),
     );
     return [fE(day, 2), fSumE(month)];
   };

@@ -6,6 +6,7 @@
 import { html, nothing } from 'lit-html';
 import { clamp, fCount, fDate, fE, fN } from '../format.js';
 import { LAW } from '../law.js';
+import { cents, sum } from '../ledger.js';
 import { monthlyPayslips } from '../model/payslips.js';
 import { endOf, parseDate } from '../offer.js';
 import { figureCard } from './parts.js';
@@ -25,29 +26,27 @@ const monthName = (date) => {
 const e2 = (x) => fN(x, 2);
 const pct = (x) => `${fN(x, 2)}\u00a0%`;
 
-const cents = (x) => Math.round(x * 100) / 100;
-
 /**
  * A month's payslip figures rounded to cents one by one, and the totals summed from those, so every column adds up on
  * screen.
  */
 function shownFigures(x, r) {
-  const gross = cents(x.salary) + cents(x.vacation);
+  const gross = sum([cents(x.salary), cents(x.vacation)]);
   const contributions = r.pay.rates.worker.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
   const irpf = cents(gross * r.pay.irpfPct);
   const severance = x.severance > 0.5 ? cents(x.severance) : 0;
-  const deductions = contributions.reduce((sum, [, amount]) => sum + amount, irpf);
+  const deductions = sum([irpf, ...contributions.map(([, amount]) => amount)]);
   const employer = r.pay.rates.employer.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
   return {
     gross,
     contributions,
     irpf,
     severance,
-    credits: gross + severance,
+    credits: sum([gross, severance]),
     deductions,
-    net: gross + severance - deductions,
+    net: sum([gross, severance], [deductions]),
     employer,
-    employerTotal: employer.reduce((sum, [, amount]) => sum + amount, 0),
+    employerTotal: sum(employer.map(([, amount]) => amount)),
   };
 }
 
