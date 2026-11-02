@@ -56,6 +56,21 @@ Two rules, and each extra hour counts once.
 - A net pay is turned into the gross that gives it, because IRPF depends on the gross. The same conversion says what gross would bring the cash part net.
 - IRPF counts the worker's other worked offers in the same year. Those are calculated on their own to avoid circular references.
 
+## Pay questions
+
+The «Lo que te pagan» section of the form is a view over `terms`; it saves no fields of its own (`src/pay-answers.js`). The first amount is in `unit` (day, month, or total when the offer has a duration).
+
+| Answer | Fields |
+|---|---|
+| Todo | `payrollMin: false`, `payType: 'net'`, `payAmount` and `payUnit` = amount and unit, `cashMode: 'amount'`, `cashAmount: ''` |
+| El salario mínimo | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
+| Una parte | `payrollMin: false`, `payAmount` = the part, `payType` net or gross, `payUnit` = unit, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
+| Nada, sin contrato | `contract: 'none'`, `cashAmount` and `cashUnit` = amount and unit |
+
+En negro is never asked: it is the model's `split.cash`. «Una parte» without the part is missing (`payrollPart`), as the model would take all of it as en negro. The vacation answers are `terms.vacation`; «Las libro» is hidden when `isCasual` (temporary, `natDays` of the schedule up to `LAW.casualMaxDays`), without changing the default `defaultVacation` sets; an offer that already has it keeps it, with a hint.
+
+Shapes the answers cannot say are converted once, in `ingestSaved` (every load path), by `toAnswerable`: a yearly amount becomes monthly, «total» without a duration becomes a month, and a payslip with en negro money, or a part whose unit differs from the total's, becomes «Una parte» with total = net payslip + en negro in the payslip's unit. A conversion is kept only if the earnings, gross, net, cash and debt figures stay within a cent. The exception is a net payslip with en negro money and vacation inside the pay: with a total the model puts the vacation on top of the payslip, so both amounts are kept and only that treatment of the vacation moves.
+
 ## Rules added in November 2026
 
 - Social Security rates depend on the contract: `ssOf(contract)` in `law.js` (Orden PJC/297/2026), read through `r.pay.rates`. An offer without a contract uses the fijo discontinuo rates, the most common contract in shepherding, to turn cash into gross and to price what the employer saves (owner, 1 November 2026).

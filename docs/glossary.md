@@ -15,6 +15,9 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | libranzas | days off, not counting vacation | `terms.daysOff`, `r.time.daysOffMonth` | ET art. 37.1 (descanso semanal) | días libres (may stay as an explanation: «días libres, sin contar vacaciones») |
 | descanso semanal | the legal weekly rest (day and a half) | `LAW.weeklyRest` | ET art. 37.1 | |
 | vacaciones | | `terms.vacation`, `p.vacationPay` | ET art. 38 | |
+| vacaciones aparte, al acabar | worked and paid on top at the end | `vacation: 'paidAtEnd'` | | pagadas aparte |
+| vacaciones dentro | worked, and already inside the pay | `vacation: 'included'` | | incluidas |
+| vacaciones libradas | days off, paid | `vacation: 'taken'` | | disfrutadas |
 | duración del contrato | | `terms.duration`, `terms.durationUnit` | | |
 
 ## Money
@@ -33,7 +36,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | paro | unemployment benefit earned by contributing | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
 | Seguridad Social | contributions, worker and employer | `ssOf(contract)`, `r.pay.rates` | Orden PJC/297/2026 | cotización (in explanations only) |
 | retención de IRPF | | `r.pay.irpf`, `irpfPct` | | |
-| te pagan | everything the offer pays together, payslip and en negro: the first answer of «Lo que te pagan», what reaches the shepherd | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | cobras (that is the Desglose figure) |
+| te pagan | everything the offer pays together, payslip and en negro: the first answer of «Lo que te pagan», what reaches the shepherd | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | | cobras (that is the Desglose figure) |
 | casa y comida | housing and meals given by the employer | `terms.housing`, `terms.meal*` | | |
 
 ## Contract
