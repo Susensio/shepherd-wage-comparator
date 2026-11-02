@@ -165,7 +165,7 @@
           <fieldset aria-label="Lo que te pagan">
           <p class="told full" id="payTold" aria-live="polite"></p>
           <div class="fld full">
-            <label for="payTotal">¿Cuánto te pagan?</label>
+            <label class="ask" for="payTotal">¿Cuánto te pagan?</label>
             <p class="hint">Todo junto, lo que te llega a ti.</p>
             <div class="combo">
               <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
@@ -177,7 +177,7 @@
             </div>
           </div>
           <div class="fld full">
-            <span>¿Cuánto va en nómina?</span>
+            <span class="ask">¿Cuánto va en nómina?</span>
             <div class="seg" role="radiogroup" aria-label="En nómina">
               <label><input type="radio" name="payroll" data-answer="payroll" value="all">Todo</label>
               <label><input type="radio" name="payroll" data-answer="payroll" value="min">El salario mínimo</label>
@@ -197,16 +197,15 @@
             <p class="hint" data-show="payLegacy">Esta oferta se guardó con otra forma de contar lo que te pagan. Las cifras son las de antes hasta que cambies una respuesta.</p>
           </div>
           <div class="fld full" data-show="withContract">
-            <span>¿Qué contrato?</span>
+            <span class="ask">¿Qué contrato?</span>
             <div class="seg" role="radiogroup" aria-label="Contrato">
               <label><input type="radio" name="contract" value="temporary">Temporal</label>
               <label><input type="radio" name="contract" value="seasonal">Fijo discontinuo</label>
               <label><input type="radio" name="contract" value="permanent">Fijo</label>
             </div>
-            <p class="hint">Cambia el mínimo legal: el salario mínimo de temporero solo vale para contratos temporales de hasta <span data-law="casualMaxDays"></span> días con la misma empresa.</p>
           </div>
           <div class="fld full" data-show="withContract">
-            <span>¿Y las vacaciones?</span>
+            <span class="ask">¿Y las vacaciones?</span>
             <div class="opts">
               <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><div><b>Me las pagan aparte, al acabar</b><span>Trabajas esos días y te los pagan al acabar, además de lo pactado.</span></div></label>
               <label class="opt"><input type="radio" name="vacation" value="included"><div><b>Van dentro de lo que me pagan</b><span>Trabajas esos días y no se cobran aparte. Lo más habitual.</span></div></label>
@@ -215,7 +214,7 @@
             <p class="hint" id="vacationHint"></p>
           </div>
           <div class="fld full" data-show="hasExtraPays">
-            <span>¿Y las pagas extra?</span>
+            <span class="ask">¿Y las pagas extra?</span>
             <div class="seg" role="radiogroup" aria-label="Pagas extra">
               <label><input type="radio" name="extraPays" value="included">Van dentro, prorrateadas</label>
               <label><input type="radio" name="extraPays" value="separate">Dos pagas aparte</label>

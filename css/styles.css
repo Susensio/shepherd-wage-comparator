@@ -462,6 +462,14 @@ summary:focus-visible,
   align-items: stretch;
 }
 
+/* The questions of «Lo que te pagan» */
+.fld > span.ask:first-child,
+.fld > label.ask {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
 /* «Lo que te pagan»: the offer told back, and what goes en negro */
 .told {
   padding: 10px 12px;
