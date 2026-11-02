@@ -106,8 +106,11 @@ function medals(list, unit) {
   return out;
 }
 
-/** Head to head: the two offers picked, row by row and in blocks; the better one in each row, in green. */
-function headToHead(list, pairing) {
+/**
+ * Head to head: the two offers picked, row by row and in blocks; the better one in each row, in green. Money is in the
+ * unit Comparar is in, as in the ranking; totals only when both last about the same.
+ */
+function headToHead(list, pairing, unit) {
   if (!pairing.on || list.length < 2) return nothing;
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
@@ -119,6 +122,7 @@ function headToHead(list, pairing) {
     !a.r.time.noDuration &&
     !b.r.time.noDuration &&
     Math.abs(a.r.time.natDays - b.r.time.natDays) <= 0.1 * Math.max(a.r.time.natDays, b.r.time.natDays);
+  const totalsHidden = unit === 'total' && !similar;
   // «Le cuestas» adds the housing and food given; without them it repeats «Dinero que pone»
   const inKind = [a, b].some((x) => x.r.inKind.total > 0.5);
   const duration = (x) =>
@@ -127,71 +131,40 @@ function headToHead(list, pairing) {
       : x.o.terms.durationUnit === 'days'
         ? `${fTyped(x.o.terms.duration)} días`
         : `${fTyped(x.o.terms.duration)} ${num(x.o.terms.duration) === 1 ? 'mes' : 'meses'}`;
-  const orDash = (format) => (v) => (Number.isFinite(v) ? format(v) : '–');
-  const perMonthOk = (x) => x.r.time.noDuration || !isUnderAMonth(x.r);
+  const U = UNITS[unit];
+  /** A whole-contract amount in the chosen unit; none without a duration for «en total». */
+  const inPicked = (x, amount) => {
+    if (unit === 'total' && x.r.time.noDuration) return Number.NaN;
+    const per = U.per(x.r);
+    return per > 0 ? amount / per : Number.NaN;
+  };
+  // Shorter than a month, «al mes» is at that rate, marked as in the ranking
+  const atRate = (x) => unit === 'month' && isUnderAMonth(x.r);
+  const inUnitText = (v, x) => (Number.isFinite(v) ? `${fUnit(v, unit)}${atRate(x) ? '*' : ''}` : '–');
+  const money = (what, amount, best) =>
+    !totalsHidden && [`${what} ${U.short}`, (x) => inPicked(x, amount(x)), inUnitText, best];
   // Blocks of [what, value, format, best: 'max', 'min' or '' (information, no winner)]
   /** @type {[string, any[]][]} */
   const groups = [
     [
       'Dinero',
       [
-        [say('Ganas por hora', 'Se gana por hora'), (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
-        [say('Ganas por día', 'Se gana por día'), (x) => x.r.earnings.perDay, orDash(fE), 'max'],
-        [
-          say('Ganas al mes', 'Se gana al mes'),
-          (x) => (perMonthOk(x) ? x.r.earnings.perMonth : Number.NaN),
-          orDash(fE),
+        unit !== 'hour' && [
+          say('Ganas por hora', 'Se gana por hora'),
+          (x) => x.r.earnings.perHour,
+          (v) => fE(v, 2),
           'max',
         ],
-        [
-          say('Cobras al mes', 'Se cobra al mes'),
-          (x) => (perMonthOk(x) ? x.r.earnings.received / (x.r.time.months || 1) : Number.NaN),
-          orDash(fE),
-          'max',
-        ],
-        similar && [
-          say('Ganas en total', 'Se gana en total'),
-          (x) => (x.r.time.noDuration ? Number.NaN : x.r.earnings.total),
-          orDash(fE),
-          'max',
-        ],
-        similar && [
-          say('Cobras en total', 'Se cobra en total'),
-          (x) => (x.r.time.noDuration ? Number.NaN : x.r.earnings.received),
-          orDash(fE),
-          'max',
-        ],
+        money(say('Ganas', 'Se gana'), (x) => x.r.earnings.total, 'max'),
+        money(say('Cobras', 'Se cobra'), (x) => x.r.earnings.received, 'max'),
       ],
     ],
     [
       'Para el ganadero',
       [
         // What the employer pays in money (payroll, Social Security, cash, km, severance), and with housing and food
-        [
-          'Dinero que pone al mes',
-          (x) => (perMonthOk(x) ? employerMoney(x.r) / (x.r.time.months || 1) : Number.NaN),
-          orDash(fE),
-          '',
-        ],
-        inKind && [
-          say('Le cuestas al mes', 'Le cuesta al mes'),
-          (x) => (perMonthOk(x) ? x.r.employer.cost / (x.r.time.months || 1) : Number.NaN),
-          orDash(fE),
-          '',
-        ],
-        similar && [
-          'Dinero que pone en total',
-          (x) => (x.r.time.noDuration ? Number.NaN : employerMoney(x.r)),
-          orDash(fE),
-          '',
-        ],
-        similar &&
-          inKind && [
-            say('Le cuestas en total', 'Le cuesta en total'),
-            (x) => (x.r.time.noDuration ? Number.NaN : x.r.employer.cost),
-            orDash(fE),
-            '',
-          ],
+        money('Dinero que pone', (x) => employerMoney(x.r), ''),
+        inKind && money(say('Le cuestas', 'Le cuesta'), (x) => x.r.employer.cost, ''),
       ],
     ],
     [
@@ -246,8 +219,12 @@ function headToHead(list, pairing) {
   });
   const header = (x) =>
     html`<th><button type="button" class="linkbtn" data-action=${openAction(x)} data-id=${x.o.id}><span>${x.o.mine.name}</span>${detailOf(x)}</button></th>`;
+  const notes = [
+    [a, b].some(atRate) && '* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.',
+    totalsHidden && 'Duran distinto, así que los totales no se comparan. Compara por hora, día o mes.',
+  ].filter(Boolean);
   return html`<div class="pair" id="pairBlk"><div class="pair-head"><h4 class="sub">Cara a cara</h4><button type="button" class="linkbtn" data-action="closePair">Cerrar</button></div>
-    <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    <table class="table pair-t"><thead><tr><th></th>${header(a)}${header(b)}</tr></thead><tbody>${rows}</tbody></table>${notes.map((t) => html`<p class="hint">${t}</p>`)}</div>`;
 }
 
 /** Hours of the extra part of a typical week that go unpaid: the unpaid share of the contract's extra time. */
@@ -356,7 +333,7 @@ export function compareView(all, unit, termsOnly, others, pairing) {
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
 `,
     // After the «Otros pastores» section, which sits right under the ranking
-    more: html`${headToHead(list, pairing)}${hoursView(list)}`,
+    more: html`${headToHead(list, pairing, unit)}${hoursView(list)}`,
   };
 }
 

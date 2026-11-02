@@ -77,37 +77,56 @@ test('compare, and go to an offer from there', async ({ page }) => {
   await expect(page.locator('.tabs [aria-selected=true]')).toHaveAttribute('data-tab', 'offers');
 });
 
-test('head to head', async ({ loaded: page }) => {
+test('head to head, in the unit Comparar is in', async ({ loaded: page }) => {
   await page.click('.tabs [data-tab=compare]');
   await page.click('[data-action=startPair]');
-  await page.locator('.lr').nth(0).click();
-  await page.locator('.lr').nth(2).click();
-  await expect(page.locator('#pairBlk')).toContainText('Cara a cara');
-  for (const label of ['Ganas por día', 'Para el ganadero', 'Dinero que pone al mes'])
-    await expect(page.locator('#pairBlk')).toContainText(label);
-  // What the employer pays a month is the model's own figure; «Le cuestas» appears only with housing or food given
+  // Puerto A lasts 102 days, Campaña B 11: under a month, and too different for totals
+  await page.click('.lr[data-id=o1]');
+  await page.click('.lr[data-id=o3]');
+  const pair = page.locator('#pairBlk');
+  await expect(pair).toContainText('Cara a cara');
+  for (const label of ['Ganas por hora', 'Ganas por día', 'Para el ganadero', 'Dinero que pone por día'])
+    await expect(pair).toContainText(label);
+  await expect(pair).not.toContainText('Ganas al mes');
+  await page.click("#cmpView label:has-text('mes')");
+  // What the employer pays a month is the model's own figure, at that rate for the short one; «Le cuestas» appears
+  // only with housing or food given
   const check = await page.evaluate(async () => {
     const { fE } = await import('./src/format.js');
     const ids = [...document.querySelectorAll('#pairBlk thead [data-id]')].map((b) => b.dataset.id);
     const results = ids.map((id) => app.calcOffer(app.state.offers.find((o) => o.id === id)));
-    const cell = (label) =>
-      [...document.querySelectorAll('#pairBlk tbody tr')]
+    const cells = (label) =>
+      [...(document.querySelectorAll('#pairBlk tbody tr') ?? [])]
         .find((tr) => tr.querySelector('th')?.textContent === label)
-        ?.querySelector('td')
-        .textContent.replace(/\s*✔\s*$/, '')
-        .trim();
-    const r = results[0];
+        ?.querySelectorAll('td');
+    const text = (td) => td.textContent.trim();
+    const [first, second] = [...cells('Dinero que pone al mes')].map(text);
     return {
-      shown: cell('Dinero que pone al mes'),
-      expected: fE((r.employer.cost - r.inKind.total) / (r.time.months || 1)),
-      costRow: cell('Le cuestas al mes') !== undefined,
+      shown: [first, second],
+      expected: results.map((r, n) => `${fE((r.employer.cost - r.inKind.total) / r.time.months)}${n === 1 ? '*' : ''}`),
+      costRow: cells('Le cuestas al mes') !== undefined,
       inKind: results.some((x) => x.inKind.total > 0.5),
     };
   });
-  expect(check.shown).toBe(check.expected);
+  expect(check.shown).toEqual(check.expected);
   expect(check.costRow).toBe(check.inKind);
+  await expect(pair).toContainText('* Menos de un mes');
+  await page.click("#cmpView label:has-text('total')");
+  await expect(pair).not.toContainText('en total');
+  await expect(pair).toContainText('Duran distinto, así que los totales no se comparan.');
+  await expect(pair).toContainText('Duración');
   await page.click('#pairBlk [data-action=closePair]');
-  await expect(page.locator('#pairBlk')).toHaveCount(0);
+  await expect(pair).toHaveCount(0);
+});
+
+test('head to head shows totals when both last about the same', async ({ loaded: page }) => {
+  await page.click('.tabs [data-tab=compare]');
+  await page.click("#cmpView label:has-text('total')");
+  await page.click('[data-action=startPair]');
+  await page.click('.lr[data-id=o4]');
+  await page.click('.lr[data-id=o6]');
+  await expect(page.locator('#pairBlk')).toContainText('Ganas en total');
+  await expect(page.locator('#pairBlk')).not.toContainText('Duran distinto');
 });
 
 test('Comparar can show the terms alone, without your travel and expenses', async ({ loaded: page }) => {
