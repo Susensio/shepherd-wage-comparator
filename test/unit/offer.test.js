@@ -34,7 +34,9 @@ test('without a contract, the cash in hand is what is needed', () => {
 test('an agreed total needs the total', () => {
   const o = makeTerms({ cashMode: 'total', totalAmount: 0 });
   assert.deepEqual(missing(o), ['agreedTotal']);
-  assert.deepEqual(missing({ ...o, totalAmount: 5000 }), []);
+  assert.deepEqual(missing({ ...o, totalAmount: 5000, payAmount: 0 }), ['payrollPart']);
+  assert.deepEqual(missing({ ...o, totalAmount: 5000, payAmount: 1500 }), []);
+  assert.deepEqual(missing({ ...o, totalAmount: 5000, payrollMin: true }), []);
 });
 
 test('the pay is the payroll minimum or an amount', () => {

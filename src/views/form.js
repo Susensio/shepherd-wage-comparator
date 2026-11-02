@@ -4,12 +4,12 @@
  */
 
 import { html, render } from 'lit-html';
-import { fCount, fE, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
+import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
-import { answersOf, askExtraPays, isAnswerable, isCasualLength } from '../pay-answers.js';
+import { answersOf, askExtraPays, isAnswerable, isCasual } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
-import { areaLine, summaries } from '../text.js';
+import { areaLine, summaries, VACATION_SAYS } from '../text.js';
 import { $, $$ } from '../ui/dom.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
@@ -19,7 +19,7 @@ const SHOW = {
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
   // «Las libro» makes no sense on a short contract; one already saved with it keeps showing, with a hint
-  vacationTaken: (o) => !isCasualLength(o.terms) || o.terms.vacation === 'taken',
+  vacationTaken: (o, r) => !isCasual(o.terms, r.time) || o.terms.vacation === 'taken',
   overnight: (o) => o.terms.overnight === 'yes',
   showRent: (o) => o.terms.housing === 'yes',
   showMeals: (o) => mealsGiven(o.terms).length > 0,
@@ -67,10 +67,10 @@ export function fillVacation(o) {
 }
 
 /** Shows only the fields that apply. Returns those that appeared, for the caller to animate. */
-function applyShow(o) {
+function applyShow(o, r) {
   const appeared = [];
   for (const el of /** @type {HTMLElement[]} */ ($$('[data-show]'))) {
-    const visible = !!SHOW[el.dataset.show](o);
+    const visible = !!SHOW[el.dataset.show](o, r);
     if (el.hidden && visible) appeared.push(el);
     el.hidden = !visible;
   }
@@ -102,15 +102,15 @@ function paintPlace(o, { index, status }) {
 
 const UNIT_PER = { day: 'al día', month: 'al mes', total: 'en total' };
 
-/** Under the vacation options: why one is missing, or has to change, on a short contract; or the automatic choice. */
-function vacationHint(o) {
-  if (isCasualLength(o.terms) && o.terms.vacation === 'taken')
-    return 'En un contrato corto no da tiempo a librarlas: cambia a «Me las pagan aparte, al acabar» o «Van dentro de lo que me pagan».';
+/** Under the vacation options: why one is missing, or has to change, on a casual contract; or the automatic choice. */
+function vacationHint(o, r) {
+  const casual = isCasual(o.terms, r.time);
+  const why = `En un contrato temporal de hasta ${LAW.casualMaxDays} días no da tiempo a librarlas`;
+  if (casual && o.terms.vacation === 'taken')
+    return `${why}: cambia a «Me las pagan aparte, al acabar» o «Van dentro de lo que me pagan».`;
   if (o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd')
     return 'Marcado de forma automática: en un contrato de menos de un mes no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.';
-  return isCasualLength(o.terms)
-    ? 'En un contrato corto no da tiempo a librarlas: se pagan al acabar o van dentro.'
-    : '';
+  return casual ? `${why}: se pagan al acabar o van dentro.` : '';
 }
 
 /** An amount typed in the form, as an input shows it. */
@@ -122,22 +122,19 @@ function payTold(o, r, a) {
   if (!(amount > 0)) return html`Responde abajo y aquí se resume la oferta.`;
   const per = UNIT_PER[a.unit];
   /** @type {(string | import('lit-html').TemplateResult)[]} */
-  const parts = [html`Te pagan <b>${fE(amount, Number.isInteger(amount) ? 0 : 2)} ${per}</b>`];
+  const parts = [html`Te pagan <b>${fEntered(amount)} ${per}</b>`];
   if (a.payroll === 'none') parts.push('todo en negro, sin contrato');
   else {
     if (a.payroll === 'all') parts.push('todo en nómina');
     else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
-    else if (num(a.part) > 0) parts.push(`${fE(r.split.payrollNet)} en nómina`);
+    else if (num(a.part) > 0)
+      parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}${per} en nómina`);
     else parts.push('una parte en nómina');
     if (r.split?.cash > 0.5 && (a.payroll === 'min' || num(a.part) > 0))
       parts.push(`unos ${fE(r.split.cash)} en negro`);
     parts.push(`contrato ${contractOf(o.terms).phrase}`);
     if (askExtraPays(o.terms) && o.terms.extraPays === 'separate') parts.push('dos pagas extra aparte');
-    parts.push(
-      { paidAtEnd: 'vacaciones aparte', taken: 'vacaciones libradas', included: 'vacaciones incluidas' }[
-        o.terms.vacation
-      ] || 'vacaciones sin poner',
-    );
+    parts.push(VACATION_SAYS[o.terms.vacation] || 'vacaciones sin poner');
   }
   return html`${parts.map((p, i) => html`${i ? ' · ' : ''}${p}`)}.`;
 }
@@ -147,7 +144,7 @@ function cashLine(r, a) {
   const amount = num(a.amount);
   if (!(amount > 0) || a.payroll === 'all' || (a.payroll === 'part' && !(num(a.part) > 0))) return null;
   const per = UNIT_PER[a.unit];
-  if (a.payroll === 'none') return `Todo en negro: ${fE(amount, Number.isInteger(amount) ? 0 : 2)} ${per}.`;
+  if (a.payroll === 'none') return `Todo en negro: ${fEntered(amount)} ${per}.`;
   if (r.split?.shortfall) return 'Lo que va en nómina supera lo que te pagan: no queda nada en negro.';
   return r.split?.cash > 0.5 ? `Unos ${fE(r.split.cash)} ${per} van en negro.` : 'Nada en negro.';
 }
@@ -177,8 +174,7 @@ function paintAnswers(o, r) {
 function payHint(o, r) {
   if (o.terms.contract === 'none') return '';
   if (o.terms.payrollMin) {
-    const monthly = r.min.salary / r.time.months;
-    return `En nómina, el mínimo${r.min.casual ? ` de temporero (el contrato dura ${LAW.casualMaxDays} días o menos)` : ''}: unos ${fE(monthly)} brutos al mes, ${fE(monthly * r.netFactor)} netos.`;
+    return `En nómina, unos ${fE((r.min.salary / r.time.months) * r.netFactor)} netos al mes.`;
   }
   if (!(num(o.terms.payAmount) > 0)) return '';
   const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.terms.payUnit];
@@ -242,7 +238,7 @@ function yearHint(o, r) {
  */
 export function paintForm(o, r, offers, places) {
   const cfg = r.cfg;
-  const appeared = applyShow(o);
+  const appeared = applyShow(o, r);
   // Without a start date an offer is never counted as worked (`workedOffers`): the box says so instead of hiding it
   const offerOnly = /** @type {HTMLInputElement} */ ($('#f [name=offerOnly]'));
   const noDate = !o.terms.start;
@@ -252,7 +248,7 @@ export function paintForm(o, r, offers, places) {
     '#offerOnlyHint',
     noDate ? 'Sin fecha de inicio cuenta como solo oferta. Para contarla como trabajada, pon cuándo empezó.' : '',
   );
-  text('#vacationHint', vacationHint(o));
+  text('#vacationHint', vacationHint(o, r));
   const s = summaries(o, r, places.index);
   render(
     [

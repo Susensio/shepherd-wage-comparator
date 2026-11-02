@@ -15,7 +15,15 @@ export const MISSING_TEXT = {
   pay: 'lo que te pagan',
   agreedTotal: 'lo que te pagan',
   cashInHand: 'lo que te pagan',
+  payrollPart: 'lo que va en nómina',
   vacation: 'qué pasa con las vacaciones',
+};
+
+/** How each vacation answer is said (`terms.vacation`). */
+export const VACATION_SAYS = {
+  paidAtEnd: 'vacaciones aparte',
+  included: 'vacaciones dentro',
+  taken: 'vacaciones libradas',
 };
 
 /** The same for another shepherd's offer: impersonal. */
@@ -127,9 +135,8 @@ export function summaries(o, r, places = null, third = false) {
         ? 'libra los festivos'
         : 'sin libranzas';
   const vacation =
-    { taken: 'vacaciones disfrutadas', paidAtEnd: 'vacaciones pagadas aparte', included: 'vacaciones incluidas' }[
-      o.terms.vacation
-    ] || 'vacaciones sin poner';
+    (third && o.terms.vacation === 'taken' ? 'las vacaciones se libran' : VACATION_SAYS[o.terms.vacation]) ||
+    'vacaciones sin poner';
   const extraPays =
     !['year', 'total'].includes(o.terms.payUnit) && o.terms.extraPays === 'separate' ? ' · 2 pagas extra' : '';
   const meals = mealsGiven(o.terms).length ? `${third ? 'se dan' : 'te dan'} ${mealsList(o.terms)}` : 'sin comida';
@@ -166,10 +173,15 @@ export function summaries(o, r, places = null, third = false) {
     others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
   // «Lo que te pagan» is one section: the payslip, and the en negro money when there is any
+  const hasCash = r.cash.total > 0.5;
   const pay =
-    lines.b === 'Nada' || o.terms.contract === 'none'
-      ? lines.payroll
-      : `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`;
+    o.terms.contract === 'none'
+      ? hasCash
+        ? `Sin contrato: ${lines.b} en negro`
+        : 'Sin contrato'
+      : hasCash
+        ? `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`
+        : lines.payroll;
   return { ...lines, pay };
 }
 

@@ -4,9 +4,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
+import { schedule } from '../../src/model/time.js';
 import { DEF_CFG, makeOffer } from '../../src/offer.js';
-import { answersOf, isAnswerable, toAnswerable, writeAnswers } from '../../src/pay-answers.js';
-import { normalizeOffer } from '../../src/saved.js';
+import { answersOf, isAnswerable, isCasual, toAnswerable, writeAnswers } from '../../src/pay-answers.js';
+import { ingestSaved, normalizeOffer } from '../../src/saved.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };
@@ -145,11 +146,35 @@ test('a gross payslip with vacation inside the pay is said as its net', () => {
   assert.deepEqual([answersOf(offer.terms).payroll, offer.terms.payType], ['all', 'net']);
 });
 
-test('a shape that cannot be converted without changing its figures is left alone', () => {
+test('a net payslip, en negro money and vacation inside the pay keep both amounts; only the vacation treatment moves', () => {
   const offer = offerWith({ payType: 'net', payAmount: 1400, cashAmount: 300, vacation: 'included' });
-  const terms = structuredClone(offer.terms);
-  assert.equal(toAnswerable(offer, { cfg, offers: [offer] }), false);
-  assert.deepEqual(offer.terms, terms);
+  const before = calc(offer, { cfg, offers: [offer] });
+  assert.equal(toAnswerable(offer, { cfg, offers: [offer] }), true);
+  assert.equal(isAnswerable(offer.terms), true);
+  const after = calc(offer, { cfg, offers: [offer] });
+  assert.ok(Math.abs(after.cash.total - before.cash.total) <= 0.01, 'en negro money is kept');
+  assert.equal(offer.terms.payAmount, 1400);
+  // Changing an answer afterwards does not lose the en negro money either
+  const answers = answersOf(offer.terms);
+  writeAnswers(offer.terms, { ...answers, payroll: 'part', partType: 'net', part: 1400 });
+  assert.ok(Math.abs(calc(offer, { cfg, offers: [offer] }).cash.total - before.cash.total) <= 0.01);
+});
+
+test('ingestSaved converts once, on load', () => {
+  const { offers } = ingestSaved({ offers: sample.offers, cfg: sample.cfg }, { fallbackCfg: cfg });
+  assert.ok(offers.every((offer) => isAnswerable(offer.terms)));
+});
+
+test('only a temporary contract of 120 days or less is casual', () => {
+  const casual = (terms) => {
+    const t = { durationUnit: 'days', duration: 120, contract: 'temporary', ...terms };
+    return isCasual(t, schedule(t));
+  };
+  assert.equal(casual({}), true);
+  assert.equal(casual({ duration: 121 }), false);
+  assert.equal(casual({ contract: 'seasonal' }), false);
+  assert.equal(casual({ durationUnit: 'unknown' }), false);
+  assert.equal(casual({ duration: '' }), false);
 });
 
 test('the answers go to the terms by the mapping and read back', () => {

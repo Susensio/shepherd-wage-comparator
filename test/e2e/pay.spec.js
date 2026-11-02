@@ -133,11 +133,12 @@ test('extra pays are asked only for a monthly amount with a payslip', async ({ p
   await expect(page.locator('#payTold')).toContainText('dos pagas extra aparte');
 });
 
-test('«Las libro, cobrando» is not offered on a contract of 120 days or less', async ({ page }) => {
+test('«Las libro, cobrando» is not offered on a temporary contract of 120 days or less', async ({ page }) => {
   await newOffer(page, '3');
+  await answer(page, 'contract', 'temporary');
   const taken = page.locator('input[name=vacation][value=taken]');
   await expect(taken).toBeHidden();
-  await expect(page.locator('#vacationHint')).toContainText('En un contrato corto');
+  await expect(page.locator('#vacationHint')).toContainText('En un contrato temporal de hasta 120 días');
   await page.fill('#duration', '5');
   await expect(taken).toBeVisible();
   await answer(page, 'durationUnit', 'days');
@@ -145,17 +146,77 @@ test('«Las libro, cobrando» is not offered on a contract of 120 days or less',
   await expect(taken).toBeHidden();
   await page.fill('#duration', '121');
   await expect(taken).toBeVisible();
+  // Only temporary contracts have the casual minimum: the others can take their vacation
+  await page.fill('#duration', '60');
+  await expect(taken).toBeHidden();
+  await answer(page, 'contract', 'seasonal');
+  await expect(taken).toBeVisible();
 });
 
 test('an offer that already takes its vacation keeps it, shown with a hint, when the contract is short', async ({
   page,
 }) => {
   await newOffer(page, '6');
+  await answer(page, 'contract', 'temporary');
   await answer(page, 'vacation', 'taken');
   await page.fill('#duration', '2');
   expect((await terms(page)).vacation).toBe('taken');
   await expect(page.locator('input[name=vacation][value=taken]')).toBeChecked();
   await expect(page.locator('#vacationHint')).toContainText('cambia a «Me las pagan aparte, al acabar»');
+});
+
+test('«Una parte» without the part is missing, and the mark points at it', async ({ page }) => {
+  await newOffer(page);
+  await answer(page, 'payroll', 'part');
+  await page.click('[data-action=done]');
+  await expect(page.locator('#goMsg')).toHaveText('Falta lo que va en nómina.');
+  await expect(page.locator('#payPart')).toBeFocused();
+  await expect(page.locator('.fld.missing')).toContainText('¿Cuánto va en nómina?');
+});
+
+test('the sentence tells the part as typed', async ({ page }) => {
+  await newOffer(page);
+  await answer(page, 'payroll', 'part');
+  await page.fill('#payPart', '1500');
+  await expect(page.locator('#payTold')).toContainText('1.500 € al mes en nómina · unos');
+  await answer(page, 'payType', 'gross');
+  await expect(page.locator('#payTold')).toContainText('1.500 € brutos al mes en nómina · unos');
+});
+
+test('an offer saved with a payslip and en negro money keeps both when an answer changes', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { ingestSaved } = await import('./src/saved.js');
+    const { DEF_CFG } = await import('./src/offer.js');
+    app.closeTemplates();
+    const { offers } = ingestSaved(
+      {
+        offers: [
+          {
+            id: 'x',
+            terms: {
+              start: '2026-06-01',
+              duration: 3,
+              hoursPerDay: 9,
+              payType: 'net',
+              payAmount: 1400,
+              cashAmount: 300,
+              vacation: 'included',
+            },
+            mine: { name: 'Vieja' },
+          },
+        ],
+      },
+      { fallbackCfg: DEF_CFG },
+    );
+    app.state.offers = offers;
+    app.select('x');
+  });
+  await expect(page.locator('input[name=payroll][value=part]')).toBeChecked();
+  await expect(page.locator('#payPart')).toHaveValue('1400');
+  await expect(page.locator('#payCash')).toContainText('Unos 300 € al mes van en negro');
+  await answer(page, 'payPer', 'day');
+  await answer(page, 'payPer', 'month');
+  await expect(page.locator('#payCash')).toContainText('van en negro');
 });
 
 test('what is missing points at the amount', async ({ page }) => {

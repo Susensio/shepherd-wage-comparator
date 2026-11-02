@@ -76,6 +76,23 @@ test('summaries: one line per form section', () => {
   assert.match(s.car, /^Tu coche/);
 });
 
+test('summaries: the pay line says the en negro money, and without a contract the amount', () => {
+  const none = offers.find((o) => o.mine.name === 'Sin contrato D');
+  assert.equal(summaries(none, resultOf(none)).pay, 'Sin contrato: 63 €/día en negro');
+  const worked = offers.find((o) => o.mine.name === 'Temporada E');
+  assert.doesNotMatch(summaries(worked, resultOf(worked)).pay, /en negro/);
+});
+
+test('summaries: one word for each vacation answer', () => {
+  const o = structuredClone(byId('o1'));
+  const say = (vacation, third) =>
+    summaries({ ...o, terms: { ...o.terms, vacation } }, resultOf(o), null, third).payroll;
+  assert.match(say('taken', false), /vacaciones libradas/);
+  assert.match(say('taken', true), /las vacaciones se libran/);
+  assert.match(say('paidAtEnd', false), /vacaciones aparte/);
+  assert.match(say('included', false), /vacaciones dentro/);
+});
+
 const places = buildIndex({
   provinces: [['HU', 'Huesca']],
   municipalities: [['Yebra de Basa', 0, '22252']],

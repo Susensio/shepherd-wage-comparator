@@ -1,6 +1,7 @@
 /**
  * «Lo que te pagan»: the pay questions of the offer form as a view over `terms`. Nothing here is saved on its own:
- * `answersOf` reads the answers out of the fields and `writeAnswers` puts them back (mapping in docs/model.md).
+ * `answersOf` reads the answers out of the fields and `writeAnswers` puts them back (mapping in docs/model.md,
+ * «Pay questions»).
  * Offers saved in a shape the questions cannot say are converted by `toAnswerable`, keeping their figures.
  */
 
@@ -8,7 +9,7 @@ import { num } from './format.js';
 import { LAW } from './law.js';
 import { calc } from './model/calc.js';
 import { schedule } from './model/time.js';
-import { DAYS_PER_MONTH, DEF_TERMS } from './offer.js';
+import { DEF_TERMS } from './offer.js';
 
 /**
  * @typedef {object} Answers
@@ -71,12 +72,14 @@ export function isAnswerable(t) {
   return t.payType === 'net' && !(num(t.cashAmount) > 0) && unitFits(t.payUnit, t);
 }
 
-/** Days the contract lasts, 0 if not known. */
-const contractDays = (t) =>
-  t.durationUnit === 'unknown' ? 0 : t.durationUnit === 'days' ? num(t.duration) : num(t.duration) * DAYS_PER_MONTH;
-
-/** A contract of `LAW.casualMaxDays` days or less: vacation cannot be taken (the minimum per day excludes it). */
-export const isCasualLength = (t) => contractDays(t) > 0 && contractDays(t) <= LAW.casualMaxDays;
+/**
+ * Whether the model counts the contract as casual: temporary, lasting `LAW.casualMaxDays` calendar days or less (RD
+ * 126/2026 art. 4: the minimum per day excludes vacation, so it cannot be taken). Not known without a duration.
+ * @param {object} terms
+ * @param {{natDays: number, noDuration: boolean}} time the schedule the model computed
+ */
+export const isCasual = (terms, time) =>
+  terms.contract === 'temporary' && !time.noDuration && time.natDays > 0 && time.natDays <= LAW.casualMaxDays;
 
 /** The extra pays can be apart: with a payslip, and a monthly amount (a daily one only if it already says so). */
 export const askExtraPays = (t) => {
@@ -139,7 +142,8 @@ function withNetPayroll(t, r, unit) {
 
 /**
  * Brings the offer's terms into a shape the questions can say, if they are not and the figures stay the same within a
- * cent. Returns whether it changed them; an offer no conversion can keep is left as it is.
+ * cent, or, failing that, keeping the payslip and the en negro money as they are. Returns whether it changed them; an
+ * offer with no days to work out a total from is left as it is.
  * @param {object} offer `{ id, terms, mine }`; its terms are changed
  * @param {{cfg: object, offers: object[]}} ctx as for `calc`
  */
@@ -161,5 +165,10 @@ export function toAnswerable(offer, ctx) {
     Object.assign(terms, trial);
     return true;
   }
-  return false;
+  // Net payslip, en negro money and vacation inside the pay: no total keeps the payslip, as the model puts the vacation
+  // on top of it once there is a total. Both amounts are kept; only that treatment of the vacation moves.
+  const lossless = terms.contract === 'none' ? null : withTotal(fitted, offer, ctx, r.cash.total);
+  if (!lossless || !isAnswerable(lossless)) return false;
+  Object.assign(terms, lossless);
+  return true;
 }

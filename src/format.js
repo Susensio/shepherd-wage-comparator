@@ -52,6 +52,9 @@ export const fSumE = (sum) => {
 /** For inputs: «1234,5», without thousands separator. */
 export const fInputValue = (x, minDigits, maxDigits = minDigits) => formatter(minDigits, maxDigits, false).format(x);
 
+/** An amount as it was typed, in euros: whole, or with cents when it has them. */
+export const fEntered = (x) => fE(x, Number.isInteger(x) ? 0 : 2);
+
 /** A figure as it was typed, with up to two decimals: «7,5» h, «4» days off, «78,75» €/día. */
 export const fTyped = (value) => formatter(0, 2).format(num(value));
 

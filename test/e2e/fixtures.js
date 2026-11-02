@@ -11,12 +11,13 @@ export const sample = read('offers.json');
 export async function loadOffers(page, data, show = 1) {
   await page.evaluate(
     async ({ data, show }) => {
-      const { normalizeOffer } = await import('./src/saved.js');
+      const { ingestSaved } = await import('./src/saved.js');
       const { DEF_CFG } = await import('./src/offer.js');
       const { saveConfig } = await import('./src/state.js');
       app.closeTemplates();
-      app.state.offers = data.offers.map(normalizeOffer);
-      app.state.config = { ...DEF_CFG, ...data.cfg };
+      const loaded = ingestSaved(data, { fallbackCfg: DEF_CFG });
+      app.state.offers = loaded.offers;
+      app.state.config = loaded.cfg;
       saveConfig();
       app.select(app.state.offers[show].id);
     },

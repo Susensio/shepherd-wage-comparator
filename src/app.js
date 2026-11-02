@@ -7,7 +7,6 @@ import { render } from 'lit-html';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
-import { toAnswerable } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
@@ -80,6 +79,7 @@ const MISSING_FIELD = {
   hoursPerDay: '#hoursPerDay',
   pay: '#payTotal',
   cashInHand: '#payTotal',
+  payrollPart: '#payPart',
   vacation: 'input[name=vacation]',
 };
 
@@ -178,8 +178,6 @@ function paintTimeline(all = compared()) {
 export function paintAll() {
   setTimeout(setNavHeight);
   const o = active();
-  // An offer saved in a shape the pay questions cannot say is converted when it is shown, keeping its figures
-  if (toAnswerable(o, { cfg: state.config, offers: myOffers() })) saveOffers();
   const r = calcOffer(o);
   paintChips();
   needPlacesFor(o);

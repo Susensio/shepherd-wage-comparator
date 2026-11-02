@@ -214,10 +214,13 @@ export function missing(terms) {
     : fromTotal(terms)
       ? !(num(terms.totalAmount) > 0) && 'agreedTotal'
       : !(terms.payrollMin || num(terms.payAmount) > 0 || num(terms.cashAmount) > 0) && 'pay';
+  // «A part» of the total on payroll: without it the model would take everything as en negro
+  const part = fromTotal(terms) && !terms.payrollMin && !(num(terms.payAmount) > 0) && 'payrollPart';
   return [
     terms.durationUnit !== 'unknown' && !(num(terms.duration) > 0) && 'duration',
     !(num(terms.hoursPerDay) > 0) && 'hoursPerDay',
     pay,
+    part,
     !noContract && !terms.vacation && 'vacation',
   ].filter(Boolean);
 }

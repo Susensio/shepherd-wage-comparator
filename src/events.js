@@ -28,8 +28,8 @@ import {
   sideOf,
   TEMPLATES,
 } from './offer.js';
-import { answersOf, writeAnswers } from './pay-answers.js';
-import { active, calcOffer, KEY, saveCmpUnit, saveConfig, state, store } from './state.js';
+import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
+import { active, calcOffer, KEY, myOffers, saveCmpUnit, saveConfig, state, store } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { preloadPlaces } from './storage/places.js';
@@ -121,6 +121,8 @@ function onFormInput(e) {
       /** @type {HTMLInputElement} */ ($('#duration')).value = fInputValue(terms.duration, terms.duration % 1 ? 1 : 0);
     }
     if (el.checked) terms.durationUnit = el.value;
+    // Without a duration «en total» is a month: the only edit that can leave the pay in a shape the questions cannot say
+    toAnswerable(o, { cfg: state.config, offers: myOffers() });
   } else if (el.type === 'radio') {
     if (el.checked) side[el.name] = el.value;
   } else if (el.type === 'checkbox') side[el.name] = el.checked;

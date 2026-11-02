@@ -1,6 +1,7 @@
 /** Everything read from the browser or a backup goes through here, completed with today's defaults. */
 
 import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation } from './offer.js';
+import { toAnswerable } from './pay-answers.js';
 
 /**
  * A saved offer, complete. `offerOnly` describes the shepherd, not the job (it was a term until 30 October 2026): a
@@ -51,13 +52,14 @@ const withoutLawFigures = (cfg) =>
 /**
  * `{ offers, cfg }` from a saved bundle (browser, backup or account), completed with defaults.
  * `fallbackCfg` (the caller's current settings) is the base when the bundle has none. Former law figures in `cfg` are dropped. The input is not touched.
- * Offers in the old flat shape are converted.
+ * Offers in the old flat shape are converted, and so are pay shapes the form's questions cannot say (once, here: the
+ * figures are worked out with these settings and the other offers).
  */
 export function ingestSaved(data, { fallbackCfg }) {
-  return {
-    offers: (data.offers ?? []).map(toCurrentShape).filter(Boolean).map(normalizeOffer),
-    cfg: data.cfg ? { ...DEF_CFG, ...withoutLawFigures(data.cfg) } : { ...fallbackCfg },
-  };
+  const offers = (data.offers ?? []).map(toCurrentShape).filter(Boolean).map(normalizeOffer);
+  const cfg = data.cfg ? { ...DEF_CFG, ...withoutLawFigures(data.cfg) } : { ...fallbackCfg };
+  for (const offer of offers) toAnswerable(offer, { cfg, offers });
+  return { offers, cfg };
 }
 
 /**
