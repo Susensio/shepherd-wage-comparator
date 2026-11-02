@@ -51,7 +51,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | Term on screen | Meaning | Code | Not |
 |---|---|---|---|
 | oferta | a job offer as told by the employer, with the shepherd's own figures | `{ id, terms, mine }` | trabajo, empleo |
-| solo oferta | an offer received but not taken; it stays out of the year's income | `offerOnly` | |
+| solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set) | `offerOnly` | |
 | solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
 | ganadero | the employer | | empresario, patrón |
 | pastor, pastora | the worker; «pastores y pastoras» when addressing both | | |

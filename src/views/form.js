@@ -24,7 +24,6 @@ import { $, $$ } from '../ui/dom.js';
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
-  withDate: (o) => !!o.terms.start,
   hasExtraPays: (o) => !o.terms.payrollMin && !['year', 'total'].includes(o.terms.payUnit),
   fixedPayroll: (o) => !o.terms.payrollMin,
   cashByTotal: (o) => fromTotal(o.terms),
@@ -192,6 +191,15 @@ function yearHint(o, r) {
 export function paintForm(o, r, offers, places) {
   const cfg = r.cfg;
   const appeared = applyShow(o);
+  // Without a start date an offer is never counted as worked (`workedOffers`): the box says so instead of hiding it
+  const offerOnly = /** @type {HTMLInputElement} */ ($('#f [name=offerOnly]'));
+  const noDate = !o.terms.start;
+  offerOnly.disabled = noDate;
+  offerOnly.checked = noDate || !!o.mine.offerOnly;
+  text(
+    '#offerOnlyHint',
+    noDate ? 'Sin fecha de inicio cuenta como solo oferta. Para contarla como trabajada, pon cuándo empezó.' : '',
+  );
   text(
     '#vacationHint',
     o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd'

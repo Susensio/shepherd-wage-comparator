@@ -213,3 +213,21 @@ test('opening a card in «¿Es legal?» does not shrink its title while it anima
   );
   expect(new Set(heights).size, `summary heights: ${heights.join(', ')}`).toBe(1);
 });
+
+test('«Solo oferta» is always shown: ticked and locked without a start date', async ({ page }) => {
+  await page.locator('.tcard').first().click();
+  const box = page.locator('#f [name=offerOnly]');
+  await page.fill('#start', '');
+  await page.locator('#start').dispatchEvent('input');
+  await expect(box).toBeVisible();
+  await expect(box).toBeChecked();
+  await expect(box).toBeDisabled();
+  await expect(page.locator('#offerOnlyHint')).toContainText('pon cuándo empezó');
+  await page.fill('#start', '2026-06-01');
+  await page.locator('#start').dispatchEvent('input');
+  await expect(box).toBeEnabled();
+  await expect(box).not.toBeChecked();
+  await expect(page.locator('#offerOnlyHint')).toBeEmpty();
+  await box.check();
+  expect(await page.evaluate(() => app.active().mine.offerOnly)).toBe(true);
+});
