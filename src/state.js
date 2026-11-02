@@ -1,7 +1,7 @@
-/** The app's state: offers, the active one, settings and preferences, and saving them in the browser. */
+/** The app's state: settings and preferences, saving them in the browser, and the fields `offers.js` owns. */
 
 import { calc } from './model/calc.js';
-import { DEF_CFG, makeOffer } from './offer.js';
+import { DEF_CFG } from './offer.js';
 import { ingestSaved } from './saved.js';
 import { UNITS } from './units.js';
 
@@ -66,31 +66,21 @@ export const state = {
 /** The offer being shown and edited. The form edits it directly and it is saved on every change. */
 export const active = () => state.offers.find((o) => o.id === state.activeId);
 /** Your offers, without the first-run placeholder. */
-export const myOffers = () => state.offers.filter((o) => o.id !== state.placeholderId);
+export const offersOf = (s) => s.offers.filter((o) => o.id !== s.placeholderId);
+export const myOffers = () => offersOf(state);
 /** Every figure of an offer, with your settings and your other offers. */
 export const calcOffer = (o) => calc(o, { cfg: state.config, offers: myOffers() });
 
 /** Called after every save of offers or settings (the account sync listens). */
 const listeners = new Set();
 export const onSave = (fn) => listeners.add(fn);
-const saved = () => {
+export const notifySaved = () => {
   for (const fn of listeners) fn();
 };
 
-let persistRequested = false;
-export function saveOffers() {
-  store.set(KEY.offers, state.offers);
-  store.set(KEY.active, state.activeId);
-  saved();
-  // Ask the browser not to delete them when short of space
-  if (!persistRequested && !state.placeholderId) {
-    persistRequested = true;
-    navigator.storage?.persist?.().catch(() => {});
-  }
-}
 export function saveConfig() {
   store.set(KEY.cfg, state.config);
-  saved();
+  notifySaved();
 }
 export function saveFolds() {
   store.set(KEY.folds, state.folds);
@@ -103,25 +93,11 @@ export function saveCmpUnit() {
   store.set(KEY.cmpUnit, state.cmpUnit);
 }
 
-/** Reads everything saved in this browser. */
+/** Reads the settings and preferences saved in this browser; the offers are `offers.start()`. */
 export function load() {
-  const savedOffers = store.get(KEY.offers, null);
-  const firstRun = !Array.isArray(savedOffers);
-  const { cfg: config, offers: ingested } = ingestSaved(
-    { offers: firstRun ? [] : savedOffers, cfg: store.get(KEY.cfg, null) },
-    { fallbackCfg: DEF_CFG },
-  );
-  const offers = ingested.length ? ingested : [makeOffer()];
-
-  let activeId = store.get(KEY.active, null) || offers[0].id;
-  if (!offers.some((x) => x.id === activeId)) activeId = offers[0].id;
+  const { cfg: config } = ingestSaved({ offers: [], cfg: store.get(KEY.cfg, null) }, { fallbackCfg: DEF_CFG });
   const unit = store.get(KEY.cmpUnit, 'day');
-
   Object.assign(state, {
-    offers,
-    activeId,
-    firstRun,
-    placeholderId: firstRun ? offers[0].id : null,
     config,
     cmpUnit: UNITS[unit] ? unit : 'day',
     folds: { time: true, pay: true, breakdown: true, ...store.get(KEY.folds, {}) },

@@ -3,9 +3,10 @@
  * out, the page never touches the network and the bundle is not even loaded.
  */
 
-import { DEF_CFG, makeOffer, SCHEMA_VERSION } from '../offer.js';
+import { DEF_CFG, SCHEMA_VERSION } from '../offer.js';
+import { offers as pageOffers } from '../offers.js';
 import { ingestSaved } from '../saved.js';
-import { KEY, onSave, saveConfig, saveOffers, state, store } from '../state.js';
+import { KEY, onSave, saveConfig, state, store } from '../state.js';
 import { ACCOUNT_CONFIG } from './account-config.js';
 
 /** Where supabase-js keeps its session in localStorage; known, so a saved session is found without loading it. */
@@ -33,7 +34,8 @@ const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cm
  * The account behind a supabase-js client.
  * @param {object} deps
  * @param {any} deps.client a supabase-js client
- * @param {{ offers: any[], activeId: string, placeholderId: string | null, firstRun: boolean, config: any }} deps.state
+ * @param {{ offers: any[], config: any }} deps.state read for the offers' order, written for the settings
+ * @param {ReturnType<typeof import('../offers.js').createOffers>} deps.offerList where the offers are kept: every change to the list goes through it
  * @param {() => void} deps.persist writes offers and settings to localStorage
  * @param {{ get(key: string, fallback: any): any, set(key: string, value: any): void }} deps.store
  * @param {() => void} [deps.onReplaced] the account's copy has replaced the offers: repaint
@@ -44,6 +46,7 @@ const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cm
 export function createAccount({
   client,
   state,
+  offerList,
   persist,
   store,
   onReplaced = () => {},
@@ -62,16 +65,13 @@ export function createAccount({
   /** First sign-in on a browser with offers the account lacks, whose upload failed: kept until retried or discarded. */
   let pending = /** @type {{ account: { offers: any[], cfg: any }, extras: any[] } | null} */ (null);
 
-  const ownOffers = () => state.offers.filter((o) => o.id !== state.placeholderId);
-
   /** Gives offers whose id is not a uuid a new one, locally too, since the server needs uuids. */
   function remapIds(offers) {
     let remapped = false;
     for (const offer of offers) {
       if (UUID.test(offer.id)) continue;
       const newId = crypto.randomUUID();
-      if (state.activeId === offer.id) state.activeId = newId;
-      offer.id = newId;
+      offerList.remapId(offer, newId);
       remapped = true;
     }
     if (remapped) persist();
@@ -124,7 +124,7 @@ export function createAccount({
 
   /** What differs between the browser and what the account holds. */
   function unsynced() {
-    const offers = ownOffers();
+    const offers = offerList.mine();
     return {
       changed: offers.filter((o) => known.offers.get(o.id) !== fingerprint(o)),
       removed: [...known.offers.keys()].filter((offerId) => !offers.some((o) => o.id === offerId)),
@@ -153,7 +153,7 @@ export function createAccount({
     let { cfg } = ingested;
     let merged = ingested.offers;
     if (left) {
-      const local = new Map(ownOffers().map((o) => [o.id, o]));
+      const local = new Map(offerList.mine().map((o) => [o.id, o]));
       const kept = left.changed.filter((offerId) => local.has(offerId));
       merged = merged
         .filter((o) => !left.removed.includes(o.id))
@@ -163,17 +163,12 @@ export function createAccount({
     }
     const offers = merged.sort((a, b) => position(a.id) - position(b.id));
     syncing = false;
-    // An empty account starts like a first visit: a placeholder, replaced by the template picked
-    const empty = !offers.length;
-    state.offers = empty ? [makeOffer()] : offers;
-    if (!state.offers.some((o) => o.id === state.activeId)) state.activeId = state.offers[0].id;
+    offerList.replaceFromAccount(offers);
     state.config = cfg;
-    state.placeholderId = empty ? state.offers[0].id : null;
-    state.firstRun = empty;
     persist();
     onReplaced();
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
-    known.offers = new Map(ownOffers().map((o) => [o.id, fingerprint(o)]));
+    known.offers = new Map(offerList.mine().map((o) => [o.id, fingerprint(o)]));
     known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
     // Rows written before offerOnly moved to `mine` still hold it in the shared terms: unsynced until rewritten.
     for (const row of account.offers) if (row.terms && 'offerOnly' in row.terms) known.offers.delete(row.id);
@@ -190,7 +185,7 @@ export function createAccount({
   /** Writes whatever differs from what the account holds. */
   async function flushNow() {
     if (!syncing) return;
-    const offers = ownOffers();
+    const offers = offerList.mine();
     remapIds(offers);
     saveUnsynced(); // after remapIds, so the ids kept are the ones written
     const { changed, removed } = unsynced();
@@ -237,14 +232,8 @@ export function createAccount({
    * Not persisted through `persist`, whose placeholder would be saved as a real offer.
    */
   function forgetBrowserCopy() {
-    const placeholder = makeOffer();
-    Object.assign(state, {
-      offers: [placeholder],
-      activeId: placeholder.id,
-      placeholderId: placeholder.id,
-      firstRun: true,
-      config: { ...DEF_CFG },
-    });
+    offerList.clearForSignOut();
+    state.config = { ...DEF_CFG };
     onReplaced();
     // After onReplaced: showing the placeholder saves it, and a saved one is no longer a first visit.
     for (const key of [KEY.offers, KEY.active, KEY.cfg]) store.set(key, null);
@@ -316,7 +305,7 @@ export function createAccount({
       if (!user) return { user, pending: [] };
       const account = await readOwn();
       const firstOnThisBrowser = store.get(SYNCED_KEY, null) !== user.id;
-      const extras = ownOffers().filter((o) => !account.offers.some((x) => x.id === o.id));
+      const extras = offerList.mine().filter((o) => !account.offers.some((x) => x.id === o.id));
       if (firstOnThisBrowser && extras.length) {
         pending = { account, extras };
         try {
@@ -435,8 +424,9 @@ function open({ config, loadBundle }) {
       const account = createAccount({
         client,
         state,
+        offerList: pageOffers,
         persist: () => {
-          saveOffers();
+          pageOffers.save();
           saveConfig();
         },
         store,

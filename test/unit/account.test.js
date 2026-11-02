@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../../src/offer.js';
+import { createOffers } from '../../src/offers.js';
 import { createAccount, startAccount } from '../../src/storage/account.js';
 
 const ME = '00000000-0000-0000-0000-00000000000a';
@@ -151,6 +152,9 @@ const accountRow = (n, terms = {}, mine = {}, cmp = true) => [
   { offer_id: id(n), mine: { ...DEF_MINE, ...mine }, cmp },
 ];
 
+/** The offers module over a test state; the account never saves through it (`persist` does). */
+const offerListOf = (state) => createOffers({ state, store: { get: (_key, fallback) => fallback, set() {} } });
+
 const accountTables = (...rows) => ({ offers: rows.map((r) => r[0]), offer_mine: rows.map((r) => r[1]) });
 
 function setUp({ tables, session, localOffers, synced = ME } = {}) {
@@ -166,6 +170,7 @@ function setUp({ tables, session, localOffers, synced = ME } = {}) {
   const account = createAccount({
     client: fakeAll.client,
     state,
+    offerList: offerListOf(state),
     store,
     persist: () => persisted.push(state.offers.map((o) => o.id)),
     onReplaced: () => replaced.push(state.offers.map((o) => o.id)),
@@ -554,6 +559,7 @@ describe('signing out', () => {
     const account = createAccount({
       client: second.client,
       state: first.state,
+      offerList: offerListOf(first.state),
       store: first.store,
       persist: () => {},
       debounceMs: 5,
@@ -609,6 +615,7 @@ describe('changes that have not reached the account', () => {
     const account = createAccount({
       client: next.client,
       state,
+      offerList: offerListOf(state),
       store: {
         get: (key, fallback) => first.store.get(key) ?? fallback,
         set: (key, value) => first.store.set(key, value),

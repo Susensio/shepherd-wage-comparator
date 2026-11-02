@@ -12,6 +12,7 @@ import {
   paintAll,
   scrollChipsNextPaint,
   select,
+  show,
   templatesOpen,
   viewShared,
 } from './app.js';
@@ -28,8 +29,9 @@ import {
   sideOf,
   TEMPLATES,
 } from './offer.js';
+import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
-import { active, calcOffer, KEY, myOffers, saveCmpUnit, saveConfig, state, store } from './state.js';
+import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { preloadPlaces } from './storage/places.js';
@@ -262,10 +264,7 @@ const ACTIONS = {
   template(b) {
     const template = TEMPLATES.find((t) => t.id === b.dataset.template);
     const o = makeOffer(template?.terms, { ...template?.mine, name: uniqueName(template?.title || 'Oferta') });
-    if (state.placeholderId && state.offers.length === 1 && state.offers[0].id === state.placeholderId)
-      state.offers = [];
-    state.placeholderId = null;
-    state.offers.push(o);
+    offers.chooseTemplate(o);
     closeTemplates();
     scrollChipsNextPaint();
     select(o.id);
@@ -284,25 +283,15 @@ const ACTIONS = {
       cmp: true,
     };
     copy.mine.name = `${o.mine.name} (copia)`;
-    state.offers.splice(state.offers.indexOf(o) + 1, 0, copy);
+    offers.add(copy, { after: o });
     select(copy.id);
   },
   deleteOffer() {
     const o = active();
     if (!deleteButton.confirm(`¿Borrar «${o.mine.name}»? Toca otra vez`)) return;
-    const i = state.offers.indexOf(o);
-    state.offers.splice(i, 1);
-    if (!state.offers.length) {
-      // no offers left: back to the welcome
-      const blank = makeOffer();
-      state.offers.push(blank);
-      state.placeholderId = blank.id;
-      select(blank.id);
-      store.set(KEY.offers, null);
-      openTemplates();
-      return;
-    }
-    select(state.offers[Math.max(0, i - 1)].id);
+    const backToWelcome = offers.remove(o);
+    show();
+    if (backToWelcome) openTemplates();
   },
   edit: () => toggleFold(/** @type {HTMLDetailsElement} */ ($('#editWrap')), true),
   complete() {

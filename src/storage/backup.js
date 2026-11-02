@@ -1,6 +1,7 @@
 /** Backups: downloading or copying one, and adding the offers of one you saved. */
 
 import { closeTemplates, select } from '../app.js';
+import { offers as offerList } from '../offers.js';
 import { ingestSaved } from '../saved.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { copyText } from '../ui/dom.js';
@@ -88,13 +89,8 @@ export function loadBackup(content, msg) {
     );
     return true;
   }
-  if (state.placeholderId) {
-    state.offers = [];
-    state.placeholderId = null;
-    closeTemplates();
-  }
-  state.offers.push(...fresh);
-  select(state.offers.find((o) => o.id === state.activeId)?.id || state.offers[0].id);
+  if (offerList.addImported(fresh)) closeTemplates();
+  select(state.activeId);
   const others = alreadyHad
     ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no ha cambiado' : `Otras ${alreadyHad} ya las tenías y no han cambiado`}.`
     : '';

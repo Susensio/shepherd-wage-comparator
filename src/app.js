@@ -7,7 +7,8 @@ import { render } from 'lit-html';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
-import { active, calcOffer, myOffers, saveOffers, state } from './state.js';
+import { offers } from './offers.js';
+import { active, calcOffer, myOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
 import { paintAccountStatus } from './ui/account-section.js';
@@ -194,17 +195,20 @@ export function paintAll() {
 
 /** Saves the offers and repaints. */
 export function commit() {
-  saveOffers();
+  offers.save();
   paintAll();
 }
 
 /** Shows an offer: in the form and in the result. */
 export function select(id) {
-  state.activeId = id;
-  const o = active();
-  defaultVacation(o.terms);
-  saveOffers();
-  fillForm(o);
+  defaultVacation(state.offers.find((o) => o.id === id).terms);
+  offers.select(id);
+  show();
+}
+
+/** Paints the active offer, in the form and in the result, without saving. */
+export function show() {
+  fillForm(active());
   paintAll();
 }
 
@@ -230,8 +234,7 @@ export function closeTemplates() {
   $('#tplPanel').hidden = true;
   setFocusMode(false);
   if (state.placeholderId) {
-    state.placeholderId = null;
-    saveOffers();
+    offers.keepPlaceholder();
     openEditor(true);
     paintChips();
   }

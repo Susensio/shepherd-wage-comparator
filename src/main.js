@@ -13,6 +13,7 @@ import {
 } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
+import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
 import { setUpAccountSection } from './ui/account-section.js';
@@ -24,6 +25,7 @@ import { fillLawFigures } from './views/law-figures.js';
 import { fillSettings } from './views/settings.js';
 
 load();
+offers.start();
 for (const o of state.offers) defaultVacation(o.terms);
 fillLawFigures();
 restoreStaticFolds();
