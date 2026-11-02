@@ -1,80 +1,32 @@
-/** Backups: downloading or copying one, and adding the offers of one you saved. */
+/** Reading a backup: which of its offers are new, whether its settings are taken, and what to tell the shepherd. */
 
-import { closeTemplates, select } from '../app.js';
-import { offers as offerList } from '../offers.js';
 import { ingestSaved } from '../saved.js';
-import { myOffers, saveConfig, state } from '../state.js';
-import { copyText } from '../ui/dom.js';
-import { paintBackup } from '../ui/settings-page.js';
-import { fillSettings } from '../views/settings.js';
-import { backupText, markBackup } from './bundle.js';
-
-/** Writes a result into its box; `kind` is «ok» or «warn» (the box's style). */
-function say(msg, text, kind = 'ok') {
-  msg.textContent = text;
-  msg.dataset.kind = kind;
-}
-
-/** Saves a backup file; if it cannot, copies the text, or shows it to copy by hand. */
-export async function downloadBackup(msg) {
-  const text = backupText();
-  const filename = `jornales-copia-${new Date().toISOString().slice(0, 10)}.json`;
-  try {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    markBackup();
-    say(msg, 'Copia guardada. Para recuperarla: Ajustes, «Copia de seguridad», «Elegir el archivo».');
-  } catch {
-    const copied = await copyText(text, msg, {
-      ok: 'No se pudo descargar: la copia está en el portapapeles. Pégala en una nota o mándatela por mensaje.',
-      failMsg: 'No se pudo descargar ni copiar. Aquí la tienes para copiarla a mano:',
-    });
-    msg.dataset.kind = copied ? 'ok' : 'warn';
-    if (copied) markBackup();
-  }
-  paintBackup();
-}
-
-/** Copies the backup as text. */
-export async function copyBackup(msg) {
-  const copied = await copyText(backupText(), msg, {
-    ok: 'Copiada. Pégala en una nota o mándatela por mensaje.',
-    failMsg: 'No se pudo copiar. Aquí la tienes, ya seleccionada: cópiala a mano.',
-  });
-  msg.dataset.kind = copied ? 'ok' : 'warn';
-  if (copied) {
-    markBackup();
-    paintBackup();
-  }
-}
 
 /**
- * Adds the offers of a backup that you do not have; yours are not touched. With no offers of your own, its
- * settings are taken too. Returns whether it was a valid backup. `msg` is shown as a warning if nothing was added.
+ * What loading a backup would do, without doing it: `{ valid: false, text, kind }` if `content` is not a backup,
+ * else `{ valid: true, fresh, cfg, text, kind }`. `fresh` are the offers to add (those you do not have; yours are not
+ * touched), `cfg` the settings to take or null, `text` what to say and `kind` its style («ok» or «warn»). The
+ * settings are taken only when you have no offers of your own, even if the copy adds nothing.
+ * @param {string} content
+ * @param {{ mine: { id: string }[], config: object }} yours your offers (not the placeholder) and your settings
  */
-export function loadBackup(content, msg) {
+export function planImport(content, { mine, config }) {
   let saved;
   try {
     saved = JSON.parse(content);
     if (!Array.isArray(saved.offers)) throw new Error('no offers');
   } catch {
-    say(msg, 'Eso no es una copia válida. Usa el archivo o el texto completo que guardaste.', 'warn');
-    return false;
+    return {
+      valid: false,
+      text: 'Eso no es una copia válida. Usa el archivo o el texto completo que guardaste.',
+      kind: 'warn',
+    };
   }
-  const hadOffers = !state.placeholderId && myOffers().length > 0;
-  const { offers, cfg } = ingestSaved(saved, { fallbackCfg: state.config });
-  const owned = state.placeholderId ? [] : state.offers;
-  const fresh = offers.filter((o) => !owned.some((x) => x.id === o.id));
+  const hadOffers = mine.length > 0;
+  const { offers, cfg } = ingestSaved(saved, { fallbackCfg: config });
+  const fresh = offers.filter((o) => !mine.some((x) => x.id === o.id));
   const alreadyHad = offers.length - fresh.length;
   const takeCfg = !hadOffers && !!saved.cfg;
-  if (takeCfg) {
-    state.config = cfg;
-    saveConfig();
-    fillSettings(state.config);
-  }
   const kept = hadOffers && saved.cfg ? ' «Tus datos» siguen como los tenías.' : '';
   if (!fresh.length) {
     const reason = !alreadyHad
@@ -82,18 +34,22 @@ export function loadBackup(content, msg) {
       : alreadyHad === 1
         ? 'la de la copia ya la tenías'
         : `las ${alreadyHad} de la copia ya las tenías`;
-    say(
-      msg,
-      `No se ha añadido ninguna oferta: ${reason}.${takeCfg ? ' Se han tomado tus datos de la copia.' : kept}`,
-      'warn',
-    );
-    return true;
+    return {
+      valid: true,
+      fresh,
+      cfg: takeCfg ? cfg : null,
+      text: `No se ha añadido ninguna oferta: ${reason}.${takeCfg ? ' Se han tomado tus datos de la copia.' : kept}`,
+      kind: 'warn',
+    };
   }
-  if (offerList.addImported(fresh)) closeTemplates();
-  select(state.activeId);
   const others = alreadyHad
     ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no ha cambiado' : `Otras ${alreadyHad} ya las tenías y no han cambiado`}.`
     : '';
-  say(msg, `${fresh.length === 1 ? 'Añadida 1 oferta' : `Añadidas ${fresh.length} ofertas`}.${others}${kept}`);
-  return true;
+  return {
+    valid: true,
+    fresh,
+    cfg: takeCfg ? cfg : null,
+    text: `${fresh.length === 1 ? 'Añadida 1 oferta' : `Añadidas ${fresh.length} ofertas`}.${others}${kept}`,
+    kind: 'ok',
+  };
 }

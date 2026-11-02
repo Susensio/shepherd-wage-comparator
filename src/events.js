@@ -32,11 +32,11 @@ import {
 import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
-import { copyBackup, downloadBackup, loadBackup } from './storage/backup.js';
 import { snoozeReminder } from './storage/bundle.js';
 import { preloadPlaces } from './storage/places.js';
 import { cardText, claimText } from './text.js';
 import { accountActions, onSharingToggled } from './ui/account-section.js';
+import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { $, copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';

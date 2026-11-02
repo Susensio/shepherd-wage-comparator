@@ -33,7 +33,7 @@ test('browser storage', async ({ openApp }) => {
 
 test('a backup file', async ({ page }) => {
   const [ok, message, loaded] = await page.evaluate(async (text) => {
-    const { loadBackup } = await import('./src/storage/backup.js');
+    const { loadBackup } = await import('./src/ui/backup.js');
     const msg = document.createElement('p');
     return [loadBackup(text, msg), msg.textContent, app.state.offers];
   }, JSON.stringify(sample));
@@ -50,7 +50,7 @@ test('offers saved in the old flat shape are converted, from the browser and fro
     ['Vieja', 1000],
   ]);
   const message = await page.evaluate(async () => {
-    const { loadBackup } = await import('./src/storage/backup.js');
+    const { loadBackup } = await import('./src/ui/backup.js');
     const msg = document.createElement('p');
     loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Otra vieja', kmHome: 30 }] }), msg);
     return msg.textContent;
