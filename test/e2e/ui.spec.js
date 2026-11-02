@@ -191,3 +191,25 @@ test('without accounts, a backup, downloaded and loaded in another browser', asy
   await other.setInputFiles('#backupFile', backup);
   await expect(other.locator('#backupResult')).toContainText('ya la tenías');
 });
+
+test('opening a card in «¿Es legal?» does not shrink its title while it animates', async ({ loaded: page }) => {
+  const card = page.locator('details.owed[data-fold]:not([open])').first();
+  await expect(card).toHaveCount(1);
+  await card.scrollIntoViewIfNeeded();
+  const heights = await card.evaluate(
+    (d) =>
+      new Promise((resolve) => {
+        const summary = d.querySelector(':scope > summary');
+        const seen = [];
+        const t0 = performance.now();
+        const tick = () => {
+          seen.push(Math.round(summary.getBoundingClientRect().height));
+          if (performance.now() - t0 < 500) requestAnimationFrame(tick);
+          else resolve(seen);
+        };
+        summary.click();
+        requestAnimationFrame(tick);
+      }),
+  );
+  expect(new Set(heights).size, `summary heights: ${heights.join(', ')}`).toBe(1);
+});

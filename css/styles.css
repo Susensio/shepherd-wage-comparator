@@ -2618,6 +2618,10 @@ details.paste > summary {
 details.owed > summary {
   align-items: center;
 }
+/* A card that is a flex column would shrink its title and contents while its height animates open: they jumped */
+details > * {
+  flex-shrink: 0;
+}
 
 .levers .lev-t {
   font-weight: 650;
