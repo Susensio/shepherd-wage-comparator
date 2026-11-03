@@ -3710,3 +3710,43 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
     animation: none;
   }
 }
+
+/* Pull down to reload, on phones (ui/pull-refresh.js): a circle that follows the finger from above the top */
+#pullRefresh {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) - 40px);
+  left: 50%;
+  z-index: 30;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+  opacity: 0;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+}
+#pullRefresh svg {
+  width: 22px;
+  height: 22px;
+}
+#pullRefresh.ready {
+  color: var(--ink);
+}
+#pullRefresh.spinning svg {
+  animation: pull-spin 0.8s linear infinite;
+}
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (min-width: 1024px) {
+  #pullRefresh {
+    display: none;
+  }
+}

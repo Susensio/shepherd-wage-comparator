@@ -18,6 +18,7 @@ import {
   showTab,
 } from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
+import { setUpPullRefresh } from './ui/pull-refresh.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
@@ -34,6 +35,7 @@ resetHistory();
 setUpEntry({ paint: paintAll, select });
 setUpEvents();
 setUpTooltips();
+setUpPullRefresh();
 setUpPlaceField({ commit, paint: paintAll });
 showTab(store.get(KEY.tab, 'offers'));
 fillForm(active());
