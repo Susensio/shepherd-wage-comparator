@@ -148,11 +148,16 @@ export function summaries(o, r, places = null, third = false) {
   const split = r.split;
   const where = whereText(o.terms, places, o.mine.place);
   const herd = herdText(o.terms);
+  const dates = datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : '';
+  const hours = num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner';
+  const workday = `${hours} · ${daysOff}`;
   const lines = {
     where,
     herd,
     place: [where, herd].filter(Boolean).join(' · ') || 'Sin poner',
-    time: `${datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : ''}${duration} · ${daysOff} · ${num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner'}`,
+    time: `${dates}${duration} · ${daysOff} · ${hours}`,
+    when: `${dates}${duration}`,
+    workday: workday[0].toUpperCase() + workday.slice(1),
     payroll:
       o.terms.contract === 'none'
         ? 'Sin contrato: todo en negro'

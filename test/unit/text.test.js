@@ -61,6 +61,8 @@ test('summaries: one line per form section', () => {
     'herd',
     'place',
     'time',
+    'when',
+    'workday',
     'payroll',
     'b',
     'housing',
@@ -69,6 +71,9 @@ test('summaries: one line per form section', () => {
     'pay',
   ]);
   assert.match(s.time, /102 días/);
+  assert.match(s.when, /102 días/);
+  assert.doesNotMatch(s.when, /h\/día|libra/);
+  assert.match(s.workday, /^\d+(,\d+)?\u00a0h\/día · libra /);
   assert.match(s.payroll, /neto/);
   assert.match(s.pay, /^1\.785 €\/mes neto/);
   assert.match(s.pay, /· en negro: el resto hasta/);
