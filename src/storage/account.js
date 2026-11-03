@@ -34,11 +34,11 @@ const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cm
  * The account behind a supabase-js client.
  * @param {object} deps
  * @param {any} deps.client a supabase-js client
- * @param {{ offers: any[], config: any }} deps.state read for the offers' order, written for the settings
+ * @param {{ offers: any[], config: any, activeId: string }} deps.state read for the offers' order, written for the settings
  * @param {ReturnType<typeof import('../offers.js').createOffers>} deps.offerList where the offers are kept: every change to the list goes through it
  * @param {() => void} deps.persist writes offers and settings to localStorage
  * @param {{ get(key: string, fallback: any): any, set(key: string, value: any): void }} deps.store
- * @param {() => void} [deps.onReplaced] the account's copy has replaced the offers: repaint
+ * @param {(info?: { activeKept: boolean }) => void} [deps.onReplaced] the offers were replaced: repaint. `activeKept`: the offer shown is still there
  * @param {(error: unknown) => void} [deps.onError] a background save failed; it is retried with the next change
  * @param {(status: 'saving' | 'saved' | 'error') => void} [deps.onStatus] how the background saving goes
  * @param {number} [deps.debounceMs]
@@ -167,10 +167,11 @@ export function createAccount({
     }
     const offers = merged.sort((a, b) => position(a.id) - position(b.id));
     syncing = false;
+    const activeKept = offers.some((o) => o.id === state.activeId);
     offerList.replaceFromAccount(offers);
     state.config = cfg;
     persist();
-    onReplaced();
+    onReplaced({ activeKept });
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
     known.offers = new Map(offerList.mine().map((o) => [o.id, fingerprint(o)]));
     known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
@@ -411,6 +412,41 @@ export function createAccount({
 
 /* --- Loading it on the page --- */
 
+/**
+ * Records into `UNSYNCED_KEY` what the page changes from now until the account connects, which `connect` then keeps
+ * over the account's copy (the bundle takes seconds to load). The browser's offers at this moment are the baseline: the
+ * cache matches the account apart from what an earlier session recorded, which is carried over. Returns the stop.
+ */
+function trackUntilConnected() {
+  const user = store.get(SYNCED_KEY, null); // a first sign-in on this browser uploads the local offers instead
+  if (!user) return () => {};
+  const prior = store.get(UNSYNCED_KEY, null);
+  const left = prior?.user === user ? prior : { changed: [], removed: [], cfg: false };
+  const baseline = new Map(pageOffers.mine().map((o) => [o.id, fingerprint(o)]));
+  const baselineCfg = JSON.stringify(state.config);
+  let tracking = true;
+  onSave(() => {
+    if (!tracking) return;
+    const now = pageOffers.mine();
+    const changed = new Set([
+      ...left.changed,
+      ...now.filter((o) => baseline.get(o.id) !== fingerprint(o)).map((o) => o.id),
+    ]);
+    const removed = new Set(
+      [...left.removed, ...baseline.keys()].filter((offerId) => !now.some((o) => o.id === offerId)),
+    );
+    store.set(UNSYNCED_KEY, {
+      user,
+      changed: [...changed],
+      removed: [...removed],
+      cfg: left.cfg || baselineCfg !== JSON.stringify(state.config),
+    });
+  });
+  return () => {
+    tracking = false;
+  };
+}
+
 /** Injects the vendored UMD bundle (a classic script that sets `window.supabase`). */
 export function loadSupabase() {
   if (window.supabase) return Promise.resolve(window.supabase);
@@ -425,7 +461,7 @@ export function loadSupabase() {
 
 /**
  * @typedef {object} AccountHooks
- * @property {() => void} [onReplaced] the account's offers replace the browser's
+ * @property {(info?: { activeKept: boolean }) => void} [onReplaced] the account's offers replace the browser's
  * @property {(status: 'saving' | 'saved' | 'error') => void} [onStatus] background saves start, succeed or fail
  */
 
@@ -436,10 +472,21 @@ export function loadSupabase() {
 export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = loadSupabase } = {}) {
   /** @type {Promise<ReturnType<typeof createAccount>> | null} */
   let opening = null;
+  /** @type {Promise<any> | null} */
+  let bundle = null;
+
+  /** A project is configured and this browser has a session, or a login is on its way back from the emailed link or Google. */
+  function returningUser() {
+    if (!config.url || !config.anonKey) return false;
+    // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
+    const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');
+    return !!(store.get(SESSION_KEY, null) || store.get(RETURNING_KEY, null) || linkFollowed);
+  }
 
   /** @param {AccountHooks} hooks */
   function open(hooks) {
-    opening ??= loadBundle()
+    bundle ??= loadBundle();
+    opening ??= bundle
       .then((supabase) => {
         const client = supabase.createClient(config.url, config.anonKey, {
           auth: { storageKey: SESSION_KEY, flowType: 'pkce' },
@@ -460,24 +507,44 @@ export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = load
       })
       .catch((error) => {
         opening = null;
+        bundle = null;
         throw error;
       });
     return opening;
   }
 
   return {
+    /** Whether `start` will connect: decided from localStorage and the URL alone, so the first paint can already know. */
+    returningUser,
+
+    /** Starts fetching the bundle for a returning user (guests never load it), so `start` finds it on its way. */
+    preload() {
+      if (!returningUser()) return;
+      bundle ??= loadBundle();
+      bundle.catch(() => {}); // the failure surfaces in `open`, which retries
+    },
+
     /**
      * Called once at startup. With no project configured, or no saved session and no login in progress, it does
      * nothing (no request, no bundle) and returns null. Otherwise `{ account, user, pending }` once connected.
      * @param {AccountHooks} [hooks]
      */
     async start(hooks = {}) {
-      if (!config.url || !config.anonKey) return null;
-      // An emailed link opened in this browser comes back with a PKCE code; supabase-js finishes the login from the URL.
-      const linkFollowed = new URLSearchParams(globalThis.location?.search).has('code');
-      if (!store.get(SESSION_KEY, null) && !store.get(RETURNING_KEY, null) && !linkFollowed) return null;
-      const account = await open(hooks);
-      return { account, ...(await account.connect()) };
+      if (!returningUser()) return null;
+      const stopTracking = trackUntilConnected();
+      try {
+        // replaceWith takes over the record (and the saves) from onReplaced on
+        const account = await open({
+          ...hooks,
+          onReplaced: (info) => {
+            stopTracking();
+            hooks.onReplaced?.(info);
+          },
+        });
+        return { account, ...(await account.connect()) };
+      } finally {
+        stopTracking();
+      }
     },
 
     /**

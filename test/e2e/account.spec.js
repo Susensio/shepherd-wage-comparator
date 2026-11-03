@@ -5,7 +5,7 @@
 // The fake client and its seam are in fake-account.js.
 
 import { installFake, withoutProject, withProject } from './fake-account.js';
-import { expect, sample, test } from './fixtures.js';
+import { expect, openStep, sample, test } from './fixtures.js';
 
 /** The fake's signed-in user; `installFake` runs in the page, so it repeats the literal. */
 const ME = '00000000-0000-0000-0000-00000000000a';
@@ -483,6 +483,45 @@ test('while the account connects, the backup card shows neither version', async 
   await page.evaluate(() => window.fake.releaseSession());
   await expect(page.locator('#backupAccount')).toBeVisible();
   await expect(page.locator('#backupGuest')).toBeHidden();
+});
+
+test.describe('while the saved session is being connected', () => {
+  const connecting = (openApp, options = {}) =>
+    openApp({
+      init: installFake,
+      arg: {
+        holdSession: true,
+        localOffers: sample.offers,
+        tables: { profiles: [{ ...PROFILE }], ...accountRows() },
+        ...options,
+      },
+      beforeLoad: withProject,
+    });
+  const release = (page) => page.evaluate(() => window.fake.releaseSession());
+
+  test('the account button shows «connecting», then the signed-in state', async ({ openApp }) => {
+    const page = await connecting(openApp);
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'connecting');
+    await release(page);
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
+  });
+
+  test('the offer and the step open stay where they were when the account replaces the offers', async ({ openApp }) => {
+    const second = sample.offers[1].id;
+    const page = await connecting(openApp, {
+      tables: {
+        profiles: [{ ...PROFILE }],
+        offers: [{ id: second, user_id: ME, terms: {} }],
+        offer_mine: [{ offer_id: second, mine: { name: 'De la cuenta' }, cmp: true }],
+      },
+    });
+    await page.evaluate((id) => app.select(id), second);
+    await openStep(page, 'pay');
+    await release(page);
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
+    expect(await page.evaluate(() => app.state.activeId)).toBe(second);
+    await expect(page.locator('#entry .step[data-step=pay]')).toBeVisible();
+  });
 });
 
 test('sharing asks first, and turning it off does not', async ({ openApp }) => {

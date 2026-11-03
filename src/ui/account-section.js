@@ -14,9 +14,10 @@ import { signInView } from '../views/sign-in.js';
 import { currentTab, openPageName, tabInView } from './navigation.js';
 import { paintAccount, paintAccountButton } from './settings-page.js';
 
+export const accountLoader = createAccountLoader();
 export const accountState = createAccountState({
   enabled: !!(ACCOUNT_CONFIG.url && ACCOUNT_CONFIG.anonKey),
-  loader: createAccountLoader(),
+  loader: accountLoader,
   others: state.others,
   ingestShared,
   isOnline: () => navigator.onLine !== false,

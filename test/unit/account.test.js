@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
+import { notifySaved, state as pageState } from '../../src/state.js';
 import { createAccount, createAccountLoader } from '../../src/storage/account.js';
 import { fakeClient, ME } from './fake-client.js';
 
@@ -77,6 +78,27 @@ describe('nothing is loaded or called without an account', () => {
       assert.equal(loaded, 1);
       assert.equal(result?.user, null);
       assert.deepEqual(calls, []);
+    } finally {
+      delete globalThis.localStorage;
+    }
+  });
+
+  test('preload fetches the bundle only for a returning user, and start reuses it', async () => {
+    const config = { url: 'https://x.supabase.co', anonKey: 'k' };
+    let loaded = 0;
+    const loadBundle = async () => {
+      loaded++;
+      return { createClient: () => fakeClient({ session: null }).client };
+    };
+    createAccountLoader({ config, loadBundle }).preload();
+    assert.equal(loaded, 0);
+    globalThis.localStorage = { getItem: (key) => (key === 'cj.session' ? '{"a":1}' : null), setItem() {} };
+    try {
+      const loader = createAccountLoader({ config, loadBundle });
+      loader.preload();
+      assert.equal(loaded, 1);
+      await loader.start();
+      assert.equal(loaded, 1);
     } finally {
       delete globalThis.localStorage;
     }
@@ -628,6 +650,87 @@ describe('changes that have not reached the account', () => {
     await second.account.connect();
     assert.equal(second.state.offers.find((o) => o.id === id(2)).terms.payAmount, 99);
     assert.equal(second.state.offers.find((o) => o.id === id(1)).terms.payAmount, 11);
+  });
+});
+
+describe('changes made on the page before the account connects', () => {
+  const config = { url: 'https://x.supabase.co', anonKey: 'k' };
+
+  /**
+   * A signed-in returning visit whose bundle is still loading: three offers cached and in the account. `inWindow`
+   * runs on the page state before the bundle arrives; `start` then resolves with the page and the fake account.
+   */
+  async function visit(inWindow) {
+    const memory = new Map([
+      ['cj.session', '{"a":1}'],
+      ['cj.accountUser', ME],
+    ]);
+    globalThis.localStorage = {
+      getItem: (key) => (memory.has(key) ? JSON.stringify(memory.get(key)) : null),
+      setItem: (key, value) => memory.set(key, JSON.parse(value)),
+    };
+    const kept = { offers: pageState.offers, config: pageState.config, activeId: pageState.activeId };
+    try {
+      const local = [1, 2, 3].map((n) => ({ ...makeOffer(), id: id(n) }));
+      Object.assign(pageState, { offers: local, activeId: id(1), placeholderId: null, config: { ...DEF_CFG } });
+      const fake = fakeClient({ tables: { ...accountTables(accountRow(1), accountRow(2), accountRow(3)) } });
+      let release = () => {};
+      const bundle = new Promise((resolve) => {
+        release = resolve;
+      });
+      const loadBundle = () => bundle.then(() => ({ createClient: () => fake.client }));
+      const started = createAccountLoader({ config, loadBundle }).start();
+      inWindow(pageState);
+      notifySaved();
+      release();
+      await started;
+      return { ...fake, page: structuredClone({ offers: pageState.offers, config: pageState.config }), memory };
+    } finally {
+      Object.assign(pageState, kept);
+      delete globalThis.localStorage;
+    }
+  }
+  const accountIds = (data) => data.offers.map((o) => o.id).sort();
+
+  // One visit for all the checks: every account the page creates listens to the page's saves for good.
+  let visit1;
+  const visited = () => {
+    visit1 ??= visit((s) => {
+      s.offers[0].terms.payAmount = 777;
+      s.offers.push({ ...makeOffer(), id: id(4) });
+      s.offers.splice(2, 1); // offer 3
+      s.config = { ...s.config, others: 500 };
+    });
+    return visit1;
+  };
+
+  test('an edit is kept over the account copy and written', async () => {
+    const { page, data } = await visited();
+    assert.equal(page.offers.find((o) => o.id === id(1)).terms.payAmount, 777);
+    assert.equal(data.offers.find((o) => o.id === id(1)).terms.payAmount, 777);
+  });
+
+  test('a new offer is kept and uploaded', async () => {
+    const { page, data } = await visited();
+    assert.ok(page.offers.some((o) => o.id === id(4)));
+    assert.ok(accountIds(data).includes(id(4)));
+  });
+
+  test('a deletion stays and reaches the account', async () => {
+    const { page, data } = await visited();
+    assert.ok(!page.offers.some((o) => o.id === id(3)));
+    assert.ok(!accountIds(data).includes(id(3)));
+  });
+
+  test('a change of settings is kept and written', async () => {
+    const { page, data } = await visited();
+    assert.equal(page.config.others, 500);
+    assert.equal(data.settings[0].cfg.others, 500);
+  });
+
+  test('nothing is left recorded once connected', async () => {
+    const { memory } = await visited();
+    assert.equal(memory.get('cj.accountUnsynced') ?? null, null);
   });
 });
 

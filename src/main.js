@@ -6,7 +6,7 @@ import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
-import { accountState, setUpAccountSection } from './ui/account-section.js';
+import { accountLoader, accountState, setUpAccountSection } from './ui/account-section.js';
 import { setUpEntry, startEntry } from './ui/entry.js';
 import {
   openAccountPage,
@@ -23,6 +23,8 @@ import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
 import { fillSettings } from './views/settings.js';
 
+// Before the first paint: the bundle is 218 KB and the account cannot connect without it
+accountLoader.preload();
 load();
 offers.start();
 for (const o of state.offers) defaultVacation(o.terms);
@@ -39,12 +41,13 @@ fillSettings(state.config);
 paintAll();
 if (state.firstRun) startEntry();
 
-accountState.subscribe((event) => {
+accountState.subscribe((event, detail) => {
   if (event === 'others') paintCompare();
   if (event === 'signedIn') returnAfterSignIn();
   if (event !== 'replaced') return;
-  // The offers were replaced: what was open may be gone. An empty account starts like a first visit, with the templates
-  resetViews();
+  // The offers were replaced: what was open may be gone. An empty account starts like a first visit, with the templates.
+  // The offer shown surviving keeps its ficha or step open.
+  if (!detail?.activeKept) resetViews();
   for (const o of state.offers) defaultVacation(o.terms);
   fillSettings(state.config);
   select(state.activeId);

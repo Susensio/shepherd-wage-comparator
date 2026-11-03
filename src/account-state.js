@@ -90,9 +90,12 @@ export function createAccountState({
   let loadSeq = 0;
   const listeners = new Set();
 
-  /** @param {AccountEvent} event */
-  const emit = (event) => {
-    for (const listener of listeners) listener(event);
+  /**
+   * @param {AccountEvent} event
+   * @param {{ activeKept: boolean }} [detail] of `replaced`: the offer shown survived
+   */
+  const emit = (event, detail) => {
+    for (const listener of listeners) listener(event, detail);
   };
 
   /** Where the account stands, as the dot on its button shows it. */
@@ -147,7 +150,7 @@ export function createAccountState({
 
   /** @type {import('./storage/account.js').AccountHooks} */
   const hooks = {
-    onReplaced: () => emit('replaced'),
+    onReplaced: (info) => emit('replaced', info),
     onStatus(sync) {
       view.sync = sync;
       emit('status');
@@ -239,7 +242,8 @@ export function createAccountState({
     view,
     status,
     /** Called with an `AccountEvent` after each change. */
-    subscribe: (/** @type {(event: AccountEvent) => void} */ listener) => listeners.add(listener),
+    subscribe: (/** @type {(event: AccountEvent, detail?: { activeKept: boolean }) => void} */ listener) =>
+      listeners.add(listener),
     loadOthers,
 
     /** Called once at startup. With no project configured nothing happens. Resolves when the saved session is looked at. */
