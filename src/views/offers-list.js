@@ -7,6 +7,9 @@ import { H_MAX, H_ORDINARY } from '../rights.js';
 import { herdText } from '../text.js';
 import { fUnit, inUnit, isUnderAMonth, offerUnit, UNITS } from '../units.js';
 
+/** The «⋯» of a card (the ficha's is in index.html). */
+const DOTS = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
+
 /** Your offers in order: latest start first; those without a date at the end, in the order you made them. */
 const sorted = (items) => [...items].sort((a, b) => (b.o.terms.start || '').localeCompare(a.o.terms.start || ''));
 
@@ -45,7 +48,7 @@ export const offersListView = (items, activeId) =>
     const detail = [datesText(o.terms), herdText(o.terms), o.mine.offerOnly && 'solo oferta']
       .filter(Boolean)
       .join(' · ');
-    return html`<button type="button" class="ocard" aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
+    return html`<div class="ocwrap"><button type="button" class="ocard" aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
       <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${
         !complete
           ? ''
@@ -53,7 +56,7 @@ export const offersListView = (items, activeId) =>
       }</span>
       ${detail ? html`<span class="oc-detail">${detail}</span>` : ''}
       <span class="oc-facts">${facts.map((f) => html`<span class=${f.status}>${f.text}</span>`)}</span>
-    </button>`;
+    </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
   });
 
 /** @param {string | null} chosen the template picked, if any */
