@@ -55,6 +55,10 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | Term on screen | Meaning | Code | Not |
 |---|---|---|---|
 | oferta | a job offer as told by the employer, with the shepherd's own figures | `{ id, terms, mine }` | trabajo, empleo |
+| ficha | the read-only page of one offer: its result, its «Condiciones» and the «Análisis» | `views/ficha.js` | página de la oferta, resumen |
+| Condiciones | the ficha's rows, one per step: Dónde, Cuándo, Pago, Jornada, Casa y comida, Viaje, Gastos e IRPF; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
+| Análisis | the ficha's sections under «Condiciones»: Desglose, ¿Es legal?, Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
+| paso | one screen of the guided entry («Paso 2 de 8»); a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar»; «Luego» skips one | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set) | `offerOnly` | |
 | solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
 | ganadero | the employer | | empresario, patrón |
