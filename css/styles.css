@@ -15,7 +15,6 @@
   --tag: #f2c230;
   --tag-ink: #1c1a0e;
   --c-pay: #2e5e45;
-  --c-unemp: #7a8ca3;
   --c-vac: color-mix(in srgb, var(--c-pay) 55%, var(--surface));
   --c-sev: #7fa7ae;
   --c-cash: #c47d17;
@@ -44,7 +43,6 @@
     --tag: #f2c230;
     --tag-ink: #1c1a0e;
     --c-pay: #6fb08a;
-    --c-unemp: #9fb0c6;
     --c-vac: color-mix(in srgb, var(--c-pay) 55%, var(--surface));
     --c-sev: #4e7f86;
     --c-cash: #e0a040;
@@ -69,7 +67,6 @@
   --tag: #f2c230;
   --tag-ink: #1c1a0e;
   --c-pay: #6fb08a;
-  --c-unemp: #9fb0c6;
   --c-vac: color-mix(in srgb, var(--c-pay) 55%, var(--surface));
   --c-sev: #4e7f86;
   --c-cash: #e0a040;

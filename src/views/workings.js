@@ -90,7 +90,7 @@ function earningsSection(r, third) {
   return section(
     third ? 'Lo que se gana' : 'Lo que ganas',
     [row(third ? 'Total que se gana' : 'Total que ganas', fE(e.total), { cls: 'tot' })],
-    `Repartido: ÷ ${hours} = ${fE(e.perHour, 2)}/h · ÷ ${fN(t.daysWorked)} días = ${fE(e.perDay)}/día${t.noDuration ? '' : ` · ÷ ${fN(t.months, 1)} meses = ${fE(e.perMonth)}/mes`}.${e.parts.unemployment > 0.5 ? ` El paro: ${fN(r.unemployment.contribDays)} días cotizados dan unos ${fN(r.unemployment.days)} días de prestación; solo se cobra al llegar a ${LAW.unemployment.minDaysContributed} días cotizados en ${LAW.unemployment.windowYears} años.` : ''}`,
+    `Repartido: ÷ ${hours} = ${fE(e.perHour, 2)}/h · ÷ ${fN(t.daysWorked)} días = ${fE(e.perDay)}/día${t.noDuration ? '' : ` · ÷ ${fN(t.months, 1)} meses = ${fE(e.perMonth)}/mes`}.`,
   );
 }
 

@@ -89,7 +89,6 @@ const YOUR_DATA = {
 
 /** Your figures and the two counting choices («Tus datos», «Cómo se cuenta»). Law figures are not here: see law.js. */
 export const DEF_CFG = {
-  unemployment: true, // count the unemployment benefit you generate as money
   inKind: true, // count housing and food as money
   others: 0, // other gross pay in the year, for IRPF
   ...YOUR_DATA,

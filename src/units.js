@@ -70,7 +70,6 @@ export const PARTS = [
   { key: 'severance', color: '--c-sev', label: 'Indemnización', value: (p) => p.severance },
   { key: 'housing', color: '--c-housing', label: 'Casa', value: (p) => p.housing },
   { key: 'food', color: '--c-food', label: 'Comida', value: (p) => p.food },
-  { key: 'unemployment', color: '--c-unemp', label: 'Paro', value: (p) => p.unemployment },
 ];
 /** Everything you earn before expenses. */
 export const incomeOf = (r) => PARTS.reduce((sum, part) => sum + part.value(r.earnings.parts), 0);

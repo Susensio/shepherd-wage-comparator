@@ -104,12 +104,20 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const netPayroll = pay.netOf(pay.gross);
   const cashGrossEq = cash > 0 ? bisect((x) => pay.netOf(pay.gross + x) - netPayroll, cash, cash, cash * 3, 50) : 0;
 
+  // The benefit that payroll plus the cash's gross equivalent would give, minus the one generated (zero at the maximum)
+  const lostDays = contribDays > 0 ? contribDays : noDuration ? DAYS_PER_MONTH : natDays;
+  const withCash = unemploymentBenefit(pay.gross + cashGrossEq, lostDays);
+  const lostBenefit = {
+    days: Math.max(0, withCash.days - benefit.days),
+    euros: Math.max(0, withCash.euros - benefit.euros),
+  };
+
   const employerRate = 1 + pay.rates.employerPct / 100;
   const salaryPerDay = natDays > 0 ? pay.salary / natDays : 0;
   const severance =
     !noDuration && t.contract === 'temporary' ? (salaryPerDay * LAW.severanceDaysPerYear * natDays) / 365 : 0;
 
-  // What you earn: the unemployment benefit counts as your money (it can be switched off): it is what cash does not give
+  // What you earn: money only. The unemployment benefit you generate is apart (`unemployment`), ADR-0022
   const parts = {
     base: pay.base * pay.netFactor,
     extraPays: pay.extraPays * pay.netFactor,
@@ -119,7 +127,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     food,
     km: car.kmPaid,
     severance,
-    unemployment: cfg.unemployment !== false ? benefit.euros : 0,
   };
   const total = Object.values(parts).reduce((sum, x) => sum + x, 0) - (car.cost + otherExpenses);
   const perMonth = (x) => (months > 0 ? x / months : 0);
@@ -200,8 +207,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
       contribDays,
       days: benefit.days,
       euros: benefit.euros,
-      /** without a contract: the benefit the cash would have generated */
-      lost: noContract ? unemploymentBenefit(coveredByCash, noDuration ? DAYS_PER_MONTH : natDays) : null,
+      /** what money paid en negro does not generate: the benefit payroll plus its gross equivalent would give, less this one */
+      lost: lostBenefit,
     },
     employer: {
       ss: (pay.gross * pay.rates.employerPct) / 100,

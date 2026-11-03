@@ -18,6 +18,4 @@ export function fillSettings(cfg, skip) {
   }
   for (const input of /** @type {HTMLInputElement[]} */ ($$('input[name=cfg_inKind]')))
     input.checked = (input.value === '1') === cfg.inKind;
-  for (const input of /** @type {HTMLInputElement[]} */ ($$('input[name=cfg_unemployment]')))
-    input.checked = (input.value === '1') === (cfg.unemployment !== false);
 }

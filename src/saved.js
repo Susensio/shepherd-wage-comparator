@@ -43,8 +43,11 @@ const toCurrentShape = (saved) => {
   return saved && typeof saved === 'object' && typeof saved.id === 'string' ? fromFlat(saved) : null;
 };
 
-/** Settings that were once editable and are now read from law.js. Saved values are dropped so they are not re-saved. */
-const FORMER_LAW_KEYS = ['ssPct', 'ssEmp', 'annualHours', 'overnightPct', 'vacationDaysPerYear'];
+/**
+ * Settings that were once editable and are now read from law.js, and `unemployment` (removed by ADR-0022). Saved values
+ * are dropped so they are not re-saved.
+ */
+const FORMER_LAW_KEYS = ['ssPct', 'ssEmp', 'annualHours', 'overnightPct', 'vacationDaysPerYear', 'unemployment'];
 
 const withoutLawFigures = (cfg) =>
   Object.fromEntries(Object.entries(cfg).filter(([key]) => !FORMER_LAW_KEYS.includes(key)));

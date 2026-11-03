@@ -115,7 +115,7 @@ function breakdown(o, r, unit, third) {
   const cfg = r.cfg;
   const p = r.earnings.parts;
   const money = moneyIn(r, unit);
-  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ` + lo que ${say('cobras', 'se cobra')} en negro` : ''}${p.housing > 0.5 || p.food > 0.5 ? ` + lo que ${say('te ahorras', 'se ahorra')} en casa y comida` : ''}${p.km > 0.5 ? ` + los km que ${say('te pagan', 'se pagan')}` : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${p.unemployment > 0.5 ? ` + el paro que ${say('generas', 'se genera')}` : ''}${r.expenses.total > 0.5 ? ` − ${say('tus', 'los')} gastos de coche y otros` : ''}, ${{ hour: `repartido entre las horas que ${say('trabajas', 'se trabajan')}`, day: `repartido entre los días que ${say('trabajas', 'se trabajan')}`, month: 'repartido entre los meses del contrato', total: 'en todo el contrato' }[unit]}.${p.unemployment > 0.5 ? ` El paro ${say('lo cobras', 'se cobra')} al juntar ${LAW.unemployment.minDaysContributed} días cotizados.` : cfg.unemployment === false ? ' No incluye el paro.' : ''}`;
+  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ` + lo que ${say('cobras', 'se cobra')} en negro` : ''}${p.housing > 0.5 || p.food > 0.5 ? ` + lo que ${say('te ahorras', 'se ahorra')} en casa y comida` : ''}${p.km > 0.5 ? ` + los km que ${say('te pagan', 'se pagan')}` : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${r.expenses.total > 0.5 ? ` − ${say('tus', 'los')} gastos de coche y otros` : ''}, ${{ hour: `repartido entre las horas que ${say('trabajas', 'se trabajan')}`, day: `repartido entre los días que ${say('trabajas', 'se trabajan')}`, month: 'repartido entre los meses del contrato', total: 'en todo el contrato' }[unit]}.`;
   // From gross to net payroll, on tapping «Nómina» (paid vacation has its own row)
   const netPay = p.base + p.extraPays;
   const grossPay = netPay / (r.pay.netFactor || 1);
@@ -140,7 +140,6 @@ function breakdown(o, r, unit, third) {
       o.terms.vacation === 'included'
         ? `Los ${vacationDays} días de vacaciones que ${say('no disfrutas', 'no se disfrutan')} van dentro de lo que ${say('te pagan', 'se paga')}: unos ${fE(p.vacationPay)} netos. No se suman: es la parte del jornal que son vacaciones.`
         : `Los ${vacationDays} días de vacaciones que ${say('no disfrutas te los pagan', 'no se disfrutan se pagan')} al acabar: unos ${fE(p.vacationPay)} netos, aquí repartidos entre lo que ${say('trabajas', 'se trabaja')}.`,
-    unemployment: `Esta oferta cotiza ${fN(r.unemployment.contribDays)} días y genera unos ${fN(r.unemployment.days)} días de paro. ${say('Lo cobras cuando juntes', 'Se cobra al juntar')} ${LAW.unemployment.minDaysContributed} días cotizados; aquí va repartido entre lo que ${say('trabajas', 'se trabaja')}.${third ? '' : ' Se puede quitar en «Cómo se cuenta».'}`,
   };
   const trip =
     o.mine.commute === 'daily'

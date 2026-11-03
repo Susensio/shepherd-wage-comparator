@@ -74,8 +74,8 @@ test('saved settings are completed with defaults', () => {
   assert.deepEqual(cfg, { ...DEF_CFG, fuelUse: 9 });
 });
 
-test('saved values of figures that now come from the law are dropped', () => {
-  const former = { ssPct: 1, ssEmp: 2, annualHours: 3, overnightPct: 4, vacationDaysPerYear: 5 };
+test('saved values of figures that now come from the law, and of removed settings, are dropped', () => {
+  const former = { ssPct: 1, ssEmp: 2, annualHours: 3, overnightPct: 4, vacationDaysPerYear: 5, unemployment: true };
   const { cfg } = ingestSaved({ offers: [], cfg: { ...former, fuelUse: 9 } }, { fallbackCfg });
   assert.deepEqual(cfg, { ...DEF_CFG, fuelUse: 9 });
   for (const key of Object.keys(former)) assert.ok(!(key in cfg), key);

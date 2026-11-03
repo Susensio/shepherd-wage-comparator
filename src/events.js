@@ -143,7 +143,6 @@ function onSettingsInput(e) {
   if (el.dataset.cfg)
     cfg[el.dataset.cfg] = el.value.trim() === '' ? DEF_CFG[el.dataset.cfg] : num(el.value); // empty: the default
   else if (el.name === 'cfg_inKind') cfg.inKind = el.value === '1';
-  else if (el.name === 'cfg_unemployment') cfg.unemployment = el.value === '1';
   else return;
   saveConfig();
   fillSettings(state.config, el);

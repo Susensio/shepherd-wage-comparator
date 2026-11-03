@@ -122,6 +122,36 @@ test('every sample offer adds up', () => {
   }
 });
 
+const byName = (name) => offers.find((o) => o.mine.name === name);
+
+test('what you earn leaves the unemployment benefit out, which stays apart', () => {
+  const r = calc(byName('Puerto A'), { cfg, offers });
+  assert.ok(r.unemployment.euros > 0);
+  near(
+    r.earnings.total,
+    r.earnings.received + r.inKind.total + r.earnings.parts.severance - r.expenses.total,
+    0.01,
+    'total',
+  );
+  assert.equal('unemployment' in r.earnings.parts, false);
+  assert.equal(
+    calc(byName('Puerto A'), { cfg: { ...cfg, unemployment: false }, offers }).earnings.total,
+    r.earnings.total,
+  );
+});
+
+test('paro lost to money en negro: no contract, partly en negro below the maximum, and at the maximum', () => {
+  const noContract = calc(byName('Sin contrato D'), { cfg, offers });
+  assert.equal(noContract.unemployment.euros, 0);
+  assert.ok(noContract.unemployment.lost.euros > 100, 'no contract loses the benefit the cash would give');
+  const partly = calc(byName('Campaña B'), { cfg, offers });
+  near(partly.unemployment.lost.euros, 30, 5, 'Campaña B');
+  const maximum = calc(byName('Puerto A'), { cfg, offers });
+  assert.ok(maximum.cash.total > 0);
+  assert.equal(maximum.unemployment.lost.euros, 0);
+  assert.equal(calc(byName('Invernada C'), { cfg, offers }).unemployment.lost.euros, 0);
+});
+
 test('unemployment benefit: 360 days contributed give 120 days', () => {
   near(unemploymentBenefit(20000, 360).days, 120, 0.01, 'days');
 });
