@@ -443,7 +443,7 @@ describe('signing out', () => {
 });
 
 describe('an edit made while the sign-out request runs', () => {
-  test('is kept in the browser, not cleared with the rest', async () => {
+  test('is lost: the browser copy is cleared all the same', async () => {
     const { account, state, client, fake, store } = setUp({ tables: accountTables(accountRow(1)) });
     await account.connect();
     let release = () => {};
@@ -467,8 +467,10 @@ describe('an edit made while the sign-out request runs', () => {
     await signingOut;
     assert.equal(fake.signedOut, true);
     assert.equal(account.currentUser(), null);
-    assert.equal(state.offers[0].terms.payAmount, 42);
-    assert.equal(state.placeholderId, null);
+    assert.notEqual(state.offers[0].terms.payAmount, 42);
+    assert.equal(state.offers.length, 1);
+    assert.equal(state.placeholderId, state.offers[0].id);
+    assert.equal(state.firstRun, true);
     assert.equal(store.get('cj.accountUnsynced'), null);
   });
 
@@ -663,11 +665,18 @@ describe('other users and the profile', () => {
     assert.equal(data.profiles.find((p) => p.user_id === OTHER).phone, '600');
   });
 
-  test('deleting the account calls the server function and signs out', async () => {
-    const { account, fake } = setUp({ tables: tables() });
+  test('deleting the account calls the server function, signs out and clears the browser copy', async () => {
+    const { account, fake, state, store } = setUp({ tables: tables() });
     await account.connect();
+    store.set('cj.ofertas2', 'x');
+    state.config.inKind = false;
     await account.deleteAccount();
     assert.deepEqual(fake.rpc, ['delete_my_account']);
     assert.equal(fake.signedOut, true);
+    assert.equal(state.offers.length, 1);
+    assert.equal(state.placeholderId, state.offers[0].id);
+    assert.equal(state.firstRun, true);
+    assert.equal(state.config.inKind, DEF_CFG.inKind);
+    assert.equal(store.get('cj.ofertas2'), null);
   });
 });

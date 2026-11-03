@@ -284,9 +284,8 @@ export function createAccount({
     },
 
     /**
-     * Saves what is pending, then signs out; if either fails nothing changes and the error is thrown. Returns
-     * `{ keptEdits }`: an edit made while the sign-out request ran can no longer be written, so the browser copy is
-     * not cleared.
+     * Saves what is pending, then signs out and clears the browser copy; if saving or the request fails nothing
+     * changes and the error is thrown. An edit made while the request runs cannot be written and is lost with the copy.
      */
     async signOut() {
       try {
@@ -304,11 +303,9 @@ export function createAccount({
         syncing = true;
         throw error;
       }
-      const keptEdits = hasUnsynced();
       stop();
       user = null;
-      if (!keptEdits) forgetBrowserCopy();
-      return { keptEdits };
+      forgetBrowserCopy();
     },
 
     /**
@@ -401,11 +398,12 @@ export function createAccount({
       );
     },
 
-    /** Deletes the account itself, with everything in it, and signs out. */
+    /** Deletes the account itself, with everything in it, signs out and clears the browser copy. */
     async deleteAccount() {
       stop();
       unwrap(await client.rpc('delete_my_account'));
       user = null;
+      forgetBrowserCopy();
       unwrap(await client.auth.signOut({ scope: 'local' }));
     },
   };

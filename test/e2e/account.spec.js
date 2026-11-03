@@ -511,12 +511,14 @@ test('sharing asks first, and turning it off does not', async ({ openApp }) => {
   expect(await sharing()).toBe(false);
 });
 
-test('deleting the account asks first and keeps the browser offers', async ({ openApp }) => {
+test('deleting the account asks first and clears the browser offers', async ({ openApp }) => {
   const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
   const before = await page.evaluate(() => app.state.offers.map((o) => o.id));
   await page.getByRole('button', { name: 'Borrar la cuenta', exact: true }).click();
   await expect(page.locator('#deleteConfirm')).toContainText('para siempre');
-  await expect(page.locator('#deleteConfirm')).toContainText('En este navegador se quedan tus ofertas');
+  await expect(page.locator('#deleteConfirm')).toContainText(
+    'También se borran las ofertas y los ajustes de este navegador',
+  );
   expect(await page.evaluate(() => window.fake.rpc)).toEqual([]);
 
   await page.getByRole('button', { name: 'Cancelar' }).last().click();
@@ -527,7 +529,10 @@ test('deleting the account asks first and keeps the browser offers', async ({ op
   await page.getByRole('button', { name: 'Sí, borrar la cuenta' }).click();
   await expect(page.locator('#accountOut')).toBeVisible();
   expect(await page.evaluate(() => window.fake.rpc)).toEqual(['delete_my_account']);
-  expect(await page.evaluate(() => app.state.offers.map((o) => o.id))).toEqual(before);
+  expect(await page.evaluate(() => app.state.offers.length)).toBe(1);
+  expect(await page.evaluate(() => app.state.placeholderId)).not.toBeNull();
+  expect(await page.evaluate(() => app.state.offers[0].id)).not.toBe(before[0]);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('cj.ofertas2')))).toBeNull();
 });
 
 test('signing out from the page opened over Comparar silences the tooltip on every tab', async ({ openApp }) => {

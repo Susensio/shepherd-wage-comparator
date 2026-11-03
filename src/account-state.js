@@ -332,8 +332,8 @@ export function createAccountState({
 
     signOut: () =>
       attempt('No se pudo salir. Inténtalo de nuevo.', async () => {
-        const { keptEdits } = await account.signOut();
-        signedOut({ keptInAccount: !keptEdits });
+        await account.signOut();
+        signedOut({ keptInAccount: true });
       }),
 
     uploadPending: () =>
