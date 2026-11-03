@@ -236,3 +236,36 @@ test('listeners hear every change of status', async () => {
   await places.load();
   assert.deepEqual(seen, ['loading', 'ready']);
 });
+
+test('b and v are the same letter when searching', () => {
+  const index = buildIndex({
+    provinces: [['HU', 'Huesca']],
+    municipalities: [['Aínsa-Sobrarbe', 0, '22907']],
+    places: [['Jabierre', 0]],
+  });
+  assert.deepEqual(names(index, 'Javierre'), ['Jabierre']);
+});
+
+test('a full name the list does not hold falls back to its words, the right municipality first', () => {
+  const index = buildIndex({
+    provinces: [['HU', 'Huesca']],
+    municipalities: [
+      ['Aínsa-Sobrarbe', 0, '22907'],
+      ['Sabiñánigo', 0, '22199'],
+    ],
+    places: [
+      ['Javierre', 1],
+      ['Jabierre', 0],
+      ['Olsón', 0],
+    ],
+  });
+  // Jabierre and Olsón share a municipality; Jabierre is the first word, so it leads
+  assert.deepEqual(names(index, 'Javierre de Olsón'), ['Jabierre', 'Olsón', 'Javierre']);
+  assert.deepEqual(names(index, 'Nada de Nada'), []);
+});
+
+test('the real list finds Jabierre, in Aínsa-Sobrarbe, for «Javierre de Olsón»', () => {
+  const [first] = searchPlaces(buildIndex(real), 'Javierre de Olsón');
+  assert.equal(first.name, 'Jabierre');
+  assert.equal(first.municipality, 'Aínsa-Sobrarbe');
+});

@@ -33,6 +33,12 @@ export function articleFirst(name) {
   return article.endsWith("'") ? spoken : spoken[0].toUpperCase() + spoken.slice(1);
 }
 
+/** For searching only: b and v sound the same in Spanish, so «Javierre» finds «Jabierre». */
+const searchKey = (text) => fold(text).replace(/v/g, 'b');
+
+/** Short words that do not tell places apart («de», «del», «la»…), left out when a name is searched word by word. */
+const MIN_WORD = 4;
+
 export const MAX_SUGGESTIONS = 8;
 const MIN_QUERY = 2;
 
@@ -52,7 +58,7 @@ export function buildIndex(file) {
     /** @type {Map<string, string>} province code → name */
     provinces: new Map(file.provinces),
     byCode: new Map(municipalities.map((m) => [m.municipalityCode, m])),
-    rows: file.places.map(([name, municipality]) => ({ folded: fold(name), name, municipality })),
+    rows: file.places.map(([name, municipality]) => ({ folded: searchKey(name), name, municipality })),
   };
 }
 
@@ -60,18 +66,27 @@ export function buildIndex(file) {
 
 /**
  * Up to eight places for what was typed: names starting with it first, then those with a word starting with it,
- * then those containing it; shorter names first within each group.
+ * then those containing it; shorter names first within each group. b and v count as the same letter. A full name the
+ * list does not hold («Javierre de Olsón», listed as «Jabierre») falls back to its words: places named by one of them,
+ * those whose municipality has another of the words' places first.
  * @param {PlacesIndex} index
  * @param {string} query
  * @returns {Place[]}
  */
 export function searchPlaces(index, query) {
-  const wanted = fold(query);
+  const wanted = searchKey(query);
   if (wanted.length < MIN_QUERY) return [];
+  const found = matches(index.rows, wanted);
+  const rows = found.length ? found : byWords(index.rows, wanted);
+  return rows.slice(0, MAX_SUGGESTIONS).map((row) => ({ name: row.name, ...index.municipalities[row.municipality] }));
+}
+
+/** Rows containing `wanted`, best first. */
+function matches(rows, wanted) {
   const starts = [];
   const words = [];
   const inside = [];
-  for (const row of index.rows) {
+  for (const row of rows) {
     const at = row.folded.indexOf(wanted);
     if (at < 0) continue;
     if (at === 0) starts.push(row);
@@ -79,9 +94,26 @@ export function searchPlaces(index, query) {
     else inside.push(row);
   }
   const byLength = (a, b) => a.folded.length - b.folded.length;
-  return [...starts.sort(byLength), ...words.sort(byLength), ...inside.sort(byLength)]
-    .slice(0, MAX_SUGGESTIONS)
-    .map((row) => ({ name: row.name, ...index.municipalities[row.municipality] }));
+  return [...starts.sort(byLength), ...words.sort(byLength), ...inside.sort(byLength)];
+}
+
+/** Rows named by one of the query's words; those sharing a municipality with another word's places first, then by word order. */
+function byWords(rows, wanted) {
+  const words = wanted.split(/[\s\-',()]+/).filter((word) => word.length >= MIN_WORD);
+  if (words.length < 2) return [];
+  const perWord = words.map((word) => matches(rows, word).filter((row) => row.folded.startsWith(word)));
+  const municipalitiesOf = perWord.map((list) => new Set(list.map((row) => row.municipality)));
+  const scored = perWord.flatMap((list, i) =>
+    list.map((row) => ({
+      row,
+      word: i,
+      shared: municipalitiesOf.filter((set, j) => j !== i && set.has(row.municipality)).length,
+    })),
+  );
+  // The first word usually names the village («Jabierre de Olsón»): it goes first on a tie
+  scored.sort((a, b) => b.shared - a.shared || a.word - b.word || a.row.folded.length - b.row.folded.length);
+  const seen = new Set();
+  return scored.map(({ row }) => row).filter((row) => !seen.has(row) && seen.add(row));
 }
 
 /**
