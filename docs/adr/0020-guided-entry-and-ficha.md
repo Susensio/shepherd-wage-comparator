@@ -23,3 +23,5 @@ Weighed and discarded:
 - The form's markup in `index.html` is replaced by step views; the conditional rules (`SHOW` in `views/form.js`), the pay answers (`pay-answers.js`) and the hints carry over.
 - The browser tests that drive the form need rewriting around steps.
 - More room per question: the hints shortened on 3 November can grow back where they help.
+
+Amended by [ADR-0022](0022-earnings-without-paro-ranking-with-it.md): the ficha shows the analysis first and «Condiciones» last as one row; Duplicar, Copiar and Borrar are in a «⋯» menu.

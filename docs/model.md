@@ -13,7 +13,7 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 ## Terms-only figures
 
 - `calcTermsOnly` (`model/calc.js`) calculates an offer from `terms` alone, with `termsOnly` (`offer.js`): a neutral `mine` (no car, so no trips, km or fuel; no other expenses; no rent override; automatic IRPF) and IRPF as if nothing else was earned that year (`others` 0, no other offers). It works from `{ id, terms }`, which is how other people's offers are calculated (ADR-0007).
-- The rest of the settings are kept: what housing and meals are worth, Social Security rates, the unemployment switch. They value the terms; they say nothing about the worker's life. The km rate the employer pays is in `terms` but is paid per km driven at work, so with no km it is zero.
+- The rest of the settings are kept: what housing and meals are worth, Social Security rates. They value the terms; they say nothing about the worker's life. The km rate the employer pays is in `terms` but is paid per km driven at work, so with no km it is zero.
 - These figures say what the job pays, not what it is worth to any one worker, so they leave out costs that differ between workers. The Comparar tab can show them for own offers (the «Solo las condiciones» switch).
 
 ## Other shepherds' offers
@@ -48,7 +48,9 @@ Two rules, and each extra hour counts once.
 
 ## Earnings and savings
 
-- The unemployment benefit a contribution generates counts as the worker's money, because a payroll gives it and cash does not. It can be switched off in «Cómo se cuenta» (Ajustes).
+- «Ganas» (`earnings.total`, `perHour`, `perDay`, `perMonth`, and the parts in `PARTS`) is money only: what reaches the worker, plus housing and food when counted, minus car and other expenses. The unemployment benefit a contribution generates is not part of it (ADR-0022): `r.unemployment` keeps its days and euros, shown apart under the headline. The old «Contar el paro que generas» setting is gone; `ingestSaved` drops a saved `unemployment` value.
+- **Paro lost to money en negro** (`r.unemployment.lost`): the benefit that the declared pay plus the gross equivalent of the cash (`r.cash.grossEq`) would give, minus the benefit generated, over the same contributed days (a month when there is no duration). Without a contract, all of it. Zero when the declared pay already reaches the benefit's maximum, and without cash. Only the euros differ when there is a contract: the days contributed are the same.
+- **Comparar's ranking key** is «Ganas» plus the paro, both in the chosen unit (`inUnit`); with «Solo lo que ganas» (not saved) it is «Ganas» alone. The sum is never shown. Offers without a duration, in «en total», go last. Medals, the chart over time and the yearly summary use money only.
 - The law's figures (Social Security rates, overnight bonus, vacation days, annual hours) are read from `src/law.js`, not from the settings; values saved for them are dropped on load (`ingestSaved`).
 - **Savings** is what the employer saves at the worker's expense, with their Social Security: the contributions on the cash part, the missing minimum, and the unpaid extra days and overtime. It is the worker's margin to negotiate.
 

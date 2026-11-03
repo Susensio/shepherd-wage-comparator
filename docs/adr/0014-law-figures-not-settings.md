@@ -23,3 +23,4 @@ Weighed and discarded:
 - Old values saved for those keys are lost on the next load; the owner's held the law's values, so no figure changed.
 - The single set of contribution rates is now visible as a fixed fact: it is the temporary-contract rate, which is wrong for permanent contracts (backlog).
 
+Amended by [ADR-0022](0022-earnings-without-paro-ranking-with-it.md): the unemployment switch in «Cómo se cuenta» is gone.
