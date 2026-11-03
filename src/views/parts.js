@@ -21,7 +21,7 @@ export const two = (a, b) => html`<span class="two"><span>${a}</span><span>${b}<
 /**
  * Figure columns: per day and, next to it, per month (the total for contracts shorter than a month, where a month
  * would be made up). The same for every offer, so they compare. Per day with cents, so the sums add up.
- * `shown(x)` is the figure of each column as it is written; `sum(plus, minus)` (`sumTexts` as strings) adds those, not the exact amounts, so a
+ * `shown(x)` is the figure of each column as it is written; `sum(plus, minus)` (`sums` as numbers, `sumTexts` as strings) adds those, not the exact amounts, so a
  * row with «=» comes out of the rows above it on screen.
  */
 export function columns(r) {
@@ -31,13 +31,16 @@ export function columns(r) {
     const month = inUnit(x, r, other);
     return [num(fN(inUnit(x, r, 'day'), 2)), num(fN(month, euroDecimals(month, UNITS[other].decimals || undefined)))];
   };
-  const texts = (plus, minus = []) => {
-    const [day, month] = [0, 1].map((i) =>
+  /** The sums of what is shown, per column: [per day, per month or total]. */
+  const sums = (plus, minus = []) =>
+    [0, 1].map((i) =>
       sum(
         plus.map((x) => shown(x)[i]),
         minus.map((x) => shown(x)[i]),
       ),
     );
+  const texts = (plus, minus = []) => {
+    const [day, month] = sums(plus, minus);
     return [fE(day, 2), fSumE(month)];
   };
   return {
@@ -46,6 +49,7 @@ export function columns(r) {
     value: (x) => two(cell(x, 'day'), cell(x, other)),
     minus: (x) => two(`−${cell(x, 'day')}`, `−${cell(x, other)}`),
     shown,
+    sums,
     sumTexts: texts,
     sum: (plus, minus) => two(...texts(plus, minus)),
   };

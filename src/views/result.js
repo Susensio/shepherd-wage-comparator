@@ -166,8 +166,11 @@ function breakdown(o, r, unit, third) {
   const earned = present.map((part) => part.value(p));
   const [showCar, showOther] = [shows(r.car.cost), shows(r.expenses.other)];
   const expenses = [showCar && r.car.cost, showOther && r.expenses.other].filter(Boolean);
+  const [earnedDay, earnedOther] = cols.sums(earned, expenses);
   return {
     earnTip,
+    // «Ganas» as the ledger adds it up, in each of its columns: the headline shows the one in its unit
+    earnedShown: { day: earnedDay, [cols.other]: earnedOther },
     html: html`
     <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">${say('cobras', 'se cobra')} <b>${cols.sumTexts(received)[1]}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
     ${incomeBar(r, incomeOf(r) || 1)}
@@ -198,7 +201,9 @@ export function resultView(o, r, { readOnly = false } = {}) {
     return html`<p class="empty">Para ver cuánto ${readOnly ? 'se gana' : 'ganas'} falta ${joinAnd(shortfall.map((id) => (readOnly ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`;
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
-  const { earnTip, html: breakdownView } = breakdown(o, r, unit, readOnly);
+  const { earnTip, earnedShown, html: breakdownView } = breakdown(o, r, unit, readOnly);
+  // The headline is the ledger's «Ganas» in the same unit, so the two never differ by a rounding
+  const headline = unit in earnedShown ? fUnit(earnedShown[unit], unit) : money.figure(r.earnings.total);
   const year = actualYear(o.terms);
   const line = legalLine(o, r);
   return html`${
@@ -207,7 +212,7 @@ export function resultView(o, r, { readOnly = false } = {}) {
       : ''
   }
     <h3 class="q">${readOnly ? '¿Cuánto se gana?' : '¿Cuánto ganas?'}</h3>
-    <div class="tag"><span class="lbl tipl" data-tip=${earnTip} tabindex="0" role="button">${readOnly ? 'Se gana' : 'Ganas'} ${UNITS[unit].label}</span><span class="tag-row"><span class="big">${money.figure(r.earnings.total)}</span>${
+    <div class="tag"><span class="lbl tipl" data-tip=${earnTip} tabindex="0" role="button">${readOnly ? 'Se gana' : 'Ganas'} ${UNITS[unit].label}</span><span class="tag-row"><span class="big">${headline}</span>${
       r.stamp
         ? html`<a href="#secLegal" class=${STAMPS[r.stamp.code].warn ? 'stamp warn' : 'stamp'}>${stampLines(STAMPS[r.stamp.code].text)}</a>`
         : nothing

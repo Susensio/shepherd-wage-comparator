@@ -25,6 +25,15 @@ async function invariantProblems() {
     problems.push('overtime per week × weeks ≠ total overtime');
   if (r.savings.days > 1 && !close(r.savings.days, x.daysUnpaid * (1 + r.pay.rates.employerPct / 100)))
     problems.push('extra-days savings ≠ unpaid × employer rate');
+  // The headline is the breakdown's «Ganas» in its unit: per day (rounded to euros) under a month, else per month
+  const big = document.querySelector('#result .tag .big');
+  const earned = document.querySelectorAll('#result [data-fold="breakdown2"] .row.tot .two > span');
+  if (big && earned.length === 2) {
+    const read = (el) => Number.parseFloat(el.textContent.replace(/\./g, '').replace(',', '.'));
+    const underAMonth = !t.noDuration && t.months < 0.97;
+    const ledger = underAMonth ? Math.round(read(earned[0])) : read(earned[1]);
+    if (read(big) !== ledger) problems.push(`headline ${big.textContent} ≠ breakdown «Ganas» ${ledger}`);
+  }
   const onPayroll = r.pay.net + r.employer.severance;
   const legend = document.querySelector('#secSeason .rc-legend');
   if (legend && !r.noContract) {
