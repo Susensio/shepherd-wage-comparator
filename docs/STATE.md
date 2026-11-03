@@ -1,5 +1,23 @@
 # State
 
+## Guided entry and the offer ficha (ADR-0020)
+
+Decided with the owner on 3 November 2026 from the mock-up https://claude.ai/artifact/N7vHMVyQnVBrRz76NxqzSi. Not started. Work on branch `ccr-32fbee75-oc1p8v`; publish when the owner says so.
+
+### Open with the owner
+
+- The page's name: «Zurrón» («Ofertas, cuentas y derechos del pastor») proposed; Majada, Cayado and Jornal shown as alternatives in the mock-up. «Comparador de salarios» today.
+- «Ficha» for the offer page and «Análisis» over its sections; whether every step gets «Luego».
+
+### Plan
+
+1. Navigation: Ofertas becomes the list (cards: name, figure, dates, one flag; «+ Nueva oferta»); tapping an offer opens its ficha; the ficha has a back link to the list. History entries for list → ficha → step, so the phone's back button works (`ui/navigation.js`).
+2. Steps: one view per step in `src/views/steps/` (or one `views/steps.js`), built from today's fieldsets in `index.html` and `views/form.js` (`SHOW`, hints, `paintAnswers`), with the step list in one place. Entry runs them in order (progress, back, close, «Luego», «Siguiente» / «Ver la ficha»); editing from the ficha opens one step with «Guardar» / «Cancelar» (cancel restores the offer as it was). The earnings strip reads the model (`calc`). The templates become step one.
+3. Ficha: today's result view without the form; «Condiciones» from `summaries` in `text.js`, one row per step; missing data marked on its row and opening its step (today's `missing` / «Falta…»).
+4. Remove the old form markup and its CSS once nothing uses it; keep `events.js` reading answers into `terms` through the same functions.
+5. Tests: rewrite the e2e specs that fill the form (`pay.spec.js`, `ui.spec.js`, `hours.spec.js`, `place.spec.js`, parts of `saved-data.spec.js`) around steps; keep `consistency.spec.js` on the ficha; unit tests unchanged. Screens at 375 and 320 px, light and dark.
+6. Records: glossary («ficha» and step names), `docs/model.md` only if a rule moves, this section deleted when done.
+
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
 Decided with the owner on 1 November 2026. Not started. To be built from the owner's laptop; nothing below has been run against the live project yet.
