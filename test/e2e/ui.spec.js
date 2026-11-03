@@ -54,7 +54,7 @@ test('duplicate and delete', async ({ page }) => {
   expect(names[1]).toMatch(/\(copia\)$/);
   // Deleting asks for a second tap
   await page.click('#btnDel');
-  await expect(page.locator('#btnDel')).toContainText('Toca otra vez');
+  await expect(page.locator('#btnDel')).toHaveText('¿Seguro?');
   await page.click('#btnDel');
   expect(await offerNames(page)).toHaveLength(1);
 });

@@ -303,7 +303,7 @@ const ACTIONS = {
   },
   deleteOffer() {
     const o = active();
-    if (!deleteButton.confirm(`¿Borrar «${o.mine.name}»? Toca otra vez`)) return;
+    if (!deleteButton.confirm('¿Seguro?')) return;
     const backToWelcome = offers.remove(o);
     show();
     if (backToWelcome) openTemplates();

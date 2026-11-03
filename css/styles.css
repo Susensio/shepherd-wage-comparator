@@ -707,6 +707,10 @@ button.sm,
   padding: 6px 10px;
 }
 
+/* The same width for «Borrar» and «¿Seguro?», so the row does not move when it asks */
+#btnDel {
+  min-width: 82px;
+}
 button.danger {
   color: var(--neg);
 }
