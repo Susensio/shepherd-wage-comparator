@@ -7,7 +7,7 @@ import { render } from 'lit-html';
 import { $, $$ } from './dom.js';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
-import { defaultVacation, missing } from './offer.js';
+import { defaultVacation, missing, workedOffers } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
@@ -166,9 +166,9 @@ export function viewShared(id) {
   window.scrollTo({ top: 0 });
 }
 
-/** «Cuándo»: what you are paid over time and each year's summary. Only with dated offers. */
+/** «Cuándo»: what you are paid over time and each year's summary. Only with worked offers (dated, not «solo oferta»). */
 function paintTimeline(all = compared()) {
-  const dated = all.some(({ o }) => o.terms.start);
+  const dated = workedOffers(all.map((x) => x.o)).length > 0;
   $('#tlBlk').hidden = !dated;
   render(dated ? trendView(all, state.cmpUnit, $('#cmpBlk').clientWidth) : '', $('#trend'));
   render(dated ? yearlyView(all) : '', $('#yearly'));

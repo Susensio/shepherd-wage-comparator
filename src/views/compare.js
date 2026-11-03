@@ -371,8 +371,10 @@ export function trendView(all, unit, width) {
             : (r.min.salary + r.min.vacation) / bonus;
     return base * bonus * (1 - r.pay.rates.workerPct / 100);
   };
+  // Only offers that were worked: the line is what was earned, not what was offered
+  const worked = new Set(workedOffers(all.map((x) => x.o)));
   const points = all
-    .filter(({ o }) => o.terms.start && isComplete(o.terms))
+    .filter(({ o }) => worked.has(o) && isComplete(o.terms))
     .map(({ o, r }) => {
       const d = U.per(r);
       const [start, end] = spanOf(o.terms);
@@ -414,8 +416,7 @@ export function trendView(all, unit, width) {
           return svg`<text class="axis" x=${X((a + b) / 2)} y=${H - 6} text-anchor="middle">${y}</text>`;
         })
       : svg`<text class="axis" x=${M.l} y=${H - 6} text-anchor="start">${fDate(new Date(x0 + pad))}</text><text class="axis" x=${W - M.r} y=${H - 6} text-anchor="end">${fDate(new Date(x1 - pad - DAY_MS))}</text>`;
-  const jobs = points.filter((p) => !p.o.mine.offerOnly);
-  const offersOnly = points.filter((p) => p.o.mine.offerOnly);
+  const jobs = points;
   const xEnd = (p) => Math.max(X(p.b - DAY_MS), X(p.a) + 3);
   const steps = jobs
     .slice(1)
@@ -430,20 +431,18 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.mine.name} · ${datesText(p.o.terms)}${p.o.mine.offerOnly ? ' (solo era una oferta)' : ''}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
+    `${p.o.mine.name} · ${datesText(p.o.terms)}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que ganas ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que ganas ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
-      .join(
-        '',
-      )}/>${offersOnly.map((p) => svg`<path class="offer-only" d="M${X(p.a)},${Y(p.y)}H${xEnd(p)}"/>`)}${points.map(
+      .join('')}/>${points.map(
       (p) =>
-        svg`<text class=${p.o.mine.offerOnly ? 'nm offer-only-t' : 'nm'} x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
+        svg`<text class="nm" x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
     )}${points.map(
       (p) =>
         svg`<rect class="hit" data-tip=${tip(p)} tabindex="0" role="button" x=${X(p.a) - 4} y=${Y(p.y) - 16} width=${xEnd(p) - X(p.a) + 8} height="28"/>`,
     )}</svg>
-    ${offersOnly.length ? html`<p class="hint">En raya, las que solo eran ofertas.</p>` : nothing}</div>`;
+    </div>`;
 }
 
 /**

@@ -2116,14 +2116,6 @@ details.paste > summary {
   opacity: 0.45;
 }
 
-.trend .offer-only {
-  fill: none;
-  stroke: var(--c-pay);
-  stroke-width: 2.5;
-  stroke-dasharray: 6 4;
-  stroke-linecap: round;
-  opacity: 0.7;
-}
 .trend .hit {
   fill: transparent;
   cursor: pointer;
@@ -2311,10 +2303,6 @@ details.paste > summary {
   fill: var(--ink);
   font-weight: 600;
   font-family: var(--f-body);
-}
-.trend .nm.offer-only-t {
-  fill: var(--muted);
-  font-weight: 500;
 }
 .tablew {
   overflow-x: auto;

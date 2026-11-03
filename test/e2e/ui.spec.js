@@ -250,3 +250,14 @@ test('«Solo oferta» is always shown: ticked and locked without a start date', 
   await box.check();
   expect(await page.evaluate(() => app.active().mine.offerOnly)).toBe(true);
 });
+
+test('the chart over time shows only worked offers', async ({ loaded: page }) => {
+  await page.click('.tabs [data-tab=compare]');
+  const names = page.locator('#trend text.nm');
+  await expect(names.first()).toBeVisible();
+  const shown = await names.allTextContents();
+  // Puerto A and Temporada F are marked «solo oferta»
+  expect(shown).toContain('Puerto A, otra cuenta');
+  expect(shown).not.toContain('Puerto A');
+  expect(shown).not.toContain('Temporada F');
+});
