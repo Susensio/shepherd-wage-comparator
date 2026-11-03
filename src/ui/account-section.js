@@ -63,7 +63,7 @@ export function paintAccountStatus({ chooser = false } = {}) {
 
 function paint() {
   paintAccount(view);
-  render(view.user ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
+  render(view.user || !view.started ? '' : signInView(view.signIn, !!ACCOUNT_CONFIG.emailSignIn), $('#accountSignIn'));
   paintAccountStatus();
   const section = othersSection();
   $('#othersBlk').hidden = !section;
@@ -76,7 +76,7 @@ function paint() {
  */
 function showSignInButtons({ chooser = false } = {}) {
   const clientId = ACCOUNT_CONFIG.googleClientId;
-  if (!clientId || view.user || view.signIn.googleFailed) return;
+  if (!clientId || !view.started || view.user || view.signIn.googleFailed) return;
   const slots = /** @type {HTMLElement[]} */ ($$('.gsi-slot')).filter((slot) => slot.offsetParent);
   if (!slots.length) return;
   showGoogleButtons({ clientId, slots, chooser, handler: accountState.signInWithGoogleToken }).catch((error) => {

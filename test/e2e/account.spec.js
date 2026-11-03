@@ -506,6 +506,43 @@ test.describe('while the saved session is being connected', () => {
     await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
   });
 
+  test('nothing meant for a guest shows meanwhile: no tooltip, no sign-in, no Google button', async ({ openApp }) => {
+    const page = await connecting(openApp, { google: true });
+    const nothingForGuests = async () => {
+      await expect(page.locator('#accountTip .tip')).toHaveCount(0);
+      await expect(page.locator('#accountSignIn button:visible')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Entrar' })).toHaveCount(0);
+    };
+    await nothingForGuests();
+    await page.locator('.tabs [data-tab=compare]').click();
+    await nothingForGuests();
+    await expect(page.locator('#othersBlk')).toBeHidden();
+    await page.evaluate(() => app.openSettingsPage());
+    await nothingForGuests();
+    await expect(page.locator('#settingsStorage')).toBeHidden();
+    await page.locator('#accountButton').click();
+    await expect(page.locator('#accountLoading')).toHaveText('Cargando tu cuenta…');
+    await expect(page.locator('#accountOut')).toBeHidden();
+    await expect(page.locator('#accountIn')).toBeHidden();
+    await nothingForGuests();
+    expect(await page.evaluate(() => window.fake.google.themes.length)).toBe(0);
+
+    await release(page);
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
+    await expect(page.locator('#accountLoading')).toBeHidden();
+    await expect(page.locator('#accountIn')).toBeVisible();
+    await expect(page.locator('#accountOut')).toBeHidden();
+    expect(await page.evaluate(() => window.fake.google.themes.length)).toBe(0);
+  });
+
+  test('a guest is never told to wait', async ({ openApp }) => {
+    const page = await connecting(openApp, { signedOut: true, holdSession: false });
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'guest');
+    await page.locator('#accountButton').click();
+    await expect(page.locator('#accountLoading')).toBeHidden();
+    await expect(page.locator('#accountOut')).toBeVisible();
+  });
+
   test('the offer and the step open stay where they were when the account replaces the offers', async ({ openApp }) => {
     const second = sample.offers[1].id;
     const page = await connecting(openApp, {

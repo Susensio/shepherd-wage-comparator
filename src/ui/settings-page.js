@@ -92,6 +92,7 @@ let filledProfile = null;
  * @param {AccountView} view
  */
 export function paintAccount({
+  started,
   user,
   profile,
   pending,
@@ -104,7 +105,9 @@ export function paintAccount({
   $('#signedOutNotice').hidden = !signedOutNotice;
   $('#accountMsg').textContent = messageIsSignedOutNotice ? $('#signedOutNotice').textContent : message;
   $('#accountMsg').classList.toggle('ok', messageOk);
-  $('#accountOut').hidden = !!user;
+  // Until the saved session is looked at, neither the sign-in nor the account: a signed-in user must not see the guest's page first
+  $('#accountLoading').hidden = started;
+  $('#accountOut').hidden = !started || !!user;
   $('#accountPending').hidden = !(user && pending.length);
   $('#accountIn').hidden = !(user && !pending.length);
   $('#pendingList').replaceChildren(
