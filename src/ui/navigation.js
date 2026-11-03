@@ -1,7 +1,7 @@
 /** Where the reader is: the tab shown, the page (account, settings) open over it, and the way back from a page. */
 
+import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
-import { $ } from './dom.js';
 
 const TABS = ['offers', 'compare', 'laws'];
 

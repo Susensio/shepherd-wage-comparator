@@ -1,19 +1,4 @@
-/** Small DOM helpers: lookups, the clipboard and buttons that ask twice. */
-
-/**
- * The first element matching `selector`, under `root`.
- * @param {string} selector
- * @param {ParentNode} [root]
- * @returns {HTMLElement}
- */
-export const $ = (selector, root = document) => /** @type {HTMLElement} */ (root.querySelector(selector));
-/**
- * Every element matching `selector`, under `root`.
- * @param {string} selector
- * @param {ParentNode} [root]
- * @returns {HTMLElement[]}
- */
-export const $$ = (selector, root = document) => /** @type {HTMLElement[]} */ ([...root.querySelectorAll(selector)]);
+/** Small DOM helpers: the clipboard and buttons that ask twice. The lookups `$`/`$$` are in `src/dom.js`. */
 
 /**
  * Copies to the clipboard and says so in `msg`. If it cannot, it leaves the text selected to copy by hand: in

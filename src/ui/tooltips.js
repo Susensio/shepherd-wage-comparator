@@ -1,6 +1,6 @@
 /** Explanations on tap ([data-tip]): a bubble under the element. */
 
-import { $ } from './dom.js';
+import { $ } from '../dom.js';
 
 let openedAt = 0;
 

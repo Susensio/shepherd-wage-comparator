@@ -3,7 +3,7 @@
  * height, and scrolling to things.
  */
 
-import { $ } from './dom.js';
+import { $ } from '../dom.js';
 import { saveFold } from './folds.js';
 
 const ANIM = { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' };

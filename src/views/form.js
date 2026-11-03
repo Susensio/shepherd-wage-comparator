@@ -4,13 +4,13 @@
  */
 
 import { html, render } from 'lit-html';
+import { $, $$ } from '../dom.js';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
 import { areaLine, summaries, VACATION_SAYS } from '../text.js';
-import { $, $$ } from '../ui/dom.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {

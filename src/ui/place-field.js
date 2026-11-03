@@ -1,11 +1,11 @@
 /** The «Pueblo» field: a combobox over the place list. Typing suggests; picking fills the municipality and province. */
 
 import { html, render } from 'lit-html';
+import { $ } from '../dom.js';
 import { searchPlaces } from '../places.js';
 import { active } from '../state.js';
 import { loadPlaces, onPlacesChange, placesIfLoaded } from '../storage/places.js';
 import { areaLine } from '../text.js';
-import { $ } from './dom.js';
 import { scrollToElement } from './motion.js';
 
 /** @type {import('../places.js').Place[]} */

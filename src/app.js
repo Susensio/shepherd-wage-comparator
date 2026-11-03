@@ -4,6 +4,7 @@
  */
 
 import { render } from 'lit-html';
+import { $, $$ } from './dom.js';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing } from './offer.js';
@@ -12,7 +13,6 @@ import { active, calcOffer, myOffers, state } from './state.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
-import { $, $$ } from './ui/dom.js';
 import { restoreFolds } from './ui/folds.js';
 import { cancelScroll, fadeIn, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
 import { onNavigate } from './ui/navigation.js';

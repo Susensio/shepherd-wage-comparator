@@ -2,6 +2,7 @@
 
 import { render } from 'lit-html';
 import { createAccountState } from '../account-state.js';
+import { $, $$ } from '../dom.js';
 import { ingestShared } from '../saved.js';
 import { state } from '../state.js';
 import { createAccountLoader } from '../storage/account.js';
@@ -10,7 +11,6 @@ import { forgetGoogleChoice, showGoogleButtons } from '../storage/google-sign-in
 import { GUEST_TIPS, PENDING_TIP, tipView } from '../views/account-tip.js';
 import { othersView, shareTermsView } from '../views/others.js';
 import { signInView } from '../views/sign-in.js';
-import { $, $$ } from './dom.js';
 import { currentTab, openPageName, tabInView } from './navigation.js';
 import { paintAccount, paintAccountButton } from './settings-page.js';
 

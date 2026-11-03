@@ -16,6 +16,7 @@ import {
   templatesOpen,
   viewShared,
 } from './app.js';
+import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
 import {
   DAYS_PER_MONTH,
@@ -37,7 +38,7 @@ import { preloadPlaces } from './storage/places.js';
 import { cardText, claimText } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
-import { $, copyText, doubleTap } from './ui/dom.js';
+import { copyText, doubleTap } from './ui/dom.js';
 import { saveFold } from './ui/folds.js';
 import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
 import { closePage, onPopState, openAccountPage, openSettingsPage, showTab } from './ui/navigation.js';

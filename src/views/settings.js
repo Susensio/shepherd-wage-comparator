@@ -1,8 +1,8 @@
 /** The settings page's fields («Tus datos», «Cómo se cuenta»). */
 
+import { $$ } from '../dom.js';
 import { fInputValue, num } from '../format.js';
 import { DEF_CFG } from '../offer.js';
-import { $$ } from '../ui/dom.js';
 
 /**
  * Fills in «Tus datos» and the two counting choices. Values left at their default stay empty, with the default in grey.

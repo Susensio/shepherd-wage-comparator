@@ -1,10 +1,10 @@
 /** The backup status, the account button and the account section on the settings page: they read the state and the account. */
 
+import { $ } from '../dom.js';
 import { isComplete } from '../offer.js';
 import { myOffers } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { backupStatus } from '../storage/bundle.js';
-import { $ } from './dom.js';
 
 /** The backup reminder above the offers, and the status in the settings page's backup card (the account part of the card is toggled in `paintAccountButton`). */
 export function paintBackup() {
