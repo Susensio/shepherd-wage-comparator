@@ -21,3 +21,7 @@ Weighed and discarded:
 
 - One breakpoint decides both: the bottom bar below it, top tabs and the split above it.
 - On wide screens the ficha does not need its «‹ Ofertas» link, and opening an offer does not add a history entry for the list.
+
+## Amended 3 November 2026
+
+On phones the bar is no longer fixed to the screen: the content scrolls in its own element (`#scroller`) and the bar is placed after it, outside (`placeTabs()` in `ui/navigation.js` moves the one `.tabs` element between the app bar on wide screens and the end of the page on phones). Android Chrome's overscroll stretch then moves only the content, as the owner wanted, instead of the whole page with the bar. Accepted costs: Chrome's address bar no longer hides on scroll; pull-to-refresh is off. Wide screens still scroll the page.
