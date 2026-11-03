@@ -125,7 +125,7 @@ test('focusing the field brings it near the top, where the keyboard will not cov
   page,
 }) => {
   await startOffer(page);
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.evaluate(() => document.querySelector('#scroller').scrollTo(0, 1e6));
   await page.focus('#place');
   await expect.poll(() => page.locator('#place').evaluate((e) => e.getBoundingClientRect().top)).toBeLessThan(250);
 });

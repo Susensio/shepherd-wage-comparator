@@ -1,6 +1,7 @@
 /** Explanations on tap ([data-tip]): a bubble under the element. */
 
 import { $ } from '../dom.js';
+import { onScroll, overlayHost, scrollPosition } from './scroller.js';
 
 let openedAt = 0;
 
@@ -14,15 +15,20 @@ function open(el) {
   pop.className = 'pop';
   pop.setAttribute('role', 'tooltip');
   pop.textContent = el.dataset.tip;
-  document.body.appendChild(pop);
+  const host = overlayHost();
+  host.appendChild(pop);
   el.classList.add('on');
-  openedAt = scrollY;
+  openedAt = scrollPosition();
+  const hostBox = host.getBoundingClientRect();
   const box = el.getBoundingClientRect();
   const margin = 12;
   const width = pop.offsetWidth;
   const left = Math.max(margin, Math.min(box.left, document.documentElement.clientWidth - margin - width));
-  pop.style.left = `${left + scrollX}px`;
-  pop.style.top = `${box.bottom + 8 + scrollY}px`;
+  // In the host's own coordinates: the page's on wide screens (where the host is the body, at the origin), else the scroller's
+  const origin =
+    host === document.body ? { x: scrollX, y: scrollY } : { x: -hostBox.left, y: -hostBox.top + host.scrollTop };
+  pop.style.left = `${left + origin.x}px`;
+  pop.style.top = `${box.bottom + 8 + origin.y}px`;
   // the little arrow points at the element
   pop.style.setProperty('--arrow-x', `${Math.max(12, Math.min(width - 12, box.left + box.width / 2 - left))}px`);
 }
@@ -49,5 +55,5 @@ export function setUpTooltips() {
   });
   addEventListener('resize', close);
   // a slight scroll while tapping does not close it
-  addEventListener('scroll', () => Math.abs(scrollY - openedAt) > 24 && $('.pop') && close(), { passive: true });
+  onScroll(() => Math.abs(scrollPosition() - openedAt) > 24 && $('.pop') && close());
 }

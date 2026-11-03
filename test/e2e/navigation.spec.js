@@ -26,7 +26,7 @@ test.describe('phone', () => {
     loaded: page,
   }) => {
     await page.locator('.tabs [data-tab=laws]').click();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => document.querySelector('#scroller').scrollTo(0, 1e6));
     const bar = await box(page.locator('.tabs'));
     expect(bar.y + bar.height).toBeCloseTo(700, 0);
     const last = await page.evaluate(() => {
@@ -34,6 +34,21 @@ test.describe('phone', () => {
       return panel.getBoundingClientRect().bottom;
     });
     expect(last).toBeLessThanOrEqual(bar.y);
+  });
+
+  // Chrome's overscroll stretch moves the scroller and what is inside it: the bar must be outside
+  test('the content scrolls in its own element, with the bar outside it and the window still', async ({
+    loaded: page,
+  }) => {
+    await page.locator('.tabs [data-tab=laws]').click();
+    expect(await page.evaluate(() => document.querySelector('#scroller').scrollTop)).toBe(0);
+    await page.mouse.move(200, 300);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => page.evaluate(() => document.querySelector('#scroller').scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await page.evaluate(() => !!document.querySelector('#scroller .tabs'))).toBe(false);
+    const bar = await box(page.locator('.tabs'));
+    expect(bar.y + bar.height).toBeCloseTo(700, 0);
   });
 
   test('the entry hides the bar', async ({ loaded: page }) => {

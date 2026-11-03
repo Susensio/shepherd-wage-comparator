@@ -7,9 +7,7 @@
 
 import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
-
-/** From this width the tabs move to the app bar and Ofertas shows the list beside the ficha; keep in step with the CSS. */
-const wide = window.matchMedia('(min-width: 1024px)');
+import { scrollPosition, scrollToTop, wide } from './scroller.js';
 
 const TABS = ['offers', 'compare', 'laws'];
 
@@ -67,7 +65,18 @@ function applyView() {
 }
 if (wide.matches) view.ficha = true;
 applyView();
-wide.addEventListener('change', () => go({ ficha: wide.matches, entry: view.entry }, 'none'));
+
+/** The tabs sit in the app bar on wide screens; on phones, after #scroller, so its stretch does not move them. */
+function placeTabs() {
+  const tabs = $('.tabs');
+  if (wide.matches) $('.appbar').insertBefore(tabs, $('.bar-actions'));
+  else document.body.append(tabs);
+}
+placeTabs();
+wide.addEventListener('change', () => {
+  placeTabs();
+  go({ ficha: wide.matches, entry: view.entry }, 'none');
+});
 
 /** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
 function showPanel(shown) {
@@ -84,7 +93,7 @@ export function showTab(tab, scrollUp) {
   for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   saveTab(shown);
   hooks.tabShown(shown);
-  if (scrollUp) window.scrollTo({ top: 0 });
+  if (scrollUp) scrollToTop(0);
 }
 
 /**
@@ -97,12 +106,12 @@ function openPage(page, fromPrompt = false) {
   where.leaveAfterSignIn = fromPrompt;
   where.promptFromPage = fromPrompt ? where.page : null; // a tooltip on Ajustes returns to Ajustes
   if (!where.page) {
-    where.scrollBeforePage = scrollY;
+    where.scrollBeforePage = scrollPosition();
     history.pushState({ page: true }, ''); // the phone's Back closes the page, not the site
   }
   showPanel(page);
   hooks.pageOpened(fromPrompt);
-  window.scrollTo({ top: 0 });
+  scrollToTop(0);
 }
 
 export const openAccountPage = (fromPrompt = false) => openPage('account', fromPrompt);
@@ -111,7 +120,7 @@ export const openSettingsPage = () => openPage('settings');
 /** Back to the tab the page was opened from, where it was scrolled. */
 function leavePage() {
   showTab(where.tab);
-  window.scrollTo({ top: where.scrollBeforePage, behavior: 'instant' });
+  scrollToTop(where.scrollBeforePage, 'instant');
 }
 
 /** «Volver»: through the history when the page pushed an entry, so Back and «Volver» stay in step. */
@@ -143,7 +152,7 @@ function go(next, how) {
   if (wide.matches) next = { ...next, ficha: true };
   const depth = (v) => (v.entry ? 2 : v.ficha ? 1 : 0);
   const deeper = depth(next) > depth(view);
-  if (!view.entry) scrolls[view.ficha ? 'ficha' : 'list'] = scrollY;
+  if (!view.entry) scrolls[view.ficha ? 'ficha' : 'list'] = scrollPosition();
   const marker = next.entry ? { entry: true } : next.ficha && !wide.matches ? { ficha: true } : null;
   Object.assign(view, next);
   if (how === 'push') history.pushState(marker, '');
@@ -152,7 +161,7 @@ function go(next, how) {
   applyView();
   hooks.viewChanged();
   const restore = !deeper && (how === 'back' || how === 'none');
-  window.scrollTo({ top: restore && !view.entry ? scrolls[view.ficha ? 'ficha' : 'list'] : 0, behavior: 'instant' });
+  scrollToTop(restore && !view.entry ? scrolls[view.ficha ? 'ficha' : 'list'] : 0, 'instant');
 }
 
 /** An offer's ficha, in place of the list. */

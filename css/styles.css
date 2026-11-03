@@ -97,10 +97,25 @@
 [hidden] {
   display: none !important;
 }
-/* No rubber-band at the ends of the page: it dragged the bottom tab bar with it */
-html,
-body {
-  overscroll-behavior-y: none;
+/* Phones: the content is its own scroller, so Chrome's stretch at its ends leaves the tab bar (outside it) still */
+@media not all and (min-width: 1024px) {
+  html {
+    overflow: hidden;
+  }
+  body {
+    height: 100dvh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #scroller {
+    position: relative; /* holds the tooltips */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-anchor: none;
+  }
 }
 body {
   background: var(--bg);
@@ -113,12 +128,19 @@ body {
 .wrap {
   max-width: 800px;
   margin: 0 auto;
-  padding-block: max(20px, env(safe-area-inset-top, 0px)) calc(48px + 56px + env(safe-area-inset-bottom, 0px));
+  padding-block: max(20px, env(safe-area-inset-top, 0px)) calc(48px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+@media not all and (min-width: 1024px) {
+  /* the body's 8px margin went with the scroller: keep the page where it was */
+  .wrap {
+    width: calc(100% - 16px);
+    margin: 8px auto;
+  }
 }
 h1,
 h2,
@@ -1006,7 +1028,8 @@ section.others p {
   min-width: 0;
 }
 
-.welcome {
+/* Not the body, which carries the same class on a first visit */
+div.welcome {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1731,11 +1754,9 @@ section.blk {
   margin-bottom: 4px;
 }
 
-/* Tabs (ADR-0021): a bar fixed at the bottom on phones; from 1024 px they sit in the app bar (see the end of the file) */
+/* Tabs (ADR-0021): a bar under the scroller on phones (navigation.js moves it there); from 1024 px they sit in the app bar (see the end of the file) */
 .tabs {
-  position: fixed;
-  inset: auto 0 0;
-  z-index: 20;
+  flex: none;
   display: flex;
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   background: var(--surface);
@@ -3375,7 +3396,6 @@ details.plg > summary .stat.dt b {
     flex: 0 1 auto;
   }
   .tabs {
-    position: static;
     margin-left: 20px;
     padding: 0;
     background: none;

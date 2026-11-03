@@ -18,6 +18,7 @@ import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } fro
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
 import { entryOpen, onNavigate, openFicha } from './ui/navigation.js';
+import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fichaView } from './views/ficha.js';
@@ -136,7 +137,7 @@ function paintShared(others = null) {
 export function viewShared(id) {
   state.others.viewId = id;
   paintShared();
-  window.scrollTo({ top: 0 });
+  scrollToTop(0);
 }
 
 /** «Cuándo»: what you are paid over time and each year's summary. Only with worked offers (dated, not «solo oferta»). */

@@ -639,13 +639,13 @@ for (const [name, open] of [
         beforeLoad: withProject,
       });
       await page.evaluate(() => app.showTab('compare'));
-      await page.evaluate(() => window.scrollTo(0, 200));
+      await page.evaluate(() => document.querySelector('#scroller').scrollTo(0, 200));
       return page;
     };
 
     test("the browser's Back closes the page, stays in the app, and restores the scroll", async ({ openApp }) => {
       const page = await openOnCompare(openApp);
-      const before = await page.evaluate(() => scrollY);
+      const before = await page.evaluate(() => document.querySelector('#scroller').scrollTop);
       expect(before).toBeGreaterThan(0);
       const url = page.url();
       await page.evaluate(open); // the bar is not sticky: a click would scroll up first
@@ -654,12 +654,12 @@ for (const [name, open] of [
       await expect(page.locator(`[data-panel=${name}]`)).toBeHidden();
       await expect(page.locator('[data-panel=compare]')).toBeVisible();
       expect(page.url()).toBe(url);
-      expect(await page.evaluate(() => scrollY)).toBe(before);
+      expect(await page.evaluate(() => document.querySelector('#scroller').scrollTop)).toBe(before);
     });
 
     test('«Volver» goes back through the history and restores the scroll', async ({ openApp }) => {
       const page = await openOnCompare(openApp);
-      const before = await page.evaluate(() => scrollY);
+      const before = await page.evaluate(() => document.querySelector('#scroller').scrollTop);
       const length = await page.evaluate(() => history.length);
       await page.evaluate(open);
       await page
@@ -667,7 +667,7 @@ for (const [name, open] of [
         .first()
         .click();
       await expect(page.locator('[data-panel=compare]')).toBeVisible();
-      expect(await page.evaluate(() => scrollY)).toBe(before);
+      expect(await page.evaluate(() => document.querySelector('#scroller').scrollTop)).toBe(before);
       await expect.poll(() => page.evaluate(() => history.state?.page ?? false)).toBe(false);
       expect(await page.evaluate(() => history.length)).toBe(length + 1); // the entry stays forward, not stacked
     });

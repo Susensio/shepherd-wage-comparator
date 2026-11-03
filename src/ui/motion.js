@@ -5,6 +5,7 @@
 
 import { $ } from '../dom.js';
 import { saveFold } from './folds.js';
+import { scrollPosition, scrollToTop, visibleArea } from './scroller.js';
 
 const ANIM = { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' };
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -50,7 +51,8 @@ export function toggleFold(d, opening) {
   d.style.overflow = 'hidden';
   // Only what is on screen is animated: below it things appear or go at once, so a long section slides at the same
   // pace as a short one instead of filling the screen in one go
-  const visible = Math.max(0, innerHeight - d.getBoundingClientRect().top);
+  const area = visibleArea();
+  const visible = Math.max(0, area.top + area.height - d.getBoundingClientRect().top);
   const start = opening ? from : Math.min(from, Math.max(to, visible));
   const end = opening ? Math.min(to, Math.max(from, visible)) : to;
   const anim = animate(d, { height: [`${start}px`, `${end}px`] }, { distance: Math.abs(end - start) });
@@ -80,7 +82,7 @@ let scrollTimer;
 export const cancelScroll = () => clearTimeout(scrollTimer);
 
 /**
- * Scrolls the page to an element. Only this page moves (scrollIntoView would also move the outer one, if embedded),
+ * Scrolls what scrolls to an element. Only this page moves (scrollIntoView would also move the outer one, if embedded),
  * and it aims again once the page settles: closing the phone keyboard or folding sections changes heights midway.
  * @param {HTMLElement | null} el
  * @param {'start' | 'center'} align
@@ -91,13 +93,16 @@ export function scrollToElement(el, align = 'start') {
     const box = el.getBoundingClientRect();
     // The entry's header sticks to the top and would cover it
     const nav = $('#entry:not([hidden]) .entryhead')?.getBoundingClientRect().height || 0;
-    return Math.max(0, scrollY + (align === 'center' ? box.top - (innerHeight - box.height) / 2 : box.top - nav - 8));
+    const area = visibleArea();
+    const offset =
+      align === 'center' ? box.top - area.top - (area.height - box.height) / 2 : box.top - area.top - nav - 8;
+    return Math.max(0, scrollPosition() + offset);
   };
   const behavior = () => (reducedMotion() ? 'instant' : 'smooth');
-  requestAnimationFrame(() => window.scrollTo({ top: targetY(), behavior: behavior() }));
+  requestAnimationFrame(() => scrollToTop(targetY(), behavior()));
   cancelScroll();
   scrollTimer = setTimeout(() => {
     const y = targetY();
-    if (Math.abs(y - scrollY) > 4) window.scrollTo({ top: y, behavior: behavior() });
+    if (Math.abs(y - scrollPosition()) > 4) scrollToTop(y, behavior());
   }, 650);
 }

@@ -12,6 +12,7 @@ import { STEP_OF_MISSING, STEPS } from '../steps.js';
 import { preloadPlaces } from '../storage/places.js';
 import { fUnit, inUnit, offerUnit } from '../units.js';
 import { closeEntry, entryOpen, entryToFicha, openEntry } from './navigation.js';
+import { scrollToTop } from './scroller.js';
 
 const entry = {
   /** Index in `STEPS` of the step shown. */
@@ -43,7 +44,7 @@ function show(index) {
   entry.step = index;
   if (STEPS[index].id === 'place') preloadPlaces();
   callbacks.paint();
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  scrollToTop(0, 'instant');
   $('#entryTitle').focus({ preventScroll: true });
 }
 
