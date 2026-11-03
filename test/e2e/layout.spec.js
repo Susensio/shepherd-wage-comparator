@@ -1,8 +1,8 @@
 // Spacing and tap sizes: measured on the page, at phone width.
 
-import { expect, sample, test } from './fixtures.js';
+import { expect, openStep, sample, test } from './fixtures.js';
 
-const TAPPED = 'button:not(.linkbtn), .filebtn, .tabs button, .chip, .barbtn, summary';
+const TAPPED = 'button:not(.linkbtn), .filebtn, .tabs button, .ocard, .crow, .barbtn, summary';
 
 /** Visible tapped things under `root` that are shorter than 40 px. */
 const tooShort = (page, root = 'body') =>
@@ -29,6 +29,14 @@ test('buttons, tabs, chips, bar icons and fold titles are at least 40 px tall', 
   expect(await tooShort(page)).toEqual([]);
   await page.evaluate(() => app.openAccountPage());
   expect(await tooShort(page)).toEqual([]);
+});
+
+test('the steps of the entry have taps of at least 40 px', async ({ loaded: page }) => {
+  for (const id of ['place', 'when', 'pay', 'workday', 'home', 'trip', 'expenses']) {
+    await openStep(page, id);
+    expect(await tooShort(page, '#entry'), id).toEqual([]);
+    await page.locator('#entryClose').click();
+  }
 });
 
 test('Comparar: the sticky «Comparar por» row does not cover the legend under it', async ({ loaded: page }) => {

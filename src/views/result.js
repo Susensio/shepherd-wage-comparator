@@ -192,13 +192,17 @@ function breakdown(o, r, unit, third) {
 }
 
 /**
- * The whole result of an offer, or what is still missing to show it. `readOnly` (another shepherd's offer): nothing to
- * complete, negotiate or copy.
+ * The result of an offer in two parts: `head` (the headline, its stamp and the pills, or what is still missing) and
+ * `analysis` (the breakdown, the law and the workings; null while something is missing). `readOnly` (another
+ * shepherd's offer): nothing to complete, negotiate or copy.
  */
-export function resultView(o, r, { readOnly = false } = {}) {
+export function resultParts(o, r, { readOnly = false } = {}) {
   const shortfall = missing(o.terms);
   if (shortfall.length)
-    return html`<p class="empty">Para ver cuánto ${readOnly ? 'se gana' : 'ganas'} falta ${joinAnd(shortfall.map((id) => (readOnly ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`;
+    return {
+      head: html`<p class="empty">Para ver cuánto ${readOnly ? 'se gana' : 'ganas'} falta ${joinAnd(shortfall.map((id) => (readOnly ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`,
+      analysis: null,
+    };
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
   const { earnTip, earnedShown, html: breakdownView } = breakdown(o, r, unit, readOnly);
@@ -206,7 +210,7 @@ export function resultView(o, r, { readOnly = false } = {}) {
   const headline = unit in earnedShown ? fUnit(earnedShown[unit], unit) : money.figure(r.earnings.total);
   const year = actualYear(o.terms);
   const line = legalLine(o, r);
-  return html`${
+  const head = html`${
     year !== r.year
       ? html`<p class="year-warning">Esta oferta es de ${year} y aún no están incluidos el salario mínimo ni el IRPF de ${year}: las cuentas usan los de ${r.year}.</p>`
       : ''
@@ -218,13 +222,20 @@ export function resultView(o, r, { readOnly = false } = {}) {
         : nothing
     }</span>${otherUnits(r, unit)}
       ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}</div>
-    ${pills(o, r, readOnly)}
-    ${breakdownView}
+    ${pills(o, r, readOnly)}`;
+  const analysis = html`${breakdownView}
     ${legalSection(o, r, money, readOnly)}
     ${readOnly ? nothing : negotiationSection(o, r, money)}
     ${readOnly ? nothing : seasonEndSection(o, r)}
     <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r, readOnly)}</div></details>
     ${readOnly ? nothing : copyRow(line)}`;
+  return { head, analysis };
+}
+
+/** The whole result of an offer, or what is still missing to show it. */
+export function resultView(o, r, options = {}) {
+  const { head, analysis } = resultParts(o, r, options);
+  return html`${head}${analysis ?? nothing}`;
 }
 
 const copyRow = (line) =>

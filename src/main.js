@@ -1,23 +1,22 @@
 /** Startup. */
 
-import {
-  closeTemplates,
-  commit,
-  openTemplates,
-  paintAll,
-  paintCompare,
-  restoreStaticFolds,
-  scrollChipsNextPaint,
-  select,
-  templatesOpen,
-} from './app.js';
+import { commit, paintAll, paintCompare, restoreStaticFolds, select } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
 import { accountState, setUpAccountSection } from './ui/account-section.js';
-import { openAccountPage, openSettingsPage, returnAfterSignIn, showTab } from './ui/navigation.js';
+import { setUpEntry, startEntry } from './ui/entry.js';
+import {
+  openAccountPage,
+  openFicha,
+  openSettingsPage,
+  resetHistory,
+  resetViews,
+  returnAfterSignIn,
+  showTab,
+} from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
@@ -29,27 +28,27 @@ offers.start();
 for (const o of state.offers) defaultVacation(o.terms);
 fillLawFigures();
 restoreStaticFolds();
+resetHistory();
+setUpEntry({ paint: paintAll, select });
 setUpEvents();
 setUpTooltips();
 setUpPlaceField({ commit, paint: paintAll });
 showTab(store.get(KEY.tab, 'offers'));
-scrollChipsNextPaint();
 fillForm(active());
 fillSettings(state.config);
 paintAll();
-if (state.firstRun) openTemplates();
+if (state.firstRun) startEntry();
 
 accountState.subscribe((event) => {
   if (event === 'others') paintCompare();
   if (event === 'signedIn') returnAfterSignIn();
   if (event !== 'replaced') return;
-  // An empty account starts like a first visit, with the templates
-  if (state.placeholderId) openTemplates();
-  else if (templatesOpen()) closeTemplates();
+  // The offers were replaced: what was open may be gone. An empty account starts like a first visit, with the templates
+  resetViews();
   for (const o of state.offers) defaultVacation(o.terms);
   fillSettings(state.config);
-  scrollChipsNextPaint();
   select(state.activeId);
+  if (state.placeholderId) startEntry();
 });
 // Hidden, and no request, while storage/account-config.js has no project.
 setUpAccountSection().catch(console.error);
@@ -60,10 +59,14 @@ window.app = {
   active,
   calcOffer,
   select,
-  showTab,
+  showTab: (tab) => {
+    resetViews();
+    showTab(tab);
+  },
+  closeEntry: resetViews,
   openAccountPage,
   openSettingsPage,
-  closeTemplates,
+  openFicha,
   cardText,
   claimText,
 };

@@ -1,15 +1,17 @@
 // «Lo que te pagan»: the four answers, the questions that depend on them, and how saved offers read into them.
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, goStep, loadOffers, openStep, sample, startOffer, test } from './fixtures.js';
 
 const terms = (page) => page.evaluate(() => app.active().terms);
 const answer = (page, name, value) => page.check(`input[name=${name}][value=${value}]`);
 
-/** A new offer with a 4-month contract, the pay section open. */
+/** A new offer with a 4-month contract, on the pay step. */
 async function newOffer(page, duration = '4') {
-  await page.locator('.tcard').first().click();
+  await startOffer(page, 'when');
   await page.fill('#duration', duration);
+  await goStep(page, 'workday');
   await page.fill('#hoursPerDay', '9');
+  await goStep(page, 'pay');
   await page.fill('#payTotal', '2100');
   await answer(page, 'payPer', 'month');
 }
@@ -101,14 +103,18 @@ test('«en total» only with a duration', async ({ page }) => {
   const total = page.locator('input[name=payPer][value=total]');
   await expect(total).toBeAttached();
   await expect(page.locator('label', { has: total })).toBeVisible();
+  await goStep(page, 'when');
   await answer(page, 'durationUnit', 'unknown');
+  await goStep(page, 'pay');
   await expect(page.locator('label', { has: total })).toBeHidden();
 });
 
 test('a total with the duration cleared becomes a month of the same amount', async ({ page }) => {
   await newOffer(page);
   await answer(page, 'payPer', 'total');
+  await goStep(page, 'when');
   await answer(page, 'durationUnit', 'unknown');
+  await goStep(page, 'pay');
   expect(await terms(page)).toMatchObject({ payUnit: 'month', payAmount: 2100 });
   await expect(page.locator('input[name=payPer][value=month]')).toBeChecked();
 });
@@ -141,20 +147,19 @@ test('«Las libro, cobrando» is not offered on a temporary contract of 120 days
   const taken = page.locator('input[name=vacation][value=taken]');
   await expect(taken).toBeHidden();
   await expect(page.locator('#vacationHint')).toContainText('En contratos temporales de hasta 120 días');
-  await page.fill('#duration', '5');
+  await setDuration(page, '5');
   await expect(taken).toBeVisible();
-  await answer(page, 'durationUnit', 'days');
-  await page.fill('#duration', '120');
+  await setDuration(page, '120', 'days');
   await expect(taken).toBeHidden();
-  await page.fill('#duration', '121');
+  await setDuration(page, '121');
   await expect(taken).toBeVisible();
   // Only temporary contracts have the casual minimum: the others can take their vacation
-  await page.fill('#duration', '60');
+  await setDuration(page, '60');
   await expect(taken).toBeHidden();
   await answer(page, 'contract', 'seasonal');
   await expect(taken).toBeVisible();
   // A contract of a month or less, of any kind, ends before the vacation could be taken
-  await page.fill('#duration', '30');
+  await setDuration(page, '30');
   await expect(taken).toBeHidden();
   await expect(page.locator('#vacationHint')).toContainText('En contratos de un mes o menos');
 });
@@ -165,18 +170,27 @@ test('an offer that already takes its vacation keeps it, shown with a hint, when
   await newOffer(page, '6');
   await answer(page, 'contract', 'temporary');
   await answer(page, 'vacation', 'taken');
-  await page.fill('#duration', '2');
+  await setDuration(page, '2');
   expect((await terms(page)).vacation).toBe('taken');
   await expect(page.locator('input[name=vacation][value=taken]')).toBeChecked();
   await expect(page.locator('#vacationHint')).toContainText('elige otra opción');
 });
 
+/** Changes the duration on its step and comes back to the pay. */
+async function setDuration(page, value, unit) {
+  await goStep(page, 'when');
+  if (unit) await answer(page, 'durationUnit', unit);
+  await page.fill('#duration', value);
+  await goStep(page, 'pay');
+}
+
 test('«Una parte» without the part is missing, and the mark points at it', async ({ page }) => {
   await newOffer(page);
   await answer(page, 'payroll', 'part');
-  await page.click('[data-action=done]');
+  await page.evaluate(() => app.openFicha());
+  await expect(page.locator('.crow[data-step=pay]')).toContainText('Falta lo que va en nómina');
+  await page.locator('#result .empty [data-action=complete]').click();
   await expect(page.locator('#goMsg')).toHaveText('Falta lo que va en nómina.');
-  await expect(page.locator('#payPart')).toBeFocused();
   await expect(page.locator('.fld.missing')).toContainText('¿Cuánto va en nómina?');
 });
 
@@ -193,7 +207,6 @@ test('an offer saved with a payslip and en negro money keeps both when an answer
   await page.evaluate(async () => {
     const { ingestSaved } = await import('./src/saved.js');
     const { DEF_CFG } = await import('./src/offer.js');
-    app.closeTemplates();
     const { offers } = ingestSaved(
       {
         offers: [
@@ -217,6 +230,7 @@ test('an offer saved with a payslip and en negro money keeps both when an answer
     app.state.offers = offers;
     app.select('x');
   });
+  await openStep(page, 'pay');
   await expect(page.locator('input[name=payroll][value=part]')).toBeChecked();
   await expect(page.locator('#payPart')).toHaveValue('1400');
   await expect(page.locator('#payCash')).toContainText('Unos 300 € al mes van en negro');
@@ -226,12 +240,14 @@ test('an offer saved with a payslip and en negro money keeps both when an answer
 });
 
 test('what is missing points at the amount', async ({ page }) => {
-  await page.locator('.tcard').first().click();
+  await startOffer(page, 'when');
   await page.fill('#duration', '4');
+  await goStep(page, 'workday');
   await page.fill('#hoursPerDay', '9');
-  await page.click('[data-action=done]');
+  await goStep(page, 'expenses');
+  await page.locator('#entryNext').click();
+  await page.locator('#result [data-action=complete]').click();
   await expect(page.locator('#goMsg')).toHaveText('Falta lo que te pagan.');
-  await expect(page.locator('#payTotal')).toBeFocused();
   await expect(page.locator('.fld.missing')).toContainText('¿Cuánto te pagan?');
 });
 
@@ -256,6 +272,7 @@ const EXPECTED = {
 sample.offers.forEach((offer, index) => {
   test(`${offer.mine.name} loads into its answers`, async ({ page }) => {
     await loadOffers(page, sample, index);
+    await openStep(page, 'pay');
     const want = EXPECTED[offer.mine.name];
     await expect(page.locator(`input[name=payroll][value=${want.payroll}]`)).toBeChecked();
     await expect(page.locator(`input[name=payPer][value=${want.per}]`)).toBeChecked();

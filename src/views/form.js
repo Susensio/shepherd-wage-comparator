@@ -1,6 +1,6 @@
 /**
- * The offer form. Its markup is static, in index.html; this fills its fields from the offer, shows the fields that
- * apply and writes the hints and summaries that depend on the figures.
+ * The offer form, one section per step. Its markup is static, in index.html; this fills its fields from the offer,
+ * shows the fields that apply and writes the hints that depend on the figures.
  */
 
 import { html, render } from 'lit-html';
@@ -10,7 +10,7 @@ import { LAW } from '../law.js';
 import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
-import { areaLine, summaries, VACATION_SAYS } from '../text.js';
+import { areaLine, VACATION_SAYS } from '../text.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
@@ -227,7 +227,7 @@ function yearHint(o, r) {
 }
 
 /**
- * What changes in the form on every recalculation: the fields shown, the summaries and the hints.
+ * What changes in the form on every recalculation: the fields shown and the hints.
  * @param {object} o the active offer
  * @param {object} r its figures
  * @param {object[]} offers your offers, to warn about overlapping dates
@@ -244,26 +244,6 @@ export function paintForm(o, r, offers, places) {
   offerOnly.checked = noDate || !!o.mine.offerOnly;
   text('#offerOnlyHint', noDate ? `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.` : '');
   text('#vacationHint', vacationHint(o, r));
-  const s = summaries(o, r, places.index);
-  render(
-    [
-      ['Dónde', s.where],
-      ['Ganado', s.herd],
-      ['Tiempo', s.time],
-      ['Nómina', s.payroll],
-      ['En negro', s.b],
-      ['Casa y comida', s.housing],
-      ['Coche', s.car],
-      ['Contrato', contractOf(o.terms).stat],
-    ]
-      .filter(([, v]) => v)
-      .map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`),
-    $('#editInfo'),
-  );
-  for (const [k, v] of Object.entries(s)) {
-    const el = $(`#sum-${k}`);
-    if (el) el.textContent = v;
-  }
   paintPlace(o, places);
   text('#payHint', payHint(o, r));
   paintAnswers(o, r);

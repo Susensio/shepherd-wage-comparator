@@ -925,45 +925,6 @@ details.plg > summary:has(.stat)::after {
   margin-left: 0;
 }
 
-/* --- Offer data --- */
-.editwrap > summary {
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--ink);
-}
-.editwrap > summary::after {
-  display: none;
-}
-.editsum .sech {
-  border: 0;
-  padding: 0;
-  font-family: var(--f-display);
-  font-weight: 750;
-  font-stretch: 80%;
-  line-height: 1.1;
-}
-.editbtn {
-  flex: 0 0 auto;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 7px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-}
-/* Open, the top button is the same «Hecho» as the bottom one */
-.editwrap[open]:not(.closing) .editbtn {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-}
-.editbody {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding-top: 16px;
-}
 .editinfo {
   margin: -6px 0 0;
   display: grid;
@@ -1039,116 +1000,7 @@ section.others p {
   margin: 0;
   min-width: 0;
 }
-.namebar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: end;
-}
-.namebar .actions {
-  flex-wrap: nowrap;
-  gap: 6px;
-}
-.gores {
-  align-self: flex-start;
-}
-#results,
-.editor {
-  scroll-margin-top: calc(var(--navh, 60px) + 8px);
-}
 
-/* --- Offers (ear-tag chips) and templates --- */
-.offers {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 5;
-  background: var(--bg);
-  padding-block: 8px;
-  margin-block: -8px;
-  border-bottom: 1px solid var(--line);
-}
-.navrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chips {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 2px 6px;
-  scrollbar-width: thin;
-  --fade-l: 0px;
-  --fade-r: 0px;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--fade-l),
-    #000 calc(100% - var(--fade-r)),
-    transparent
-  );
-  mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
-}
-/* If there are more offers on one side, that edge fades: the JS sets --fade-l and --fade-r from the scroll position */
-.chip {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: var(--tap);
-  max-width: 220px;
-  text-align: left;
-  padding: 7px 12px;
-  border-radius: 14px 14px 8px 8px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  font-weight: 600;
-}
-.chip .cn {
-  max-width: 196px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13.5px;
-}
-.chip.incomplete .cn::after {
-  content: "";
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-left: 6px;
-  border-radius: 50%;
-  background: var(--c-cash);
-  vertical-align: middle;
-}
-.chip[aria-current="true"] {
-  background: var(--tag);
-  color: var(--tag-ink);
-  border-color: var(--tag);
-}
-.chip.add {
-  flex: 0 0 auto;
-  margin-bottom: 6px;
-  justify-content: center;
-  border-style: dashed;
-  color: var(--muted);
-  font-size: 14px;
-}
-.tpl {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
-}
 .welcome {
   display: flex;
   flex-direction: column;
@@ -1205,9 +1057,315 @@ section.others p {
 .tcard.blank {
   border-style: dashed;
 }
-/* While picking a template only the templates and the backup are shown (to restore your offers in another browser) */
-body.choosing :is(#main, #results, #backupNotice, .tabs) {
-  display: none !important;
+.tcard[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* --- The list of offers --- */
+.offers-list,
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ocard {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 64px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  font-weight: 400;
+}
+.ocard:hover {
+  border-color: var(--ink);
+}
+.oc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.oc-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--f-display);
+  font-stretch: 85%;
+  font-weight: 750;
+  font-size: 19px;
+  line-height: 1.15;
+}
+.oc-fig {
+  flex: 0 0 auto;
+  font-family: var(--f-num);
+  font-weight: 600;
+  font-size: 15px;
+}
+.oc-detail {
+  font-size: 13px;
+  color: var(--muted);
+}
+.oc-flag {
+  font-size: 13px;
+  font-weight: 600;
+}
+.newoffer {
+  align-self: stretch;
+  min-height: 48px;
+}
+
+/* --- The ficha --- */
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.fichahead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: -6px;
+}
+.fichahead h1 {
+  font-size: 26px;
+  overflow-wrap: anywhere;
+}
+.sechead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.conditions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.crows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.crow {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  font-weight: 400;
+}
+.crow + .crow {
+  border-top: 1px solid var(--line);
+}
+.crow:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.crow svg {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+}
+.ck {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.cv {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.crow.missing {
+  box-shadow: inset 3px 0 0 var(--c-cash);
+}
+.miss {
+  display: block;
+  color: var(--c-cash-t);
+  font-weight: 650;
+}
+.analysis-title {
+  margin-top: 6px;
+}
+.fichaend {
+  margin-top: 6px;
+}
+
+/* --- The guided entry: a screen of its own, with the header and the footer in view --- */
+body.on-entry .wrap {
+  display: none;
+}
+/* A first visit keeps the app bar, to sign in or restore a copy; a page opened from it replaces the entry meanwhile */
+body.on-entry.welcome .wrap {
+  display: flex;
+  padding-bottom: 0;
+}
+body.on-entry.welcome:not(.on-page) .wrap > :not(.appbar, .tip-slot) {
+  display: none;
+}
+body.on-entry.on-page .wrap {
+  display: flex;
+}
+body.on-entry.on-page #entry {
+  display: none;
+}
+body.in-ficha #intro {
+  display: none;
+}
+.entry {
+  max-width: 800px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.entryhead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.entrybar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px));
+}
+.entrybar .back {
+  margin-left: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+.entrystep {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.entryclose {
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.progress {
+  height: 4px;
+  background: var(--line);
+}
+.progress div {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--t) var(--ease);
+}
+.entrymain {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px));
+}
+#entryTitle {
+  font-size: 28px;
+  line-height: 1.05;
+  outline: 0;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.step fieldset {
+  gap: 18px 10px;
+}
+.herd {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.herd label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.step .opt {
+  min-height: 52px;
+  padding: 12px 14px;
+}
+.step .opt b {
+  font-size: 15px;
+}
+.opt > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.step .seg label {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 14.5px;
+}
+.entryfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.strip b {
+  font-family: var(--f-num);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.entryactions {
+  display: flex;
+  gap: 8px;
+}
+.entryactions button {
+  flex: 1 1 0;
+  min-height: 48px;
+  font-size: 15px;
+}
+.entryactions .pri {
+  flex: 2 1 0;
+}
+.told:empty {
+  display: none;
 }
 
 /* --- Result --- */

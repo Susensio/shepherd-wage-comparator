@@ -12,7 +12,6 @@ test('the Leyes tab is filled in', async ({ page }) => {
   );
   expect(unlinked).toBe(0);
   await page.evaluate(() => {
-    app.closeTemplates();
     app.showTab('laws');
   });
   const year = await page.evaluate(async () => Object.keys((await import('./src/law.js')).MIN_WAGE).at(-1));

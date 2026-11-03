@@ -99,7 +99,9 @@ test.describe('the settings page', () => {
       .locator('[data-panel=settings]')
       .getByRole('button', { name: /Volver/ })
       .click();
-    await expect(page.locator('[data-panel=offers]')).toBeVisible();
+    // A first visit goes back to the templates it was on
+    await expect(page.locator('#entry')).toBeVisible();
+    await expect(page.locator('[data-panel=settings]')).toBeHidden();
   });
 });
 

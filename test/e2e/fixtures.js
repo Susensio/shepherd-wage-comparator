@@ -14,16 +14,47 @@ export async function loadOffers(page, data, show = 1) {
       const { ingestSaved } = await import('./src/saved.js');
       const { DEF_CFG } = await import('./src/offer.js');
       const { saveConfig } = await import('./src/state.js');
-      app.closeTemplates();
+      app.closeEntry();
       const loaded = ingestSaved(data, { fallbackCfg: DEF_CFG });
       app.state.offers = loaded.offers;
       app.state.config = loaded.cfg;
       saveConfig();
       app.select(app.state.offers[show].id);
+      if (!document.body.classList.contains('on-page')) app.openFicha();
     },
     { data, show },
   );
 }
+
+/** The steps in the order of the entry. */
+const STEP_IDS = ['template', 'place', 'when', 'pay', 'workday', 'home', 'trip', 'expenses'];
+
+/** In the entry of a new offer, picks a template (the first by default, or `template`) and goes on to step `id`. */
+export async function startOffer(page, id = 'place', template = null) {
+  await page
+    .locator(template ? `.tcard[data-template=${template}]` : '.tcard')
+    .first()
+    .click();
+  for (let i = 1; i < STEP_IDS.indexOf(id); i++) await page.locator('#entryNext').click();
+  await expect(page.locator(`#entry .step[data-step=${id}]`)).toBeVisible();
+}
+
+/** In the entry of a new offer, goes forward or back to step `id`. */
+export async function goStep(page, id) {
+  const shown = async () => STEP_IDS.indexOf(await page.locator('#entry .step:visible').getAttribute('data-step'));
+  for (let at = await shown(); at !== STEP_IDS.indexOf(id); at = await shown())
+    await page.locator(at < STEP_IDS.indexOf(id) ? '#entryNext' : '#entryBack').click();
+}
+
+/** Opens one step of the active offer to change it, from its ficha. */
+export async function openStep(page, id) {
+  await page.evaluate(() => app.openFicha());
+  await page.locator(`.crow[data-step=${id}]`).click();
+  await expect(page.locator(`#entry .step[data-step=${id}]`)).toBeVisible();
+}
+
+/** Closes the step being edited, keeping what was typed. */
+export const saveStep = (page) => page.locator('#entryNext').click();
 
 export const test = base.extend({
   /** Every error the page throws, in any of the test's tabs. The test fails if there is one. */

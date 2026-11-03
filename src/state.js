@@ -102,6 +102,6 @@ export function load() {
   Object.assign(state, {
     config,
     cmpUnit: UNITS[unit] ? unit : 'day',
-    folds: { time: true, pay: true, breakdown: true, ...store.get(KEY.folds, {}) },
+    folds: { breakdown: true, ...store.get(KEY.folds, {}) },
   });
 }

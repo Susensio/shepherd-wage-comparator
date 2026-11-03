@@ -52,273 +52,26 @@
     <div class="actions"><button type="button" class="sm pri" data-action="download">Descargar copia</button><button type="button" class="sm" data-action="snoozeBackup">Ahora no</button></div>
     <p class="hint" id="noticeMsg" aria-live="polite"></p>
   </div>
-  <nav class="offers" aria-label="Tus ofertas">
-    <div class="navrow">
-      <div class="chips" id="chips"></div>
-      <button type="button" class="chip add" id="btnAdd" data-action="newOffer">+ Nueva</button>
-    </div>
-  </nav>
 
-  <section class="tpl" id="tplPanel" hidden aria-labelledby="tplTitle">
-    <div class="welcome" id="welcome" hidden>
-      <h2>¿Cuánto te pagan de verdad?</h2>
-      <p>En el pastoreo las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, la comida, las libranzas, el coche, las vacaciones «incluidas»… Apúntalas tal como te las proponen y mira cuánto ganas por hora, por día y por mes.</p>
-      <ul>
-        <li><b>Compara</b> varias ofertas y mira cuál te deja más.</li>
-        <li><b>Comprueba</b> si la nómina llega al salario mínimo y al plus de pernocta, y cuánto te deben si no.</li>
-        <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
-      </ul>
-      <p class="hint">Nadie más ve tus ofertas, salvo que las compartas.</p>
-      <p class="hint" id="signedOutNotice" role="status" hidden>Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.</p>
-    </div>
-    <h2 id="tplTitle">¿Qué tipo de trabajo es?</h2>
-    <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
-    <div class="tpl-grid" id="tplGrid"></div>
+  <section class="offers-list" id="offersList" aria-label="Tus ofertas">
+    <div class="cards" id="cards"></div>
+    <button type="button" class="pri newoffer" id="btnAdd" data-action="newOffer">+ Nueva oferta</button>
   </section>
 
-  <main id="main">
-    <section class="editor">
-      <form id="f" autocomplete="off" onsubmit="return false">
-        <details id="editWrap" class="editwrap">
-        <summary class="editsum"><span class="sech">Datos de la oferta</span><span class="editbtn" id="editBtn">Modificar</span></summary>
-        <div class="editbody">
-        <div class="namebar">
-          <label class="fld">Nombre de la oferta
-            <input type="text" id="name" name="name" placeholder="p. ej. Puerto de Castanesa, verano">
-          </label>
-          <div class="actions">
-            <button type="button" class="sm" data-action="duplicate">Duplicar</button>
-            <button type="button" class="sm danger" id="btnDel" data-action="deleteOffer">Borrar</button>
-          </div>
-        </div>
-
-        <details class="sec" data-fold="place">
-          <summary><span class="st">Dónde y qué ganado</span><span class="ss" id="sum-place"></span></summary>
-          <fieldset aria-label="Dónde y qué ganado">
-          <div class="fld full place-fld">
-            <label for="place">Pueblo</label>
-            <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. San Juan de Plan">
-            <ul class="suggest" id="placeList" role="listbox" aria-label="Pueblos" hidden></ul>
-            <p class="hint place-picked" id="placePicked" hidden><span id="placePickedText"></span> <button type="button" class="linkbtn" data-action="changePlace">Cambiar</button></p>
-            <p class="hint" id="placeHint"></p>
-          </div>
-          <label class="fld third">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep" placeholder="0"></label>
-          <label class="fld third">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats" placeholder="0"></label>
-          <label class="fld third">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="time">
-          <summary><span class="st">Tiempo de trabajo</span><span class="ss" id="sum-time"></span></summary>
-          <fieldset aria-label="Tiempo de trabajo">
-          <div class="fld half">
-            <label for="start">Empieza el</label>
-            <div class="clearable">
-              <input type="date" id="start" name="start">
-              <button type="button" class="clear-x" data-action="clearStart" data-show="hasStart" aria-label="Quitar la fecha de inicio">✕</button>
-            </div>
-          </div>
-          <div class="fld half">
-            <label for="end">Termina el</label>
-            <div class="clearable">
-              <input type="date" id="end">
-              <button type="button" class="clear-x" data-action="clearEnd" data-show="hasEnd" aria-label="Quitar la fecha de fin">✕</button>
-            </div>
-          </div>
-          <div class="fld full">
-            <label class="fld" for="duration">Duración del contrato</label>
-            <div class="combo">
-              <input class="n" type="text" inputmode="decimal" id="duration" name="duration" data-show="withDuration">
-              <div class="seg" role="radiogroup" aria-label="Duración en">
-                <label><input type="radio" name="durationUnit" value="months">meses</label>
-                <label><input type="radio" name="durationUnit" value="days">días</label>
-                <label><input type="radio" name="durationUnit" value="unknown">no lo sé</label>
-              </div>
-            </div>
-          </div>
-          <div class="fld full">
-            <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
-            <p class="hint" id="yearHint"></p>
-            <p class="hint" id="offerOnlyHint"></p>
-            <p class="hint overlap-warning" id="overlapHint"></p>
-          </div>
-          <label class="fld third">Horas al día<input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay"></label>
-          <div class="fld twothirds">
-            <span>¿Libras también los festivos?</span>
-            <div class="seg" role="radiogroup" aria-label="¿Libras también los festivos?">
-              <label><input type="radio" name="holidays" value="yes">Sí</label>
-              <label><input type="radio" name="holidays" value="no">No</label>
-            </div>
-          </div>
-          <p class="hint full">Festivos: unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, pon «No».</p>
-          <div class="fld full">
-            <label class="fld" for="daysOff">Libranzas (días libres, sin contar vacaciones)</label>
-            <div class="combo">
-              <input class="n" type="text" inputmode="decimal" id="daysOff" name="daysOff">
-              <div class="seg" role="radiogroup" aria-label="Libranzas por">
-                <label><input type="radio" name="daysOffUnit" value="week">a la semana</label>
-                <label><input type="radio" name="daysOffUnit" value="month">al mes</label>
-                <label data-show="withDuration"><input type="radio" name="daysOffUnit" value="total">en total</label>
-              </div>
-            </div>
-            <p class="hint" id="daysOffHint"></p>
-          </div>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="pay">
-          <summary><span class="st">Lo que te pagan</span><span class="ss" id="sum-pay"></span></summary>
-          <fieldset aria-label="Lo que te pagan">
-          <p class="told full" id="payTold" aria-live="polite"></p>
-          <div class="fld full">
-            <label class="ask" for="payTotal">¿Cuánto te pagan?</label>
-            <p class="hint">Todo junto, lo que te llega.</p>
-            <div class="combo">
-              <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
-              <div class="seg" role="radiogroup" aria-label="Por">
-                <label><input type="radio" name="payPer" data-answer="unit" value="day">al día</label>
-                <label><input type="radio" name="payPer" data-answer="unit" value="month">al mes</label>
-                <label data-show="withDuration"><input type="radio" name="payPer" data-answer="unit" value="total">en total</label>
-              </div>
-            </div>
-          </div>
-          <div class="fld full">
-            <span class="ask">¿Cuánto va en nómina?</span>
-            <div class="seg" role="radiogroup" aria-label="En nómina">
-              <label><input type="radio" name="payroll" data-answer="payroll" value="all">Todo</label>
-              <label><input type="radio" name="payroll" data-answer="payroll" value="min">El mínimo</label>
-              <label><input type="radio" name="payroll" data-answer="payroll" value="part">Una parte</label>
-              <label><input type="radio" name="payroll" data-answer="payroll" value="none">Sin contrato</label>
-            </div>
-            <div class="combo" data-show="payPart">
-              <input class="n" type="text" inputmode="decimal" id="payPart" data-answer="part" aria-label="Lo que va en nómina">
-              <span class="hint payper" id="payPartPer"></span>
-            </div>
-            <div class="seg" role="radiogroup" aria-label="Bruto o neto" data-show="payPart">
-              <label><input type="radio" name="payType" value="net">neto, lo que llega</label>
-              <label><input type="radio" name="payType" value="gross">bruto, como en la nómina</label>
-            </div>
-            <p class="hint" id="payHint"></p>
-            <p class="cashline" id="payCash" hidden></p>
-            <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
-          </div>
-          <div class="fld full" data-show="withContract">
-            <span class="ask">¿Qué contrato?</span>
-            <div class="seg" role="radiogroup" aria-label="Contrato">
-              <label><input type="radio" name="contract" value="temporary">Temporal</label>
-              <label><input type="radio" name="contract" value="seasonal">Fijo discontinuo</label>
-              <label><input type="radio" name="contract" value="permanent">Fijo</label>
-            </div>
-          </div>
-          <div class="fld full" data-show="withContract">
-            <span class="ask">¿Y las vacaciones?</span>
-            <div class="opts">
-              <label class="opt"><input type="radio" name="vacation" value="included"><b>Van dentro de lo que me pagan</b></label>
-              <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Me las pagan aparte, al acabar</b></label>
-              <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Las libro, cobrando</b></label>
-            </div>
-            <p class="hint" id="vacationHint"></p>
-          </div>
-          <div class="fld full" data-show="hasExtraPays">
-            <span class="ask">¿Y las pagas extra?</span>
-            <div class="seg" role="radiogroup" aria-label="Pagas extra">
-              <label><input type="radio" name="extraPays" value="included">Van dentro, prorrateadas</label>
-              <label><input type="radio" name="extraPays" value="separate">Dos pagas aparte</label>
-            </div>
-          </div>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="housing">
-          <summary><span class="st">Casa y comida</span><span class="ss" id="sum-housing"></span></summary>
-          <fieldset aria-label="Casa y comida">
-          <div class="fld half">
-            <span>¿Duermes en el monte?</span>
-            <div class="seg" role="radiogroup" aria-label="Pernocta">
-              <label><input type="radio" name="overnight" value="yes">Sí</label>
-              <label><input type="radio" name="overnight" value="no">No</label>
-            </div>
-          </div>
-          <div class="fld half">
-            <span>¿Te ponen casa?</span>
-            <div class="seg" role="radiogroup" aria-label="Casa">
-              <label><input type="radio" name="housing" value="yes">Sí</label>
-              <label><input type="radio" name="housing" value="no">No</label>
-            </div>
-          </div>
-          <p class="hint full" data-show="overnight">No suma dinero: sube el mínimo legal un <span data-law="overnightPct"></span> % (convenio).</p>
-          <label class="fld full" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
-          <div class="fld full">
-            <span>¿Qué comidas te dan?</span>
-            <div class="multi chips" role="group" aria-label="Comidas que te dan (puedes marcar varias)">
-              <label><input type="checkbox" name="mealBreakfast">Desayuno</label>
-              <label><input type="checkbox" name="mealSnack">Almuerzo</label>
-              <label><input type="checkbox" name="mealLunch">Comida</label>
-              <label><input type="checkbox" name="mealDinner">Cena</label>
-            </div>
-          </div>
-          <p class="hint full" id="mealsHint" data-show="showMeals"></p>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="car">
-          <summary><span class="st">Coche y desplazamientos</span><span class="ss" id="sum-car"></span></summary>
-          <fieldset aria-label="Coche y desplazamientos">
-          <div class="fld full">
-            <span>¿Cómo llegas al trabajo?</span>
-            <div class="seg" role="radiogroup" aria-label="Cómo llegas al trabajo">
-              <label><input type="radio" name="car" value="own">Coche propio</label>
-              <label><input type="radio" name="car" value="noCar">Sin coche propio</label>
-            </div>
-          </div>
-          <div class="fld full" data-show="trips">
-            <span>¿Cada cuánto haces el viaje?</span>
-            <div class="seg" role="radiogroup" aria-label="Cada cuánto haces el viaje">
-              <label><input type="radio" name="commute" value="daily">Ida y vuelta cada día</label>
-              <label><input type="radio" name="commute" value="liveIn">Solo al empezar y al acabar</label>
-            </div>
-            <p class="hint">«Solo al empezar y al acabar» es si vives allí.</p>
-          </div>
-          <label class="fld half" data-show="trips">Km a casa (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
-          <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada una, ida y vuelta.</span></label>
-          <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
-          <label class="fld half" data-show="kmRate">Te pagan por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
-          <p class="hint full" id="carHint"></p>
-          </fieldset>
-        </details>
-
-        <details class="sec" data-fold="others">
-          <summary><span class="st">Otros gastos e IRPF</span><span class="ss" id="sum-others"></span></summary>
-          <fieldset aria-label="Otros gastos e IRPF">
-          <label class="fld full">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
-          <div class="fld full" data-show="withContract">
-            <span>Retención de IRPF</span>
-            <div class="combo">
-              <div class="seg" role="radiogroup" aria-label="Modo IRPF">
-                <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
-                <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
-              </div>
-              <input type="text" inputmode="decimal" id="irpfManual" name="irpfManual" class="n pct" aria-label="Porcentaje de IRPF" data-show="irpfManual">
-            </div>
-          </div>
-          </fieldset>
-        </details>
-
-        <p class="hint missing-msg" id="goMsg" aria-live="polite"></p>
-        <button type="button" class="pri gores" id="btnGoRes" data-action="done">Hecho</button>
-        </div>
-        </details>
-        <dl class="editinfo" id="editInfo" data-action="edit"></dl>
-      </form>
+  <article class="ficha" id="ficha" hidden aria-label="Ficha de la oferta">
+    <button type="button" class="back" data-action="closeFicha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Ofertas</button>
+    <header class="fichahead">
+      <h1 id="fichaName"></h1>
+      <span class="hint">Ficha de la oferta</span>
+    </header>
+    <section class="results" id="results" aria-label="Resultados de la oferta">
+      <div class="result" id="result" aria-live="polite"></div>
     </section>
-
-  </main>
-
-  <section class="results" id="results" aria-label="Resultados de la oferta">
-    <div class="result" id="result" aria-live="polite"></div>
-  </section>
-
-
+    <div class="actions fichaend">
+      <button type="button" class="sm" data-action="duplicate">Duplicar</button>
+      <button type="button" class="sm danger" id="btnDel" data-action="deleteOffer">Borrar</button>
+    </div>
+  </article>
   </div>
 
   <div class="panel" data-panel="compare" hidden>
@@ -530,6 +283,273 @@
   </details>
 
   </div>
+</div>
+<div class="entry" id="entry" hidden>
+  <header class="entryhead">
+    <div class="entrybar">
+      <button type="button" class="back" id="entryBack" data-action="entryBack" aria-label="Atrás"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <span class="entrystep" id="entryCounter"></span>
+      <button type="button" class="linkbtn entryclose" id="entryClose" data-action="entryClose">Cerrar</button>
+    </div>
+    <div class="progress" aria-hidden="true"><div id="entryBar"></div></div>
+  </header>
+
+  <main class="entrymain">
+    <h2 id="entryTitle"></h2>
+
+    <section class="step" data-step="template">
+      <div class="welcome" id="welcome" hidden>
+        <h2>¿Cuánto te pagan de verdad?</h2>
+        <p>En el pastoreo las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, la comida, las libranzas, el coche, las vacaciones «incluidas»… Apúntalas tal como te las proponen y mira cuánto ganas por hora, por día y por mes.</p>
+        <ul>
+          <li><b>Compara</b> varias ofertas y mira cuál te deja más.</li>
+          <li><b>Comprueba</b> si la nómina llega al salario mínimo y al plus de pernocta, y cuánto te deben si no.</li>
+          <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
+        </ul>
+        <p class="hint">Nadie más ve tus ofertas, salvo que las compartas.</p>
+        <p class="hint" id="signedOutNotice" role="status" hidden>Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.</p>
+      </div>
+      <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
+      <div class="tpl-grid" id="tplGrid"></div>
+    </section>
+
+    <form id="f" autocomplete="off" onsubmit="return false">
+      <section class="step" data-step="place" hidden>
+        <fieldset aria-label="Dónde y qué ganado">
+        <div class="fld full place-fld">
+          <label class="ask" for="place">Pueblo</label>
+          <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. San Juan de Plan">
+          <ul class="suggest" id="placeList" role="listbox" aria-label="Pueblos" hidden></ul>
+          <p class="hint place-picked" id="placePicked" hidden><span id="placePickedText"></span> <button type="button" class="linkbtn" data-action="changePlace">Cambiar</button></p>
+          <p class="hint" id="placeHint"></p>
+        </div>
+        <div class="fld full">
+          <span class="ask">¿Qué ganado?</span>
+          <div class="herd">
+            <label>Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep" placeholder="0"></label>
+            <label>Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats" placeholder="0"></label>
+            <label>Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
+          </div>
+        </div>
+        <label class="fld full">Nombre de la oferta
+          <input type="text" id="name" name="name" placeholder="p. ej. Puerto de Castanesa, verano">
+          <span class="hint">Con él la reconoces en la lista.</span>
+        </label>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="when" hidden>
+        <fieldset aria-label="Cuándo y cuánto tiempo">
+        <div class="fld full">
+          <label class="ask" for="start">¿Cuándo empieza?</label>
+          <div class="clearable">
+            <input type="date" id="start" name="start">
+            <button type="button" class="clear-x" data-action="clearStart" data-show="hasStart" aria-label="Quitar la fecha de inicio">✕</button>
+          </div>
+        </div>
+        <div class="fld full">
+          <label class="ask" for="duration">¿Cuánto dura?</label>
+          <div class="combo">
+            <input class="n" type="text" inputmode="decimal" id="duration" name="duration" data-show="withDuration">
+            <div class="seg" role="radiogroup" aria-label="Duración en">
+              <label><input type="radio" name="durationUnit" value="months">meses</label>
+              <label><input type="radio" name="durationUnit" value="days">días</label>
+              <label><input type="radio" name="durationUnit" value="unknown">no lo sé</label>
+            </div>
+          </div>
+          <p class="hint">Sin duración se cuenta un mes.</p>
+        </div>
+        <div class="fld full">
+          <label for="end">Termina el</label>
+          <div class="clearable">
+            <input type="date" id="end">
+            <button type="button" class="clear-x" data-action="clearEnd" data-show="hasEnd" aria-label="Quitar la fecha de fin">✕</button>
+          </div>
+          <p class="hint">Se calcula con la duración. Si pones la fecha, la duración se ajusta.</p>
+        </div>
+        <div class="fld full">
+          <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
+          <p class="hint" id="yearHint"></p>
+          <p class="hint" id="offerOnlyHint"></p>
+          <p class="hint overlap-warning" id="overlapHint"></p>
+        </div>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="pay" hidden>
+        <fieldset aria-label="Lo que te pagan">
+        <p class="told full" id="payTold" aria-live="polite"></p>
+        <div class="fld full">
+          <label class="ask" for="payTotal">¿Cuánto te pagan?</label>
+          <p class="hint">Todo junto, lo que te llega.</p>
+          <div class="combo">
+            <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
+            <div class="seg" role="radiogroup" aria-label="Por">
+              <label><input type="radio" name="payPer" data-answer="unit" value="day">al día</label>
+              <label><input type="radio" name="payPer" data-answer="unit" value="month">al mes</label>
+              <label data-show="withDuration"><input type="radio" name="payPer" data-answer="unit" value="total">en total</label>
+            </div>
+          </div>
+        </div>
+        <div class="fld full">
+          <span class="ask">¿Cuánto va en nómina?</span>
+          <div class="opts" role="radiogroup" aria-label="En nómina">
+            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="all"><b>Todo</b></label>
+            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="min"><b>El salario mínimo</b></label>
+            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="part"><b>Una parte</b></label>
+            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="none"><b>Nada, sin contrato</b></label>
+          </div>
+          <div class="combo" data-show="payPart">
+            <input class="n" type="text" inputmode="decimal" id="payPart" data-answer="part" aria-label="Lo que va en nómina">
+            <span class="hint payper" id="payPartPer"></span>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Bruto o neto" data-show="payPart">
+            <label><input type="radio" name="payType" value="net">neto, lo que llega</label>
+            <label><input type="radio" name="payType" value="gross">bruto, como en la nómina</label>
+          </div>
+          <p class="hint" id="payHint"></p>
+          <p class="cashline" id="payCash" hidden></p>
+          <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
+        </div>
+        <div class="fld full" data-show="withContract">
+          <span class="ask">¿Qué contrato?</span>
+          <div class="seg" role="radiogroup" aria-label="Contrato">
+            <label><input type="radio" name="contract" value="temporary">Temporal</label>
+            <label><input type="radio" name="contract" value="seasonal">Fijo discontinuo</label>
+            <label><input type="radio" name="contract" value="permanent">Fijo</label>
+          </div>
+        </div>
+        <div class="fld full" data-show="withContract">
+          <span class="ask">¿Y las vacaciones?</span>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="vacation" value="included"><b>Van dentro de lo que me pagan</b></label>
+            <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Me las pagan aparte, al acabar</b></label>
+            <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Las libro, cobrando</b></label>
+          </div>
+          <p class="hint" id="vacationHint"></p>
+        </div>
+        <div class="fld full" data-show="hasExtraPays">
+          <span class="ask">¿Y las pagas extra?</span>
+          <div class="opts" role="radiogroup" aria-label="Pagas extra">
+            <label class="opt"><input type="radio" name="extraPays" value="included"><b>Van dentro, prorrateadas</b></label>
+            <label class="opt"><input type="radio" name="extraPays" value="separate"><b>Dos pagas aparte</b></label>
+          </div>
+        </div>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="workday" hidden>
+        <fieldset aria-label="Jornada y libranzas">
+        <div class="fld full">
+          <label class="ask" for="hoursPerDay">¿Cuántas horas al día?</label>
+          <input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay">
+          <p class="hint">Contando el camino con el ganado, no el de casa.</p>
+        </div>
+        <div class="fld full">
+          <label class="ask" for="daysOff">¿Cuántos días libras?</label>
+          <div class="combo">
+            <input class="n" type="text" inputmode="decimal" id="daysOff" name="daysOff">
+            <div class="seg" role="radiogroup" aria-label="Libranzas por">
+              <label><input type="radio" name="daysOffUnit" value="week">a la semana</label>
+              <label><input type="radio" name="daysOffUnit" value="month">al mes</label>
+              <label data-show="withDuration"><input type="radio" name="daysOffUnit" value="total">en total</label>
+            </div>
+          </div>
+          <p class="hint">Libranzas: días libres, sin contar las vacaciones.</p>
+        </div>
+        <div class="fld full">
+          <span class="ask">¿Libras también los festivos?</span>
+          <div class="seg" role="radiogroup" aria-label="¿Libras también los festivos?">
+            <label><input type="radio" name="holidays" value="yes">Sí</label>
+            <label><input type="radio" name="holidays" value="no">No</label>
+          </div>
+          <p class="hint">Unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, pon «No».</p>
+        </div>
+        <p class="told full" id="daysOffHint"></p>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="home" hidden>
+        <fieldset aria-label="Casa y comida">
+        <div class="fld full">
+          <span class="ask">¿Duermes en el monte?</span>
+          <div class="seg" role="radiogroup" aria-label="Pernocta">
+            <label><input type="radio" name="overnight" value="yes">Sí</label>
+            <label><input type="radio" name="overnight" value="no">No</label>
+          </div>
+          <p class="hint" data-show="overnight">En borda o cabaña. No suma dinero: sube el mínimo legal un <span data-law="overnightPct"></span> % (convenio).</p>
+        </div>
+        <div class="fld full">
+          <span class="ask">¿Te ponen casa?</span>
+          <div class="seg" role="radiogroup" aria-label="Casa">
+            <label><input type="radio" name="housing" value="yes">Sí</label>
+            <label><input type="radio" name="housing" value="no">No</label>
+          </div>
+        </div>
+        <label class="fld full" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
+        <div class="fld full">
+          <span class="ask">¿Qué comidas te dan?</span>
+          <div class="multi chips" role="group" aria-label="Comidas que te dan (puedes marcar varias)">
+            <label><input type="checkbox" name="mealBreakfast">Desayuno</label>
+            <label><input type="checkbox" name="mealSnack">Almuerzo</label>
+            <label><input type="checkbox" name="mealLunch">Comida</label>
+            <label><input type="checkbox" name="mealDinner">Cena</label>
+          </div>
+          <p class="hint" id="mealsHint" data-show="showMeals"></p>
+        </div>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="trip" hidden>
+        <fieldset aria-label="Coche y desplazamientos">
+        <div class="fld full">
+          <span class="ask">¿Cómo llegas al trabajo?</span>
+          <div class="opts" role="radiogroup" aria-label="Cómo llegas al trabajo">
+            <label class="opt"><input type="radio" name="car" value="own"><span><b>Con mi coche</b><span>Se cuentan los km, la gasolina y lo que te paguen por ellos.</span></span></label>
+            <label class="opt"><input type="radio" name="car" value="noCar"><span><b>Sin coche propio</b><span>No se cuentan gasolina ni desgaste.</span></span></label>
+          </div>
+        </div>
+        <div class="fld full" data-show="trips">
+          <span class="ask">¿Cada cuánto haces el viaje?</span>
+          <div class="opts" role="radiogroup" aria-label="Cada cuánto haces el viaje">
+            <label class="opt"><input type="radio" name="commute" value="daily"><b>Ida y vuelta cada día</b></label>
+            <label class="opt"><input type="radio" name="commute" value="liveIn"><span><b>Solo al empezar y al acabar</b><span>Es si vives allí.</span></span></label>
+          </div>
+        </div>
+        <label class="fld half" data-show="trips">Km a casa (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
+        <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada una, ida y vuelta.</span></label>
+        <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
+        <label class="fld half" data-show="kmRate">Te pagan por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
+        <p class="told full" id="carHint"></p>
+        </fieldset>
+      </section>
+
+      <section class="step" data-step="expenses" hidden>
+        <fieldset aria-label="Otros gastos e IRPF">
+        <label class="fld full">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
+        <div class="fld full" data-show="withContract">
+          <span class="ask">Retención de IRPF</span>
+          <div class="combo">
+            <div class="seg" role="radiogroup" aria-label="Modo IRPF">
+              <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
+              <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
+            </div>
+            <input type="text" inputmode="decimal" id="irpfManual" name="irpfManual" class="n pct" aria-label="Porcentaje de IRPF" data-show="irpfManual">
+          </div>
+        </div>
+        </fieldset>
+      </section>
+    </form>
+    <p class="hint missing-msg" id="goMsg" aria-live="polite"></p>
+  </main>
+
+  <footer class="entryfoot">
+    <p class="strip"><span id="stripLabel"></span><b class="n" id="stripFigure"></b></p>
+    <div class="entryactions">
+      <button type="button" id="entrySkip" data-action="entrySkip">Luego</button>
+      <button type="button" class="pri" id="entryNext" data-action="entryNext">Siguiente</button>
+    </div>
+  </footer>
 </div>
 </body>
 </html>

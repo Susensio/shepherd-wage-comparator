@@ -1,6 +1,6 @@
 /** Backups on the page: downloading or copying one, and adding the offers of one you saved. */
 
-import { closeTemplates, select } from '../app.js';
+import { select } from '../app.js';
 import { offers } from '../offers.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { planImport } from '../storage/backup.js';
@@ -65,7 +65,7 @@ export function loadBackup(content, msg) {
     fillSettings(state.config);
   }
   if (!plan.fresh.length) return true;
-  if (offers.addImported(plan.fresh)) closeTemplates();
+  offers.addImported(plan.fresh);
   select(state.activeId);
   return true;
 }

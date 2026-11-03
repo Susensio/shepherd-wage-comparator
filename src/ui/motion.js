@@ -32,41 +32,19 @@ export const fadeIn = (el) =>
     { opacity: 1, transform: 'none' },
   ]);
 
-/** «Datos de la oferta»: the button and the summary under it, depending on whether it is open. */
-export function syncEditor(measured) {
-  const open = /** @type {HTMLDetailsElement} */ ($('#editWrap')).open;
-  const info = $('#editInfo');
-  const appears = info.hidden && !open;
-  $('#editBtn').textContent = open ? 'Hecho' : 'Modificar';
-  info.hidden = open;
-  if (appears && !measured) fadeIn(info);
-}
-
-/** Opens or closes «Datos de la oferta» without animation (choosing an offer, pressing «Hecho»…). */
-export function openEditor(open) {
-  /** @type {HTMLDetailsElement} */ ($('#editWrap')).open = open;
-  syncEditor();
-}
-
 /**
  * Opens or closes a collapsible animating its height. The end state is measured without painting it, then animated
  * to. While closing it carries the «closing» class, so the arrow and the summary change at once, not at the end.
- * «Datos de la oferta» also animates the summary under it: one grows while the other shrinks and fades.
  * @param {HTMLDetailsElement & {_anims?: Animation[] | null, _animating?: boolean}} d
  * @param {boolean} opening
- * @returns {Animation | undefined} the main animation, if there is one
+ * @returns {Animation | undefined} the animation, if there is one
  */
 export function toggleFold(d, opening) {
-  const editor = d.id === 'editWrap';
-  const info = editor ? $('#editInfo') : null;
   for (const a of d._anims || []) a.cancel();
   const from = d.offsetHeight;
-  if (info) info.hidden = false;
-  const infoHeight = info?.offsetHeight || 0;
   d.open = opening;
   const to = d.offsetHeight;
   d.open = true; // the end state is measured without painting it; meanwhile, open
-  if (editor) $('#editBtn').textContent = opening ? 'Hecho' : 'Modificar';
   if (!opening) d.classList.add('closing');
   d._animating = true;
   d.style.overflow = 'hidden';
@@ -75,46 +53,26 @@ export function toggleFold(d, opening) {
   const visible = Math.max(0, innerHeight - d.getBoundingClientRect().top);
   const start = opening ? from : Math.min(from, Math.max(to, visible));
   const end = opening ? Math.min(to, Math.max(from, visible)) : to;
-  const options = { distance: Math.abs(end - start) };
-  const anims = [animate(d, { height: [`${start}px`, `${end}px`] }, options)];
-  if (info) {
-    // without the summary, its gap in the form goes too
-    const hiddenMargin = `${-6 - (Number.parseFloat(getComputedStyle(info.parentElement).rowGap) || 0)}px`;
-    const shownMargin = '-6px';
-    info.style.overflow = 'hidden';
-    anims.push(
-      animate(
-        info,
-        opening
-          ? { height: [`${infoHeight}px`, '0px'], opacity: [1, 0], marginTop: [shownMargin, hiddenMargin] }
-          : { height: ['0px', `${infoHeight}px`], opacity: [0, 1], marginTop: [hiddenMargin, shownMargin] },
-        options,
-      ),
-    );
-    anims.push(animate($('.editbody', d), { opacity: opening ? [0, 1] : [1, 0] }, { ...options, fill: 'forwards' }));
-  }
-  d._anims = anims.filter(Boolean);
+  const anim = animate(d, { height: [`${start}px`, `${end}px`] }, { distance: Math.abs(end - start) });
+  d._anims = anim ? [anim] : [];
   const finish = () => {
     d.style.overflow = '';
-    if (info) info.style.overflow = '';
     d.classList.remove('closing');
     d._animating = false;
     d._anims = null;
-    anims[2]?.cancel();
     saveFold(d);
   };
-  const settle = (measured) => {
+  if (!anim) {
     d.open = opening;
     finish();
-    if (editor) syncEditor(measured);
-  };
-  if (!anims[0]) {
-    settle(false);
     return undefined;
   }
-  anims[0].onfinish = () => settle(true);
-  anims[0].oncancel = finish;
-  return anims[0];
+  anim.onfinish = () => {
+    d.open = opening;
+    finish();
+  };
+  anim.oncancel = finish;
+  return anim;
 }
 
 let scrollTimer;
@@ -131,7 +89,8 @@ export function scrollToElement(el, align = 'start') {
   if (!el) return;
   const targetY = () => {
     const box = el.getBoundingClientRect();
-    const nav = $('.offers')?.getBoundingClientRect().height || 0;
+    // The entry's header sticks to the top and would cover it
+    const nav = $('#entry:not([hidden]) .entryhead')?.getBoundingClientRect().height || 0;
     return Math.max(0, scrollY + (align === 'center' ? box.top - (innerHeight - box.height) / 2 : box.top - nav - 8));
   };
   const behavior = () => (reducedMotion() ? 'instant' : 'smooth');
@@ -141,10 +100,4 @@ export function scrollToElement(el, align = 'start') {
     const y = targetY();
     if (Math.abs(y - scrollY) > 4) window.scrollTo({ top: y, behavior: behavior() });
   }, 650);
-}
-
-/** Keeps --navh at the height of the offers bar, which sticks to the top. */
-export function setNavHeight() {
-  const nav = $('.offers');
-  if (nav) document.documentElement.style.setProperty('--navh', `${nav.getBoundingClientRect().height}px`);
 }

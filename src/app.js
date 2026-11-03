@@ -1,74 +1,39 @@
 /**
  * The controller: paints every view from the state, and the things the page does that more than one event needs
- * (choosing an offer, the templates panel, «Hecho», what the tabs and pages paint).
+ * (opening an offer, what the tabs, pages, ficha and entry paint).
  */
 
 import { render } from 'lit-html';
-import { $, $$ } from './dom.js';
+import { $ } from './dom.js';
 import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing, workedOffers } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
+import { STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { MISSING_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
+import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } from './ui/entry.js';
 import { restoreFolds } from './ui/folds.js';
-import { cancelScroll, fadeIn, openEditor, scrollToElement, setNavHeight, toggleFold } from './ui/motion.js';
-import { onNavigate } from './ui/navigation.js';
+import { fadeIn } from './ui/motion.js';
+import { entryOpen, onNavigate, openFicha } from './ui/navigation.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
+import { fichaView } from './views/ficha.js';
 import { fillForm, fillVacation, paintForm } from './views/form.js';
-import { chipsView, templatesView } from './views/offers-bar.js';
-import { resultView } from './views/result.js';
+import { offersListView, templatesView } from './views/offers-list.js';
 import { sharedView } from './views/shared.js';
 
 /** What the page remembers while open, not saved. */
 const ui = {
   /** Fade in the form fields that appear: only after you touch the form, not when switching offers or starting. */
   animateFields: false,
-  /** Bring the active chip into view on the next paint. */
-  scrollChips: false,
-  /** The offer where you pressed «Hecho» with data missing: the missing fields are marked until you fill them in. */
-  askedToSee: /** @type {string | null} */ (null),
 };
 
 export const animateNextPaint = () => {
   ui.animateFields = true;
 };
-export const scrollChipsNextPaint = () => {
-  ui.scrollChips = true;
-};
-
-/* --- The offers bar --- */
-
-/** Fades the chips' edge on the side where there are more, to show they scroll; up to 28 px as you scroll. */
-export function chipEdges() {
-  const chips = $('#chips');
-  const max = Math.max(0, chips.scrollWidth - chips.clientWidth);
-  chips.style.setProperty('--fade-l', `${Math.min(28, chips.scrollLeft)}px`);
-  chips.style.setProperty('--fade-r', `${Math.min(28, max - chips.scrollLeft)}px`);
-}
-
-function paintChips() {
-  const chips = $('#chips');
-  const keep = chips.scrollLeft;
-  render(chipsView(myOffers(), state.activeId), chips);
-  const first = !!state.placeholderId;
-  $('nav.offers').hidden = first;
-  $('#welcome').hidden = !first;
-  $('#intro').hidden = first;
-  paintAccountStatus();
-  chips.scrollLeft = keep;
-  chipEdges();
-  const current = $('#chips [aria-current="true"]');
-  if (current && ui.scrollChips) {
-    const left = current.offsetLeft - chips.offsetLeft;
-    if (left < chips.scrollLeft || left + current.offsetWidth > chips.scrollLeft + chips.clientWidth)
-      chips.scrollLeft = Math.max(0, left - 16);
-    ui.scrollChips = false;
-  }
-}
 
 /* --- Painting --- */
 
@@ -83,10 +48,11 @@ const MISSING_FIELD = {
   vacation: 'input[name=vacation]',
 };
 
-/** Marks in the form what is missing to see the result, once you have asked to see it. */
+/** Marks in the step opened because something is missing in it what is missing there. */
 function markMissing() {
   const o = active();
-  const shortfall = ui.askedToSee === o.id ? missing(o.terms) : [];
+  const step = currentStep().id;
+  const shortfall = isAskingMissing() ? missing(o.terms).filter((id) => STEP_OF_MISSING[id] === step) : [];
   // Several things can point at one field (the pay questions have a single amount)
   for (const selector of new Set(Object.values(MISSING_FIELD)))
     $(selector)
@@ -183,17 +149,19 @@ function paintTimeline(all = compared()) {
 
 /** Repaints everything from the state. */
 export function paintAll() {
-  setTimeout(setNavHeight);
   const o = active();
   const r = calcOffer(o);
-  paintChips();
   needPlacesFor(o);
+  render(offersListView(myOffers().map((x) => ({ o: x, r: calcOffer(x) }))), $('#cards'));
+  $('#fichaName').textContent = o.mine.name || 'Sin nombre';
+  render(fichaView(o, r, placesIfLoaded()), $('#result'));
+  restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
   if (ui.animateFields) for (const el of appeared) fadeIn(el);
   ui.animateFields = false;
+  render(templatesView(chosenTemplate()), $('#tplGrid'));
+  if (entryOpen()) paintEntry(o, r);
   markMissing();
-  render(resultView(o, r), $('#result'));
-  restoreFolds($('#result'));
   paintCompare();
   paintBackup();
   paintAccountStatus();
@@ -205,82 +173,23 @@ export function commit() {
   paintAll();
 }
 
-/** Shows an offer: in the form and in the result. */
+/** Makes an offer the active one, in the form and in the ficha. */
 export function select(id) {
   defaultVacation(state.offers.find((o) => o.id === id).terms);
   offers.select(id);
   show();
 }
 
-/** Paints the active offer, in the form and in the result, without saving. */
+/** Paints the active offer, in the form and in the ficha, without saving. */
 export function show() {
   fillForm(active());
   paintAll();
 }
 
-/* --- Templates --- */
-
-/** While you pick a template, the offer and the rest are hidden (body.choosing, in the CSS). */
-function setFocusMode(on) {
-  document.body.classList.toggle('choosing', on);
-  $('#btnAdd').textContent = on ? '× Cancelar' : '+ Nueva';
-}
-
-export const templatesOpen = () => !$('#tplPanel').hidden;
-
-export function openTemplates() {
-  render(templatesView(), $('#tplGrid'));
-  $('#tplPanel').hidden = false;
-  setFocusMode(true);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (!state.placeholderId) $('#tplGrid button')?.focus({ preventScroll: true });
-}
-
-export function closeTemplates() {
-  $('#tplPanel').hidden = true;
-  setFocusMode(false);
-  if (state.placeholderId) {
-    offers.keepPlaceholder();
-    openEditor(true);
-    paintChips();
-  }
-}
-
-/* --- «Hecho» --- */
-
-/**
- * «Hecho». If something is missing it takes you there and stays open; if not, it folds the form and scrolls to the
- * result. From the top (the form's own title), the fold is animated first and then it scrolls; done together, the
- * target moves meanwhile and it overshoots.
- */
-export function done(fromTop) {
-  const o = active();
-  const shortfall = missing(o.terms);
-  const results = $('#results');
-  if (!shortfall.length) {
-    ui.askedToSee = null;
-    $('#goMsg').textContent = '';
-    /** @type {HTMLElement | null} */ (document.activeElement)?.blur?.();
-    if (fromTop) {
-      const folding = toggleFold(/** @type {HTMLDetailsElement} */ ($('#editWrap')), false);
-      (folding ? folding.finished : Promise.resolve()).catch(() => {}).then(() => scrollToElement(results));
-      return;
-    }
-    // Folding the form makes the result jump up: compensate so it stays put, then scroll to it
-    cancelScroll();
-    const before = results.getBoundingClientRect().top;
-    openEditor(false);
-    window.scrollTo({ top: Math.max(0, scrollY + results.getBoundingClientRect().top - before), behavior: 'instant' });
-    scrollToElement(results);
-    return;
-  }
-  ui.askedToSee = o.id;
-  markMissing();
-  const field = $(MISSING_FIELD[shortfall[0]]);
-  const section = /** @type {HTMLDetailsElement | null} */ (field.closest('details.sec'));
-  if (section) section.open = true;
-  scrollToElement(field.closest('.fld'), 'center');
-  field.focus({ preventScroll: true });
+/** Opens an offer's ficha. */
+export function openOffer(id) {
+  select(id);
+  openFicha();
 }
 
 /* --- Tabs --- */
@@ -292,23 +201,16 @@ onNavigate({
       paintTimeline(); // the trend fits the width, which is only known once shown
       if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
     }
-    if (tab === 'offers') {
-      ui.scrollChips = true;
-      paintChips();
-    }
   },
   pageOpened(fromPrompt) {
     paintBackup();
     paintAccountStatus({ chooser: fromPrompt });
   },
+  viewChanged: () => paintAll(),
+  entryDismissed: dismiss,
 });
 
 /** Opens the named collapsibles of the static page as you left them. */
 export const restoreStaticFolds = () => restoreFolds(document);
-
-/** The fields of «Datos de la oferta» that open with a new offer. */
-export const openFirstSections = () => {
-  for (const d of /** @type {HTMLDetailsElement[]} */ ($$('[data-fold=time],[data-fold=pay]'))) d.open = true;
-};
 
 export { fillVacation };

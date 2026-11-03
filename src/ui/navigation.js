@@ -1,4 +1,8 @@
-/** Where the reader is: the tab shown, the page (account, settings) open over it, and the way back from a page. */
+/**
+ * Where the reader is: the tab shown, the page (account, settings) open over it, and the way back from a page. Over
+ * the Ofertas tab, the list shows an offer's ficha, and the guided entry covers the whole screen. Each page, ficha
+ * and entry pushes a history entry, so the phone's Back goes one level up.
+ */
 
 import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
@@ -21,10 +25,19 @@ const where = {
   scrollBeforePage: 0,
 };
 
+/** Over the Ofertas tab. `ficha`: an offer's ficha, instead of the list. `entry`: the guided entry, over either. */
+const view = { ficha: false, entry: false };
+/** Where the list and the ficha were scrolled when something opened over them. */
+const scrolls = { list: 0, ficha: 0 };
+
 /** What the controller paints when a tab is shown or a page opened. */
 const hooks = {
   tabShown: /** @type {(tab: string) => void} */ (() => {}),
   pageOpened: /** @type {(fromPrompt: boolean) => void} */ (() => {}),
+  /** The ficha or the entry opened or closed. */
+  viewChanged: /** @type {() => void} */ (() => {}),
+  /** Back closed the entry: it is dismissed, not saved. */
+  entryDismissed: /** @type {() => void} */ (() => {}),
 };
 
 /** @param {Partial<typeof hooks>} given */
@@ -36,6 +49,8 @@ export const currentTab = () => where.tab;
 /** The page open over the tabs, or null. */
 export const openPageName = () => where.page;
 /** Whether the tab is what the reader sees: shown and no page over it. */
+export const fichaOpen = () => view.ficha;
+export const entryOpen = () => view.entry;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
@@ -90,10 +105,61 @@ export function closePage() {
   else leavePage();
 }
 
-/** Back (or forward) with a page open closes it. */
+/** Back (or forward) closes what is open on top: the entry, else the page, else the ficha. */
 export function onPopState() {
-  if (where.page) leavePage();
+  const kept = history.state ?? {};
+  if (view.entry && !kept.entry) {
+    hooks.entryDismissed();
+    go({ ficha: !!kept.ficha, entry: false }, 'none');
+  } else if (where.page && !kept.page) leavePage();
+  else if (view.ficha && !view.entry && !kept.ficha) go({ ficha: false, entry: false }, 'none');
 }
+
+/** Forgets history entries left from before a reload, whose views are gone. */
+export const resetHistory = () => history.replaceState(null, '');
+
+/**
+ * Changes what shows over the Ofertas tab, with its history entry: `push` a new one, `replace` this one, `back` to
+ * drop the one that was pushed (the popstate that follows finds nothing left to close), or `none` when Back did it.
+ * @param {{ ficha: boolean, entry: boolean }} next
+ * @param {'push' | 'replace' | 'back' | 'none'} how
+ */
+function go(next, how) {
+  const depth = (v) => (v.entry ? 2 : v.ficha ? 1 : 0);
+  const deeper = depth(next) > depth(view);
+  if (!view.entry) scrolls[view.ficha ? 'ficha' : 'list'] = scrollY;
+  const marker = next.entry ? { entry: true } : next.ficha ? { ficha: true } : null;
+  Object.assign(view, next);
+  if (how === 'push') history.pushState(marker, '');
+  else if (how === 'replace') history.replaceState(marker, '');
+  else if (how === 'back' && (history.state?.entry || history.state?.ficha)) history.back();
+  $('#offersList').hidden = view.ficha;
+  $('#ficha').hidden = !view.ficha;
+  $('#entry').hidden = !view.entry;
+  document.body.classList.toggle('on-entry', view.entry);
+  document.body.classList.toggle('in-ficha', view.ficha);
+  hooks.viewChanged();
+  const restore = !deeper && (how === 'back' || how === 'none');
+  window.scrollTo({ top: restore && !view.entry ? scrolls[view.ficha ? 'ficha' : 'list'] : 0, behavior: 'instant' });
+}
+
+/** An offer's ficha, in place of the list. */
+export function openFicha() {
+  showTab('offers');
+  if (!view.ficha) go({ ficha: true, entry: false }, 'push');
+}
+/** «Ofertas», on the ficha: back to the list. */
+export const closeFicha = () => go({ ficha: false, entry: false }, 'back');
+/** The guided entry, over the list (a new offer) or the ficha (one step of it). */
+export const openEntry = () => go({ ficha: view.ficha, entry: true }, 'push');
+/** Out of the entry, to what it covered. */
+export const closeEntry = () => go({ ficha: view.ficha, entry: false }, 'back');
+/** The last step of a new offer: its ficha, where the entry was. */
+export const entryToFicha = () => go({ ficha: true, entry: false }, view.ficha ? 'back' : 'replace');
+/** Every offer was replaced: whatever was open is gone. Leaves history as it is. */
+export const resetViews = () => go({ ficha: false, entry: false }, 'none');
+/** The ficha's offer is gone: the list, with no ficha to come back to. */
+export const leaveFicha = () => go({ ficha: false, entry: false }, 'replace');
 
 /** A sign-in completed: if it began at the tooltip, back to where it began. */
 export function returnAfterSignIn() {

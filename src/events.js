@@ -1,47 +1,30 @@
-/** Events: the offer form, «Tus datos», collapsibles, and every button, by its data-action. */
+/** Events: the offer form's steps, «Tus datos», collapsibles, and every button, by its data-action. */
 
-import {
-  animateNextPaint,
-  chipEdges,
-  closeTemplates,
-  commit,
-  done,
-  fillVacation,
-  openFirstSections,
-  openTemplates,
-  paintAll,
-  scrollChipsNextPaint,
-  select,
-  show,
-  templatesOpen,
-  viewShared,
-} from './app.js';
+import { animateNextPaint, commit, fillVacation, openOffer, paintAll, select, show, viewShared } from './app.js';
 import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
-import {
-  DAYS_PER_MONTH,
-  DEF_CFG,
-  defaultVacation,
-  HERD,
-  isoOf,
-  makeOffer,
-  newId,
-  parseDate,
-  sideOf,
-  TEMPLATES,
-} from './offer.js';
+import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, HERD, isoOf, newId, parseDate, sideOf } from './offer.js';
 import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { snoozeReminder } from './storage/bundle.js';
-import { preloadPlaces } from './storage/places.js';
 import { cardText, claimText } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { copyText, doubleTap } from './ui/dom.js';
+import { back, close, editStep, next, pickTemplate, startEntry, stepOfMissing } from './ui/entry.js';
 import { saveFold } from './ui/folds.js';
-import { openEditor, scrollToElement, setNavHeight, syncEditor, toggleFold } from './ui/motion.js';
-import { closePage, onPopState, openAccountPage, openSettingsPage, showTab } from './ui/navigation.js';
+import { scrollToElement, toggleFold } from './ui/motion.js';
+import {
+  closeFicha,
+  closePage,
+  fichaOpen,
+  leaveFicha,
+  onPopState,
+  openAccountPage,
+  openSettingsPage,
+  showTab,
+} from './ui/navigation.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
 import { fillForm, form, paintEnd } from './views/form.js';
@@ -169,13 +152,6 @@ function onSettingsInput(e) {
 
 /* --- Buttons --- */
 
-/** A new offer's name, not repeating one you have. */
-function uniqueName(base) {
-  let name = base;
-  for (let i = 2; state.offers.some((o) => o.mine.name === name); i++) name = `${base} ${i}`;
-  return name;
-}
-
 /** What the sheep says when tapped (never the same twice in a row). */
 const BLEATS = [
   '¡Beee!',
@@ -204,7 +180,10 @@ let deleteButton;
 
 /** Everything done with a button: the button says what with data-action, and data-id if it is about an offer. */
 const ACTIONS = {
-  tab: (b) => showTab(b.dataset.tab, true),
+  tab(b) {
+    if (fichaOpen()) closeFicha();
+    showTab(b.dataset.tab, true);
+  },
   openAccountPage: () => openAccountPage(),
   openSettingsPage: () => openSettingsPage(),
   openAccountFromPrompt: () => openAccountPage(true),
@@ -233,13 +212,7 @@ const ACTIONS = {
   viewShared: (b) => viewShared(b.dataset.id),
   closeShared: () => viewShared(null),
   refreshOthers: () => loadOthers(),
-  view(b) {
-    // to see the offer, without opening the form
-    showTab('offers');
-    scrollChipsNextPaint();
-    select(b.dataset.id);
-    scrollToElement($('#results'));
-  },
+  view: (b) => openOffer(b.dataset.id),
 
   beee(b) {
     const bubble = $('.beee', b);
@@ -253,28 +226,19 @@ const ACTIONS = {
   },
 
   /* Offers */
-  newOffer: () => (templatesOpen() ? closeTemplates() : openTemplates()),
-  choose(b) {
-    if (templatesOpen()) closeTemplates();
-    if (b.dataset.id === state.activeId) return;
+  openOffer: (b) => {
     deleteButton.reset();
-    scrollChipsNextPaint();
-    select(b.dataset.id);
+    openOffer(b.dataset.id);
   },
-  template(b) {
-    const template = TEMPLATES.find((t) => t.id === b.dataset.template);
-    const o = makeOffer(template?.terms, { ...template?.mine, name: uniqueName(template?.title || 'Oferta') });
-    offers.chooseTemplate(o);
-    closeTemplates();
-    scrollChipsNextPaint();
-    select(o.id);
-    openEditor(true);
-    openFirstSections();
-    const name = /** @type {HTMLInputElement} */ ($('#name'));
-    scrollToElement(name, 'center');
-    name.focus({ preventScroll: true });
-    name.select();
-  },
+  closeFicha,
+  newOffer: startEntry,
+  template: (b) => pickTemplate(b.dataset.template),
+  editStep: (b) => editStep(b.dataset.step, b.classList.contains('missing')),
+  complete: () => editStep(stepOfMissing(active().terms), true),
+  entryNext: next,
+  entrySkip: next,
+  entryBack: back,
+  entryClose: close,
   /** Without an end date the duration is not known. */
   clearEnd() {
     active().terms.durationUnit = 'unknown';
@@ -305,15 +269,10 @@ const ACTIONS = {
     const o = active();
     if (!deleteButton.confirm('¿Seguro?')) return;
     const backToWelcome = offers.remove(o);
+    leaveFicha();
     show();
-    if (backToWelcome) openTemplates();
+    if (backToWelcome) startEntry();
   },
-  edit: () => toggleFold(/** @type {HTMLDetailsElement} */ ($('#editWrap')), true),
-  complete() {
-    if (!(/** @type {HTMLDetailsElement} */ ($('#editWrap')).open)) openEditor(true);
-    done(false);
-  },
-  done: () => done(false), // «Hecho» at the bottom; the one at the top is the form's own title
 
   /* The result */
   copyCard: () =>
@@ -363,12 +322,6 @@ function onSummaryClick(e) {
   // In Ajustes the sections are always open: their title does not fold
   if (details.classList.contains('fixed')) {
     e.preventDefault();
-    return;
-  }
-  // «Hecho» at the top does the same as the one at the bottom
-  if (details.id === 'editWrap' && details.open) {
-    e.preventDefault();
-    done(true);
     return;
   }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -447,14 +400,5 @@ export function setUpEvents() {
     },
     true,
   );
-  $('#editWrap').addEventListener('toggle', () => {
-    if (/** @type {HTMLDetailsElement} */ ($('#editWrap')).open) preloadPlaces();
-    if (!(/** @type {any} */ ($('#editWrap'))._animating)) syncEditor();
-  });
-  $('#chips').addEventListener('scroll', chipEdges, { passive: true });
-  addEventListener('resize', () => {
-    setNavHeight();
-    chipEdges();
-  });
   setUpBackupFile();
 }
