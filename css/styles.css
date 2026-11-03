@@ -400,13 +400,6 @@ label.fld,
   outline-offset: 4px;
   border-radius: 6px;
 }
-.missing-msg {
-  color: var(--c-cash-t);
-  font-weight: 600;
-}
-.missing-msg:empty {
-  display: none;
-}
 .row-fld {
   display: flex;
   justify-content: space-between;

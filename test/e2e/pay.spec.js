@@ -190,7 +190,7 @@ test('«Una parte» without the part is missing, and the mark points at it', asy
   await page.evaluate(() => app.openFicha());
   await expect(page.locator('.crow[data-step=pay]')).toContainText('Falta lo que va en nómina');
   await page.locator('#result .empty [data-action=complete]').click();
-  await expect(page.locator('#goMsg')).toHaveText('Falta lo que va en nómina.');
+  await expect(page.locator('.fld.missing')).toContainText('Sin la parte en nómina no se puede calcular');
   await expect(page.locator('.fld.missing')).toContainText('¿Cuánto va en nómina?');
 });
 
@@ -247,7 +247,7 @@ test('what is missing points at the amount', async ({ page }) => {
   await goStep(page, 'expenses');
   await page.locator('#entryNext').click();
   await page.locator('#result [data-action=complete]').click();
-  await expect(page.locator('#goMsg')).toHaveText('Falta lo que te pagan.');
+  await expect(page.locator('.fld.missing')).toContainText('Sin lo que te pagan no se puede calcular');
   await expect(page.locator('.fld.missing')).toContainText('Todo junto, lo que te llega');
 });
 

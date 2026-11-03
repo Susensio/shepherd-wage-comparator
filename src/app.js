@@ -5,14 +5,13 @@
 
 import { render } from 'lit-html';
 import { $ } from './dom.js';
-import { joinAnd } from './format.js';
 import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing, workedOffers } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
 import { STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
-import { MISSING_TEXT, sharedLabels } from './text.js';
+import { sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } from './ui/entry.js';
 import { restoreFolds } from './ui/folds.js';
@@ -69,7 +68,6 @@ function markMissing() {
         'missing',
         shortfall.some((what) => MISSING_FIELD[what] === selector),
       );
-  $('#goMsg').textContent = shortfall.length ? `Falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}.` : '';
 }
 
 /** Other shepherds' offers are ranked (and your own with them) on terms alone, so like is compared with like. */

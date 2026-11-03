@@ -238,7 +238,7 @@ test('a ficha with data missing marks its row and opens that step', async ({ pag
   await expect(page.locator('#cards .ocard')).toContainText('Faltan datos');
   await page.locator('.conditions > summary').click();
   await page.locator('.crow.missing').first().click();
-  await expect(page.locator('#goMsg')).toHaveText(/^Falta/);
+  await expect(page.locator('.fld.missing .warn').first()).toBeVisible();
   await expect(page.locator('.fld.missing').first()).toBeVisible();
 });
 
