@@ -4,10 +4,10 @@
 
 Decided with the owner on 3 November 2026 from the mock-up https://claude.ai/artifact/N7vHMVyQnVBrRz76NxqzSi. Not started. Work on branch `ccr-32fbee75-oc1p8v`; publish when the owner says so.
 
-### Open with the owner
+### Settled with the owner
 
-- The page's name: «Zurrón» («Ofertas, cuentas y derechos del pastor») proposed; Majada, Cayado and Jornal shown as alternatives in the mock-up. «Comparador de salarios» today.
-- «Ficha» for the offer page and «Análisis» over its sections; whether every step gets «Luego».
+- The page is called «Zurrón sindical», subtitle «Por un pastoreo digno» (3 November 2026), instead of «Comparador de salarios».
+- The mock-up was approved as it is: «Ficha» for the offer page, «Análisis» over its sections, «Luego» on every step but the first.
 
 ### Plan
 
