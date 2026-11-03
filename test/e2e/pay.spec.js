@@ -29,7 +29,7 @@ test('«Todo»: the amount is the net payslip', async ({ page }) => {
   await expect(page.locator('#payTold')).toContainText('Te pagan 2.100 € al mes · todo en nómina · contrato');
 });
 
-test('«El salario mínimo»: the amount is the agreed total and en negro is worked out', async ({ page }) => {
+test('«El mínimo»: the amount is the agreed total and en negro is worked out', async ({ page }) => {
   await newOffer(page);
   await answer(page, 'payroll', 'min');
   expect(await terms(page)).toMatchObject({
@@ -69,7 +69,7 @@ for (const [type, label] of [
   });
 }
 
-test('«Nada, sin contrato»: everything is en negro and the contract questions go', async ({ page }) => {
+test('«Sin contrato»: everything is en negro and the contract questions go', async ({ page }) => {
   await newOffer(page);
   await answer(page, 'payroll', 'none');
   expect(await terms(page)).toMatchObject({

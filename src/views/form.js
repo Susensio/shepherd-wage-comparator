@@ -161,7 +161,7 @@ function paintAnswers(o, r) {
   };
   for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[data-answer]')))
     if (el.type === 'radio') el.checked = el.value === a[el.dataset.answer];
-  // The contract radios have no «none»: leaving «Nada, sin contrato» has to uncheck and check them
+  // The contract radios have no «none»: leaving «Sin contrato» has to uncheck and check them
   for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[name=contract]')))
     el.checked = el.value === o.terms.contract;
   set('#payTotal', inputValue(a.amount));

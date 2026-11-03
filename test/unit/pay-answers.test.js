@@ -213,7 +213,7 @@ test('the answers go to the terms by the mapping and read back', () => {
   assert.deepEqual(answersOf(read('part')), { payroll: 'part', amount: 60, unit: 'day', part: 40, partType: 'gross' });
   assert.deepEqual(answersOf(read('none')), { payroll: 'none', amount: 60, unit: 'day', part: '', partType: 'net' });
   assert.equal(read('none').contract, 'none');
-  // Leaving «Nada, sin contrato» gives the default contract back
+  // Leaving «Sin contrato» gives the default contract back
   const terms = read('none');
   writeAnswers(terms, { payroll: 'all', amount: 60, unit: 'day', part: '', partType: 'net' });
   assert.equal(terms.contract, 'temporary');

@@ -539,6 +539,13 @@ summary:focus-visible,
 .seg label:last-child {
   border-right: 0;
 }
+/* Very narrow screens: less side padding, so four short choices still fit one line */
+@media (max-width: 359px) {
+  .seg label {
+    padding-inline: 5px;
+    font-size: 13px;
+  }
+}
 .seg input,
 .multi input {
   position: absolute;

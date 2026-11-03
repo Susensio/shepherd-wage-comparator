@@ -63,9 +63,9 @@ The «Lo que te pagan» section of the form is a view over `terms`; it saves no 
 | Answer | Fields |
 |---|---|
 | Todo | `payrollMin: false`, `payType: 'net'`, `payAmount` and `payUnit` = amount and unit, `cashMode: 'amount'`, `cashAmount: ''` |
-| El salario mínimo | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
+| El mínimo (el salario mínimo) | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
 | Una parte | `payrollMin: false`, `payAmount` = the part, `payType` net or gross, `payUnit` = unit, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
-| Nada, sin contrato | `contract: 'none'`, `cashAmount` and `cashUnit` = amount and unit |
+| Sin contrato | `contract: 'none'`, `cashAmount` and `cashUnit` = amount and unit |
 
 En negro is never asked: it is the model's `split.cash`. «Una parte» without the part is missing (`payrollPart`), as the model would take all of it as en negro. The vacation answers are `terms.vacation`; «Las libro» is hidden when `vacationPayable`: the contract is casual (`isCasual`: temporary, `natDays` of the schedule up to `LAW.casualMaxDays`) or lasts a month or less of any kind (`isShortContract`), the cases where the vacation may be paid instead of taken. The same rule decides whether paying it is legal in `rights.js`, so an option the form hides is never the one the verdict asks for. It does not change the default `defaultVacation` sets (only a month or less); an offer that already has «Las libro» keeps it, with a hint.
 
