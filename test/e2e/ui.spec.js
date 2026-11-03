@@ -261,3 +261,18 @@ test('the chart over time shows only worked offers', async ({ loaded: page }) =>
   expect(shown).not.toContain('Puerto A');
   expect(shown).not.toContain('Temporada F');
 });
+
+test('«Quitar» empties the start date, and hides itself', async ({ page }) => {
+  await page.locator('.tcard').first().click();
+  const clear = page.getByRole('button', { name: 'Quitar la fecha de inicio' });
+  await expect(clear).toBeHidden();
+  await page.fill('#start', '2026-06-01');
+  await page.locator('#start').dispatchEvent('input');
+  await expect(clear).toBeVisible();
+  await clear.click();
+  expect(await page.evaluate(() => app.active().terms.start)).toBe('');
+  await expect(page.locator('#start')).toHaveValue('');
+  await expect(page.locator('#end')).toHaveValue('');
+  await expect(clear).toBeHidden();
+  await expect(page.locator('#f [name=offerOnly]')).toBeChecked();
+});

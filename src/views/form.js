@@ -15,6 +15,7 @@ import { areaLine, summaries, VACATION_SAYS } from '../text.js';
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
+  hasStart: (o) => !!o.terms.start,
   payPart: (o) => answersOf(o.terms).payroll === 'part',
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),

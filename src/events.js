@@ -275,6 +275,13 @@ const ACTIONS = {
     name.focus({ preventScroll: true });
     name.select();
   },
+  clearStart() {
+    active().terms.start = '';
+    /** @type {HTMLInputElement} */ ($('#start')).value = '';
+    paintEnd(active().terms);
+    animateNextPaint();
+    commit();
+  },
   duplicate() {
     const o = active();
     const copy = {

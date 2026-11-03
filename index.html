@@ -113,7 +113,10 @@
           <summary><span class="st">Tiempo de trabajo</span><span class="ss" id="sum-time"></span></summary>
           <fieldset aria-label="Tiempo de trabajo">
           <div class="fld half">
-            <label for="start">Empieza el</label>
+            <div class="labelrow">
+              <label for="start">Empieza el</label>
+              <button type="button" class="linkbtn tap" data-action="clearStart" data-show="hasStart" aria-label="Quitar la fecha de inicio">Quitar</button>
+            </div>
             <input type="date" id="start" name="start">
           </div>
           <div class="fld half">

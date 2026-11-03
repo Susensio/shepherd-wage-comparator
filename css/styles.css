@@ -707,6 +707,19 @@ button.danger {
   text-decoration: underline;
   font-size: inherit;
 }
+/* A text button in a label row: the tap area is the full height, the row is not */
+.labelrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.labelrow .linkbtn.tap {
+  min-height: var(--tap);
+  margin: -14px 0;
+  padding: 0 4px;
+}
 .filebtn {
   display: inline-flex;
   align-items: center;
