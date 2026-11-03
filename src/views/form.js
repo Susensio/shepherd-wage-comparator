@@ -224,10 +224,10 @@ function carHint(o, r) {
   return `Con tu coche: unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes (${trips}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ', más lo que mueves trabajando' : ''}). Consumo y gasolina, en «Tus datos».`;
 }
 
+/** Only what the dates leave out; the minimum wage itself is in the Leyes tab. */
 function yearHint(o, r) {
   const year = actualYear(o.terms);
-  const w = r.wage;
-  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está incluido: se usa el de ${r.year}. ` : ''}Salario mínimo de ${r.year}: ${fE(w.annual)} al año (${fE(w.annual / 14)} en 14 pagas), o ${fE(w.casual, 2)} por jornada en temporales de ${LAW.casualMaxDays} días o menos (${w.decree}).`;
+  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está incluido: se usa el de ${r.year}.` : ''}`.trim();
 }
 
 /**

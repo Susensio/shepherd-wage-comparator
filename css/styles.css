@@ -158,6 +158,9 @@ a {
   font-size: 12.5px;
   color: var(--muted);
 }
+.hint:empty {
+  display: none;
+}
 .kicker {
   margin: 0 0 6px;
   font-size: 12px;
@@ -321,7 +324,7 @@ a {
 form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 fieldset {
   border: 0;
@@ -329,11 +332,28 @@ fieldset {
   padding: 2px 0 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px 14px;
+  gap: 8px 10px;
 }
+/* On a phone: six columns, so fields can share a row as halves (.half), thirds (.third) or two thirds */
 @media (max-width: 560px) {
   fieldset {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  fieldset > * {
+    grid-column: span 6;
+  }
+  fieldset > .half {
+    grid-column: span 3;
+  }
+  fieldset > .third {
+    grid-column: span 2;
+  }
+  fieldset > .twothirds {
+    grid-column: span 4;
+  }
+  /* Fields sharing a row line their controls up at the bottom when the labels wrap differently */
+  fieldset > :is(.half, .third, .twothirds) > :is(input, .seg, .multi) {
+    margin-top: auto;
   }
 }
 .full {
@@ -342,7 +362,7 @@ fieldset {
 .fld {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 label.fld,
@@ -534,7 +554,7 @@ summary:focus-visible,
 .opts {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .opt,
 .multi label {
@@ -552,11 +572,12 @@ summary:focus-visible,
   display: grid;
   grid-template-columns: 20px 1fr;
   gap: 8px;
-  align-items: start;
-  padding: 10px 12px;
+  align-items: center;
+  padding: 8px 12px;
+  min-height: var(--tap);
 }
 .opt input {
-  margin: 3px 0 0;
+  margin: 0;
   accent-color: var(--accent);
 }
 .opt b {
@@ -598,6 +619,29 @@ summary:focus-visible,
 }
 .multi label:has(input:checked) {
   font-weight: 650;
+}
+/* A lone checkbox takes the whole row */
+.multi:has(> label:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Chips: choices that fit in a row; checked is shown by the filled chip */
+.multi.chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+.multi.chips label {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 8px 10px;
+  min-height: var(--tap);
+}
+.multi.chips label::before,
+.multi.chips label:has(input:checked)::before {
+  content: none;
+}
+.multi.chips label:has(input:checked) {
+  background: var(--ink);
+  color: var(--bg);
 }
 .multi label:has(input:checked)::before {
   content: "✓";
@@ -719,7 +763,7 @@ details.sec {
   border-top: 1px solid var(--line);
 }
 details.sec > summary {
-  padding: 12px 2px;
+  padding: 2px 2px;
 }
 details.sec .st,
 details.sec > summary {
@@ -759,7 +803,7 @@ details.sec[open]:not(.closing) .ss {
   opacity: 0;
 }
 details.sec[open] {
-  padding-bottom: 16px;
+  padding-bottom: 12px;
 }
 details.sec > :not(summary) + :not(summary) {
   margin-top: 12px;
@@ -939,10 +983,9 @@ section.others p {
   gap: 10px;
   align-items: end;
 }
-@media (max-width: 480px) {
-  .namebar {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.namebar .actions {
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 .gores {
   align-self: flex-start;

@@ -97,24 +97,28 @@
           <fieldset aria-label="Dónde y qué ganado">
           <div class="fld full place-fld">
             <label for="place">Pueblo</label>
-            <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. Yebra de Basa">
+            <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. San Juan de Plan">
             <ul class="suggest" id="placeList" role="listbox" aria-label="Pueblos" hidden></ul>
             <p class="hint place-picked" id="placePicked" hidden><span id="placePickedText"></span> <button type="button" class="linkbtn" data-action="changePlace">Cambiar</button></p>
             <p class="hint" id="placeHint"></p>
-            <p class="hint">Si compartes la oferta, se ven el municipio, la provincia y el ganado; el pueblo, no.</p>
+            <p class="hint">Al compartir la oferta, el pueblo no se ve.</p>
           </div>
-          <label class="fld">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep"></label>
-          <label class="fld">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats"></label>
-          <label class="fld">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle"></label>
+          <label class="fld third">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep"></label>
+          <label class="fld third">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats"></label>
+          <label class="fld third">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle"></label>
           </fieldset>
         </details>
 
         <details class="sec" data-fold="time">
           <summary><span class="st">Tiempo de trabajo</span><span class="ss" id="sum-time"></span></summary>
           <fieldset aria-label="Tiempo de trabajo">
-          <div class="fld full">
+          <div class="fld half">
             <label for="start">Empieza el</label>
             <input type="date" id="start" name="start">
+          </div>
+          <div class="fld half">
+            <label for="end">Termina el</label>
+            <input type="date" id="end">
           </div>
           <div class="fld full">
             <label class="fld" for="duration">Duración del contrato</label>
@@ -128,15 +132,20 @@
             </div>
           </div>
           <div class="fld full">
-            <label for="end">Termina el</label>
-            <input type="date" id="end" aria-describedby="endHint">
-            <p class="hint" id="endHint">Pon la fecha de fin o la duración: la otra se calcula sola.</p>
-            <p class="hint" id="yearHint"></p>
             <div class="multi"><label><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label></div>
+            <p class="hint" id="yearHint"></p>
             <p class="hint" id="offerOnlyHint"></p>
             <p class="hint overlap-warning" id="overlapHint"></p>
           </div>
-          <label class="fld">Horas por día trabajado<input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay"></label>
+          <label class="fld third">Horas por día trabajado<input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay"></label>
+          <div class="fld twothirds">
+            <span>¿Libras también los festivos?</span>
+            <div class="seg" role="radiogroup" aria-label="¿Libras también los festivos?">
+              <label><input type="radio" name="holidays" value="yes">Sí</label>
+              <label><input type="radio" name="holidays" value="no">No</label>
+            </div>
+            <p class="hint">Unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, «No».</p>
+          </div>
           <div class="fld full">
             <label class="fld" for="daysOff">Libranzas (días libres, sin contar vacaciones)</label>
             <div class="combo">
@@ -148,14 +157,6 @@
               </div>
             </div>
             <p class="hint" id="daysOffHint"></p>
-          </div>
-          <div class="fld full">
-            <span>¿Libras también los festivos?</span>
-            <div class="seg" role="radiogroup" aria-label="¿Libras también los festivos?">
-              <label><input type="radio" name="holidays" value="yes">Sí</label>
-              <label><input type="radio" name="holidays" value="no">No</label>
-            </div>
-            <p class="hint">Son unos <span data-law="holidaysPerYear"></span> al año. Si ya los cuentas en las libranzas, pon «No».</p>
           </div>
           </fieldset>
         </details>
@@ -207,9 +208,9 @@
           <div class="fld full" data-show="withContract">
             <span class="ask">¿Y las vacaciones?</span>
             <div class="opts">
-              <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><div><b>Me las pagan aparte, al acabar</b><span>Trabajas esos días y te los pagan al acabar, además de lo pactado.</span></div></label>
-              <label class="opt"><input type="radio" name="vacation" value="included"><div><b>Van dentro de lo que me pagan</b><span>Trabajas esos días y no se cobran aparte. Lo más habitual.</span></div></label>
-              <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><div><b>Las libro, cobrando</b><span>Libras esos días, cobrando.</span></div></label>
+              <label class="opt"><input type="radio" name="vacation" value="included"><b>Van dentro de lo que me pagan</b></label>
+              <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Me las pagan aparte, al acabar</b></label>
+              <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Las libro, cobrando</b></label>
             </div>
             <p class="hint" id="vacationHint"></p>
           </div>
@@ -226,25 +227,25 @@
         <details class="sec" data-fold="housing">
           <summary><span class="st">Casa y comida</span><span class="ss" id="sum-housing"></span></summary>
           <fieldset aria-label="Casa y comida">
-          <div class="fld full">
-            <span>¿Duermes en el monte (borda, cabaña)?</span>
+          <div class="fld half">
+            <span>¿Duermes en el monte?</span>
             <div class="seg" role="radiogroup" aria-label="Pernocta">
               <label><input type="radio" name="overnight" value="no">No</label>
               <label><input type="radio" name="overnight" value="yes">Sí</label>
             </div>
-            <p class="hint" data-show="overnight">No suman dinero a la oferta, pero suben el mínimo legal: por convenio, pernoctar fuera por pastoreo se paga con al menos un <span data-law="overnightPct"></span> % extra.</p>
           </div>
-          <div class="fld">
+          <div class="fld half">
             <span>¿Te ponen casa?</span>
             <div class="seg" role="radiogroup" aria-label="Casa">
               <label><input type="radio" name="housing" value="no">No</label>
               <label><input type="radio" name="housing" value="yes">Sí</label>
             </div>
           </div>
-          <label class="fld" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
-          <div class="fld">
+          <p class="hint full" data-show="overnight">No suma dinero a la oferta, pero sube el mínimo legal: por convenio, pernoctar fuera por pastoreo se paga con al menos un <span data-law="overnightPct"></span> % extra.</p>
+          <label class="fld full" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
+          <div class="fld full">
             <span>¿Qué comidas te dan?</span>
-            <div class="multi" role="group" aria-label="Comidas que te dan (puedes marcar varias)">
+            <div class="multi chips" role="group" aria-label="Comidas que te dan (puedes marcar varias)">
               <label><input type="checkbox" name="mealBreakfast">Desayuno</label>
               <label><input type="checkbox" name="mealSnack">Almuerzo</label>
               <label><input type="checkbox" name="mealLunch">Comida</label>
@@ -264,7 +265,6 @@
               <label><input type="radio" name="car" value="own">Coche propio</label>
               <label><input type="radio" name="car" value="noCar">Sin coche propio</label>
             </div>
-            <p class="hint" data-show="noCar">No se cuentan gasolina ni desgaste.</p>
           </div>
           <div class="fld full" data-show="trips">
             <span>¿Cada cuánto haces el viaje?</span>
@@ -274,10 +274,10 @@
             </div>
             <p class="hint">«Solo al empezar y al acabar» es si vives allí.</p>
           </div>
-<label class="fld" data-show="trips">Km de casa al trabajo (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
-          <label class="fld" data-show="tripsHome">Veces que bajas a casa al mes, cuando libras<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada bajada cuenta ida y vuelta. Si no bajas, déjalo vacío.</span></label>
-          <label class="fld" data-show="ownCar">Km que haces trabajando con tu coche, por día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Si mueves el ganado o vas entre fincas con tu coche. Si no, déjalo vacío.</span></label>
-          <label class="fld" data-show="kmRate">Te pagan por km (€/km)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
+<label class="fld half" data-show="trips">Km de casa al trabajo (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
+          <label class="fld half" data-show="tripsHome">Veces que bajas a casa al mes, cuando libras<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada bajada cuenta ida y vuelta. Si no bajas, déjalo vacío.</span></label>
+          <label class="fld half" data-show="ownCar">Km que haces trabajando con tu coche, por día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Si mueves el ganado o vas entre fincas con tu coche. Si no, déjalo vacío.</span></label>
+          <label class="fld half" data-show="kmRate">Te pagan por km (€/km)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
           <p class="hint full" id="carHint"></p>
           </fieldset>
         </details>
@@ -285,8 +285,7 @@
         <details class="sec" data-fold="others">
           <summary><span class="st">Otros gastos e IRPF</span><span class="ss" id="sum-others"></span></summary>
           <fieldset aria-label="Otros gastos e IRPF">
-          <label class="fld">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses"></label>
-          <p class="hint full">Móvil, pienso de tus perros, ropa de trabajo…</p>
+          <label class="fld full">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
           <div class="fld full" data-show="withContract">
             <span>Retención de IRPF</span>
             <div class="combo">
