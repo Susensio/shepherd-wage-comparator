@@ -61,7 +61,9 @@ test('their offers appear with the sharer, and terms-only is forced on', async (
   await expect(page.locator('.lr.other').first()).toContainText('otro pastor');
   await expect(page.locator('input[name=termsOnly]')).toBeChecked();
   await expect(page.locator('input[name=termsOnly]')).toBeDisabled();
-  await expect(page.locator('#cmpBlk .cmp-opts + .hint')).toContainText('se comparan solo las condiciones');
+  await expect(page.locator('#cmpBlk .cmp-opts + .hint')).toContainText(
+    'se comparan sin desplazamientos ni gastos de nadie',
+  );
   await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
   await expect(page.locator('.lr.other')).toHaveCount(0);
 });

@@ -389,8 +389,8 @@ export function setUpEvents() {
       state.showOfferOnly = el.checked;
       paintAll();
     }
-    if (el.name === 'moneyOnly') {
-      state.moneyOnly = el.checked;
+    if (el.name === 'sortBy') {
+      state.moneyOnly = el.value === 'money';
       paintAll();
     }
     if (el.name === 'termsOnly') {

@@ -27,25 +27,29 @@ const unitPicker = (unit) =>
 function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
   const hint = [
     forced
-      ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
+      ? 'Con ofertas de otros pastores se comparan sin desplazamientos ni gastos de nadie.'
       : termsOnly
-        ? 'Solo las condiciones: sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
+        ? 'Sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
         : '',
     offerOnlyCount && !showOfferOnly
       ? offerOnlyCount === 1
-        ? 'Se oculta 1 que solo era una oferta.'
-        : `Se ocultan ${offerOnlyCount} que solo eran ofertas.`
+        ? 'Se oculta 1 que no trabajaste.'
+        : `Se ocultan ${offerOnlyCount} que no trabajaste.`
       : '',
   ]
     .filter(Boolean)
     .join(' ');
-  return html`<div class="multi chips cmp-opts">${
-    offerOnlyCount
-      ? html`<label><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Las de solo oferta</label>`
-      : nothing
-  }<label><input type="checkbox" name="moneyOnly" .checked=${moneyOnly}>Solo lo que ganas</label><label><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Solo las condiciones</label></div>${
-    hint ? html`<p class="hint">${hint}</p>` : nothing
-  }`;
+  const sortBy = (value, text) =>
+    html`<label><input type="radio" name="sortBy" value=${value} .checked=${moneyOnly === (value === 'money')}>${text}</label>`;
+  return html`<div class="cmp-opts">
+    <div class="view"><span class="view-l">Ordenar por</span><div class="seg" role="radiogroup" aria-label="Ordenar por">${sortBy('paro', 'Ganas y paro')}${sortBy('money', 'Solo ganas')}</div></div>
+    ${
+      offerOnlyCount
+        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las que no trabajaste</label>`
+        : nothing
+    }
+    <label class="check"><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Sin tus desplazamientos ni gastos</label>
+  </div>${hint ? html`<p class="hint">${hint}</p>` : nothing}`;
 }
 
 /** Whether to rank the offers other shepherds share, and how loading them went. Only offered when they can be read. */

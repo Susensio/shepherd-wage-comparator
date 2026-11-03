@@ -349,7 +349,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
   const toggle = page.locator('input[name=showOfferOnly]');
   await toggle.uncheck();
   await expect(rows).toHaveCount(6);
-  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2 que solo eran ofertas.');
+  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2 que no trabajaste.');
   await expect(page.locator('#cmpBlk .lr[data-id=o1]')).toHaveCount(0);
   await toggle.check();
   await expect(rows).toHaveCount(8);

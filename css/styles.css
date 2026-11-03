@@ -3516,22 +3516,13 @@ details.plg > summary .stat.dt b {
 .cmp-opts {
   margin-top: 12px;
 }
-.multi.chips.cmp-opts label {
-  flex: 0 1 auto;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
+.cmp-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.multi.chips.cmp-opts label:has(input:checked) {
-  background: var(--surface);
-  color: var(--ink);
-  font-weight: 650;
-}
-.multi.chips.cmp-opts label:has(input:checked)::before {
-  content: "✓";
-  width: auto;
-  height: auto;
-  border: 0;
+.cmp-opts .view {
+  margin-bottom: 4px;
 }
 .cmp-opts label:has(input:disabled) {
   opacity: 0.6;
@@ -3614,9 +3605,6 @@ details.plg > summary .stat.dt b {
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
     padding: 2px;
-  }
-  .newoffer {
-    order: -1;
   }
   .ocard[aria-current="true"] {
     border-color: var(--ink);
