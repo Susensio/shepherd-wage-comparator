@@ -3441,3 +3441,18 @@ details.plg > summary .stat.dt b {
     max-width: 640px;
   }
 }
+
+/* Wide screens: the account tooltip floats under its button instead of pushing the page down */
+@media (min-width: 1024px) {
+  .tip-slot {
+    position: relative;
+    height: 0;
+    margin-bottom: 0;
+    z-index: 20;
+  }
+  .tip-slot .tip {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
