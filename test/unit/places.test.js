@@ -3,15 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import {
-  articleFirst,
-  buildIndex,
-  editDistance,
-  fold,
-  MAX_SUGGESTIONS,
-  placeOfTerms,
-  searchPlaces,
-} from '../../src/places.js';
+import { articleFirst, buildIndex, fold, MAX_SUGGESTIONS, placeOfTerms, searchPlaces } from '../../src/places.js';
 import { createPlacesLoader, defersPreload, PLACES_VERSION } from '../../src/storage/places.js';
 
 const real = JSON.parse(readFileSync(new URL(`../../data/places-${PLACES_VERSION}.json`, import.meta.url), 'utf8'));
@@ -61,9 +53,9 @@ test('the built list has no trailing articles', () => {
   );
 });
 
-test('search: starts with, then word start, then contains; accents and case do not matter', () => {
+test('search: words start or whole; the municipality name finds its places; accents and case do not matter', () => {
   const index = buildIndex(small);
-  assert.deepEqual(names(index, 'AINSA'), ['Aínsa', 'Mediano Aínsa', 'Ribainsa']);
+  assert.deepEqual(names(index, 'AINSA'), ['Aínsa', 'Mediano Aínsa', 'Ribainsa', 'Sobrarbe']);
   assert.deepEqual(names(index, 'sur'), ['Zaragoza Sur']);
 });
 
@@ -78,15 +70,15 @@ test('search: shorter names first within a group', () => {
   assert.deepEqual(names(index, 'zara'), ['Zaragoza', 'Zaragoza Sur']);
 });
 
-test('search: shorter names first in the contains group too', () => {
+test('search: text inside a word is not matched, only word starts', () => {
   const index = buildIndex({
     ...small,
     places: [
-      ['Ribainsa Alta', 0],
-      ['Ribainsa', 0],
+      ['Ribainsa Alta', 1],
+      ['Ribainsa', 1],
     ],
   });
-  assert.deepEqual(names(index, 'ains'), ['Ribainsa', 'Ribainsa Alta']);
+  assert.deepEqual(names(index, 'ains'), []);
 });
 
 test('search: a result names the village, its municipality and province', () => {
@@ -276,14 +268,6 @@ test('the real list finds Jabierre, in Aínsa-Sobrarbe, for «Javierre de Olsón
   const [first] = searchPlaces(buildIndex(real), 'Javierre de Olsón');
   assert.equal(first.name, 'Jabierre');
   assert.equal(first.municipality, 'Aínsa-Sobrarbe');
-});
-
-test('edit distance counts changed, added, removed and swapped letters, and stops past the limit', () => {
-  assert.equal(editDistance('javierre', 'jabierre', 2), 1);
-  assert.equal(editDistance('benasqe', 'benasque', 2), 1);
-  assert.equal(editDistance('jaca', 'jcaa', 1), 1);
-  assert.equal(editDistance('kitten', 'sitting', 3), 3);
-  assert.equal(editDistance('jaca', 'zaragoza', 1), 2);
 });
 
 test('the real list forgives typos', () => {

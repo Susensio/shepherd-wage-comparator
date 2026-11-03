@@ -1,5 +1,7 @@
 /** Spanish places for the location field: the compact list (data/places-*.json) as a searchable index. No DOM, no network. */
 
+import MiniSearch from 'minisearch';
+
 /**
  * The file's shape. Indexes point into the lists before them.
  * @typedef {{
@@ -35,6 +37,29 @@ export function articleFirst(name) {
 
 export const MAX_SUGGESTIONS = 8;
 const MIN_QUERY = 2;
+/** Shortest query word matched with mistakes; shorter ones («de», «la») must match exactly or are left out. */
+const MIN_FUZZY = 4;
+
+/** Words of a name or query: «Aínsa-Sobrarbe» → ainsa, sobrarbe. */
+const tokenize = (text) => text.split(/[\s\-',()/]+/).filter(Boolean);
+
+/** Mistakes allowed in a word: one up to 7 letters, two from 8. */
+const allowedMistakes = (word) => (word.length >= 8 ? 2 : word.length >= MIN_FUZZY ? 1 : 0);
+
+/** Name matches count three times a municipality match. */
+const NAME_BOOST = 3;
+
+/** @param {{ name: string, municipality: string }[]} documents */
+function buildSearcher(documents) {
+  const searcher = new MiniSearch({
+    fields: ['name', 'municipality'],
+    tokenize,
+    processTerm: fold,
+    searchOptions: { prefix: true, fuzzy: allowedMistakes, boost: { name: NAME_BOOST }, combineWith: 'OR' },
+  });
+  searcher.addAll(documents);
+  return searcher;
+}
 
 /**
  * The searchable index of a places file.
@@ -47,88 +72,26 @@ export function buildIndex(file) {
     province: file.provinces[province][1],
     provinceCode: file.provinces[province][0],
   }));
+  const rows = file.places.map(([name, municipality]) => ({ name, municipality }));
   return {
     municipalities,
     /** @type {Map<string, string>} province code → name */
     provinces: new Map(file.provinces),
     byCode: new Map(municipalities.map((m) => [m.municipalityCode, m])),
-    rows: file.places.map(([name, municipality]) => {
-      const folded = fold(name);
-      return { folded, words: wordsOf(folded), name, municipality };
-    }),
-    /** Each distinct word of the names, measured once per search instead of once per place */
-    get words() {
-      const words = new Set(this.rows.flatMap((row) => row.words));
-      Object.defineProperty(this, 'words', { value: [...words] });
-      return this.words;
-    },
+    rows,
+    searcher: buildSearcher(
+      rows.map(({ name, municipality }, id) => ({ id, name, municipality: municipalities[municipality].municipality })),
+    ),
   };
 }
 
 /** @typedef {ReturnType<typeof buildIndex>} PlacesIndex */
 
-/** The words of a folded name, for fuzzy matching. */
-const wordsOf = (folded) => folded.split(/[\s\-',()/]+/).filter(Boolean);
-
-/** Shortest query word matched with mistakes; shorter ones («de», «la») must match exactly or are left out. */
-const MIN_FUZZY = 4;
-/** Mistakes allowed in a word: one up to 7 letters, two from 8. */
-const allowedMistakes = (word) => (word.length >= 8 ? 2 : 1);
-
 /**
- * Edits (a letter changed, added, removed, or two swapped) from `a` to `b`, or `max + 1` once it is sure to be more.
- * @param {string} a
- * @param {string} b
- * @param {number} max
- */
-export function editDistance(a, b, max) {
-  if (Math.abs(a.length - b.length) > max) return max + 1;
-  if (b.length + 1 > rowSize) growRows(b.length + 1);
-  let before = rowA;
-  let previous = rowB;
-  let current = rowC;
-  for (let j = 0; j <= b.length; j++) previous[j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    current[0] = i;
-    let best = i;
-    for (let j = 1; j <= b.length; j++) {
-      let d = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d = Math.min(d, before[j - 2] + 1);
-      current[j] = d;
-      if (d < best) best = d;
-    }
-    if (best > max) return max + 1;
-    [before, previous, current] = [previous, current, before];
-  }
-  return previous[b.length];
-}
-
-// Three rows of the distance table, reused: a search measures thousands of words and should not allocate for each
-let rowSize = 64;
-let rowA = new Uint16Array(rowSize);
-let rowB = new Uint16Array(rowSize);
-let rowC = new Uint16Array(rowSize);
-function growRows(size) {
-  rowSize = size;
-  rowA = new Uint16Array(size);
-  rowB = new Uint16Array(size);
-  rowC = new Uint16Array(size);
-}
-
-/** Mistakes between a typed word and a place's word, read whole or as the start of a longer one (still typing). */
-function wordDistance(typed, word, max) {
-  if (word.length < typed.length - max) return max + 1;
-  const whole = word.length <= typed.length + max ? editDistance(typed, word, max) : max + 1;
-  if (whole === 0 || word.length <= typed.length) return whole;
-  return Math.min(whole, editDistance(typed, word.slice(0, typed.length), max));
-}
-
-/**
- * Up to eight places for what was typed: names starting with it first, then those with a word starting with it,
- * then those containing it; shorter names first within each group. If that leaves room, names close to what was
- * typed, word by word, with spelling mistakes («Jabierre» for «Javierre», «Jaka»): those matching more words first,
- * then those in a municipality where the other words also match a place («Javierre de Olsón»: Jabierre and Olsón,
- * both in Aínsa-Sobrarbe), then the first word's, then the fewest mistakes.
+ * Up to eight places for what was typed, as MiniSearch ranks them: words still being typed match as prefixes, and
+ * words with spelling mistakes («Jabierre» for «Javierre») still match. Places matching more of the typed words
+ * come first, then those in a municipality where the other words also match a place («Javierre de Olsón»: Jabierre
+ * and Olsón, both in Aínsa-Sobrarbe), then the earlier typed word, then the better score.
  * @param {PlacesIndex} index
  * @param {string} query
  * @returns {Place[]}
@@ -136,74 +99,24 @@ function wordDistance(typed, word, max) {
 export function searchPlaces(index, query) {
   const wanted = fold(query);
   if (wanted.length < MIN_QUERY) return [];
-  const found = matches(index.rows, wanted);
-  const rows = found.length >= MAX_SUGGESTIONS ? found : [...found, ...closeTo(index, wanted, new Set(found))];
-  return rows.slice(0, MAX_SUGGESTIONS).map((row) => ({ name: row.name, ...index.municipalities[row.municipality] }));
-}
-
-/** Rows containing `wanted`, best first. */
-function matches(rows, wanted) {
-  const starts = [];
-  const words = [];
-  const inside = [];
-  for (const row of rows) {
-    const at = row.folded.indexOf(wanted);
-    if (at < 0) continue;
-    if (at === 0) starts.push(row);
-    else if (/[\s\-'(]/.test(row.folded[at - 1])) words.push(row);
-    else inside.push(row);
-  }
-  const byLength = (a, b) => a.folded.length - b.folded.length;
-  return [...starts.sort(byLength), ...words.sort(byLength), ...inside.sort(byLength)];
-}
-
-/** Rows whose words are close to the typed words, best first; none of those in `skip`. */
-function closeTo(index, wanted, skip) {
-  const typed = wordsOf(wanted).filter((word) => word.length >= MIN_FUZZY);
-  if (!typed.length) return [];
-  // Per typed word: the place words within its mistakes, and how many
-  const near = typed.map((word) => {
-    const max = allowedMistakes(word);
-    const close = new Map();
-    for (const own of index.words) {
-      const d = wordDistance(word, own, max);
-      if (d <= max) close.set(own, d);
-    }
-    return close;
-  });
-  const hits = [];
-  for (const row of index.rows) {
-    if (skip.has(row) || !row.words.some((own) => near.some((close) => close.has(own)))) continue;
-    let words = 0;
-    let mistakes = 0;
-    let first = typed.length;
-    typed.forEach((_, i) => {
-      let best = Number.POSITIVE_INFINITY;
-      for (const own of row.words) best = Math.min(best, near[i].get(own) ?? best);
-      if (!Number.isFinite(best)) return;
-      words += 1;
-      mistakes += best;
-      first = Math.min(first, i);
-    });
-    if (words) hits.push({ row, words, mistakes, first });
-  }
-  // A municipality where several typed words each match a place: «Javierre de Olsón» → Jabierre and Olsón
+  // «de» and «la» between words would match half the list; the last word is still being typed, so it stays
+  const typed = tokenize(wanted).filter((word, i, words) => word.length > MIN_QUERY || i === words.length - 1);
+  const hits = index.searcher.search(typed.join(' '));
   const wordsIn = new Map();
   for (const hit of hits) {
-    const set = wordsIn.get(hit.row.municipality) ?? new Set();
-    set.add(hit.first);
-    wordsIn.set(hit.row.municipality, set);
+    const { municipality } = index.rows[hit.id];
+    wordsIn.set(municipality, new Set([...(wordsIn.get(municipality) ?? []), ...hit.queryTerms]));
   }
-  const shared = (hit) => wordsIn.get(hit.row.municipality).size;
+  const shared = (hit) => wordsIn.get(index.rows[hit.id].municipality).size;
+  const first = (hit) => Math.min(...hit.queryTerms.map((term) => typed.indexOf(term)));
   hits.sort(
     (a, b) =>
-      b.words - a.words ||
-      shared(b) - shared(a) ||
-      a.first - b.first ||
-      a.mistakes - b.mistakes ||
-      a.row.folded.length - b.row.folded.length,
+      b.queryTerms.length - a.queryTerms.length || shared(b) - shared(a) || first(a) - first(b) || b.score - a.score,
   );
-  return hits.map((hit) => hit.row);
+  return hits.slice(0, MAX_SUGGESTIONS).map(({ id }) => {
+    const row = index.rows[id];
+    return { name: row.name, ...index.municipalities[row.municipality] };
+  });
 }
 
 /**
