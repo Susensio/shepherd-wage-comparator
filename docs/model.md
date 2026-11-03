@@ -40,6 +40,7 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 
 Two rules, and each extra hour counts once.
 
+- **Paid days:** a wage «al día» is paid for the whole days worked (`daysWorked`, rounded) plus the public holidays and vacation taken off, which are paid too (`paidDays` in `model/time.js`). With nothing taken off, pay per day worked is exactly the daily wage.
 - **Extra days:** days worked above the due workdays (the contract's days minus weekly rest, public holidays and vacation taken). Each is valued as a normal workday at the minimum wage.
 - **Overtime:** hours above the normal workday, on every day worked, valued at the minimum hourly wage.
 - Whatever is paid above the legal minimum, on payroll and in cash, covers the extra days first and the overtime after.

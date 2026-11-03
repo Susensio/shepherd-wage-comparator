@@ -81,6 +81,10 @@ export function schedule(terms) {
   // Whole days when there is a duration: days off per month are an average, but nobody works half a day (91.9 → 92)
   const daysExact = Math.max(0, (natDays - vacationTaken - holidaysOff) * workFrac);
   const daysWorked = noDuration ? daysExact : Math.round(daysExact);
+  // Days the daily wage is paid: those worked (whole, as above) plus the holidays and vacation taken, which are paid too
+  // (ET art. 37.2 and 38). Built on the rounded days so a wage «al día» comes out per worked day exactly when nothing is
+  // taken off.
+  const paidDays = daysWorked + (vacationTaken + holidaysOff) * workFrac;
   const daysOffTotal = Math.max(0, (natDays - vacationTaken) * (1 - workFrac));
   const perMonth = (x) => (months > 0 ? x / months : 0);
   return {
@@ -92,6 +96,7 @@ export function schedule(terms) {
     vacationDays,
     vacationTaken,
     daysWorked,
+    paidDays,
     daysOffTotal,
     daysOffMonth: perMonth(daysOffTotal),
     workedPerMonth: perMonth(daysWorked),

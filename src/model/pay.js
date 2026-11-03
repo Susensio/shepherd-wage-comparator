@@ -57,9 +57,9 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
               ? amount / time.months
               : 0
           : amount / 12;
-  // Per day: the daily wage for each paid day. With a date, months are counted as on the payslip and do not have
-  // 30.4 days: multiplying by months would inflate or shrink the pay.
-  let base = terms.payUnit === 'day' ? amount * time.workFrac * time.natDays : monthly * time.months;
+  // Per day: the daily wage for each paid day (`paidDays`). With a date, months are counted as on the payslip and do
+  // not have 30.4 days: multiplying by months would inflate or shrink the pay.
+  let base = terms.payUnit === 'day' ? amount * time.paidDays : monthly * time.months;
   let extraPays =
     terms.extraPays === 'separate' && !['year', 'total'].includes(terms.payUnit) ? (monthly * 2 * time.months) / 12 : 0;
   // A vacation day: the month's salary divided by 30, as payslips do; never below a day at the minimum wage, which

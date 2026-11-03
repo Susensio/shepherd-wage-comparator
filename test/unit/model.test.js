@@ -90,8 +90,27 @@ test('vacation included in the daily wage, or paid at the end', () => {
   const temporary = { contract: 'temporary', duration: 3, payAmount: 80, payUnit: 'day', extraPays: 'included' };
   const included = figures({ ...temporary, vacation: 'included' });
   const atEnd = figures({ ...temporary, vacation: 'paidAtEnd' });
-  near(included.pay.gross, 80 * included.time.natDays * (5 / 7), 1, 'included: daily wage × paid days');
-  near(atEnd.pay.gross, 80 * atEnd.time.natDays * (5 / 7) + atEnd.pay.vacationPay, 1, 'at the end: plus the vacation');
+  near(included.pay.gross, 80 * included.time.paidDays, 0.01, 'included: daily wage × paid days');
+  near(atEnd.pay.gross, 80 * atEnd.time.paidDays + atEnd.pay.vacationPay, 0.01, 'at the end: plus the vacation');
+});
+
+test('a daily wage is paid for the whole days worked, plus the days off that are paid', () => {
+  const base = {
+    contract: 'seasonal',
+    duration: 90,
+    durationUnit: 'days',
+    payAmount: 75,
+    payUnit: 'day',
+    payType: 'gross',
+    extraPays: 'included',
+  };
+  // 90 days at 6 a week is 77.14 days: 77 are worked, and 77 are paid
+  const nothingOff = figures({ ...base, daysOff: 1, daysOffUnit: 'week', holidays: 'no', vacation: 'included' });
+  assert.equal(nothingOff.time.paidDays, nothingOff.time.daysWorked);
+  near(nothingOff.pay.gross / nothingOff.time.daysWorked, 75, 0.001, 'exactly the daily wage per day worked');
+  // Holidays taken off are paid on top of the days worked
+  const holidaysOff = figures({ ...base, daysOff: 1, daysOffUnit: 'week', holidays: 'yes', vacation: 'included' });
+  assert.ok(holidaysOff.time.paidDays > holidaysOff.time.daysWorked);
 });
 
 test('every sample offer adds up', () => {
