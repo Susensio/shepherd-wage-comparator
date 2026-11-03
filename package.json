@@ -10,7 +10,7 @@
     "test:unit": "node --test test/unit/*.test.js",
     "test:e2e": "playwright test",
     "places": "node scripts/build-places.js",
-    "vendor": "cp node_modules/lit-html/lit-html.js node_modules/lit-html/LICENSE vendor/lit-html/ && mkdir -p vendor/supabase && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js node_modules/@supabase/supabase-js/LICENSE vendor/supabase/"
+    "vendor": "cp node_modules/lit-html/lit-html.js node_modules/lit-html/LICENSE vendor/lit-html/ && mkdir -p vendor/supabase vendor/minisearch && cp node_modules/minisearch/dist/es/index.js node_modules/minisearch/LICENSE.txt vendor/minisearch/ && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js node_modules/@supabase/supabase-js/LICENSE vendor/supabase/"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
@@ -18,6 +18,7 @@
     "@playwright/test": "1.56.0",
     "@supabase/supabase-js": "2.118.0",
     "lit-html": "3.3.1",
+    "minisearch": "7.2.0",
     "typescript": "5.9.2"
   }
 }
