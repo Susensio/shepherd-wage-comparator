@@ -17,7 +17,7 @@ Date: 2026-11-03
 - «Ganas» (headline, Desglose, every unit) is money that reaches you, plus housing and food when counted, minus your expenses. The paro is not part of it. The «Contar el paro que generas» setting goes; a saved value is ignored.
 - Under the headline, its own line: «Y genera N días de paro: unos X €, que se cobran más adelante» (or why it generates none).
 - Comparar ranks by «Ganas» plus the paro, in the chosen unit, and shows both in each row («2.311 € · + 428 € de paro»; «sin paro» when there is none), with a line saying how it is ordered. A chip «Solo lo que ganas» ranks by money alone. The sum itself is never shown.
-- «Lo que te cuesta el negro», in Análisis, says in words what money en negro does not give: no contributions for the pension or sick leave, and the paro it does not generate, in euros where the law gives a figure (below the benefit's maximum).
+- «Sin cotizar», in Análisis, says in words what money en negro does not give: no contributions for the pension or sick leave, and the paro it does not generate, in euros where the law gives a figure (below the benefit's maximum).
 - The ficha (layout A of the mock-ups): a «⋯» menu beside the name with Duplicar, Copiar ficha, Copiar reclamación and Borrar; the analysis right after the headline; «Condiciones» last, as one row with a one-line summary that opens the rows. Each card in the offers list has the same «⋯» menu; on wide screens, right-click opens it too.
 
 ## Consequences

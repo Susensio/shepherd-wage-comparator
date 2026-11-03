@@ -20,23 +20,22 @@ test('the headline and the Desglose leave the paro out', async ({ page }) => {
   await expect(page.locator('details[data-fold=breakdown2]')).not.toContainText('Paro');
 });
 
-test('«Lo que te cuesta el negro»: only with money en negro or no contract, and what each says about the paro', async ({
-  page,
-}) => {
+test('«Sin cotizar»: only with money en negro or no contract, and what each says about the paro', async ({ page }) => {
   const negro = page.locator('#secNegro');
   await loadOffers(page, sample, OFFER.temporadaF);
   await expect(negro).toHaveCount(0);
 
   await loadOffers(page, sample, OFFER.puertoA);
-  await expect(negro).toContainText('no cotizan');
-  await expect(negro).toContainText('Al paro no le resta: con lo que va en nómina ya llega al máximo.');
+  await expect(negro.locator('h3')).toHaveText('Sin cotizar');
+  await expect(negro).toContainText(/van en negro: no cotizan para tu jubilación ni para una baja/);
+  await expect(negro).toContainText('Al paro no le afecta: lo que va en nómina ya da el máximo.');
 
   await loadOffers(page, sample, OFFER.campanaB);
-  await expect(negro).toContainText(/unos 30\s€ más de paro/);
+  await expect(negro).toContainText(/En nómina, generarían unos 30\s€ más de paro/);
 
   await loadOffers(page, sample, OFFER.sinContratoD);
-  await expect(negro).toContainText('Sin contrato nada cotiza');
-  await expect(negro).toContainText(/Con contrato se generarían 14 días de paro: unos 552\s€/);
+  await expect(negro).toContainText('Sin contrato no se cotiza nada: ni jubilación, ni baja, ni paro.');
+  await expect(negro).toContainText(/Con contrato, este trabajo generaría 14 días de paro: unos 552\s€/);
 });
 
 test('«Condiciones» is the first block, under the name, one row that opens the seven', async ({ page }) => {
