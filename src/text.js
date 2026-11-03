@@ -380,9 +380,6 @@ export function claimText(o, r) {
       );
   }
 
-  add(
-    '',
-    'Cálculo aproximado hecho con Zurrón sindical. Conviene revisarlo con el convenio vigente y un sindicato.',
-  );
+  add('', 'Cálculo aproximado hecho con Zurrón sindical. Conviene revisarlo con el convenio vigente y un sindicato.');
   return lines.join('\n');
 }
