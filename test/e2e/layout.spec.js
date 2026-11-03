@@ -31,13 +31,13 @@ test('buttons, tabs, chips, bar icons and fold titles are at least 40 px tall', 
   expect(await tooShort(page)).toEqual([]);
 });
 
-test('Comparar: the sticky «Comparar por» row does not cover the checkbox under it', async ({ loaded: page }) => {
+test('Comparar: the sticky «Comparar por» row does not cover the legend under it', async ({ loaded: page }) => {
   await page.click('.tabs [data-tab=compare]');
-  const [row, checkbox] = await Promise.all([
+  const [row, legend] = await Promise.all([
     page.locator('#cmpView').boundingBox(),
-    page.locator('.terms-only').first().boundingBox(),
+    page.locator('#cmpBlk .legend').first().boundingBox(),
   ]);
-  expect(checkbox.y).toBeGreaterThanOrEqual(row.y + row.height - 0.5);
+  expect(legend.y).toBeGreaterThanOrEqual(row.y + row.height - 0.5);
 });
 
 for (const offer of sample.offers) {

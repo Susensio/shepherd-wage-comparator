@@ -20,24 +20,33 @@ const unitPicker = (unit) =>
     (u) => html`<label><input type="radio" name="cmpUnit" value=${u} .checked=${u === unit}>${UNITS[u].pick}</label>`,
   )}</div></div>`;
 
-/** Switch to the figures of the offers' terms alone, as they would be for anyone. Forced on by other shepherds' offers. */
-const termsOnlySwitch = (on, forced) =>
-  html`<div class="terms-only"><label><input type="checkbox" name="termsOnly" .checked=${on} ?disabled=${forced}>Solo las condiciones</label>
-    <p class="hint">${
-      forced
-        ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
-        : on
-          ? 'Se calcula sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
-          : 'Sin tus desplazamientos ni gastos.'
-    }</p></div>`;
-
-/** Whether to rank your offers that were only offers, not worked. Only offered when there is one. */
-const offerOnlySwitch = (show, hidden) =>
-  html`<div class="terms-only"><label><input type="checkbox" name="showOfferOnly" .checked=${show}>Incluir las que solo eran ofertas</label>${
-    show
-      ? html`<p class="hint">Aparecen atenuadas, con «solo oferta».</p>`
-      : html`<p class="hint">${hidden === 1 ? 'Se oculta 1.' : `Se ocultan ${hidden}.`}</p>`
-  }</div>`;
+/**
+ * The view switches, as chips under the ranking: your offers that were only offers (shown apart), and the figures of
+ * the terms alone (forced on by other shepherds' offers). One hint line, only when something needs saying.
+ */
+function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount }) {
+  const hint = [
+    forced
+      ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
+      : termsOnly
+        ? 'Solo las condiciones: sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
+        : '',
+    offerOnlyCount && !showOfferOnly
+      ? offerOnlyCount === 1
+        ? 'Se oculta 1 que solo era una oferta.'
+        : `Se ocultan ${offerOnlyCount} que solo eran ofertas.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return html`<div class="multi chips cmp-opts">${
+    offerOnlyCount
+      ? html`<label><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Las de solo oferta</label>`
+      : nothing
+  }<label><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Solo las condiciones</label></div>${
+    hint ? html`<p class="hint">${hint}</p>` : nothing
+  }`;
+}
 
 /** Whether to rank the offers other shepherds share, and how loading them went. Only offered when they can be read. */
 const othersControl = ({ available, include, status, items }) =>
@@ -297,16 +306,22 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     return Number.isFinite(v) ? v : -1e12;
   };
   const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
-  const controls = html`${othersControl(others)}${offerOnlyCount ? offerOnlySwitch(showOfferOnly, offerOnlyCount) : nothing}`;
+  // Under the ranking: how it is looked at, then other shepherds' offers
+  const controls = html`${viewSwitches({
+    termsOnly,
+    forced: others.available && others.include,
+    showOfferOnly,
+    offerOnlyCount,
+  })}${othersControl(others)}`;
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
     return {
       picker: nothing,
-      body: html`${controls}<p class="empty">${
+      body: html`<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => (x.sharer ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}.`).join(' ')}`
-      }</p>`,
+      }</p>${controls}`,
       more: nothing,
     };
   }
@@ -343,9 +358,9 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     : html`<div class="cmp-mode"><span>Toca una oferta para verla.</span><button type="button" class="sm" data-action="startPair">Comparar dos</button></div>`;
   return {
     picker: unitPicker(unit),
-    body: html`${controls}${termsOnlySwitch(termsOnly, others.available && others.include)}${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
+    body: html`${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
-`,
+    ${controls}`,
     // After the «Otros pastores» section, which sits right under the ranking
     more: html`${headToHead(list, pairing, unit)}${hoursView(list)}`,
   };

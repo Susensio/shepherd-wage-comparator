@@ -134,7 +134,7 @@ test('Comparar can show the terms alone, without your travel and expenses', asyn
   const rows = () => page.locator('#cmpBlk .lr .v').allTextContents();
   const full = await rows();
   await page.check('input[name=termsOnly]');
-  await expect(page.locator('.terms-only:has(input[name=termsOnly]) .hint')).toContainText('IRPF');
+  await expect(page.locator('#cmpBlk .cmp-opts + .hint')).toContainText('IRPF');
   expect(await page.evaluate(() => app.state.termsOnly)).toBe(true);
   expect(await rows()).not.toEqual(full);
   await page.uncheck('input[name=termsOnly]');
@@ -287,7 +287,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
   const toggle = page.locator('input[name=showOfferOnly]');
   await toggle.uncheck();
   await expect(rows).toHaveCount(6);
-  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2.');
+  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2 que solo eran ofertas.');
   await expect(page.locator('#cmpBlk .lr[data-id=o1]')).toHaveCount(0);
   await toggle.check();
   await expect(rows).toHaveCount(8);
