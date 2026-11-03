@@ -1,4 +1,4 @@
-/** «Sin cotizar»: in words, what money paid en negro does not give. */
+/** «Dinero en negro»: in words, what money paid en negro does not give, in the page's own terms. */
 
 import { html, nothing } from 'lit-html';
 import { fE, fN, isWorthCounting } from '../format.js';
@@ -14,8 +14,8 @@ export function negroSection(r, money, third) {
   const say = voiceOf(third);
   const { lost, euros } = r.unemployment;
   const contributions = r.noContract
-    ? 'Sin contrato no se cotiza nada: ni jubilación, ni baja, ni paro.'
-    : `${money.figure(r.cash.total)}${UNITS[money.unit].suffix} van en negro: no cotizan para ${say('tu', 'la')} jubilación ni para una baja.`;
+    ? `Sin contrato, nada de lo que ${say('cobras', 'se cobra')} cuenta para la jubilación, una baja o el paro.`
+    : `${money.figure(r.cash.total)}${UNITS[money.unit].suffix} van en negro: no cuentan para ${say('tu', 'la')} jubilación ni para una baja.`;
   const paro = isWorthCounting(lost.euros)
     ? r.noContract
       ? `Con contrato, este trabajo generaría ${daysText(lost.days)} de paro: unos ${fE(lost.euros)}.`
@@ -23,7 +23,7 @@ export function negroSection(r, money, third) {
     : euros > 0 && !r.noContract
       ? 'Al paro no le afecta: lo que va en nómina ya da el máximo.'
       : '';
-  const title = 'Sin cotizar';
+  const title = 'Dinero en negro';
   return html`<section class="employer negro" id="secNegro" aria-label=${title}><h3 class="q">${title}</h3>
     <div class="savings"><p>${contributions}</p>${paro ? html`<p>${paro}</p>` : nothing}</div></section>`;
 }

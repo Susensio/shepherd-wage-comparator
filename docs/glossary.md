@@ -33,7 +33,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | plus de pernocta | the bonus for sleeping at the work site | `terms.overnight`, `LAW.overnightPct` | convenio del campo de Huesca | plus por dormir en el monte |
 | pagas extra | | `terms.extraPays` | | |
 | indemnización | what is owed when a temporary contract ends | `r.severance` | ET art. 49.1.c | finiquito (that is the final settlement, which includes it) |
-| paro | unemployment benefit earned by contributing. Not part of «ganas»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Sin cotizar» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
+| paro | unemployment benefit earned by contributing. Not part of «ganas»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Dinero en negro» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
 | Seguridad Social | contributions, worker and employer | `ssOf(contract)`, `r.pay.rates` | Orden PJC/297/2026 | cotización (in explanations only) |
 | retención de IRPF | | `r.pay.irpf`, `irpfPct` | | |
 | te pagan | everything the offer pays together, payslip and en negro: the first answer of «Lo que te pagan», what reaches the shepherd | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | | cobras (that is the Desglose figure) |
@@ -57,7 +57,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | oferta | a job offer as told by the employer, with the shepherd's own figures | `{ id, terms, mine }` | trabajo, empleo |
 | ficha | the read-only page of one offer: its result with the paro line, the «Análisis» and, last, «Condiciones» | `views/ficha.js` | página de la oferta, resumen |
 | Condiciones | the ficha's last block, one row with a one-line summary that opens one row per step: Dónde, Cuándo, Pago, Jornada, Casa y comida, Viaje, Gastos e IRPF; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
-| Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Sin cotizar (only with money en negro or no contract), Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
+| Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Dinero en negro (only with money en negro or no contract), Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
 | paso | one screen of the guided entry («Paso 2 de 8»); a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar» | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set) | `offerOnly` | |
 | solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
