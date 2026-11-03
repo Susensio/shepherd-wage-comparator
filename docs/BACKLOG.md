@@ -40,3 +40,6 @@
 - ui | Published 3 November 2026 (ADR-0020, ADR-0021), not yet tried on a real phone or tablet, nor with a screen reader: the steps, the ficha, the bottom tab bar above the home indicator, and the split at 1024 px and up.
 - ui | After a first visit, or deleting the last offer, a stale history entry remains: one press of the phone's Back does nothing visible (`app.closeEntry` does not pop it).
 - ui | The `.editinfo` CSS now only serves the read-only shared offer; rename it.
+- account | If a saved session has expired, changes made before connecting stay in `UNSYNCED_KEY` and are applied at the next sign-in as the same user; another user signing in on that browser does not get them (the record carries the user id). Fine for now; revisit with the account-only question above.
+- account | A failed first connect (no network, read error) shows the guest UI with «No se pudo conectar con la cuenta.», though the browser still holds a session and its cached offers: an «offline, retrying» state would fit better.
+- test | Every account the page creates keeps listening to `onSave` (no unsubscribe), so unit tests that start several accounts in one process see each other's changes; the before-connect tests share one visit for that reason.

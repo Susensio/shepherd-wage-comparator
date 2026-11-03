@@ -27,7 +27,8 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 - Signed in, the account is the source of truth and `localStorage` its cache (`storage/account.js`). Changes are written after a pause, and only the offers whose `terms`, `mine` or `cmp` changed.
 - The first sign-in of a user on a browser uploads the offers the account lacks and keeps both sets, merged by id; ids that are not uuids get a new one first, in the browser too. Only a failed upload asks (ADR-0009). An empty account starts like a first visit, with the templates, and its placeholder offer is never written.
 - Backups made before ADR-0007 hold flat offers; `ingestSaved` splits them by `DEF_MINE` (own figures) and puts the rest in `terms`. The browser's own storage of that time (`cj.ofertas`) is still not read.
-- A browser that has synced with that user before takes the account's copy as it is: an offer missing from the account was deleted on another device.
+- A browser that has synced with that user before takes the account's copy as it is: an offer missing from the account was deleted on another device, except what was changed here and not yet written: offline edits, and edits made between opening the page and the account connecting. From the start of a visit with a saved session (`trackUntilConnected`, before the bundle loads), changes go into the same unsynced record (`UNSYNCED_KEY`) as offline ones, and the account's copy keeps them: edited and new offers stay, deleted ones stay deleted, settings stay.
+- While a saved session connects, the page shows the cached copy, the account button «connecting» and «Cargando tu cuenta…», never a guest's sign-in; if connecting fails, it falls back to guest with «No se pudo conectar con la cuenta.».
 - The blank placeholder offer of a first visit is never written.
 
 ## What is owed
