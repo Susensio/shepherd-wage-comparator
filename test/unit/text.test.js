@@ -75,15 +75,20 @@ test('summaries: one line per form section', () => {
   assert.doesNotMatch(s.when, /h\/día|libra/);
   assert.match(s.workday, /^\d+(,\d+)?\u00a0h\/día · libra /);
   assert.match(s.payroll, /neto/);
-  assert.match(s.pay, /^1\.785 €\/mes neto/);
-  assert.match(s.pay, /· en negro: el resto hasta/);
+  assert.equal(
+    s.pay.replace(/\u00a0/g, ' '),
+    '2.205 € al mes · 1.785 € en nómina · unos 420 € al mes en negro · contrato fijo discontinuo · vacaciones aparte',
+  );
   assert.match(s.housing, /^Duermes en borda/);
   assert.match(s.car, /^Tu coche/);
 });
 
-test('summaries: the pay line says the en negro money, and without a contract the amount', () => {
+test('summaries: the pay line tells the offer as the pay step does', () => {
   const none = offers.find((o) => o.mine.name === 'Sin contrato D');
-  assert.equal(summaries(none, resultOf(none)).pay, 'Sin contrato: 63 €/día en negro');
+  assert.equal(
+    summaries(none, resultOf(none)).pay.replace(/\u00a0/g, ' '),
+    '63 € al día · todo en negro, sin contrato',
+  );
   const worked = offers.find((o) => o.mine.name === 'Temporada E');
   assert.doesNotMatch(summaries(worked, resultOf(worked)).pay, /en negro/);
 });

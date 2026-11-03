@@ -1,9 +1,23 @@
 /** Texts: one-line summaries of an offer, and the texts people copy (the offer card and the claim). */
 
-import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd, lowerFirst, num } from './format.js';
+import {
+  f1,
+  fCount,
+  fDays,
+  fDaysSpoken,
+  fE,
+  fEntered,
+  fN,
+  fTyped,
+  isWorthCounting,
+  joinAnd,
+  lowerFirst,
+  num,
+} from './format.js';
 import { citeOf, LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
+import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
 import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
@@ -177,10 +191,11 @@ export function summaries(o, r, places = null, third = false) {
     car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
     others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
-  // «Lo que te pagan» is one section: the payslip, and the en negro money when there is any
+  // «Lo que te pagan» is one section: told as the pay step tells it back, from its answers
   const hasCash = r.cash.total > 0.5;
-  const pay =
-    o.terms.contract === 'none'
+  const pay = isAnswerable(o.terms)
+    ? payToldPlain(o, r, vacation)
+    : o.terms.contract === 'none'
       ? hasCash
         ? `Sin contrato: ${lines.b} en negro`
         : 'Sin contrato'
@@ -188,6 +203,27 @@ export function summaries(o, r, places = null, third = false) {
         ? `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`
         : lines.payroll;
   return { ...lines, pay };
+}
+
+const PAY_PER = { day: 'al día', month: 'al mes', total: 'en total' };
+
+/** The pay as it was told: «75 € al día · 50 € en nómina · unos 21 € en negro · contrato temporal · vacaciones dentro». */
+function payToldPlain(o, r, vacation) {
+  const a = answersOf(o.terms);
+  const amount = num(a.amount);
+  if (!(amount > 0)) return 'Sin poner';
+  const per = PAY_PER[a.unit] ?? '';
+  if (a.payroll === 'none') return `${fEntered(amount)} ${per} · todo en negro, sin contrato`;
+  const parts = [`${fEntered(amount)} ${per}`];
+  if (a.payroll === 'all') parts.push('todo en nómina');
+  else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
+  else if (num(a.part) > 0) parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}en nómina`);
+  else parts.push('una parte en nómina');
+  if (r.split?.cash > 0.5 && a.payroll !== 'all') parts.push(`unos ${fE(r.split.cash)} ${per} en negro`);
+  parts.push(`contrato ${contractOf(o.terms).phrase}`);
+  if (o.terms.extraPays === 'separate' && a.unit === 'month') parts.push('dos pagas extra aparte');
+  parts.push(vacation);
+  return parts.join(' · ');
 }
 
 /** «al mes», «por día»… or, over the whole contract, «en los 100 días». */

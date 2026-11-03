@@ -248,7 +248,7 @@ test('what is missing points at the amount', async ({ page }) => {
   await page.locator('#entryNext').click();
   await page.locator('#result [data-action=complete]').click();
   await expect(page.locator('#goMsg')).toHaveText('Falta lo que te pagan.');
-  await expect(page.locator('.fld.missing')).toContainText('¿Cuánto te pagan?');
+  await expect(page.locator('.fld.missing')).toContainText('Todo junto, lo que te llega');
 });
 
 const EXPECTED = {
