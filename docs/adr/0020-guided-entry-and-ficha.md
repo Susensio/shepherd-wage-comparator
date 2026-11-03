@@ -25,3 +25,5 @@ Weighed and discarded:
 - More room per question: the hints shortened on 3 November can grow back where they help.
 
 Amended by [ADR-0022](0022-earnings-without-paro-ranking-with-it.md): the ficha shows the analysis first and «Condiciones» last as one row; Duplicar, Copiar and Borrar are in a «⋯» menu.
+
+Amended 3 November 2026: the «Luego» button is gone from the entry. Only «Siguiente» (on the last step «Ver la ficha», when changing one step «Guardar») is left, and it always moves on, never blocks. Instead, each required answer (what `missing()` reports) shows an amber line right under its question while it is empty, saying what cannot be done without it ("Sin las horas no se puede calcular cuánto ganas."); the line follows what is typed and goes when the answer is filled. Finishing with something empty opens the ficha, which already says what is missing.

@@ -279,7 +279,6 @@ const ACTIONS = {
   editStep: (b) => editStep(b.dataset.step, b.classList.contains('missing')),
   complete: () => editStep(stepOfMissing(active().terms), true),
   entryNext: next,
-  entrySkip: next,
   entryBack: back,
   entryClose: close,
   /** Without an end date the duration is not known. */

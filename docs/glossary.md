@@ -58,7 +58,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | ficha | the read-only page of one offer: its result with the paro line, the «Análisis» and, last, «Condiciones» | `views/ficha.js` | página de la oferta, resumen |
 | Condiciones | the ficha's last block, one row with a one-line summary that opens one row per step: Dónde, Cuándo, Pago, Jornada, Casa y comida, Viaje, Gastos e IRPF; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
 | Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Lo que te cuesta el negro (only with money en negro or no contract), Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
-| paso | one screen of the guided entry («Paso 2 de 8»); a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar»; «Luego» skips one | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
+| paso | one screen of the guided entry («Paso 2 de 8»); a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar» | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set) | `offerOnly` | |
 | solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
 | «⋯» (Más acciones) | the menu of an offer, on the ficha and on each card: Duplicar, Copiar ficha, Copiar reclamación, Borrar | `ui/offer-menu.js` | menú, opciones |

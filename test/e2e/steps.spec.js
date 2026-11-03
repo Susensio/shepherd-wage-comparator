@@ -1,4 +1,4 @@
-// The guided entry and the ficha: the order of the steps, «Luego», changing one step, and the phone's Back button.
+// The guided entry and the ficha: the order of the steps, «Siguiente» that never blocks, changing one step, and the phone's Back button.
 
 import { expect, goStep, loadOffers, openCondition, openStep, sample, startOffer, test } from './fixtures.js';
 
@@ -7,7 +7,6 @@ const counter = (page) => page.locator('#entryCounter');
 
 test('a new offer goes through the steps in order, from the templates to the ficha', async ({ page }) => {
   await expect(page.locator('#entryTitle')).toHaveText('¿Se parece a alguna de estas?');
-  await expect(page.locator('#entrySkip')).toBeHidden(); // nothing to skip on the first step
   await expect(page.locator('#entryNext')).toBeHidden(); // until a template is picked
   await page.locator('.tcard').first().click();
   const titles = [
@@ -50,18 +49,60 @@ test('the entry has no tab bar, and a strip with what is earned so far', async (
   await expect(page.locator('#stripFigure')).toHaveText(expected);
 });
 
-test('«Luego» goes on without answering', async ({ page }) => {
+test('«Siguiente» goes on with a required answer empty, and the ficha shows what is missing', async ({ page }) => {
   await startOffer(page, 'when');
-  await page.locator('#entrySkip').click();
+  await page.locator('#entryNext').click();
   await expect(page.locator('#entryTitle')).toHaveText('¿Cuánto te pagan?');
   expect((await active(page)).terms.duration).toBe(''); // nothing was asked
   await page.locator('#entryBack').click();
   await expect(page.locator('#entryTitle')).toHaveText('¿Cuándo y cuánto tiempo?');
   await goStep(page, 'expenses');
   await expect(page.locator('#entryNext')).toHaveText('Ver la ficha');
-  await page.locator('#entrySkip').click();
+  await page.locator('#entryNext').click();
   await expect(page.locator('#ficha')).toBeVisible();
   await expect(page.locator('#result .empty')).toContainText('falta');
+  await expect(page.locator('.crow.missing').first()).toContainText('Falta');
+});
+
+test('the entry has no «Luego» button, on any step', async ({ page }) => {
+  await expect(page.getByRole('button', { name: 'Luego' })).toHaveCount(0);
+  await startOffer(page, 'when');
+  for (let i = 0; i < 6; i++) {
+    await expect(page.locator('#entry').getByText('Luego', { exact: true })).toHaveCount(0);
+    await page.locator('#entryNext').click();
+  }
+});
+
+test('the hours warning shows under the question while it is empty, and goes when it is filled', async ({ page }) => {
+  await startOffer(page, 'workday');
+  const warning = page.locator('[data-required=hoursPerDay]');
+  await expect(warning).toHaveText('Sin las horas no se puede calcular cuánto ganas.');
+  await expect(warning).toBeVisible();
+  await page.fill('#hoursPerDay', '9');
+  await expect(warning).toBeHidden();
+  await page.fill('#hoursPerDay', '');
+  await expect(warning).toBeVisible();
+  await page.fill('#hoursPerDay', '9');
+  await page.locator('#entryNext').click(); // not blocked, and no warning leaks into the next step
+  await expect(page.locator('#entry [data-required]:visible')).toHaveCount(0);
+});
+
+test('the pay, vacation and duration warnings show only while their answer is missing', async ({ page }) => {
+  await startOffer(page, 'pay');
+  await expect(page.locator('[data-required=pay]')).toHaveText(/^Sin lo que te pagan/);
+  await page.evaluate(() => {
+    app.active().terms.vacation = ''; // a new offer starts with one chosen
+  });
+  await page.fill('#payTotal', '70');
+  await page.fill('#payTotal', '71');
+  await expect(page.locator('[data-required=vacation]')).toHaveText(/^Sin esto no se puede comprobar/);
+  await page.check('input[name=vacation][value=paidAtEnd]'); // «included» is still ticked on screen
+  await expect(page.locator('[data-required=pay]')).toBeHidden();
+  await expect(page.locator('[data-required=vacation]')).toBeHidden();
+  await goStep(page, 'when');
+  await expect(page.locator('[data-required=duration]')).toHaveText('Si no lo sabes, marca «no lo sé».');
+  await page.check('input[name=durationUnit][value=unknown]');
+  await expect(page.locator('[data-required=duration]')).toBeHidden();
 });
 
 test('picking another template on coming back replaces the offer, it does not add one', async ({ page }) => {
@@ -95,7 +136,6 @@ test('a row of the ficha opens only its step, and «Guardar» keeps the change',
   await openStep(page, 'workday');
   await expect(counter(page)).toHaveText('Cambiar');
   await expect(page.locator('#entry .step:visible')).toHaveCount(1);
-  await expect(page.locator('#entrySkip')).toBeHidden();
   await expect(page.locator('#entryClose')).toHaveText('Cancelar');
   await page.fill('#hoursPerDay', '7');
   await page.locator('#entryNext').click();

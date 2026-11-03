@@ -7,7 +7,7 @@ import { html, render } from 'lit-html';
 import { $, $$ } from '../dom.js';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, overlapsOf, sideOf } from '../offer.js';
+import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, missing, overlapsOf, sideOf } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
@@ -37,6 +37,17 @@ const SHOW = {
   irpfManual: (o) => o.mine.irpfMode === 'manual',
   withContract: (o) => o.terms.contract !== 'none',
 };
+
+/** Under a required question, while it is empty: what cannot be done without it. */
+const REQUIRED_TEXT = {
+  duration: 'Si no lo sabes, marca «no lo sé».',
+  hoursPerDay: 'Sin las horas no se puede calcular cuánto ganas.',
+  pay: 'Sin lo que te pagan no se puede calcular cuánto ganas.',
+  payrollPart: 'Sin la parte en nómina no se puede calcular cuánto va en negro.',
+  vacation: 'Sin esto no se puede comprobar si te pagan las vacaciones.',
+};
+/** The `missing()` ids that share another's line. */
+const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
 
 export const form = () => /** @type {HTMLFormElement} */ ($('#f'));
 
@@ -245,6 +256,9 @@ export function paintForm(o, r, offers, places) {
   text('#offerOnlyHint', noDate ? `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.` : '');
   text('#vacationHint', vacationHint(o, r));
   paintPlace(o, places);
+  const lines = missing(o.terms).map((id) => REQUIRED_LINE[id] ?? id);
+  for (const line of $$('[data-required]'))
+    line.textContent = lines.includes(line.dataset.required) ? REQUIRED_TEXT[line.dataset.required] : '';
   text('#payHint', payHint(o, r));
   paintAnswers(o, r);
   const food = foodPerDay(o.terms, cfg);

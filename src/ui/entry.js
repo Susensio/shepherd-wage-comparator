@@ -109,7 +109,7 @@ export function save() {
   callbacks.paint();
 }
 
-/** «Siguiente» and «Luego»: to the next step, or on the last one, to the ficha. */
+/** «Siguiente»: to the next step, or on the last one, to the ficha. */
 export function next() {
   if (entry.editing) return save();
   if (entry.step < STEPS.length - 1) return show(entry.step + 1);
@@ -139,7 +139,6 @@ export function paintEntry(o, r) {
   $('#entryBack').setAttribute('aria-label', edit ? 'Cancelar' : index === 0 ? 'Cerrar' : 'Paso anterior');
   /** @type {HTMLElement} */ ($('#entryBar').parentElement).hidden = edit;
   $('#entryBar').style.width = `${Math.round(((index + 1) / STEPS.length) * 100)}%`;
-  $('#entrySkip').hidden = edit || index === 0;
   $('#entryNext').hidden = pending;
   $('#entryNext').textContent = edit ? 'Guardar' : index === STEPS.length - 1 ? 'Ver la ficha' : 'Siguiente';
   $('.strip').hidden = pending;

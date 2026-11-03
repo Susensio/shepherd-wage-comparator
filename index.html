@@ -358,6 +358,7 @@
               <label><input type="radio" name="durationUnit" value="unknown">no lo sé</label>
             </div>
           </div>
+          <p class="hint warn" data-required="duration"></p>
           <p class="hint">Sin duración se cuenta un mes.</p>
         </div>
         <div class="fld full">
@@ -390,6 +391,7 @@
               <label data-show="withDuration"><input type="radio" name="payPer" data-answer="unit" value="total">en total</label>
             </div>
           </div>
+          <p class="hint warn" data-required="pay"></p>
         </div>
         <div class="fld full">
           <span class="ask">¿Cuánto va en nómina?</span>
@@ -407,6 +409,7 @@
             <label><input type="radio" name="payType" value="net">neto, lo que llega</label>
             <label><input type="radio" name="payType" value="gross">bruto, como en la nómina</label>
           </div>
+          <p class="hint warn" data-required="payrollPart"></p>
           <p class="hint" id="payHint"></p>
           <p class="cashline" id="payCash" hidden></p>
           <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
@@ -426,6 +429,7 @@
             <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Me las pagan aparte, al acabar</b></label>
             <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Las libro, cobrando</b></label>
           </div>
+          <p class="hint warn" data-required="vacation"></p>
           <p class="hint" id="vacationHint"></p>
         </div>
         <div class="fld full" data-show="hasExtraPays">
@@ -443,6 +447,7 @@
         <div class="fld full">
           <label class="ask" for="hoursPerDay">¿Cuántas horas al día?</label>
           <input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay">
+          <p class="hint warn" data-required="hoursPerDay"></p>
           <p class="hint">Contando el camino con el ganado, no el de casa.</p>
         </div>
         <div class="fld full">
@@ -546,7 +551,6 @@
   <footer class="entryfoot">
     <p class="strip"><span id="stripLabel"></span><b class="n" id="stripFigure"></b></p>
     <div class="entryactions">
-      <button type="button" id="entrySkip" data-action="entrySkip">Luego</button>
       <button type="button" class="pri" id="entryNext" data-action="entryNext">Siguiente</button>
     </div>
   </footer>
