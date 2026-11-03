@@ -1,4 +1,4 @@
-// Comparar: ranked by what you earn plus the paro each offer generates; «Ordenar por: Solo ganas» ranks by money alone.
+// Comparar: ranked by what you earn plus the paro each offer generates; «Ordenar: Sin el paro» ranks by money alone.
 
 import { expect, loadOffers, sample, test } from './fixtures.js';
 
@@ -35,10 +35,10 @@ test('ranked by money plus paro: each row shows both, or «sin paro»', async ({
   );
 });
 
-test('«Ordenar por: Solo ganas» ranks by money alone and hides the paro lines', async ({ page }) => {
+test('«Ordenar: Sin el paro» ranks by money alone and hides the paro lines', async ({ page }) => {
   await compareByMonth(page);
-  await expect(page.getByLabel('Ganas y paro')).toBeChecked();
-  const money = page.getByLabel('Solo ganas');
+  await expect(page.getByLabel('Con el paro')).toBeChecked();
+  const money = page.getByLabel('Sin el paro');
   await expect(money).not.toBeChecked();
   await page.locator('#cmpBlk label', { has: money }).click();
   await expect(money).toBeChecked();

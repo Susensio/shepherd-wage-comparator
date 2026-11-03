@@ -42,7 +42,7 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
   const sortBy = (value, text) =>
     html`<label><input type="radio" name="sortBy" value=${value} .checked=${moneyOnly === (value === 'money')}>${text}</label>`;
   return html`<div class="cmp-opts">
-    <div class="view"><span class="view-l">Ordenar por</span><div class="seg" role="radiogroup" aria-label="Ordenar por">${sortBy('paro', 'Ganas y paro')}${sortBy('money', 'Solo ganas')}</div></div>
+    <div class="view"><span class="view-l">Ordenar</span><div class="seg" role="radiogroup" aria-label="Ordenar">${sortBy('paro', 'Con el paro')}${sortBy('money', 'Sin el paro')}</div></div>
     ${
       offerOnlyCount
         ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las que no trabajaste</label>`
