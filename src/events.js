@@ -275,6 +275,14 @@ const ACTIONS = {
     name.focus({ preventScroll: true });
     name.select();
   },
+  /** Without an end date the duration is not known. */
+  clearEnd() {
+    active().terms.durationUnit = 'unknown';
+    /** @type {HTMLInputElement} */ ($('#f [name=durationUnit][value=unknown]')).checked = true;
+    paintEnd(active().terms);
+    animateNextPaint();
+    commit();
+  },
   clearStart() {
     active().terms.start = '';
     /** @type {HTMLInputElement} */ ($('#start')).value = '';

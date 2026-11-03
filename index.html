@@ -120,7 +120,10 @@
           </div>
           <div class="fld half">
             <label for="end">Termina el</label>
-            <input type="date" id="end">
+            <div class="clearable">
+              <input type="date" id="end">
+              <button type="button" class="clear-x" data-action="clearEnd" data-show="hasEnd" aria-label="Quitar la fecha de fin">✕</button>
+            </div>
           </div>
           <div class="fld full">
             <label class="fld" for="duration">Duración del contrato</label>
@@ -169,7 +172,7 @@
           <p class="told full" id="payTold" aria-live="polite"></p>
           <div class="fld full">
             <label class="ask" for="payTotal">¿Cuánto te pagan?</label>
-            <p class="hint">Todo junto, lo que te llega a ti.</p>
+            <p class="hint">Todo junto, lo que te llega.</p>
             <div class="combo">
               <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
               <div class="seg" role="radiogroup" aria-label="Por">
@@ -197,7 +200,7 @@
             </div>
             <p class="hint" id="payHint"></p>
             <p class="cashline" id="payCash" hidden></p>
-            <p class="hint" data-show="payLegacy">Esta oferta se guardó con otra forma de contar lo que te pagan. Las cifras son las de antes hasta que cambies una respuesta.</p>
+            <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
           </div>
           <div class="fld full" data-show="withContract">
             <span class="ask">¿Qué contrato?</span>
@@ -243,7 +246,7 @@
               <label><input type="radio" name="housing" value="no">No</label>
             </div>
           </div>
-          <p class="hint full" data-show="overnight">No suma dinero a la oferta, pero sube el mínimo legal: por convenio, pernoctar fuera por pastoreo se paga con al menos un <span data-law="overnightPct"></span> % extra.</p>
+          <p class="hint full" data-show="overnight">No suma dinero: sube el mínimo legal un <span data-law="overnightPct"></span> % (convenio).</p>
           <label class="fld full" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
           <div class="fld full">
             <span>¿Qué comidas te dan?</span>
@@ -277,8 +280,8 @@
             <p class="hint">«Solo al empezar y al acabar» es si vives allí.</p>
           </div>
           <label class="fld half" data-show="trips">Km a casa (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
-          <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada bajada cuenta ida y vuelta. Si no bajas, déjalo vacío.</span></label>
-          <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Si mueves el ganado o vas entre fincas con tu coche. Si no, déjalo vacío.</span></label>
+          <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada una, ida y vuelta.</span></label>
+          <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
           <label class="fld half" data-show="kmRate">Te pagan por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
           <p class="hint full" id="carHint"></p>
           </fieldset>

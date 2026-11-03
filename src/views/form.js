@@ -16,6 +16,7 @@ import { areaLine, summaries, VACATION_SAYS } from '../text.js';
 const SHOW = {
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
   hasStart: (o) => !!o.terms.start,
+  hasEnd: (o) => !!endOf(o.terms),
   payPart: (o) => answersOf(o.terms).payroll === 'part',
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
@@ -107,13 +108,12 @@ const UNIT_PER = { day: 'al día', month: 'al mes', total: 'en total' };
 function vacationHint(o, r) {
   if (!vacationPayable(o.terms, r.time)) return '';
   const why = isCasual(o.terms, r.time)
-    ? `En un contrato temporal de hasta ${LAW.casualMaxDays} días no da tiempo a librarlas`
-    : 'En un contrato de un mes o menos no da tiempo a librarlas';
-  if (o.terms.vacation === 'taken')
-    return `${why}: cambia a «Me las pagan aparte, al acabar» o «Van dentro de lo que me pagan».`;
+    ? `En contratos temporales de hasta ${LAW.casualMaxDays} días no se libran`
+    : 'En contratos de un mes o menos no se libran';
+  if (o.terms.vacation === 'taken') return `${why}: elige otra opción.`;
   if (o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd')
-    return 'Marcado de forma automática: en un contrato de un mes o menos no da tiempo a disfrutarlas y lo normal es que te las paguen aparte al acabar. Cámbialo si no es así.';
-  return `${why}: se pagan al acabar o van dentro.`;
+    return 'Puesto por defecto: en contratos de un mes o menos lo normal es cobrarlas al acabar.';
+  return `${why}.`;
 }
 
 /** An amount typed in the form, as an input shows it. */
@@ -185,18 +185,17 @@ function payHint(o, r) {
     o.mine.irpfMode === 'manual'
       ? ''
       : o.terms.contract === 'temporary' && r.pay.irpfPct * 100 < LAW.irpf.withholding + 0.05
-        ? ' (la mínima de los eventuales agrarios)'
+        ? ', la mínima de los eventuales agrarios'
         : '';
-  const rates = `${fN(r.pay.rates.workerPct, 2)}\u00a0% de Seguridad Social y ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
+  const rates = `${fN(r.pay.rates.workerPct, 2)}\u00a0% de Seguridad Social, ${fN(r.pay.irpfPct * 100, 1)}\u00a0% de IRPF${withholding}`;
   const refund = r.pay.irpf - r.pay.irpfYear;
   return [
     o.terms.payType === 'net'
-      ? `Unos ${fE(r.pay.entered.gross)} brutos${per}: ${rates}.`
-      : `Unos ${fE(r.pay.entered.net)} netos${per}: ${rates}.`,
+      ? `Unos ${fE(r.pay.entered.gross)} brutos${per} (${rates}).`
+      : `Unos ${fE(r.pay.entered.net)} netos${per} (${rates}).`,
     isWorthCounting(refund) ? ` En la renta te devolverían unos ${fE(refund)} (no contado).` : '',
-    o.terms.payUnit === 'day' ? ' El jornal en nómina cubre también vacaciones y festivos librados.' : '',
     o.terms.payUnit === 'total' && o.terms.vacation === 'paidAtEnd'
-      ? ' Pon lo que cobraste sin las vacaciones: las vacaciones pagadas se suman aparte.'
+      ? ' Pon el total sin las vacaciones, que se suman aparte.'
       : '',
   ].join('');
 }
@@ -204,31 +203,27 @@ function payHint(o, r) {
 function daysOffHint(o, r) {
   const t = r.time;
   if (t.months <= 0) return '';
-  const hours = `Son unas ${fN(t.hoursPerWeek)}\u00a0h a la semana.`;
+  const hours = `Unas ${fN(t.hoursPerWeek)}\u00a0h a la semana.`;
   if (o.terms.daysOffUnit === 'total' && !t.noDuration) {
     const more = [o.terms.holidays === 'yes' && 'los festivos', t.vacationTaken > 0 && 'las vacaciones']
       .filter(Boolean)
       .map((x, i) => `${i ? ' y ' : ', más '}${x}`)
       .join('');
-    return `En todo el contrato trabajas unos ${fN(t.daysWorked)} días y libras ${fCount(t.daysOffTotal)}${more}. ${hours}`;
+    return `En todo el contrato, unos ${fN(t.daysWorked)} días de trabajo y ${fCount(t.daysOffTotal)} libres${more}. ${hours}`;
   }
-  return `Trabajas unos ${fN(t.workedPerMonth)} días al mes y libras ${fCount(t.daysOffMonth)}${o.terms.holidays === 'yes' ? ', más los festivos' : ''}. ${hours}`;
+  return `Al mes, unos ${fN(t.workedPerMonth)} días de trabajo y ${fCount(t.daysOffMonth)} libres${o.terms.holidays === 'yes' ? ', más los festivos' : ''}. ${hours}`;
 }
 
 function carHint(o, r) {
-  if (o.mine.car === 'noCar') return 'Sin coche propio: no se cuentan gasolina ni desgaste.';
+  if (o.mine.car === 'noCar') return 'No se cuentan gasolina ni desgaste.';
   if (!(r.car.km > 0)) return '';
-  const trips = {
-    daily: 'ida y vuelta cada día trabajado',
-    liveIn: `al empezar y al acabar${num(o.mine.tripsHome) > 0 ? ', y cuando bajas a casa' : ''}`,
-  }[o.mine.commute];
-  return `Con tu coche: unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes (${trips}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ', más lo que mueves trabajando' : ''}). Consumo y gasolina, en «Tus datos».`;
+  return `Unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes con tu coche. Consumo y gasolina, en «Tus datos».`;
 }
 
 /** Only what the dates leave out; the minimum wage itself is in the Leyes tab. */
 function yearHint(o, r) {
   const year = actualYear(o.terms);
-  return `${o.terms.start ? '' : `Sin fecha, se toma ${year}. `}${year !== r.year ? `El salario mínimo de ${year} aún no está incluido: se usa el de ${r.year}.` : ''}`.trim();
+  return year !== r.year ? `Aún no está el salario mínimo de ${year}: se usa el de ${r.year}.` : '';
 }
 
 /**
@@ -247,10 +242,7 @@ export function paintForm(o, r, offers, places) {
   const noDate = !o.terms.start;
   offerOnly.disabled = noDate;
   offerOnly.checked = noDate || !!o.mine.offerOnly;
-  text(
-    '#offerOnlyHint',
-    noDate ? 'Sin fecha de inicio cuenta como solo oferta. Para contarla como trabajada, pon cuándo empezó.' : '',
-  );
+  text('#offerOnlyHint', noDate ? `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.` : '');
   text('#vacationHint', vacationHint(o, r));
   const s = summaries(o, r, places.index);
   render(
@@ -279,20 +271,17 @@ export function paintForm(o, r, offers, places) {
   text(
     '#mealsHint',
     mealsGiven(o.terms).length
-      ? `Te ahorras ${fE(food, food % 1 ? 2 : 0)} por día trabajado. Los precios, en «Tus datos».`
+      ? `Te ahorras ${fE(food, food % 1 ? 2 : 0)} por día trabajado (precios en «Tus datos»).`
       : '',
   );
   /** @type {HTMLInputElement} */ ($('#rentValue')).placeholder = fInputValue(num(cfg.rentValue), 0);
-  text(
-    '#rentHint',
-    `Vacío: ${fE(num(cfg.rentValue))}, el de «Tus datos». Pon otro si aquí el alquiler es más caro o más barato, y 0 si sigues pagando tu casa mientras tanto.`,
-  );
+  text('#rentHint', `Vacío: ${fE(num(cfg.rentValue))}, el de «Tus datos». Pon 0 si sigues pagando tu casa.`);
   text('#yearHint', yearHint(o, r));
   const overlaps = overlapsOf(o, offers);
   text(
     '#overlapHint',
     overlaps.length
-      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.mine.name}»`))}. Si una solo era una oferta que no trabajaste, márcalo en ella: así no se suman las dos en el año ni en el IRPF.`
+      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.mine.name}»`))}. Si una no la trabajaste, márcala como solo oferta.`
       : '',
   );
   text('#daysOffHint', daysOffHint(o, r));

@@ -241,7 +241,7 @@ test('«Solo oferta» is always shown: ticked and locked without a start date', 
   await expect(box).toBeVisible();
   await expect(box).toBeChecked();
   await expect(box).toBeDisabled();
-  await expect(page.locator('#offerOnlyHint')).toContainText('pon cuándo empezó');
+  await expect(page.locator('#offerOnlyHint')).toContainText('cuenta como solo oferta');
   await page.fill('#start', '2026-06-01');
   await page.locator('#start').dispatchEvent('input');
   await expect(box).toBeEnabled();
@@ -291,4 +291,16 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
   await expect(page.locator('#cmpBlk .lr[data-id=o1]')).toHaveCount(0);
   await toggle.check();
   await expect(rows).toHaveCount(8);
+});
+
+test('clearing the end date leaves the duration unknown', async ({ loaded: page }) => {
+  await page.evaluate(() => app.select('o4'));
+  const clear = page.locator('[data-action=clearEnd]');
+  await expect(clear).toBeVisible();
+  await clear.click();
+  const terms = await page.evaluate(() => app.active().terms);
+  expect(terms.durationUnit).toBe('unknown');
+  await expect(page.locator('#end')).toHaveValue('');
+  await expect(page.locator('#f [name=durationUnit][value=unknown]')).toBeChecked();
+  await expect(clear).toBeHidden();
 });

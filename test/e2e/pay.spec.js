@@ -140,7 +140,7 @@ test('«Las libro, cobrando» is not offered on a temporary contract of 120 days
   await answer(page, 'contract', 'temporary');
   const taken = page.locator('input[name=vacation][value=taken]');
   await expect(taken).toBeHidden();
-  await expect(page.locator('#vacationHint')).toContainText('En un contrato temporal de hasta 120 días');
+  await expect(page.locator('#vacationHint')).toContainText('En contratos temporales de hasta 120 días');
   await page.fill('#duration', '5');
   await expect(taken).toBeVisible();
   await answer(page, 'durationUnit', 'days');
@@ -156,7 +156,7 @@ test('«Las libro, cobrando» is not offered on a temporary contract of 120 days
   // A contract of a month or less, of any kind, ends before the vacation could be taken
   await page.fill('#duration', '30');
   await expect(taken).toBeHidden();
-  await expect(page.locator('#vacationHint')).toContainText('En un contrato de un mes o menos');
+  await expect(page.locator('#vacationHint')).toContainText('En contratos de un mes o menos');
 });
 
 test('an offer that already takes its vacation keeps it, shown with a hint, when the contract is short', async ({
@@ -168,7 +168,7 @@ test('an offer that already takes its vacation keeps it, shown with a hint, when
   await page.fill('#duration', '2');
   expect((await terms(page)).vacation).toBe('taken');
   await expect(page.locator('input[name=vacation][value=taken]')).toBeChecked();
-  await expect(page.locator('#vacationHint')).toContainText('cambia a «Me las pagan aparte, al acabar»');
+  await expect(page.locator('#vacationHint')).toContainText('elige otra opción');
 });
 
 test('«Una parte» without the part is missing, and the mark points at it', async ({ page }) => {
