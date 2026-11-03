@@ -186,7 +186,7 @@ test('copy the claim', async ({ loaded: page }) => {
   await expect(page.locator('#claimMsg')).not.toBeEmpty();
   const text = await page.evaluate(() => app.claimText(app.active(), app.calcOffer(app.active())));
   expect(text).toContain('SALARIO');
-  expect(text).toContain('Comparador de jornales');
+  expect(text).toContain('Zurrón sindical');
 });
 
 // With accounts the reminder gives way to the account button and its tooltip (account.spec.js)

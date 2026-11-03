@@ -172,8 +172,8 @@ test.describe('the account button', () => {
   test('the app bar is on the welcome too, and a stored «settings» tab opens Ofertas', async ({ openApp }) => {
     const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
     await expect(page.locator('#welcome')).toBeVisible();
-    await expect(page.locator('.appbar h1')).toHaveText('Comparador de jornales');
-    await expect(page.locator('.appbar .kicker')).toHaveText('Para pastores y pastoras');
+    await expect(page.locator('.appbar h1')).toHaveText('Zurrón sindical');
+    await expect(page.locator('.appbar .kicker')).toHaveText('Por un pastoreo digno');
     await expect(page.getByRole('button', { name: 'Ajustes', exact: true })).toBeVisible();
     await expect(button(page)).toBeVisible();
     await page.evaluate(() => localStorage.setItem('cj.tab', 'settings'));

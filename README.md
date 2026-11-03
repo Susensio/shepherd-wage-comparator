@@ -1,6 +1,6 @@
-# Shepherd Wage Comparator
+# Zurrón sindical
 
-A page for shepherds in Spain to compare job offers. It checks each offer against the legal minimum wage, the night-stay bonus, holidays, weekly rest and the 40-hour week, and shows what is left unpaid, both on the payslip and in cash.
+Por un pastoreo digno. A page for shepherds in Spain to compare job offers. It checks each offer against the legal minimum wage, the night-stay bonus, holidays, weekly rest and the 40-hour week, and shows what is left unpaid, both on the payslip and in cash.
 
 Live at **https://susensio.github.io/shepherd-wage-comparator/**. The interface is in Spanish.
 
