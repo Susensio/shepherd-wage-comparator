@@ -1,16 +1,5 @@
 # State
 
-## Guided entry and the offer ficha (ADR-0020)
-
-Built on branch `ccr-32fbee75-oc1p8v` on 3 November 2026, not published yet; the owner is reviewing. What the build decided, beyond the mock-up:
-
-- Steps are static `<section class="step">` blocks inside the one `<form id="f">` in `index.html` (ids unchanged, so `events.js`, `pay-answers.js`, `views/form.js` and the place field work as before); `ui/entry.js` shows one at a time. Eight steps, not seven: «Tus gastos y el IRPF» is a short last step.
-- The offer name is a field on «¿Dónde es?»; «Duplicar» and «Borrar» (double tap) sit at the foot of the ficha.
-- A first visit keeps the app bar over the templates step (to sign in or restore a copy); a page opened from it replaces the entry until «Volver».
-- Comparar's «Toca una oferta» opens the ficha in the Ofertas tab; Back returns to the list.
-
-Left: look at the screens on a real phone; the mock-up's bottom tab bar was not adopted (the tabs stay at the top); the `.editinfo` CSS now only serves the shared offer view and could be renamed.
-
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
 Decided with the owner on 1 November 2026. Not started. To be built from the owner's laptop; nothing below has been run against the live project yet.
