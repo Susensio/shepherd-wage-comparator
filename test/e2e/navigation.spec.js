@@ -7,6 +7,27 @@ const box = async (locator) => (await locator.boundingBox()) ?? expect.fail('not
 test.describe('phone', () => {
   test.use({ viewport: { width: 375, height: 700 } });
 
+  // With scripts off nothing moves them: the HTML itself has them in the phone place, so they do not jump on load
+  test.describe('without scripts', () => {
+    test('the tabs are outside the app bar, a direct child of the body, from the first paint', async ({
+      browser,
+      baseURL,
+    }) => {
+      const context = await browser.newContext({
+        baseURL,
+        javaScriptEnabled: false,
+        viewport: { width: 375, height: 700 },
+      });
+      const page = await context.newPage();
+      await page.goto('/');
+      await expect(page.locator('.appbar .tabs')).toHaveCount(0);
+      await expect(page.locator('body > .tabs')).toHaveCount(1);
+      const bar = await box(page.locator('body > .tabs'));
+      expect(bar.y + bar.height).toBeCloseTo(700, 0);
+      await context.close();
+    });
+  });
+
   test('the tabs are a bar at the bottom, with an icon each and the current one marked', async ({ loaded: page }) => {
     const bar = await box(page.locator('.tabs'));
     expect(bar.y + bar.height).toBeCloseTo(700, 0);

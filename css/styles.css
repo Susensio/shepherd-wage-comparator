@@ -1897,7 +1897,7 @@ section.blk {
   margin-bottom: 4px;
 }
 
-/* Tabs (ADR-0021): a bar under the scroller on phones (navigation.js moves it there); from 1024 px they sit in the app bar (see the end of the file) */
+/* Tabs (ADR-0021): a bar under the scroller on phones (that is where the HTML has it); from 1024 px they sit in the app bar (see the end of the file) */
 .tabs {
   flex: none;
   display: flex;
@@ -3545,6 +3545,10 @@ details.plg > summary .stat.dt b {
   }
   .brand {
     flex: 0 1 auto;
+  }
+  /* Until navigation.js moves them into the app bar */
+  body > .tabs {
+    visibility: hidden;
   }
   .tabs {
     margin-left: 20px;

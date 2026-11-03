@@ -66,11 +66,11 @@ function applyView() {
 if (wide.matches) view.ficha = true;
 applyView();
 
-/** The tabs sit in the app bar on wide screens; on phones, after #scroller, so its stretch does not move them. */
+/** The tabs sit in the app bar on wide screens; on phones, the HTML puts them outside #scroller, so its stretch does not move them. */
 function placeTabs() {
   const tabs = $('.tabs');
   if (wide.matches) $('.appbar').insertBefore(tabs, $('.bar-actions'));
-  else document.body.append(tabs);
+  else document.body.append(tabs); // back from the app bar on resize
 }
 placeTabs();
 wide.addEventListener('change', () => {
