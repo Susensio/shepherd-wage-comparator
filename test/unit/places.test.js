@@ -3,7 +3,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { articleFirst, buildIndex, fold, MAX_SUGGESTIONS, placeOfTerms, searchPlaces } from '../../src/places.js';
+import {
+  articleFirst,
+  buildIndex,
+  editDistance,
+  fold,
+  MAX_SUGGESTIONS,
+  placeOfTerms,
+  searchPlaces,
+} from '../../src/places.js';
 import { createPlacesLoader, defersPreload, PLACES_VERSION } from '../../src/storage/places.js';
 
 const real = JSON.parse(readFileSync(new URL(`../../data/places-${PLACES_VERSION}.json`, import.meta.url), 'utf8'));
@@ -237,7 +245,7 @@ test('listeners hear every change of status', async () => {
   assert.deepEqual(seen, ['loading', 'ready']);
 });
 
-test('b and v are the same letter when searching', () => {
+test('a spelling mistake still finds the place (b for v)', () => {
   const index = buildIndex({
     provinces: [['HU', 'Huesca']],
     municipalities: [['Aínsa-Sobrarbe', 0, '22907']],
@@ -246,7 +254,7 @@ test('b and v are the same letter when searching', () => {
   assert.deepEqual(names(index, 'Javierre'), ['Jabierre']);
 });
 
-test('a full name the list does not hold falls back to its words, the right municipality first', () => {
+test('a full name the list does not hold is found by its words, the right municipality first', () => {
   const index = buildIndex({
     provinces: [['HU', 'Huesca']],
     municipalities: [
@@ -268,4 +276,20 @@ test('the real list finds Jabierre, in Aínsa-Sobrarbe, for «Javierre de Olsón
   const [first] = searchPlaces(buildIndex(real), 'Javierre de Olsón');
   assert.equal(first.name, 'Jabierre');
   assert.equal(first.municipality, 'Aínsa-Sobrarbe');
+});
+
+test('edit distance counts changed, added, removed and swapped letters, and stops past the limit', () => {
+  assert.equal(editDistance('javierre', 'jabierre', 2), 1);
+  assert.equal(editDistance('benasqe', 'benasque', 2), 1);
+  assert.equal(editDistance('jaca', 'jcaa', 1), 1);
+  assert.equal(editDistance('kitten', 'sitting', 3), 3);
+  assert.equal(editDistance('jaca', 'zaragoza', 1), 2);
+});
+
+test('the real list forgives typos', () => {
+  const index = buildIndex(real);
+  const first = (query) => searchPlaces(index, query)[0]?.name;
+  assert.equal(first('Sabiñaningo'), 'Sabiñánigo');
+  assert.equal(first('Benasqe'), 'Benasque');
+  assert.equal(first('San Juan de Plann'), 'San Juan de Plan');
 });
