@@ -49,16 +49,14 @@ const allowedMistakes = (word) => (word.length >= 8 ? 2 : word.length >= MIN_FUZ
 /** Name matches count three times a municipality match. */
 const NAME_BOOST = 3;
 
-/** @param {{ name: string, municipality: string }[]} documents */
-function buildSearcher(documents) {
-  const searcher = new MiniSearch({
+/** An empty searcher with the page's settings. */
+function newSearcher() {
+  return new MiniSearch({
     fields: ['name', 'municipality'],
     tokenize,
     processTerm: fold,
     searchOptions: { prefix: true, fuzzy: allowedMistakes, boost: { name: NAME_BOOST }, combineWith: 'OR' },
   });
-  searcher.addAll(documents);
-  return searcher;
 }
 
 /**
@@ -66,6 +64,27 @@ function buildSearcher(documents) {
  * @param {PlacesFile} file
  */
 export function buildIndex(file) {
+  const index = indexWithoutSearch(file);
+  index.searcher.addAll(index.documents);
+  return index;
+}
+
+/** Places added in chunks this size, so building the index on a phone never blocks the page for long. */
+const CHUNK = 1000;
+
+/**
+ * The same as `buildIndex`, built in chunks with pauses between them: the page keeps answering while the list loads.
+ * @param {PlacesFile} file
+ * @returns {Promise<PlacesIndex>}
+ */
+export async function buildIndexInChunks(file) {
+  const index = indexWithoutSearch(file);
+  await index.searcher.addAllAsync(index.documents, { chunkSize: CHUNK });
+  return index;
+}
+
+/** Everything but the search words, which `buildIndex` or `buildIndexInChunks` add. */
+function indexWithoutSearch(file) {
   const municipalities = file.municipalities.map(([municipality, province, ineCode]) => ({
     municipality,
     municipalityCode: ineCode,
@@ -79,9 +98,12 @@ export function buildIndex(file) {
     provinces: new Map(file.provinces),
     byCode: new Map(municipalities.map((m) => [m.municipalityCode, m])),
     rows,
-    searcher: buildSearcher(
-      rows.map(({ name, municipality }, id) => ({ id, name, municipality: municipalities[municipality].municipality })),
-    ),
+    documents: rows.map(({ name, municipality }, id) => ({
+      id,
+      name,
+      municipality: municipalities[municipality].municipality,
+    })),
+    searcher: newSearcher(),
   };
 }
 

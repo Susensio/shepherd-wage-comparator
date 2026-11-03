@@ -1,6 +1,6 @@
 /** The place list (data/places-*.json): fetched once per version, kept in Cache Storage, built into an index. */
 
-import { buildIndex } from '../places.js';
+import { buildIndexInChunks } from '../places.js';
 
 /** Month of the GeoNames dump the file was built from. Changing it means `npm run places` and a new download for everyone. */
 export const PLACES_VERSION = '2026-10.1';
@@ -66,8 +66,9 @@ export function createPlacesLoader(env) {
     if (inFlight) return inFlight;
     failed = false;
     inFlight = fetchFile()
-      .then((file) => {
-        index = buildIndex(file);
+      .then(buildIndexInChunks)
+      .then((built) => {
+        index = built;
         return index;
       })
       .catch((error) => {

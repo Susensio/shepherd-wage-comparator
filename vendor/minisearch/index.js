@@ -2002,4 +2002,3 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const SPACE_OR_PUNCTUATION = /[\n\r\p{Z}\p{P}]+/u;
 
 export { MiniSearch as default };
-//# sourceMappingURL=index.js.map
