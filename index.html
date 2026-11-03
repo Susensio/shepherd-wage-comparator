@@ -101,11 +101,10 @@
             <ul class="suggest" id="placeList" role="listbox" aria-label="Pueblos" hidden></ul>
             <p class="hint place-picked" id="placePicked" hidden><span id="placePickedText"></span> <button type="button" class="linkbtn" data-action="changePlace">Cambiar</button></p>
             <p class="hint" id="placeHint"></p>
-            <p class="hint">Al compartir la oferta, el pueblo no se ve.</p>
           </div>
-          <label class="fld third">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep"></label>
-          <label class="fld third">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats"></label>
-          <label class="fld third">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle"></label>
+          <label class="fld third">Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep" placeholder="0"></label>
+          <label class="fld third">Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats" placeholder="0"></label>
+          <label class="fld third">Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
           </fieldset>
         </details>
 
@@ -113,11 +112,11 @@
           <summary><span class="st">Tiempo de trabajo</span><span class="ss" id="sum-time"></span></summary>
           <fieldset aria-label="Tiempo de trabajo">
           <div class="fld half">
-            <div class="labelrow">
-              <label for="start">Empieza el</label>
-              <button type="button" class="linkbtn tap" data-action="clearStart" data-show="hasStart" aria-label="Quitar la fecha de inicio">Quitar</button>
+            <label for="start">Empieza el</label>
+            <div class="clearable">
+              <input type="date" id="start" name="start">
+              <button type="button" class="clear-x" data-action="clearStart" data-show="hasStart" aria-label="Quitar la fecha de inicio">✕</button>
             </div>
-            <input type="date" id="start" name="start">
           </div>
           <div class="fld half">
             <label for="end">Termina el</label>
@@ -135,7 +134,7 @@
             </div>
           </div>
           <div class="fld full">
-            <div class="multi"><label><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label></div>
+            <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
             <p class="hint" id="yearHint"></p>
             <p class="hint" id="offerOnlyHint"></p>
             <p class="hint overlap-warning" id="overlapHint"></p>
@@ -147,8 +146,8 @@
               <label><input type="radio" name="holidays" value="yes">Sí</label>
               <label><input type="radio" name="holidays" value="no">No</label>
             </div>
-            <p class="hint">Unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, pon «No».</p>
           </div>
+          <p class="hint full">Festivos: unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, pon «No».</p>
           <div class="fld full">
             <label class="fld" for="daysOff">Libranzas (días libres, sin contar vacaciones)</label>
             <div class="combo">

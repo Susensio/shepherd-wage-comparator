@@ -366,6 +366,7 @@ fieldset {
   min-width: 0;
 }
 label.fld,
+.fld > label:first-child,
 .fld > span:first-child {
   font-size: 13px;
   color: var(--muted);
@@ -708,17 +709,39 @@ button.danger {
   font-size: inherit;
 }
 /* A text button in a label row: the tap area is the full height, the row is not */
-.labelrow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--muted);
+/* A field with a clear button inside, on its right edge */
+.clearable {
+  position: relative;
 }
-.labelrow .linkbtn.tap {
+.clearable input {
+  width: 100%;
+  padding-right: 36px;
+}
+.clear-x {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+/* A plain checkbox with its label, not a boxed choice */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-height: var(--tap);
-  margin: -14px 0;
-  padding: 0 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
 }
 .filebtn {
   display: inline-flex;
@@ -3118,6 +3141,33 @@ details.plg > summary .stat.dt b {
 }
 .terms-only .hint {
   margin: 2px 0 0 26px;
+}
+/* Comparar's view switches: small outlined chips under the ranking, side by side; on shows a tick */
+.cmp-opts {
+  margin-top: 12px;
+}
+.multi.chips.cmp-opts label {
+  flex: 0 1 auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.multi.chips.cmp-opts label:has(input:checked) {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 650;
+}
+.multi.chips.cmp-opts label:has(input:checked)::before {
+  content: "✓";
+  width: auto;
+  height: auto;
+  border: 0;
+}
+.cmp-opts label:has(input:disabled) {
+  opacity: 0.6;
+}
+.cmp-opts + .hint {
+  margin-top: 4px;
 }
 #cmpMore:not(:empty) {
   margin-top: 18px;
