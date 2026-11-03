@@ -351,9 +351,9 @@ fieldset {
   fieldset > .twothirds {
     grid-column: span 4;
   }
-  /* Fields sharing a row line their controls up at the bottom when the labels wrap differently */
-  fieldset > :is(.half, .third, .twothirds) > :is(input, .seg, .multi) {
-    margin-top: auto;
+  /* Fields sharing a row keep one-line labels, so their controls line up from the top whatever hints follow */
+  fieldset > :is(.half, .third, .twothirds) {
+    align-self: start;
   }
 }
 .full {
