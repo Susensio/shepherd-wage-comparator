@@ -152,7 +152,13 @@ export function paintAll() {
   const o = active();
   const r = calcOffer(o);
   needPlacesFor(o);
-  render(offersListView(myOffers().map((x) => ({ o: x, r: calcOffer(x) }))), $('#cards'));
+  render(
+    offersListView(
+      myOffers().map((x) => ({ o: x, r: calcOffer(x) })),
+      o.id,
+    ),
+    $('#cards'),
+  );
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
   render(fichaView(o, r, placesIfLoaded()), $('#result'));
   restoreFolds($('#result'));

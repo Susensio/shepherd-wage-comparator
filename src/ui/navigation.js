@@ -1,11 +1,15 @@
 /**
  * Where the reader is: the tab shown, the page (account, settings) open over it, and the way back from a page. Over
  * the Ofertas tab, the list shows an offer's ficha, and the guided entry covers the whole screen. Each page, ficha
- * and entry pushes a history entry, so the phone's Back goes one level up.
+ * and entry pushes a history entry, so the phone's Back goes one level up. On wide screens the list and the ficha
+ * are side by side (ADR-0021): the ficha is always open there and pushes nothing.
  */
 
 import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
+
+/** From this width the tabs move to the app bar and Ofertas shows the list beside the ficha; keep in step with the CSS. */
+const wide = window.matchMedia('(min-width: 1024px)');
 
 const TABS = ['offers', 'compare', 'laws'];
 
@@ -53,6 +57,18 @@ export const fichaOpen = () => view.ficha;
 export const entryOpen = () => view.entry;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
+/** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
+function applyView() {
+  $('#offersList').hidden = !wide.matches && view.ficha;
+  $('#ficha').hidden = !view.ficha;
+  $('#entry').hidden = !view.entry;
+  document.body.classList.toggle('on-entry', view.entry);
+  document.body.classList.toggle('in-ficha', view.ficha && !wide.matches);
+}
+if (wide.matches) view.ficha = true;
+applyView();
+wide.addEventListener('change', () => go({ ficha: wide.matches, entry: view.entry }, 'none'));
+
 /** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
 function showPanel(shown) {
   for (const t of [...TABS, ...PAGES]) $(`[data-panel=${t}]`).hidden = t !== shown;
@@ -60,7 +76,7 @@ function showPanel(shown) {
   document.body.classList.toggle('on-page', !!where.page);
 }
 
-/** Shows a tab. With `scrollUp`, if the page is further down, it goes back up to the tabs. */
+/** Shows a tab. With `scrollUp`, the page goes back to the top. */
 export function showTab(tab, scrollUp) {
   const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the pages opens Ofertas
   showPanel(shown);
@@ -68,8 +84,7 @@ export function showTab(tab, scrollUp) {
   for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
   saveTab(shown);
   hooks.tabShown(shown);
-  const tabs = $('.tabs');
-  if (scrollUp && tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: tabs.offsetTop });
+  if (scrollUp) window.scrollTo({ top: 0 });
 }
 
 /**
@@ -112,7 +127,7 @@ export function onPopState() {
     hooks.entryDismissed();
     go({ ficha: !!kept.ficha, entry: false }, 'none');
   } else if (where.page && !kept.page) leavePage();
-  else if (view.ficha && !view.entry && !kept.ficha) go({ ficha: false, entry: false }, 'none');
+  else if (view.ficha && !view.entry && !kept.ficha && !wide.matches) go({ ficha: false, entry: false }, 'none');
 }
 
 /** Forgets history entries left from before a reload, whose views are gone. */
@@ -125,19 +140,16 @@ export const resetHistory = () => history.replaceState(null, '');
  * @param {'push' | 'replace' | 'back' | 'none'} how
  */
 function go(next, how) {
+  if (wide.matches) next = { ...next, ficha: true };
   const depth = (v) => (v.entry ? 2 : v.ficha ? 1 : 0);
   const deeper = depth(next) > depth(view);
   if (!view.entry) scrolls[view.ficha ? 'ficha' : 'list'] = scrollY;
-  const marker = next.entry ? { entry: true } : next.ficha ? { ficha: true } : null;
+  const marker = next.entry ? { entry: true } : next.ficha && !wide.matches ? { ficha: true } : null;
   Object.assign(view, next);
   if (how === 'push') history.pushState(marker, '');
   else if (how === 'replace') history.replaceState(marker, '');
   else if (how === 'back' && (history.state?.entry || history.state?.ficha)) history.back();
-  $('#offersList').hidden = view.ficha;
-  $('#ficha').hidden = !view.ficha;
-  $('#entry').hidden = !view.entry;
-  document.body.classList.toggle('on-entry', view.entry);
-  document.body.classList.toggle('in-ficha', view.ficha);
+  applyView();
   hooks.viewChanged();
   const restore = !deeper && (how === 'back' || how === 'none');
   window.scrollTo({ top: restore && !view.entry ? scrolls[view.ficha ? 'ficha' : 'list'] : 0, behavior: 'instant' });
@@ -149,7 +161,9 @@ export function openFicha() {
   if (!view.ficha) go({ ficha: true, entry: false }, 'push');
 }
 /** «Ofertas», on the ficha: back to the list. */
-export const closeFicha = () => go({ ficha: false, entry: false }, 'back');
+export function closeFicha() {
+  if (!wide.matches) go({ ficha: false, entry: false }, 'back');
+}
 /** The guided entry, over the list (a new offer) or the ficha (one step of it). */
 export const openEntry = () => go({ ficha: view.ficha, entry: true }, 'push');
 /** Out of the entry, to what it covered. */

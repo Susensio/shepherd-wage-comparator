@@ -79,3 +79,20 @@ test('«o arrástralo aquí» shows with a mouse and not on a touch screen', asy
   await expect(phone.locator('#backupDrop .filebtn')).toBeVisible();
   await touch.close();
 });
+
+for (const width of [320, 375]) {
+  test.describe(`${width} px wide`, () => {
+    test.use({ viewport: { width, height: 700 } });
+
+    test('taps are at least 40 px tall and nothing runs sideways, with the bottom bar', async ({ loaded: page }) => {
+      for (const tab of ['offers', 'compare', 'laws']) {
+        await page.click(`.tabs [data-tab=${tab}]`);
+        expect(await tooShort(page, `[data-panel=${tab}], .tabs`), tab).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      }
+      const tabs = await page.locator('.tabs').boundingBox();
+      expect(tabs.width).toBeCloseTo(width, 0);
+      await expect(page.locator('.appbar .kicker')).toBeVisible();
+    });
+  });
+}
