@@ -543,6 +543,68 @@ test.describe('while the saved session is being connected', () => {
     await expect(page.locator('#accountOut')).toBeVisible();
   });
 
+  test.describe('with no offers cached in this browser', () => {
+    const noCache = (openApp, options = {}) => connecting(openApp, { localOffers: undefined, ...options });
+    const cards = (page) => page.locator('#cards .ocard:not(.skeleton)');
+
+    test('three skeleton cards stand in for the list: no «+ Nueva oferta», no templates; the account then fills it', async ({
+      openApp,
+    }) => {
+      const page = await noCache(openApp);
+      await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(3);
+      await expect(cards(page)).toHaveCount(0);
+      await expect(page.locator('#btnAdd')).toBeHidden();
+      await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'true');
+      await expect(page.locator('#listLoading')).toHaveText('Cargando tu cuenta…');
+      expect(await page.evaluate(() => document.body.classList.contains('on-entry'))).toBe(false);
+      await expect(page.locator('#tplGrid')).toBeHidden();
+
+      await release(page);
+      await expect(cards(page)).toHaveCount(1);
+      await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
+      await expect(page.locator('#btnAdd')).toBeVisible();
+      await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'false');
+      await expect(page.locator('#listLoading')).toBeHidden();
+    });
+
+    test('an empty account then starts like a first visit, with the templates', async ({ openApp }) => {
+      const page = await noCache(openApp, { tables: { profiles: [{ ...PROFILE }], offers: [], offer_mine: [] } });
+      await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(3);
+      await expect(page.locator('#tplGrid')).toBeHidden();
+      await release(page);
+      await expect(page.locator('#tplGrid')).toBeVisible();
+      await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
+    });
+
+    test('a guest never sees a skeleton and starts with the templates', async ({ openApp }) => {
+      const page = await noCache(openApp, { signedOut: true, holdSession: false });
+      await expect(page.locator('#tplGrid')).toBeVisible();
+      await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
+      await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'false');
+    });
+
+    test.describe('on a wide screen', () => {
+      test.use({ viewport: { width: 1280, height: 800 } });
+
+      test('the ficha pane shows a skeleton too, until the account answers', async ({ openApp }) => {
+        const page = await noCache(openApp);
+        await expect(page.locator('#ficha .ficha-skeleton')).toBeVisible();
+        await expect(page.locator('#fichaName')).toBeHidden();
+        await release(page);
+        await expect(page.locator('#ficha .ficha-skeleton')).toBeHidden();
+        await expect(page.locator('#fichaName')).toHaveText('De la cuenta');
+      });
+    });
+  });
+
+  test('offers cached in this browser keep showing, with no skeleton', async ({ openApp }) => {
+    const page = await connecting(openApp);
+    await expect(page.locator('#cards .ocard:not(.skeleton)')).toHaveCount(sample.offers.length);
+    await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
+    await expect(page.locator('#btnAdd')).toBeVisible();
+    await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'false');
+  });
+
   test('the offer and the step open stay where they were when the account replaces the offers', async ({ openApp }) => {
     const second = sample.offers[1].id;
     const page = await connecting(openApp, {

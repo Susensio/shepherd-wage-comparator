@@ -3484,3 +3484,75 @@ details.plg > summary .stat.dt b {
     right: 0;
   }
 }
+
+/* --- Loading placeholders: grey blocks while a saved session connects and nothing is cached --- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skel-bar,
+.skel-block {
+  display: block;
+  border-radius: 6px;
+  background: var(--line);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skel-bar {
+  height: 14px;
+}
+.skel-bar.name {
+  width: 48%;
+  height: 20px;
+}
+.skel-bar.fig {
+  width: 22%;
+}
+.skel-bar.line {
+  width: 85%;
+}
+.skel-bar.short {
+  width: 55%;
+}
+.skel-bar.title {
+  width: 50%;
+  height: 26px;
+}
+.skel-block {
+  height: 120px;
+  border-radius: 14px;
+}
+.ocard.skeleton {
+  gap: 10px;
+  pointer-events: none;
+}
+.ocard.skeleton:hover {
+  border-color: var(--line);
+}
+.ficha-skeleton {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+body.loading-account .ficha-skeleton {
+  display: flex;
+}
+body.loading-account .ficha > :not(.ficha-skeleton) {
+  display: none;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel-bar,
+  .skel-block {
+    animation: none;
+  }
+}

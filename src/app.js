@@ -23,13 +23,20 @@ import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fichaView } from './views/ficha.js';
 import { fillForm, fillVacation, paintForm } from './views/form.js';
-import { offersListView, templatesView } from './views/offers-list.js';
+import { offersListView, skeletonCardsView, templatesView } from './views/offers-list.js';
 import { sharedView } from './views/shared.js';
 
 /** What the page remembers while open, not saved. */
 const ui = {
+  /** A saved session is connecting and the browser has no offers of its own: skeleton cards instead of the list. */
+  loadingAccount: false,
   /** Fade in the form fields that appear: only after you touch the form, not when switching offers or starting. */
   animateFields: false,
+};
+
+/** Takes effect at the next paint. */
+export const setLoadingAccount = (/** @type {boolean} */ loading) => {
+  ui.loadingAccount = loading;
 };
 
 export const animateNextPaint = () => {
@@ -153,13 +160,20 @@ export function paintAll() {
   const o = active();
   const r = calcOffer(o);
   needPlacesFor(o);
+  const loading = ui.loadingAccount;
   render(
-    offersListView(
-      myOffers().map((x) => ({ o: x, r: calcOffer(x) })),
-      o.id,
-    ),
+    loading
+      ? skeletonCardsView()
+      : offersListView(
+          myOffers().map((x) => ({ o: x, r: calcOffer(x) })),
+          o.id,
+        ),
     $('#cards'),
   );
+  $('#offersList').setAttribute('aria-busy', String(loading));
+  $('#listLoading').hidden = !loading;
+  $('#btnAdd').hidden = loading;
+  document.body.classList.toggle('loading-account', loading);
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
   render(fichaView(o, r, placesIfLoaded()), $('#result'));
   restoreFolds($('#result'));

@@ -1,6 +1,6 @@
 /** Startup. */
 
-import { commit, paintAll, paintCompare, restoreStaticFolds, select } from './app.js';
+import { commit, paintAll, paintCompare, restoreStaticFolds, select, setLoadingAccount } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
@@ -38,10 +38,24 @@ setUpPlaceField({ commit, paint: paintAll });
 showTab(store.get(KEY.tab, 'offers'));
 fillForm(active());
 fillSettings(state.config);
+// A saved session with no offers cached here (signed out earlier, new device): its offers are on their way, so
+// neither an empty list nor the first-visit templates until the account answers
+let loadingAccount = state.firstRun && accountLoader.returningUser();
+setLoadingAccount(loadingAccount);
 paintAll();
-if (state.firstRun) startEntry();
+if (state.firstRun && !loadingAccount) startEntry();
 
 accountState.subscribe((event, detail) => {
+  const answered = event === 'replaced' || (event === 'account' && accountState.status() !== 'connecting');
+  if (loadingAccount && answered) {
+    loadingAccount = false;
+    setLoadingAccount(false);
+    // Replaced: handled below. A failed connect falls back to a first visit, as it did before the wait.
+    if (event !== 'replaced') {
+      paintAll();
+      if (state.placeholderId) startEntry();
+    }
+  }
   if (event === 'others') paintCompare();
   if (event === 'signedIn') returnAfterSignIn();
   if (event !== 'replaced') return;

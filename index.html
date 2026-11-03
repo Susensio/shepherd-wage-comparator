@@ -54,11 +54,13 @@
   </div>
 
   <section class="offers-list" id="offersList" aria-label="Tus ofertas">
+    <p class="sr-only" id="listLoading" role="status" hidden>Cargando tu cuenta…</p>
     <div class="cards" id="cards"></div>
     <button type="button" class="pri newoffer" id="btnAdd" data-action="newOffer">+ Nueva oferta</button>
   </section>
 
   <article class="ficha" id="ficha" hidden aria-label="Ficha de la oferta">
+    <div class="ficha-skeleton" aria-hidden="true"><span class="skel-bar title"></span><span class="skel-bar"></span><span class="skel-block"></span><span class="skel-block"></span></div>
     <button type="button" class="back" data-action="closeFicha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Ofertas</button>
     <header class="fichahead">
       <h1 id="fichaName"></h1>
