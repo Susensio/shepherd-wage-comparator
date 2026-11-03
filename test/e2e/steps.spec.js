@@ -1,6 +1,6 @@
 // The guided entry and the ficha: the order of the steps, «Luego», changing one step, and the phone's Back button.
 
-import { expect, goStep, loadOffers, openStep, sample, startOffer, test } from './fixtures.js';
+import { expect, goStep, loadOffers, openCondition, openStep, sample, startOffer, test } from './fixtures.js';
 
 const active = (page) => page.evaluate(() => app.active());
 const counter = (page) => page.locator('#entryCounter');
@@ -120,7 +120,7 @@ test('the phone Back button goes from the step to the ficha to the list, and res
   await page.locator('#cards .ocard').nth(1).click();
   await expect(page.locator('#ficha')).toBeVisible();
   const before = await active(page);
-  await page.locator('.crow[data-step=pay]').click();
+  await openCondition(page, 'pay');
   await page.fill('#payTotal', '999');
   await page.goBack();
   await expect(page.locator('#entry')).toBeHidden();
@@ -163,7 +163,7 @@ test('each step fits a phone: nothing wider than the screen', async ({ page }) =
   for (const id of ['pay', 'when', 'workday', 'home', 'trip', 'expenses', 'place']) {
     await page.evaluate(() => app.openFicha());
     if (!(await page.locator('#ficha').isVisible())) await page.locator('#entryClose').click();
-    await page.locator(`.crow[data-step=${id}]`).click();
+    await openCondition(page, id);
     const problems = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;
       const visible = [...document.querySelectorAll('#entry :is(input, label, button)')].filter(

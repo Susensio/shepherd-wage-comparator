@@ -731,10 +731,6 @@ button.sm,
   padding: 6px 10px;
 }
 
-/* The same width for «Borrar» and «¿Seguro?», so the row does not move when it asks */
-#btnDel {
-  min-width: 82px;
-}
 button.danger {
   color: var(--neg);
 }
@@ -1173,6 +1169,46 @@ div.welcome {
   flex-direction: column;
   gap: 8px;
 }
+/* One row that opens the seven condition rows */
+.conditions > summary {
+  min-height: 56px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.cinfo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cinfo b {
+  font-size: 15px;
+}
+.cs {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--muted);
+}
+.cs.missing {
+  color: var(--c-cash-t);
+  font-weight: 650;
+}
+.cmore {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.conditions[open] > summary .cmore {
+  display: none;
+}
+.conditions > summary::after {
+  margin-left: 0;
+}
 .crows {
   display: flex;
   flex-direction: column;
@@ -1228,8 +1264,87 @@ div.welcome {
 .analysis-title {
   margin-top: 6px;
 }
-.fichaend {
+.fichatitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* The «⋯» that opens an offer's menu: a 44 px target, round on the ficha and flat on a card */
+.omenu {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+}
+.omenu svg {
+  width: 22px;
+  height: 22px;
+}
+.omenu[aria-expanded="true"] {
+  border-color: var(--ink);
+}
+.tag .paro {
   margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--tag-ink) 25%, transparent);
+}
+.offer-menu {
+  position: fixed;
+  z-index: 40;
+  width: 230px;
+  max-width: calc(100vw - 16px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(24, 35, 29, 0.18);
+  overflow: hidden;
+}
+.offer-menu[hidden] {
+  display: none;
+}
+.offer-menu [role="menuitem"] {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 500;
+}
+.offer-menu [role="menuitem"]:not([hidden]) + [role="menuitem"]:not([hidden]) {
+  border-top: 1px solid var(--line);
+}
+.offer-menu [role="menuitem"]:hover,
+.offer-menu [role="menuitem"]:focus-visible {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.offer-menu [role="menuitem"].danger {
+  color: var(--neg);
+  font-weight: 600;
+}
+.offer-menu [role="menuitem"]:focus-visible {
+  outline-offset: -2px;
+}
+.offer-menu .menu-msg {
+  margin: 0;
+  padding: 0 16px 10px;
+}
+.offer-menu .menu-msg:empty {
+  display: none;
+}
+.offer-menu .copy-fallback {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
 }
 
 /* --- The guided entry: a screen of its own, with the header and the footer in view --- */

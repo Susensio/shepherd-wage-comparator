@@ -56,19 +56,67 @@ test('the end date sets the duration', async ({ page }) => {
   await expect(page.locator('input[name=durationUnit][value=days]')).toBeChecked();
 });
 
-test('duplicate and delete', async ({ page }) => {
+const MENU = '#offerMenu';
+
+test('the ficha menu duplicates and deletes, asking twice before deleting', async ({ page }) => {
   await newOffer(page);
-  await page.click('[data-action=duplicate]');
+  const trigger = page.locator('#fichaMenu');
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator(MENU)).toBeHidden();
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator(MENU)).toBeVisible();
+  await expect(page.locator(`${MENU} [role=menuitem]:visible`)).toHaveText([
+    'Duplicar',
+    'Copiar ficha',
+    'Copiar reclamación',
+    'Borrar',
+  ]);
+  await expect(page.locator(`${MENU} [role=menuitem]`).first()).toBeFocused();
+  await page.locator(`${MENU} [data-menu=duplicate]`).click();
+  await expect(page.locator(MENU)).toBeHidden();
   const names = await offerNames(page);
   expect(names).toHaveLength(2);
   expect(names[1]).toMatch(/\(copia\)$/);
-  // Deleting asks for a second tap
-  await page.click('#btnDel');
-  await expect(page.locator('#btnDel')).toHaveText('¿Seguro?');
-  await page.click('#btnDel');
+  // Deleting asks for a second tap, and the menu stays open meanwhile
+  await trigger.click();
+  await page.locator(`${MENU} [data-menu=delete]`).click();
+  await expect(page.locator(`${MENU} [data-menu=delete]`)).toHaveText('¿Seguro?');
+  await expect(page.locator(MENU)).toBeVisible();
+  await page.locator(`${MENU} [data-menu=delete]`).click();
   expect(await offerNames(page)).toHaveLength(1);
   await expect(page.locator('#cards .ocard')).toHaveCount(1);
   await expect(page.locator('#ficha')).toBeHidden();
+});
+
+test('Escape closes the menu and gives the focus back to its button; so does tapping outside', async ({
+  loaded: page,
+}) => {
+  const trigger = page.locator('#fichaMenu');
+  await trigger.click();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator(`${MENU} [role=menuitem]:visible`).nth(1)).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator(MENU)).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await trigger.click();
+  await page.locator('#fichaName').click();
+  await expect(page.locator(MENU)).toBeHidden();
+  // A second tap on the button closes it too
+  await trigger.click();
+  await trigger.click();
+  await expect(page.locator(MENU)).toBeHidden();
+});
+
+test('the delete confirmation goes back to «Borrar» when the menu closes', async ({ loaded: page }) => {
+  await page.locator('#fichaMenu').click();
+  await page.locator(`${MENU} [data-menu=delete]`).click();
+  await expect(page.locator(`${MENU} [data-menu=delete]`)).toHaveText('¿Seguro?');
+  await page.keyboard.press('Escape');
+  await page.locator('#fichaMenu').click();
+  await expect(page.locator(`${MENU} [data-menu=delete]`)).toHaveText('Borrar');
 });
 
 test('compare, and go to an offer from there', async ({ page }) => {
@@ -188,14 +236,16 @@ test('a ficha with data missing marks its row and opens that step', async ({ pag
   await expect(page.locator('#analysis-none, .analysis-title')).toHaveCount(0);
   await expect(page.locator('.crow.missing .miss').first()).toContainText('Falta');
   await expect(page.locator('#cards .ocard')).toContainText('Faltan datos');
+  await page.locator('.conditions > summary').click();
   await page.locator('.crow.missing').first().click();
   await expect(page.locator('#goMsg')).toHaveText(/^Falta/);
   await expect(page.locator('.fld.missing').first()).toBeVisible();
 });
 
-test('copy the claim', async ({ loaded: page }) => {
-  await page.click('[data-action=copyClaim]');
-  await expect(page.locator('#claimMsg')).not.toBeEmpty();
+test('copy the claim, from the menu', async ({ loaded: page }) => {
+  await page.locator('#fichaMenu').click();
+  await page.locator(`${MENU} [data-menu=copyClaim]`).click();
+  await expect(page.locator(`${MENU} .menu-msg`)).not.toBeEmpty();
   const text = await page.evaluate(() => app.claimText(app.active(), app.calcOffer(app.active())));
   expect(text).toContain('SALARIO');
   expect(text).toContain('Zurrón sindical');

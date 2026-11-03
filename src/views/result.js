@@ -6,7 +6,7 @@ import { euroDecimals, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } f
 import { LAW } from '../law.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
-import { legalLine, MISSING_TEXT, MISSING_TEXT_THIRD } from '../text.js';
+import { MISSING_TEXT, MISSING_TEXT_THIRD } from '../text.js';
 import {
   fUnit,
   incomeOf,
@@ -22,6 +22,7 @@ import {
 import { voiceOf } from '../voice.js';
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
+import { negroSection } from './negro.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
 import { workings } from './workings.js';
@@ -34,6 +35,18 @@ const otherUnits = (r, unit) =>
     const x = inUnit(r.earnings.total, r, u);
     return html`<span><b>${fN(x, euroDecimals(x, UNITS[u].decimals || undefined))}</b> ${UNIT_TEXT[u]}</span>`;
   })}</span>`;
+
+/** Under the headline: the paro the offer generates, apart from «Ganas» (ADR-0022), or why there is none. */
+function paroLine(r) {
+  const days = Math.round(r.unemployment.days);
+  if (days < 1)
+    return r.noContract
+      ? 'Sin contrato no genera paro.'
+      : r.cash.allCash
+        ? 'Todo en negro: no genera paro.'
+        : 'No genera paro.';
+  return html`Y genera <b>${days} ${days === 1 ? 'día' : 'días'} de paro</b>: unos ${fE(r.unemployment.euros)}, que se cobran más adelante.`;
+}
 
 const STAMPS = {
   noContract: { text: 'Sin contrato' },
@@ -208,7 +221,6 @@ export function resultParts(o, r, { readOnly = false } = {}) {
   // The headline is the ledger's «Ganas» in the same unit, so the two never differ by a rounding
   const headline = unit in earnedShown ? fUnit(earnedShown[unit], unit) : money.figure(r.earnings.total);
   const year = actualYear(o.terms);
-  const line = legalLine(o, r);
   const head = html`${
     year !== r.year
       ? html`<p class="year-warning">Esta oferta es de ${year} y aún no están incluidos el salario mínimo ni el IRPF de ${year}: las cuentas usan los de ${r.year}.</p>`
@@ -220,14 +232,15 @@ export function resultParts(o, r, { readOnly = false } = {}) {
         ? html`<a href="#secLegal" class=${STAMPS[r.stamp.code].warn ? 'stamp warn' : 'stamp'}>${stampLines(STAMPS[r.stamp.code].text)}</a>`
         : nothing
     }</span>${otherUnits(r, unit)}
-      ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}</div>
+      ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}
+      <span class="sub paro">${paroLine(r)}</span></div>
     ${pills(o, r, readOnly)}`;
   const analysis = html`${breakdownView}
     ${legalSection(o, r, money, readOnly)}
+    ${negroSection(r, money, readOnly)}
     ${readOnly ? nothing : negotiationSection(o, r, money)}
     ${readOnly ? nothing : seasonEndSection(o, r)}
-    <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r, readOnly)}</div></details>
-    ${readOnly ? nothing : copyRow(line)}`;
+    <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r, readOnly)}</div></details>`;
   return { head, analysis };
 }
 
@@ -236,10 +249,3 @@ export function resultView(o, r, options = {}) {
   const { head, analysis } = resultParts(o, r, options);
   return html`${head}${analysis ?? nothing}`;
 }
-
-const copyRow = (line) =>
-  html`<div class="copyrow copies"><button type="button" class="sm" data-action="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>${
-    line
-      ? html`<button type="button" class="sm" data-action="copyClaim" title="Para el sindicato, la inspección o tu propia nota">Copiar reclamación</button>`
-      : nothing
-  }<span class="hint" id="cardMsg"></span><span class="hint" id="claimMsg"></span></div>`;

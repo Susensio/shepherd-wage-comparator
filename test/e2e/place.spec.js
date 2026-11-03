@@ -1,6 +1,6 @@
 // Where the job is and which herd: the «Pueblo» field, the place list loading, and what the summaries show.
 
-import { expect, startOffer as startEntry, test } from './fixtures.js';
+import { expect, openCondition, startOffer as startEntry, test } from './fixtures.js';
 
 const PLACES_FILE = /\/data\/places-[\d.-]+\.json$/;
 
@@ -152,7 +152,7 @@ test('keyboard: arrows move, Enter picks, Escape closes', async ({ page }) => {
 
 /** Back to the «¿Dónde es?» step of the offer being made. */
 async function openPlaceAgain(page) {
-  await page.locator('.crow[data-step=place]').click();
+  await openCondition(page, 'place');
   await expect(page.locator('#entry .step[data-step=place]')).toBeVisible();
 }
 

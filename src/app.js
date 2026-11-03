@@ -175,6 +175,7 @@ export function paintAll() {
   $('#btnAdd').hidden = loading;
   document.body.classList.toggle('loading-account', loading);
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
+  $('#fichaMenu').dataset.id = o.id;
   render(fichaView(o, r, placesIfLoaded()), $('#result'));
   restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());

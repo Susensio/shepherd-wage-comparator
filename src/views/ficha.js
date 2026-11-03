@@ -1,4 +1,4 @@
-/** The ficha of an offer: its result, its conditions one row per step, and the analysis under them. */
+/** The ficha of an offer: its result, the analysis, and the conditions last, one row that opens one row per step. */
 
 import { html, nothing } from 'lit-html';
 import { joinAnd } from '../format.js';
@@ -21,6 +21,9 @@ export function missingBySteps(terms) {
   return Object.fromEntries(Object.entries(byStep).map(([step, texts]) => [step, joinAnd(texts)]));
 }
 
+/** The conditions in one line: when, pay and hours. It is cut short by the width, not here. */
+const oneLine = (lines) => [lines.when, lines.pay, lines.workday].filter(Boolean).join(' · ');
+
 /**
  * @param {object} o
  * @param {object} r its figures
@@ -30,9 +33,11 @@ export function fichaView(o, r, places) {
   const { head, analysis } = resultParts(o, r);
   const lines = summaries(o, r, places);
   const lacking = missingBySteps(o.terms);
+  const keys = Object.keys(lacking);
   return html`${head}
-    <section class="conditions" aria-labelledby="conditionsTitle">
-      <div class="sechead"><h2 id="conditionsTitle">Condiciones</h2><span class="hint">Toca para cambiar</span></div>
+    ${analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}
+    <details class="conditions" data-fold="conditions">
+      <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span><span class="cmore">Ver</span></summary>
       <div class="crows">${CONDITION_STEPS.map(
         (step) =>
           html`<button type="button" class=${lacking[step.id] ? 'crow missing' : 'crow'} data-action="editStep" data-step=${step.id}>
@@ -40,6 +45,5 @@ export function fichaView(o, r, places) {
             <span class="cv">${lines[step.summary]}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
           </button>`,
       )}</div>
-    </section>
-    ${analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    </details>`;
 }

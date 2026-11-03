@@ -1,6 +1,6 @@
 // The bottom tab bar on phones, and the tabs in the app bar with the list beside the ficha on wide screens (ADR-0021).
 
-import { expect, openStep, test } from './fixtures.js';
+import { expect, openCondition, openStep, test } from './fixtures.js';
 
 const box = async (locator) => (await locator.boundingBox()) ?? expect.fail('not on screen');
 
@@ -142,7 +142,7 @@ test.describe('wide screen', () => {
     await expect(page.locator('#offersList')).toBeVisible();
 
     await page.evaluate(() => history.replaceState(null, '')); // the first visit's entry
-    await page.locator('.crow[data-step=pay]').click();
+    await openCondition(page, 'pay');
     await expect(page.locator('#entry .step[data-step=pay]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeHidden();
     const entry = await box(page.locator('.entry'));

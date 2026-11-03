@@ -63,16 +63,15 @@
     <div class="ficha-skeleton" aria-hidden="true"><span class="skel-bar title"></span><span class="skel-bar"></span><span class="skel-block"></span><span class="skel-block"></span></div>
     <button type="button" class="back" data-action="closeFicha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Ofertas</button>
     <header class="fichahead">
-      <h1 id="fichaName"></h1>
+      <div class="fichatitle">
+        <h1 id="fichaName"></h1>
+        <button type="button" class="omenu" id="fichaMenu" data-action="offerMenu" aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+      </div>
       <span class="hint">Ficha de la oferta</span>
     </header>
     <section class="results" id="results" aria-label="Resultados de la oferta">
       <div class="result" id="result" aria-live="polite"></div>
     </section>
-    <div class="actions fichaend">
-      <button type="button" class="sm" data-action="duplicate">Duplicar</button>
-      <button type="button" class="sm danger" id="btnDel" data-action="deleteOffer">Borrar</button>
-    </div>
   </article>
   </div>
 
@@ -552,6 +551,13 @@
     </div>
   </footer>
 </div>
+</div>
+<div class="offer-menu" id="offerMenu" role="menu" aria-label="Acciones de la oferta" hidden>
+  <button type="button" role="menuitem" tabindex="-1" data-menu="duplicate">Duplicar</button>
+  <button type="button" role="menuitem" tabindex="-1" data-menu="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>
+  <button type="button" role="menuitem" tabindex="-1" data-menu="copyClaim" title="Para el sindicato, la inspección o tu propia nota">Copiar reclamación</button>
+  <button type="button" role="menuitem" tabindex="-1" class="danger" data-menu="delete">Borrar</button>
+  <p class="hint menu-msg" role="status"></p>
 </div>
 </body>
 </html>

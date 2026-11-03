@@ -46,10 +46,16 @@ export async function goStep(page, id) {
     await page.locator(at < STEP_IDS.indexOf(id) ? '#entryNext' : '#entryBack').click();
 }
 
+/** On the ficha, opens «Condiciones» if it is closed and taps the row of step `id`. */
+export async function openCondition(page, id) {
+  if (!(await page.locator('.conditions').evaluate((d) => d.open))) await page.locator('.conditions > summary').click();
+  await page.locator(`.crow[data-step=${id}]`).click();
+}
+
 /** Opens one step of the active offer to change it, from its ficha. */
 export async function openStep(page, id) {
   await page.evaluate(() => app.openFicha());
-  await page.locator(`.crow[data-step=${id}]`).click();
+  await openCondition(page, id);
   await expect(page.locator(`#entry .step[data-step=${id}]`)).toBeVisible();
 }
 

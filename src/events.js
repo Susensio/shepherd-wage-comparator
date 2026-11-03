@@ -3,15 +3,15 @@
 import { animateNextPaint, commit, fillVacation, openOffer, paintAll, select, show, viewShared } from './app.js';
 import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
-import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, HERD, isoOf, newId, parseDate, sideOf } from './offer.js';
+import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, HERD, isoOf, missing, newId, parseDate, sideOf } from './offer.js';
 import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { snoozeReminder } from './storage/bundle.js';
-import { cardText, claimText } from './text.js';
+import { cardText, claimText, legalLine } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
-import { copyText, doubleTap } from './ui/dom.js';
+import { copyText } from './ui/dom.js';
 import { back, close, editStep, next, pickTemplate, startEntry, stepOfMissing } from './ui/entry.js';
 import { saveFold } from './ui/folds.js';
 import { scrollToElement, toggleFold } from './ui/motion.js';
@@ -25,6 +25,7 @@ import {
   openSettingsPage,
   showTab,
 } from './ui/navigation.js';
+import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
 import { fillForm, form, paintEnd } from './views/form.js';
@@ -175,7 +176,53 @@ const BLEATS = [
   'Beee… ¿esto lo sabe la Inspección?',
 ];
 
-let deleteButton;
+/** The «⋯» menu of the ficha and the cards. */
+let offerMenu;
+
+const offerById = (id) => state.offers.find((o) => o.id === id);
+
+function duplicate(o) {
+  const copy = {
+    ...structuredClone(o),
+    id: newId(),
+    cmp: true,
+  };
+  copy.mine.name = `${o.mine.name} (copia)`;
+  offers.add(copy, { after: o });
+  select(copy.id);
+}
+
+function remove(o) {
+  const backToWelcome = offers.remove(o);
+  leaveFicha();
+  show();
+  if (backToWelcome) startEntry();
+}
+
+/** What the menu does with an offer; true if it copied. */
+function runMenuAction(action, id, msg) {
+  const o = offerById(id);
+  if (action === 'duplicate') return duplicate(o);
+  if (action === 'delete') return remove(o);
+  if (action === 'copyCard')
+    return copyText(cardText(o, calcOffer(o)), msg, {
+      ok: 'Ficha copiada.',
+      failMsg: 'No se pudo copiar. Aquí la tienes para seleccionarla:',
+      rows: 7,
+    });
+  return copyText(claimText(o, calcOffer(o)), msg, {
+    ok: 'Texto copiado.',
+    failMsg: 'No se pudo copiar. Aquí lo tienes para seleccionarlo:',
+    rows: 12,
+  });
+}
+
+/** Copying needs the whole result, and the claim something to claim. */
+function menuAvailability(id) {
+  const o = offerById(id);
+  const copy = missing(o.terms).length === 0;
+  return { copy, claim: copy && !!legalLine(o, calcOffer(o)) };
+}
 
 /** Everything done with a button: the button says what with data-action, and data-id if it is about an offer. */
 const ACTIONS = {
@@ -225,10 +272,7 @@ const ACTIONS = {
   },
 
   /* Offers */
-  openOffer: (b) => {
-    deleteButton.reset();
-    openOffer(b.dataset.id);
-  },
+  openOffer: (b) => openOffer(b.dataset.id),
   closeFicha,
   newOffer: startEntry,
   template: (b) => pickTemplate(b.dataset.template),
@@ -253,39 +297,9 @@ const ACTIONS = {
     animateNextPaint();
     commit();
   },
-  duplicate() {
-    const o = active();
-    const copy = {
-      ...structuredClone(o),
-      id: newId(),
-      cmp: true,
-    };
-    copy.mine.name = `${o.mine.name} (copia)`;
-    offers.add(copy, { after: o });
-    select(copy.id);
-  },
-  deleteOffer() {
-    const o = active();
-    if (!deleteButton.confirm('¿Seguro?')) return;
-    const backToWelcome = offers.remove(o);
-    leaveFicha();
-    show();
-    if (backToWelcome) startEntry();
-  },
+  offerMenu: (b) => offerMenu.open(b, b.dataset.id),
 
   /* The result */
-  copyCard: () =>
-    copyText(cardText(active(), calcOffer(active())), $('#cardMsg'), {
-      ok: 'Ficha copiada.',
-      failMsg: 'No se pudo copiar. Aquí la tienes para seleccionarla:',
-      rows: 7,
-    }),
-  copyClaim: () =>
-    copyText(claimText(active(), calcOffer(active())), $('#claimMsg'), {
-      ok: 'Texto copiado.',
-      failMsg: 'No se pudo copiar. Aquí lo tienes para seleccionarlo:',
-      rows: 12,
-    }),
   payslipMonth(b) {
     stepPayslipMonth(b.dataset.offer, Number(b.dataset.step));
     paintAll();
@@ -358,7 +372,7 @@ function setUpBackupFile() {
 }
 
 export function setUpEvents() {
-  deleteButton = doubleTap($('#btnDel'), 'Borrar', 4000);
+  offerMenu = setUpOfferMenu({ available: menuAvailability, run: runMenuAction });
   form().addEventListener('input', onFormInput);
   form().addEventListener('focusout', onFormFocusOut);
   $('#yourdata').addEventListener('input', onSettingsInput);
