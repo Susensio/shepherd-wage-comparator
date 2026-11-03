@@ -97,6 +97,11 @@
 [hidden] {
   display: none !important;
 }
+/* No rubber-band at the ends of the page: it dragged the bottom tab bar with it */
+html,
+body {
+  overscroll-behavior-y: none;
+}
 body {
   background: var(--bg);
   color: var(--ink);
@@ -1109,7 +1114,10 @@ section.others p {
   font-size: 13px;
   color: var(--muted);
 }
-.oc-flag {
+.oc-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
   font-size: 13px;
   font-weight: 600;
 }
