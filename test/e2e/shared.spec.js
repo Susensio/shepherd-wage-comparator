@@ -80,11 +80,11 @@ test('every row uses the terms-only figures', async ({ openApp }) => {
     const full = app.calcOffer(mine);
     const termsOnly = calcTermsOnly(mine, { cfg: app.state.config });
     return {
-      mine: figureOf('Mi oferta').querySelector('.v').textContent.trim(),
+      mine: figureOf('Mi oferta').querySelector('.v .fig').textContent.trim(),
       expectedMine: shown(termsOnly).trim(),
       fullMine: shown(full).trim(),
       others: [...document.querySelectorAll('#cmpBlk .lr.other')].map((row) =>
-        row.querySelector('.v').textContent.trim(),
+        row.querySelector('.v .fig').textContent.trim(),
       ),
       expectedOthers: app.state.others.items.map(({ o }) => shown(calcTermsOnly(o, { cfg: app.state.config })).trim()),
     };

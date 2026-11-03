@@ -24,7 +24,7 @@ const unitPicker = (unit) =>
  * The view switches, as chips under the ranking: your offers that were only offers (shown apart), and the figures of
  * the terms alone (forced on by other shepherds' offers). One hint line, only when something needs saying.
  */
-function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount }) {
+function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
   const hint = [
     forced
       ? 'Con ofertas de otros pastores se comparan solo las condiciones, sin desplazamientos ni gastos de nadie.'
@@ -43,7 +43,7 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount }) {
     offerOnlyCount
       ? html`<label><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Las de solo oferta</label>`
       : nothing
-  }<label><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Solo las condiciones</label></div>${
+  }<label><input type="checkbox" name="moneyOnly" .checked=${moneyOnly}>Solo lo que ganas</label><label><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Solo las condiciones</label></div>${
     hint ? html`<p class="hint">${hint}</p>` : nothing
   }`;
 }
@@ -209,10 +209,11 @@ function headToHead(list, pairing, unit) {
       [
         ['En negro', (x) => x.r.cash.share, (v) => (v <= 0.005 ? 'nada' : `${fN(v * 100)} %`), 'min'],
         [say('Te deben', 'Se le deben'), debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
-        similar && [
-          'Paro que genera',
-          (x) => x.r.unemployment.days,
-          (v) => (v >= 0.5 ? `${fN(v)} días` : 'nada'),
+        // In the unit Comparar is in, like the money rows above: the days would not add to them
+        !totalsHidden && [
+          `Paro que genera ${U.short}`,
+          (x) => inPicked(x, x.r.unemployment.euros),
+          (v, x) => (v >= 0.5 ? inUnitText(v, x) : 'nada'),
           'max',
         ],
       ],
@@ -291,9 +292,10 @@ function hoursView(list) {
  * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
  * @param {{on: boolean, ids: string[]}} pairing «Comparar dos»: whether it is on and which offers are picked
  * @param {boolean} [showOfferOnly] rank your offers that were only offers (not worked), shown apart
+ * @param {boolean} [moneyOnly] rank by what you earn alone: by default the paro each offer generates is added (ADR-0022)
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
-export function compareView(everything, unit, termsOnly, others, pairing, showOfferOnly = true) {
+export function compareView(everything, unit, termsOnly, others, pairing, showOfferOnly = true, moneyOnly = false) {
   const U = UNITS[unit];
   // Your offers that were not worked (no start date, or marked «solo oferta»); other shepherds' never are
   const worked = new Set(workedOffers(everything.map((x) => x.o)));
@@ -305,13 +307,17 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     const v = unit === 'total' && r.time.noDuration ? Number.NaN : r.earnings[U.key];
     return Number.isFinite(v) ? v : -1e12;
   };
-  const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
+  // What ranks an offer: its money plus the paro it generates, in the unit (only its money with «Solo lo que ganas»)
+  const rankValue = (r) =>
+    sortValue(r) + (moneyOnly || sortValue(r) <= -1e11 ? 0 : inUnit(r.unemployment.euros, r, unit));
+  const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => rankValue(b.r) - rankValue(a.r));
   // Under the ranking: how it is looked at, then other shepherds' offers
   const controls = html`${viewSwitches({
     termsOnly,
     forced: others.available && others.include,
     showOfferOnly,
     offerOnlyCount,
+    moneyOnly,
   })}${othersControl(others)}`;
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
@@ -336,13 +342,20 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     return d > 0 ? d : 1;
   };
   const max = Math.max(...list.map(({ r }) => incomeOf(r) / per(r)), 1e-9);
+  /** Under the figure: the paro the offer generates, in the unit, or that it generates none. */
+  const paroLine = (r) =>
+    sortValue(r) <= -1e11
+      ? nothing
+      : r.unemployment.euros >= 1
+        ? html`<small class="paro ok">+ ${fUnit(inUnit(r.unemployment.euros, r, unit), unit)} de paro</small>`
+        : html`<small class="paro bad">sin paro</small>`;
   const medalsOf = medals(list, unit);
   const rows = list.map((x, n) => {
     const { o, r } = x;
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
-    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v">${figure(r)}</span>
+    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v"><span class="fig">${figure(r)}</span>${moneyOnly ? nothing : paroLine(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
@@ -359,6 +372,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
   return {
     picker: unitPicker(unit),
     body: html`${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
+    <p class="hint">${moneyOnly ? `Ordenadas por lo que ganas ${U.short}.` : `Ordenadas por lo que ganas ${U.short} y el paro que genera cada oferta.`}</p>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${controls}`,
     // After the «Otros pastores» section, which sits right under the ranking

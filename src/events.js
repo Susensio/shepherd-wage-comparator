@@ -389,6 +389,10 @@ export function setUpEvents() {
       state.showOfferOnly = el.checked;
       paintAll();
     }
+    if (el.name === 'moneyOnly') {
+      state.moneyOnly = el.checked;
+      paintAll();
+    }
     if (el.name === 'termsOnly') {
       state.termsOnly = el.checked;
       paintAll();

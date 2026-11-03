@@ -127,7 +127,7 @@ test('compare, and go to an offer from there', async ({ page }) => {
   await page.click('.tabs [data-tab=compare]');
   const rows = page.locator('#cmpBlk .lr');
   await expect(rows).toHaveCount(2);
-  await expect(rows.first().locator('.v')).toHaveText(/\/día$/); // per day by default
+  await expect(rows.first().locator('.v')).toContainText(/\/día/); // per day by default
   await page.click("#cmpView label:has-text('total')");
   expect(await page.evaluate(() => app.state.cmpUnit)).toBe('total');
   await expect(rows.first().locator('.v')).not.toContainText('/día');

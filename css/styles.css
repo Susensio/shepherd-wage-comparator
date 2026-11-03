@@ -2646,6 +2646,23 @@ details.paste > summary {
   font-weight: 600;
   font-size: 15px;
   white-space: nowrap;
+  text-align: right;
+}
+/* Under the figure: the paro the offer generates, apart from what it pays */
+.lr .v .fig {
+  display: block;
+}
+.lr .v .paro {
+  display: block;
+  font-family: var(--f-body);
+  font-size: 12px;
+  font-weight: 600;
+}
+.lr .v .paro.ok {
+  color: var(--accent);
+}
+.lr .v .paro.bad {
+  color: var(--neg);
 }
 .lr .bar {
   grid-column: 2 / -1;

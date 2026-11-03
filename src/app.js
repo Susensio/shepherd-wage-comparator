@@ -119,6 +119,7 @@ export function paintCompare() {
     state.others,
     state.pairing,
     state.showOfferOnly,
+    state.moneyOnly,
   );
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
