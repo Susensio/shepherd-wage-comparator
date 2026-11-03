@@ -31,6 +31,14 @@ const termsOnlySwitch = (on, forced) =>
           : 'Sin tus desplazamientos ni gastos.'
     }</p></div>`;
 
+/** Whether to rank your offers that were only offers, not worked. Only offered when there is one. */
+const offerOnlySwitch = (show, hidden) =>
+  html`<div class="terms-only"><label><input type="checkbox" name="showOfferOnly" .checked=${show}>Incluir las que solo eran ofertas</label>${
+    show
+      ? html`<p class="hint">Aparecen atenuadas, con «solo oferta».</p>`
+      : html`<p class="hint">${hidden === 1 ? 'Se oculta 1.' : `Se ocultan ${hidden}.`}</p>`
+  }</div>`;
+
 /** Whether to rank the offers other shepherds share, and how loading them went. Only offered when they can be read. */
 const othersControl = ({ available, include, status, items }) =>
   available
@@ -268,22 +276,28 @@ function hoursView(list) {
 
 /**
  * Comparar: the ranking in the chosen unit (tap a row to see the offer), the best at each thing and the weekly hours.
- * @param {{o: object, r: object, sharer?: object}[]} all your offers and, with `sharer`, other shepherds' ones, with their figures
+ * @param {{o: object, r: object, sharer?: object}[]} everything your offers and, with `sharer`, other shepherds' ones, with their figures
  * @param {string} unit
  * @param {boolean} termsOnly show the figures of the terms alone
  * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
  * @param {{on: boolean, ids: string[]}} pairing «Comparar dos»: whether it is on and which offers are picked
+ * @param {boolean} [showOfferOnly] rank your offers that were only offers (not worked), shown apart
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
-export function compareView(all, unit, termsOnly, others, pairing) {
+export function compareView(everything, unit, termsOnly, others, pairing, showOfferOnly = true) {
   const U = UNITS[unit];
+  // Your offers that were not worked (no start date, or marked «solo oferta»); other shepherds' never are
+  const worked = new Set(workedOffers(everything.map((x) => x.o)));
+  const isOfferOnly = (x) => !x.sharer && !worked.has(x.o);
+  const offerOnlyCount = everything.filter(isOfferOnly).length;
+  const all = showOfferOnly ? everything : everything.filter((x) => !isOfferOnly(x));
   // Without a duration there is no total: those go last
   const sortValue = (r) => {
     const v = unit === 'total' && r.time.noDuration ? Number.NaN : r.earnings[U.key];
     return Number.isFinite(v) ? v : -1e12;
   };
   const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => sortValue(b.r) - sortValue(a.r));
-  const controls = othersControl(others);
+  const controls = html`${othersControl(others)}${offerOnlyCount ? offerOnlySwitch(showOfferOnly, offerOnlyCount) : nothing}`;
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
     return {
@@ -313,16 +327,16 @@ export function compareView(all, unit, termsOnly, others, pairing) {
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
-    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}${o.mine.offerOnly ? html` <small>(solo oferta)</small>` : nothing}</b>${detailOf(x)}</span><span class="v">${figure(r)}</span>
+    const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v">${figure(r)}</span>
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
-      <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
+      <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
           ? html`<span class="bad">${x.sharer ? 'se le deben' : 'te deben'} ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;
     return pairing.on
       ? html`<button type="button" class=${picked ? 'lr pickable picked' : 'lr pickable'} data-action="pickPair" aria-pressed=${String(picked)} data-id=${o.id}>${content}</button>`
-      : html`<button type="button" class=${x.sharer ? 'lr other' : 'lr'} data-action=${openAction(x)} data-id=${o.id}>${content}</button>`;
+      : html`<button type="button" class=${x.sharer ? 'lr other' : isOfferOnly(x) ? 'lr offer-only' : 'lr'} data-action=${openAction(x)} data-id=${o.id}>${content}</button>`;
   });
   const mode = pairing.on
     ? html`<div class="cmp-mode"><span>${pairing.ids.length === 2 ? 'Comparando:' : pairing.ids.length ? 'Marca otra oferta.' : 'Marca dos ofertas.'}</span><button type="button" class="linkbtn" data-action="closePair">Cancelar</button></div>`

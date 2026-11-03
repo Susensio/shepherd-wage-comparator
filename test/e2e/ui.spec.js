@@ -134,7 +134,7 @@ test('Comparar can show the terms alone, without your travel and expenses', asyn
   const rows = () => page.locator('#cmpBlk .lr .v').allTextContents();
   const full = await rows();
   await page.check('input[name=termsOnly]');
-  await expect(page.locator('.terms-only .hint')).toContainText('IRPF');
+  await expect(page.locator('.terms-only:has(input[name=termsOnly]) .hint')).toContainText('IRPF');
   expect(await page.evaluate(() => app.state.termsOnly)).toBe(true);
   expect(await rows()).not.toEqual(full);
   await page.uncheck('input[name=termsOnly]');
@@ -275,4 +275,20 @@ test('«Quitar» empties the start date, and hides itself', async ({ page }) => 
   await expect(page.locator('#end')).toHaveValue('');
   await expect(clear).toBeHidden();
   await expect(page.locator('#f [name=offerOnly]')).toBeChecked();
+});
+
+test('Comparar shows the offers that were only offers apart, and can hide them', async ({ loaded: page }) => {
+  await page.click('.tabs [data-tab=compare]');
+  const rows = page.locator('#cmpBlk .lr');
+  // Puerto A and Temporada F are marked «solo oferta»
+  await expect(rows).toHaveCount(8);
+  await expect(page.locator('#cmpBlk .lr.offer-only')).toHaveCount(2);
+  await expect(page.locator('#cmpBlk .lr.offer-only[data-id=o1] .offer-only-tag')).toHaveText('solo oferta');
+  const toggle = page.locator('input[name=showOfferOnly]');
+  await toggle.uncheck();
+  await expect(rows).toHaveCount(6);
+  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2.');
+  await expect(page.locator('#cmpBlk .lr[data-id=o1]')).toHaveCount(0);
+  await toggle.check();
+  await expect(rows).toHaveCount(8);
 });

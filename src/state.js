@@ -46,6 +46,8 @@ export const state = {
   cmpUnit: 'day',
   /** Comparar shows the figures of the terms alone (not saved: a way of looking). */
   termsOnly: false,
+  /** Comparar ranks your offers that were only offers (not worked) too; on by default (not saved: a way of looking). */
+  showOfferOnly: true,
   /**
    * Other shepherds' shared offers (ADR-0006). Never saved and never mixed into `offers`. `available`: signed in with
    * sharing on; `include`: ranked in Comparar; `viewId`: the one open read-only.

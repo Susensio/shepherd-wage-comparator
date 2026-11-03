@@ -411,6 +411,10 @@ export function setUpEvents() {
   });
   document.addEventListener('change', (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
+    if (el.name === 'showOfferOnly') {
+      state.showOfferOnly = el.checked;
+      paintAll();
+    }
     if (el.name === 'termsOnly') {
       state.termsOnly = el.checked;
       paintAll();

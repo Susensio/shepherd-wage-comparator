@@ -983,6 +983,17 @@ section.others p {
 .lr.other {
   border-left: 3px solid var(--accent);
 }
+/* Your offers that were only offers: muted, so the worked ones stand out */
+.lr.offer-only {
+  border-left: 3px dashed var(--line);
+}
+.lr.offer-only :is(.nm, .v, .bar) {
+  opacity: 0.6;
+}
+.lr .det .offer-only-tag {
+  color: var(--muted);
+  font-style: italic;
+}
 .editinfo dt {
   color: var(--muted);
 }
