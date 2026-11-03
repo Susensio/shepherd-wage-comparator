@@ -39,10 +39,10 @@ test('«Lo que te cuesta el negro»: only with money en negro or no contract, an
   await expect(negro).toContainText(/Con contrato se generarían 14 días de paro: unos 552\s€/);
 });
 
-test('«Condiciones» is the last block, one row that opens the seven', async ({ page }) => {
+test('«Condiciones» is the first block, under the name, one row that opens the seven', async ({ page }) => {
   await loadOffers(page, sample, OFFER.puertoA);
   const conditions = page.locator('.conditions');
-  expect(await page.evaluate(() => document.querySelector('#result')?.lastElementChild?.matches('.conditions'))).toBe(
+  expect(await page.evaluate(() => document.querySelector('#result')?.firstElementChild?.matches('.conditions'))).toBe(
     true,
   );
   await expect(conditions.locator('.cs')).toContainText('21 jun');

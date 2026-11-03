@@ -1,4 +1,4 @@
-/** The ficha of an offer: its result, the analysis, and the conditions last, one row that opens one row per step. */
+/** The ficha of an offer: its conditions first, one row that opens one row per step, then its result and the analysis. */
 
 import { html, nothing } from 'lit-html';
 import { joinAnd } from '../format.js';
@@ -34,9 +34,7 @@ export function fichaView(o, r, places) {
   const lines = summaries(o, r, places);
   const lacking = missingBySteps(o.terms);
   const keys = Object.keys(lacking);
-  return html`${head}
-    ${analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}
-    <details class="conditions" data-fold="conditions">
+  return html`<details class="conditions" data-fold="conditions">
       <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span><span class="cmore">Ver</span></summary>
       <div class="crows">${CONDITION_STEPS.map(
         (step) =>
@@ -45,5 +43,7 @@ export function fichaView(o, r, places) {
             <span class="cv">${lines[step.summary]}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
           </button>`,
       )}</div>
-    </details>`;
+    </details>
+    ${head}
+    ${analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }
