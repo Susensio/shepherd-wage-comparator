@@ -1094,10 +1094,10 @@ div.welcome {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
-  min-height: 64px;
+  gap: 2px;
+  min-height: 56px;
   text-align: left;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border-radius: 14px;
   background: var(--surface);
   font-weight: 400;
@@ -1130,12 +1130,18 @@ div.welcome {
   font-size: 13px;
   color: var(--muted);
 }
-.oc-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  font-size: 13px;
+.oc-detail .warn {
   font-weight: 600;
+}
+/* Offers not worked: muted with a dashed edge, as in Comparar */
+.ocard.offer-only {
+  border-left: 3px dashed var(--line);
+}
+.ocard.offer-only :is(.oc-name, .oc-fig) {
+  opacity: 0.6;
+}
+.ocard .offer-only-tag {
+  font-style: italic;
 }
 .newoffer {
   align-self: stretch;

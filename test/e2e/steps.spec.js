@@ -78,10 +78,13 @@ test('the list shows each offer as a card, and a card opens its ficha', async ({
   await expect(page.locator('#cards .ocard')).toHaveCount(8);
   const card = page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' });
   await expect(card.locator('.oc-fig')).toContainText('€');
-  // The facts that tell offers apart, not «No cumple», which almost every card would say
-  await expect(card.locator('.oc-facts')).toContainText('h/sem');
-  await expect(card.locator('.oc-facts')).toContainText('% en negro');
-  await expect(page.locator('#cards')).not.toContainText('No cumple');
+  // Short cards: name, figure, dates and herd; the facts that tell offers apart are in Comparar
+  await expect(card.locator('.oc-detail')).toContainText('2026');
+  await expect(page.locator('#cards')).not.toContainText('h/sem');
+  // Not worked: muted, tagged (Puerto A is marked «solo oferta», Puerto A otra cuenta is worked)
+  await expect(page.locator('#cards .ocard[data-id=o1]')).toHaveClass(/offer-only/);
+  await expect(card).not.toHaveClass(/offer-only/);
+  await expect(page.locator('#cards .offer-only-tag').first()).toHaveText('solo oferta');
   await card.click();
   await expect(page.locator('#fichaName')).toHaveText('Puerto A, otra cuenta');
   await expect(page.locator('.crow')).toHaveCount(7);
