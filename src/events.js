@@ -225,8 +225,11 @@ function menuAvailability(id) {
   return { copy, claim: copy && !!legalLine(o, calcOffer(o)) };
 }
 
-/** Everything done with a button: the button says what with data-action, and data-id if it is about an offer. */
-const ACTIONS = {
+/* Everything done with a button: the button says what with data-action, and data-id if it is about an offer. One
+   object per screen, joined in ACTIONS. */
+
+/** Tabs and pages. */
+const NAVIGATION_ACTIONS = {
   tab(b) {
     if (fichaOpen()) closeFicha();
     showTab(b.dataset.tab, true);
@@ -235,9 +238,10 @@ const ACTIONS = {
   openSettingsPage: () => openSettingsPage(),
   openAccountFromPrompt: () => openAccountPage(true),
   closePage,
-  changePlace,
+};
 
-  /* Comparar */
+/** Comparar: the head to head, other shepherds' offers, the sheep. */
+const COMPARE_ACTIONS = {
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out
   pickPair(b) {
     const id = b.dataset.id;
@@ -271,8 +275,11 @@ const ACTIONS = {
     clearTimeout(b._timer);
     b._timer = setTimeout(() => b.classList.remove('bleating'), 1600);
   },
+};
 
-  /* Offers */
+/** Ofertas: the list, the ficha with its result, and the entry. */
+const OFFER_ACTIONS = {
+  changePlace,
   openOffer: (b) => openOffer(b.dataset.id),
   closeFicha,
   newOffer: () => startEntry(),
@@ -287,28 +294,23 @@ const ACTIONS = {
     active().terms.durationUnit = 'unknown';
     /** @type {HTMLInputElement} */ ($('#f [name=durationUnit][value=unknown]')).checked = true;
     paintEnd(active().terms);
-
     commit({ animate: true });
   },
   clearStart() {
     active().terms.start = '';
     /** @type {HTMLInputElement} */ ($('#start')).value = '';
     paintEnd(active().terms);
-
     commit({ animate: true });
   },
   offerMenu: (b) => offerMenu.open(b, b.dataset.id),
-
-  /* The result */
   payslipMonth(b) {
     stepPayslipMonth(b.dataset.offer, Number(b.dataset.step));
     paintAll();
   },
+};
 
-  /* Account */
-  ...accountActions,
-
-  /* Backups */
+/** Ajustes: backups. The account's are in ui/account-section.js. */
+const BACKUP_ACTIONS = {
   download: (b) => downloadBackup(b.closest('#backupNotice') ? $('#noticeMsg') : $('#backupSaveResult')),
   snoozeBackup() {
     snoozeReminder();
@@ -326,6 +328,8 @@ const ACTIONS = {
     if (loadBackup(box.value, $('#backupResult'))) box.value = '';
   },
 };
+
+const ACTIONS = { ...NAVIGATION_ACTIONS, ...COMPARE_ACTIONS, ...OFFER_ACTIONS, ...accountActions, ...BACKUP_ACTIONS };
 
 /** Collapsibles open and close animating their height. */
 function onSummaryClick(e) {
