@@ -48,7 +48,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # --ignore-scripts: `prepare` would enable the pre-push hook (check + full browser tests), which then runs on the snapshot push.
+      - run: npm ci --ignore-scripts
         if: steps.gate.outputs.ready == 'true'
       # Policies tested offline before they reach the project.
       - run: node --test test/unit/rls.test.js
