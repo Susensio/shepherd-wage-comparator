@@ -121,7 +121,9 @@ for (const offer of sample.offers) {
   });
 }
 
-test('Comparar ranks each offer with the ficha headline figure, in the headline unit', async ({ loaded: page }) => {
+test('Comparar and the share card give each offer the ficha headline figure, in the headline unit', async ({
+  loaded: page,
+}) => {
   const UNIT_OF_LABEL = { 'Se gana al mes': 'mes', 'Se gana por día trabajado': 'día', 'Se gana en total': 'total' };
   const amount = (text) => Number.parseFloat(text.replace(/\./g, '').replace(',', '.'));
   // At this pay the exact monthly figure rounds to 1 € less than the sum of the breakdown's rounded rows
@@ -135,6 +137,16 @@ test('Comparar ranks each offer with the ficha headline figure, in the headline 
     const big = page.locator('#result .tag .big');
     if (!(await big.count())) continue;
     headlines.push({ id: offer.id, unit: UNIT_OF_LABEL[label.trim()], figure: amount(await big.textContent()) });
+    // The share card's «Ganado» says the same, in that unit
+    const card = await page.evaluate(() => app.cardText(app.active(), app.calcOffer(app.active())));
+    const unit = UNIT_OF_LABEL[label.trim()];
+    const inCard = card.match(
+      new RegExp(`Ganado:.*?([\\d.,]+)\\s€${{ mes: '/mes', día: '/día', total: ' en total' }[unit]}`),
+    );
+    expect(
+      inCard && amount(inCard[1]),
+      `${offer.id}: card «${card.split('\n').find((line) => line.startsWith('Ganado'))}»`,
+    ).toBe(amount(await big.textContent()));
   }
   expect(headlines.length).toBeGreaterThan(4);
   await page.click('.tabs [data-tab=compare]');

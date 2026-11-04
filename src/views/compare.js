@@ -7,8 +7,8 @@ import { yearShares } from '../model/calc.js';
 import { datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, unpaidTime } from '../text.js';
-import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
-import { earnedShown, incomeBar, legend, swatch } from './parts.js';
+import { earnedShown, fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
+import { incomeBar, legend, swatch } from './parts.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest. */
 const WEEK_WORK_DAYS = 7 - LAW.weeklyRest;

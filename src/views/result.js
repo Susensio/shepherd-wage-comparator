@@ -8,6 +8,7 @@ import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
 import { MISSING_TEXT } from '../text.js';
 import {
+  earnedShown,
   fUnit,
   incomeOf,
   inUnit,
@@ -22,7 +23,7 @@ import {
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { negroSection } from './negro.js';
-import { columns, earnedShown, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
+import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
 import { workings } from './workings.js';
 

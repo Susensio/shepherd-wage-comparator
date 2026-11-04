@@ -1,9 +1,9 @@
 /** Small pieces the views are built from: rows of figures, figure cards, bars and explanations on tap. */
 
 import { html, nothing, svg } from 'lit-html';
-import { capitalize, euroDecimals, fCount, fE, fN, num } from '../format.js';
-import { fSumE, sum } from '../ledger.js';
-import { fUnit, incomeOf, inUnit, isUnderAMonth, PARTS, UNITS } from '../units.js';
+import { capitalize, fCount, fE } from '../format.js';
+import { fSumE } from '../ledger.js';
+import { fUnit, incomeOf, inUnit, otherColumn, PARTS, shownInColumns, sumsInColumns } from '../units.js';
 
 /** Content that explains itself when tapped (dotted underline). */
 export const withTip = (content, tip) =>
@@ -25,20 +25,10 @@ export const two = (a, b) => html`<span class="two"><span>${a}</span><span>${b}<
  * row with «=» comes out of the rows above it on screen.
  */
 export function columns(r) {
-  const other = isUnderAMonth(r) ? 'total' : 'month';
+  const other = otherColumn(r);
   const cell = (x, unit) => (unit === 'day' ? fE(inUnit(x, r, unit), 2) : fUnit(inUnit(x, r, unit), unit));
-  const shown = (x) => {
-    const month = inUnit(x, r, other);
-    return [num(fN(inUnit(x, r, 'day'), 2)), num(fN(month, euroDecimals(month, UNITS[other].decimals || undefined)))];
-  };
-  /** The sums of what is shown, per column: [per day, per month or total]. */
-  const sums = (plus, minus = []) =>
-    [0, 1].map((i) =>
-      sum(
-        plus.map((x) => shown(x)[i]),
-        minus.map((x) => shown(x)[i]),
-      ),
-    );
+  const shown = (x) => shownInColumns(x, r);
+  const sums = (plus, minus = []) => sumsInColumns(r, plus, minus);
   const texts = (plus, minus = []) => {
     const [day, month] = sums(plus, minus);
     return [fE(day, 2), fSumE(month)];
@@ -53,20 +43,6 @@ export function columns(r) {
     sumTexts: texts,
     sum: (plus, minus) => two(...texts(plus, minus)),
   };
-}
-
-/**
- * «Ganado» as the breakdown adds it up from its rounded rows, in each of its columns: `{ day, month }`, or
- * `{ day, total }` under a month. What every view shows as «Ganado» in those units, so none differs by a rounding.
- * @returns {Partial<Record<'day' | 'month' | 'total', number>>}
- */
-export function earnedShown(r) {
-  const cols = columns(r);
-  const shows = (x) => cols.shown(x).some((shown) => shown !== 0);
-  const earned = PARTS.map((part) => part.value(r.earnings.parts)).filter((x) => x > 0.5);
-  const expenses = [r.car.cost, r.expenses.other].filter(shows);
-  const [day, other] = cols.sums(earned, expenses);
-  return { day, [cols.other]: other };
 }
 
 /**

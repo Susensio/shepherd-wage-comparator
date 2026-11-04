@@ -1,6 +1,7 @@
 /** Units money is shown in, and the parts of what you earn. */
 
-import { fE } from './format.js';
+import { euroDecimals, fE, fN, num } from './format.js';
+import { sum } from './ledger.js';
 
 /** The Comparar units: how a contract figure is divided and with how many decimals it is shown. */
 export const UNITS = {
@@ -88,4 +89,37 @@ export function moneyIn(r, unit) {
     netAll: (x, decimals = 0) => fE(x * factor, decimals),
     factor,
   };
+}
+
+/** The ledgers' second column: per month, or the total for contracts shorter than a month, where a month would be made up. */
+export const otherColumn = (r) => (isUnderAMonth(r) ? 'total' : 'month');
+
+/** `x` in the ledgers' two columns as it is written: per day with cents, and per month or total. */
+export function shownInColumns(x, r) {
+  const other = otherColumn(r);
+  const month = inUnit(x, r, other);
+  return [num(fN(inUnit(x, r, 'day'), 2)), num(fN(month, euroDecimals(month, UNITS[other].decimals || undefined)))];
+}
+
+/** The sums of what is shown, per column: [per day, per month or total]. */
+export const sumsInColumns = (r, plus, minus = []) =>
+  [0, 1].map((i) =>
+    sum(
+      plus.map((x) => shownInColumns(x, r)[i]),
+      minus.map((x) => shownInColumns(x, r)[i]),
+    ),
+  );
+
+/**
+ * «Ganado» as the breakdown adds it up from its rounded rows, in each of its columns: `{ day, month }`, or
+ * `{ day, total }` under a month. What every view and the share card show as «Ganado» in those units, so none
+ * differs by a rounding.
+ * @returns {Partial<Record<'day' | 'month' | 'total', number>>}
+ */
+export function earnedShown(r) {
+  const shows = (x) => shownInColumns(x, r).some((shown) => shown !== 0);
+  const earned = PARTS.map((part) => part.value(r.earnings.parts)).filter((x) => x > 0.5);
+  const expenses = [r.car.cost, r.expenses.other].filter(shows);
+  const [day, other] = sumsInColumns(r, earned, expenses);
+  return { day, [otherColumn(r)]: other };
 }

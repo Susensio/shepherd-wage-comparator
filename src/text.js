@@ -20,7 +20,7 @@ import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
-import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
+import { earnedShown, isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
 /** What `missing()` can report, as the sentence names it. */
 export const MISSING_TEXT = {
@@ -280,13 +280,15 @@ export function cardText(o, r) {
     [savings.days, 'por las jornadas de más'],
     [savings.overtime, 'por las horas extra (estimado)'],
   ].filter(([value]) => isWorthCounting(value));
+  // As the ficha's breakdown adds them up, so the card and the headline agree to the euro
+  const shown = earnedShown(r);
   return [
     o.mine.name || 'Oferta',
     `${s.time} → ${fN(r.time.daysWorked)} días trabajados`,
     `Nómina: ${s.payroll}`,
     r.cash.total > 0 ? `En negro: ${lowerFirst(s.b)}` : '',
     `${s.housing} · ${s.car}`,
-    `Ganado: ${fE(r.earnings.perHour, 2)}/hora · ${fE(r.earnings.perDay)}/día · ${fE(r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(r.earnings.total)} en total`}`,
+    `Ganado: ${fE(r.earnings.perHour, 2)}/hora · ${fE(shown.day ?? r.earnings.perDay)}/día · ${fE(shown.month ?? r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(shown.total ?? r.earnings.total)} en total`}`,
     legalLine(o, r)?.text || '',
     [
       x.daysValue > 0 && r.extraDays.extra >= 1 && `Jornadas de más: ${fCount(r.extraDays.extra)} en el contrato`,
