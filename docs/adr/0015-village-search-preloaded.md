@@ -1,6 +1,6 @@
 # ADR-0015: Place each offer by searching a village in a list kept in the browser, preloaded when an offer's form opens, instead of a province picker or an online place search
 
-Status: Accepted
+Status: Accepted; the village kept private superseded by [ADR-0028](0028-offer-only-and-village-shared.md)
 Date: 2026-11-01
 
 ## Context

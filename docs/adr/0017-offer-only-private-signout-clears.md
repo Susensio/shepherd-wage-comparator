@@ -1,6 +1,6 @@
 # ADR-0017: Keep whether an offer was worked private and clear the browser's copy on sign-out, instead of sharing the «Solo oferta» label and leaving the copy for the next account
 
-Status: Accepted
+Status: Accepted; its first half (offerOnly private) superseded by [ADR-0028](0028-offer-only-and-village-shared.md), the sign-out half stands
 Date: 2026-11-01
 
 ## Context
