@@ -38,7 +38,7 @@ test('unknown legacy keys of a flat offer are dropped', () => {
   assert.equal(offers[0].terms.payAmount, 5);
 });
 
-test('offerOnly in saved terms or a flat offer moves to mine', () => {
+test('offerOnly ends in terms: from a flat offer, from mine, mine winning over a stale copy in terms', () => {
   const { offers } = ingestSaved(
     {
       offers: [
@@ -50,7 +50,7 @@ test('offerOnly in saved terms or a flat offer moves to mine', () => {
     { fallbackCfg },
   );
   assert.deepEqual(
-    offers.map((o) => [o.mine.offerOnly, 'offerOnly' in o.terms]),
+    offers.map((o) => [o.terms.offerOnly, 'offerOnly' in o.mine]),
     [
       [true, false],
       [true, false],
@@ -59,10 +59,13 @@ test('offerOnly in saved terms or a flat offer moves to mine', () => {
   );
 });
 
-test('offerOnly is never read from a shared row', () => {
-  const shared = ingestShared({ offer: { id: 'a', terms: { offerOnly: true } }, sharer: { name: 'X' } });
-  assert.equal(shared?.o.mine.offerOnly, false);
-  assert.equal('offerOnly' in (shared?.o.terms ?? {}), false);
+test("a shared row's offerOnly and village are read (ADR-0028)", () => {
+  const shared = ingestShared({
+    offer: { id: 'a', schema_version: 3, terms: { offerOnly: true, place: 'Sarvisé' } },
+    sharer: { name: 'X' },
+  });
+  assert.equal(shared?.o.terms.offerOnly, true);
+  assert.equal(shared?.o.terms.place, 'Sarvisé');
 });
 
 test('entries that are not offers are left out', () => {
@@ -113,20 +116,18 @@ test('offers saved before the place and herd fields get them empty', () => {
     ],
     ['', '', '', '', ''],
   );
-  assert.equal(offers[0].mine.place, '');
+  assert.equal(offers[0].terms.place, '');
 });
 
-test("the village is the shepherd's own; the codes and head counts are terms", () => {
-  assert.ok('place' in DEF_MINE);
-  for (const field of ['municipality', 'province', 'sheep', 'goats', 'cattle']) {
+test('the village, its codes, the head counts and whether it was worked are terms, shared (ADR-0028)', () => {
+  for (const field of ['place', 'municipality', 'province', 'sheep', 'goats', 'cattle', 'offerOnly']) {
     assert.ok(field in DEF_TERMS, field);
     assert.ok(!(field in DEF_MINE), field);
   }
-  assert.ok(!('place' in DEF_TERMS));
 });
 
-test('the account schema is at version 2', () => {
-  assert.equal(SCHEMA_VERSION, 2);
+test('the account schema is at version 3', () => {
+  assert.equal(SCHEMA_VERSION, 3);
 });
 
 describe('upgrade chain', () => {
@@ -157,6 +158,21 @@ describe('upgrade chain', () => {
     assert.equal(upgrade[1].offer(split), split);
   });
 
+  test('upgrade[2] moves offerOnly and the village from mine to terms, keeping the rest', () => {
+    const [own, stale] = fixture('v2').offers;
+    assert.deepEqual(upgrade[2].offer({ ...own, mine: { ...own.mine, place: 'Sarvisé' } }), {
+      ...own,
+      terms: { ...own.terms, offerOnly: true, place: 'Sarvisé' },
+      mine: { name: 'Puerto A', kmHome: 108, car: 'own', futureMineField: 7 },
+    });
+    assert.deepEqual(upgrade[2].offer(stale).terms, { payAmount: 1200, offerOnly: true });
+  });
+
+  test('upgrade[2] leaves an offer already in version 3 as it is (browser copies are not stamped)', () => {
+    const v3 = { id: 'a', terms: { payAmount: 5, offerOnly: true, place: 'X' }, mine: { name: 'Y' } };
+    assert.deepEqual(upgrade[2].offer(v3), v3);
+  });
+
   test('upgrade[1] on settings drops the former law figures', () => {
     const { cfg } = fixture('v1');
     assert.deepEqual(upgrade[1].cfg(cfg), { rentValue: 350, fuelUse: 7 });
@@ -165,7 +181,7 @@ describe('upgrade chain', () => {
   test("a version 1 bundle comes out in today's shape", () => {
     const { offers, cfg } = ingestSaved(fixture('v1'), { fallbackCfg });
     assert.equal(offers.length, 1);
-    assert.equal(offers[0].mine.offerOnly, true);
+    assert.equal(offers[0].terms.offerOnly, true);
     assert.equal(offers[0].mine.name, 'Puerto A');
     assert.equal(offers[0].terms.payAmount, 1785);
     assert.equal('oldThing' in offers[0].terms, false);
@@ -200,37 +216,27 @@ describe('fields the page does not know', () => {
     assert.equal(cfg.futureCfgField, 'kept');
   });
 
-  test('offerOnly in terms of a version 2 row moves to mine, an own value winning', () => {
-    const { offers } = ingestSaved(fixture('v2'), { fallbackCfg });
-    assert.equal(offers[1].mine.offerOnly, true);
-    assert.equal('offerOnly' in offers[1].terms, false);
-  });
-
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v3-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v4-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 3);
+    assert.equal(offer.schema_version, 4);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
     assert.equal('newSetting' in cfg, false);
     assert.equal(offer.terms.payAmount, 1785);
-    assert.equal(
-      offer.mine.offerOnly,
-      true,
-      'offerOnly is a known key; the newer page may move it, but here it is read as saved',
-    );
+    assert.equal(offer.terms.offerOnly, true, 'a known key, read as saved');
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v3-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v4-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 3);
+    assert.equal(again.offers[0].schema_version, 4);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 3, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 4, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -240,7 +246,7 @@ describe('fields the page does not know', () => {
 
   test('a shared row of the current version keeps them, and its sharer names it', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 2, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 3, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.newTerm, 'x');

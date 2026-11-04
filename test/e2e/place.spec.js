@@ -83,8 +83,8 @@ test('offline with no copy, it says so and the field still takes text', async ({
   await startOffer(page);
   await expect(page.locator('#placeHint')).toContainText('No se pudo cargar la lista de pueblos');
   await page.fill('#place', 'Mi majada');
-  const { mine, terms } = await page.evaluate(() => app.active());
-  expect(mine.place).toBe('Mi majada');
+  const { terms } = await page.evaluate(() => app.active());
+  expect(terms.place).toBe('Mi majada');
   expect(terms.municipality).toBe('');
 });
 
@@ -99,10 +99,8 @@ test('picking a village fills in its municipality and province', async ({ page }
   await expect(page.locator('#place')).toHaveValue('Yebra de Basa');
   await expect(page.locator('#placePickedText')).toHaveText('Municipio de Yebra de Basa · Huesca');
   await expect(page.getByRole('listbox')).toBeHidden();
-  const { mine, terms } = await page.evaluate(() => app.active());
-  expect(terms).toMatchObject({ municipality: '22252', province: 'HU' });
-  expect(mine.place).toBe('Yebra de Basa');
-  expect(terms).not.toHaveProperty('place');
+  const { terms } = await page.evaluate(() => app.active());
+  expect(terms).toMatchObject({ municipality: '22252', province: 'HU', place: 'Yebra de Basa' });
 });
 
 test('a village inside a municipality names both', async ({ page }) => {
@@ -160,7 +158,7 @@ test('typing without picking keeps the text and leaves the codes empty', async (
   await startOffer(page);
   await page.fill('#place', 'Mi aldea');
   let offer = await page.evaluate(() => app.active());
-  expect(offer.mine.place).toBe('Mi aldea');
+  expect(offer.terms.place).toBe('Mi aldea');
   expect(offer.terms).toMatchObject({ municipality: '', province: '' });
   await expect(await placeRow(page)).toContainText('Mi aldea');
   await openPlaceAgain(page);

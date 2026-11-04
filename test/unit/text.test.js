@@ -114,17 +114,17 @@ const places = buildIndex({
   places: [['Yebra de Basa', 0]],
 });
 
-test('where: municipality and province from the list, with your village if it differs', () => {
+test('where: municipality and province from the list, with the village if it differs', () => {
   const terms = { municipality: '22252', province: 'HU' };
   assert.equal(whereText(terms, places), 'Municipio de Yebra de Basa · Huesca');
-  assert.equal(whereText(terms, places, 'Yebra de Basa'), 'Municipio de Yebra de Basa · Huesca');
-  assert.equal(whereText(terms, places, ' Sarvisé '), 'Sarvisé · Municipio de Yebra de Basa · Huesca');
+  assert.equal(whereText({ ...terms, place: 'Yebra de Basa' }, places), 'Municipio de Yebra de Basa · Huesca');
+  assert.equal(whereText({ ...terms, place: ' Sarvisé ' }, places), 'Sarvisé · Municipio de Yebra de Basa · Huesca');
   assert.equal(whereText({ municipality: '', province: 'HU' }, places), 'Huesca');
 });
 
-test("where: before the list is in, only your own village shows; nothing for another shepherd's offer", () => {
+test('where: before the list is in, only the village shows', () => {
   const terms = { municipality: '22252', province: 'HU' };
-  assert.equal(whereText(terms, null, 'Sarvisé'), 'Sarvisé');
+  assert.equal(whereText({ ...terms, place: 'Sarvisé' }, null), 'Sarvisé');
   assert.equal(whereText(terms, null), '');
   assert.equal(whereText({ municipality: '', province: '' }, places), '');
 });

@@ -25,7 +25,7 @@ const contact = (sharer) => {
 export function sharedView({ o, r, sharer, label }, places) {
   const s = summaries(o, r, null);
   const conditions = [
-    ['Dónde', whereText(o.terms, places)], // never the village: it is not theirs to share
+    ['Dónde', whereText(o.terms, places)],
     ['Ganado', herdText(o.terms)],
     ['Tiempo', s.when],
     ['Nómina', s.payroll],

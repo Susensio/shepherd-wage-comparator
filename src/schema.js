@@ -10,17 +10,19 @@ import { toAnswerable } from './pay-answers.js';
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 1;
+export const PAGE_VERSION = 2;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
-const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'offerOnly', 'vacationAuto']);
+const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
+/** Own figures of version 1 that are terms from version 3 on: `fromFlat` must still sort them. */
+const FORMER_MINE_KEYS = new Set(['offerOnly', 'place']);
 const MINE_KEYS = new Set(Object.keys(DEF_MINE));
 const CFG_KEYS = new Set(Object.keys(DEF_CFG));
 
@@ -33,7 +35,7 @@ function fromFlat(saved) {
   const terms = {};
   const mine = {};
   for (const [key, value] of Object.entries(fields)) {
-    if (MINE_KEYS.has(key)) mine[key] = value;
+    if (MINE_KEYS.has(key) || FORMER_MINE_KEYS.has(key)) mine[key] = value;
     else if (TERM_KEYS.has(key)) terms[key] = value;
   }
   return { id, cmp, terms, mine };
@@ -52,29 +54,36 @@ const withoutLawFigures = (cfg) =>
  * `upgrade[n]` turns version n into n + 1; `offer` and `cfg` are each optional. Versions:
  * 1: offers with every field at the top level (before ADR-0007; backups made before 30 October 2026); settings that
  *    may hold figures that now come from law.js.
- * 2: offers as `{ id, cmp, terms, mine }`; settings without those figures. The version of every account row to date.
- * `offerOnly` moved from `terms` to `mine` on 30 October 2026 (ADR-0017) without a version bump, so rows of version 2
- * may still hold it in `terms`: `normalizeOffer` moves it. Plan step 7 in docs/STATE.md reverses the move properly.
+ * 2: offers as `{ id, cmp, terms, mine }`; settings without those figures. `offerOnly` and the village (`place`) in
+ *    `mine`; `offerOnly` moved there from `terms` on 30 October 2026 (ADR-0017) without a version bump, so it may be
+ *    in either, and `mine`'s wins.
+ * 3: `offerOnly` and `place` in `terms`, shared (ADR-0028). The migration of 4 November 2026 rewrote every account row.
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
+  2: { offer: ownToTerms },
 };
+
+/** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
+function ownToTerms(offer) {
+  const { offerOnly, place, ...mine } = offer.mine ?? {};
+  const terms = { ...offer.terms };
+  if (offerOnly !== undefined) terms.offerOnly = offerOnly;
+  if (place !== undefined) terms.place = place;
+  return { ...offer, terms, mine };
+}
 
 const pick = (object, keys) => Object.fromEntries(Object.entries(object ?? {}).filter(([key]) => keys.has(key)));
 
 /**
- * A saved offer, complete. `offerOnly` describes the shepherd, not the job (it was a term until 30 October 2026): a
- * saved `terms.offerOnly` moves to `mine`, unless `mine` has its own. Fields the page does not know are kept, so a
- * write does not lose what a newer page added without raising the version.
+ * A saved offer, complete. Fields the page does not know are kept, so a write does not lose what a newer page added
+ * without raising the version.
  */
-export const normalizeOffer = (saved) => {
-  const { offerOnly, ...terms } = saved.terms ?? {};
-  return {
-    ...saved,
-    terms: { ...DEF_TERMS, ...terms },
-    mine: { ...DEF_MINE, ...(offerOnly === undefined ? {} : { offerOnly }), ...saved.mine },
-  };
-};
+export const normalizeOffer = (saved) => ({
+  ...saved,
+  terms: { ...DEF_TERMS, ...saved.terms },
+  mine: { ...DEF_MINE, ...saved.mine },
+});
 
 /**
  * What version a saved offer is in: its own stamp (account rows have one), else its bundle's (backups), else what its
@@ -83,6 +92,7 @@ export const normalizeOffer = (saved) => {
 function offerVersion(row, bundleVersion) {
   if (Number.isInteger(row.schema_version)) return row.schema_version;
   if (Number.isInteger(bundleVersion)) return bundleVersion;
+  // Read as 2 even when written as 3: the 2-to-3 upgrade leaves an offer already in version 3 as it is
   return isCurrentShape(row) ? 2 : 1;
 }
 
@@ -135,9 +145,7 @@ export function ingestSaved(data, { fallbackCfg }) {
  */
 export function ingestShared({ offer, sharer }) {
   if (typeof offer?.terms !== 'object' || offer.terms === null) return null;
-  // Never read `offerOnly` from a shared row: it is the sharer's own, and old rows still carry it.
-  const { offerOnly: _ignored, ...terms } = offer.terms;
-  const upgraded = upgradeOffer({ id: offer.id, schema_version: offer.schema_version, terms, mine: {} });
+  const upgraded = upgradeOffer({ id: offer.id, schema_version: offer.schema_version, terms: offer.terms, mine: {} });
   if (!upgraded) return null;
   const { schema_version: _newer, ...o } = upgraded;
   o.mine = { ...DEF_MINE, name: sharer?.name || 'Otro pastor' };

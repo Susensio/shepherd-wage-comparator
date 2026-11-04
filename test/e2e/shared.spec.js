@@ -198,17 +198,41 @@ test.describe('the read-only view', () => {
     expect(gaps.legalToWorkings).toBeGreaterThanOrEqual(12);
   });
 
-  test('municipality, province and herd show, never the village', async ({ openApp }) => {
-    const terms = { ...byName('Puerto A').terms, municipality: '22252', province: 'HU', sheep: 800, cattle: 1 };
+  test('the village, its municipality, province and herd show (ADR-0028)', async ({ openApp }) => {
+    const terms = {
+      ...byName('Puerto A').terms,
+      place: 'Sarvisé',
+      municipality: '22252',
+      province: 'HU',
+      sheep: 800,
+      cattle: 1,
+    };
     const page = await openCompare(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });
     await include(page);
     await page.locator('.lr.other').first().click();
     const conditions = page.locator('#sharedBlk .shared-conditions');
-    await expect(conditions).toContainText('Municipio de Yebra de Basa · Huesca'); // named once the list arrives
+    await expect(conditions).toContainText('Sarvisé · Municipio de Yebra de Basa · Huesca'); // named once the list arrives
     await expect(conditions).toContainText('800 ovejas · 1 vaca');
-    expect(await page.evaluate(() => app.state.others.items[0].o.mine)).toEqual(
-      expect.not.objectContaining({ place: expect.stringMatching(/./) }),
-    );
+  });
+
+  test("another shepherd's offer that was only an offer is tagged, and hidden with yours by the switch", async ({
+    openApp,
+  }) => {
+    const terms = { ...byName('Puerto A').terms, offerOnly: true };
+    const page = await openCompare(openApp, {
+      others: [
+        { id: sharedId(1), user_id: OTHER, terms },
+        { id: sharedId(2), user_id: OTHER, terms: byName('Invernada C').terms },
+      ],
+    });
+    await include(page);
+    const row = page.locator(`.lr.other[data-id="${sharedId(1)}"]`);
+    await expect(row).toHaveClass(/offer-only/);
+    await expect(row).toContainText('solo oferta');
+    await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).not.toHaveClass(/offer-only/);
+    await page.locator('[name=showOfferOnly]').uncheck();
+    await expect(row).toHaveCount(0);
+    await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).toBeVisible();
   });
 
   test('without contact data it says so', async ({ openApp }) => {

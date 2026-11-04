@@ -4,7 +4,7 @@ import { html, nothing } from 'lit-html';
 
 /** What sharing shows and to whom, in full: the account page's confirmation and the fold under Comparar's consent. */
 export const shareTermsView = () => html`
-  <p>Se ven las condiciones de las ofertas, con el nombre, el correo y el teléfono. Las ven los pastores que han entrado y comparten al menos una oferta.</p>
+  <p>Se ven las condiciones de las ofertas, el pueblo y si se trabajaron, con el nombre, el correo y el teléfono. Las ven los pastores que han entrado y comparten al menos una oferta.</p>
   <p>No se ven los km, los gastos, los nombres de las ofertas ni los ajustes.</p>
   <p>Si se deja de compartir, los datos dejan de verse, y también las ofertas de otros pastores.</p>`;
 

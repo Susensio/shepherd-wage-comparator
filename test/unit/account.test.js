@@ -454,22 +454,23 @@ describe('saving changes', () => {
     );
   });
 
-  test('an offer whose shared terms still hold offerOnly is rewritten without it', async () => {
-    const old = accountRow(2, { offerOnly: true });
-    delete old[1].mine.offerOnly; // rows from before the move have no offerOnly in `mine`
-    const tables = accountTables(accountRow(1), old);
-    const { account, state, calls } = setUp({ tables });
+  test('a version 2 row, offerOnly and the village in mine, is rewritten at version 3 with them in the terms', async () => {
+    const old = accountRow(2);
+    old[0].schema_version = 2;
+    for (const key of ['offerOnly', 'place']) delete old[0].terms[key];
+    Object.assign(old[1].mine, { offerOnly: true, place: 'Sarvisé' });
+    const { account, state, calls } = setUp({ tables: accountTables(accountRow(1), old) });
     await account.connect();
-    assert.equal(state.offers[1].mine.offerOnly, true);
-    assert.equal('offerOnly' in state.offers[1].terms, false);
+    assert.equal(state.offers[1].terms.offerOnly, true);
+    assert.equal(state.offers[1].terms.place, 'Sarvisé');
     await account.flush();
     const [offers, mine] = calls;
     assert.deepEqual(
-      offers.rows.map((r) => r.id),
-      [id(2)],
+      offers.rows.map((r) => [r.id, r.schema_version, r.terms.offerOnly, r.terms.place]),
+      [[id(2), SCHEMA_VERSION, true, 'Sarvisé']],
     );
-    assert.equal('offerOnly' in offers.rows[0].terms, false);
-    assert.equal(mine.rows[0].mine.offerOnly, true);
+    assert.equal('offerOnly' in mine.rows[0].mine, false);
+    assert.equal('place' in mine.rows[0].mine, false);
     calls.length = 0;
     await account.flush();
     assert.deepEqual(calls, []);

@@ -993,9 +993,13 @@ section.others p {
 .lr.other {
   border-left: 3px solid var(--accent);
 }
-/* Your offers that were only offers: muted, so the worked ones stand out */
+/* Offers that were only offers: muted, so the worked ones stand out */
 .lr.offer-only {
   border-left: 3px dashed var(--line);
+}
+/* Another shepherd's that was only an offer: their colour, dashed */
+.lr.other.offer-only {
+  border-left-color: var(--accent);
 }
 .lr.offer-only :is(.nm, .v, .bar) {
   opacity: 0.6;

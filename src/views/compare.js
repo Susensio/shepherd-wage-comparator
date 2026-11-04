@@ -20,7 +20,7 @@ const unitPicker = (unit) =>
   )}</div></div>`;
 
 /**
- * The view switches, as chips under the ranking: your offers that were only offers (shown apart), and the figures of
+ * The view switches, as chips under the ranking: the offers that were only offers (shown apart), and the figures of
  * the terms alone (forced on by other shepherds' offers). One hint line, only when something needs saying.
  */
 function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
@@ -293,15 +293,15 @@ function hoursView(list) {
  * @param {boolean} termsOnly show the figures of the terms alone
  * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
  * @param {{on: boolean, ids: string[]}} pairing «Comparar dos»: whether it is on and which offers are picked
- * @param {boolean} [showOfferOnly] rank your offers that were only offers (not worked), shown apart
+ * @param {boolean} [showOfferOnly] rank the offers that were only offers (not worked), yours or others', shown apart
  * @param {boolean} [moneyOnly] rank by what you earn alone: by default the paro each offer generates is added (ADR-0022)
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
 export function compareView(everything, unit, termsOnly, others, pairing, showOfferOnly = true, moneyOnly = false) {
   const U = UNITS[unit];
-  // Your offers that were not worked (no start date, or marked «solo oferta»); other shepherds' never are
+  // Offers that were not worked (no start date, or marked «solo oferta»), yours or other shepherds' (ADR-0028)
   const worked = new Set(workedOffers(everything.map((x) => x.o)));
-  const isOfferOnly = (x) => !x.sharer && !worked.has(x.o);
+  const isOfferOnly = (x) => !worked.has(x.o);
   const offerOnlyCount = everything.filter(isOfferOnly).length;
   const all = showOfferOnly ? everything : everything.filter((x) => !isOfferOnly(x));
   // Without a duration there is no total: those go last
@@ -367,7 +367,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
       }</span>`;
     return pairing.on
       ? html`<button type="button" class=${picked ? 'lr pickable picked' : 'lr pickable'} data-action="pickPair" aria-pressed=${String(picked)} data-id=${o.id}>${content}</button>`
-      : html`<button type="button" class=${x.sharer ? 'lr other' : isOfferOnly(x) ? 'lr offer-only' : 'lr'} data-action=${openAction(x)} data-id=${o.id}>${content}</button>`;
+      : html`<button type="button" class=${['lr', x.sharer && 'other', isOfferOnly(x) && 'offer-only'].filter(Boolean).join(' ')} data-action=${openAction(x)} data-id=${o.id}>${content}</button>`;
   });
   const mode = pairing.on
     ? html`<div class="cmp-mode"><span>${pairing.ids.length === 2 ? 'Comparando:' : pairing.ids.length ? 'Marca otra oferta.' : 'Marca dos ofertas.'}</span><button type="button" class="linkbtn" data-action="closePair">Cancelar</button></div>`

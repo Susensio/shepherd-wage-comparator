@@ -37,6 +37,8 @@ export const DEF_TERMS = {
   mealLunch: false,
   mealDinner: false,
   kmRate: '',
+  offerOnly: false, // just an offer, not worked: a fact about the offer, shared (ADR-0028)
+  place: '', // the village as written or picked; shared (ADR-0028)
   municipality: '', // INE code of the municipality (places list)
   province: '', // province code (places list)
   sheep: '', // head counts, each optional
@@ -47,8 +49,6 @@ export const DEF_TERMS = {
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',
-  offerOnly: false, // just an offer, not worked
-  place: '', // the village as you wrote or picked it; the codes in `terms` are the shared part
   rentValue: '', // empty: the one in the settings
   car: 'own', // own · noCar
   commute: 'daily', // daily · liveIn
@@ -63,10 +63,10 @@ export const DEF_MINE = {
 /** Own figures that cost nothing: no car (so no trips, km or fuel), no expenses, automatic IRPF. */
 const NEUTRAL_MINE = { ...DEF_MINE, car: 'noCar', commute: 'liveIn' };
 
-/** The offer judged on its terms alone: the same terms with neutral own figures. Works from `{ id, terms }`. Keeps the name and whether it was worked. */
+/** The offer judged on its terms alone: the same terms with neutral own figures. Works from `{ id, terms }`. Keeps the name. */
 export const termsOnly = (offer) => ({
   ...offer,
-  mine: { ...NEUTRAL_MINE, name: offer.mine?.name ?? '', offerOnly: offer.mine?.offerOnly ?? false },
+  mine: { ...NEUTRAL_MINE, name: offer.mine?.name ?? '' },
 });
 
 /** The side of an offer a field lives on: `offer.mine` or `offer.terms`. */
@@ -285,11 +285,11 @@ export function datesText(terms) {
 }
 
 /** Offers that count as work done or to do: dated and not «just an offer». */
-export const workedOffers = (offers) => offers.filter((o) => o.terms.start && !o.mine.offerOnly);
+export const workedOffers = (offers) => offers.filter((o) => o.terms.start && !o.terms.offerOnly);
 
 /** Other worked offers whose dates overlap this one. */
 export function overlapsOf(offer, offers) {
-  if (!offer.terms.start || offer.mine.offerOnly) return [];
+  if (!offer.terms.start || offer.terms.offerOnly) return [];
   const [start, end] = spanOf(offer.terms);
   return workedOffers(offers).filter((p) => {
     if (p.id === offer.id) return false;

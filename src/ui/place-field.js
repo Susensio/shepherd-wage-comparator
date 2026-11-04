@@ -49,7 +49,7 @@ function close() {
 function pick(i) {
   const place = suggestions[i];
   const o = active();
-  o.mine.place = place.name;
+  o.terms.place = place.name;
   o.terms.municipality = place.municipalityCode;
   o.terms.province = place.provinceCode;
   input().value = place.name;
@@ -60,7 +60,7 @@ function pick(i) {
 /** Typing replaces what was picked: the codes go, the text stays as yours. */
 function onInput() {
   const o = active();
-  o.mine.place = input().value;
+  o.terms.place = input().value;
   o.terms.municipality = '';
   o.terms.province = '';
   suggest();

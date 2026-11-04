@@ -61,11 +61,10 @@ export const areaLine = (place) =>
  * from the places list, so without it (not loaded yet) only the village is left. Empty if there is nothing to say.
  * @param {object} terms
  * @param {import('./places.js').PlacesIndex | null} places
- * @param {string} village yours alone: left out for offers that are not yours
  */
-export function whereText(terms, places, village = '') {
+export function whereText(terms, places) {
   const found = places && placeOfTerms(places, terms);
-  const name = village.trim();
+  const name = (terms.place ?? '').trim();
   if (!found) return name;
   const area = found.municipality ? areaLine(found) : found.province;
   return !name || fold(name) === fold(found.municipality) ? area : `${name} · ${area}`;
@@ -149,7 +148,7 @@ export function summaries(o, r, places = null) {
       ? ` · ~${isUnderAMonth(r) || r.time.months < 1 ? `${fN(km)}\u00a0km en total` : `${fN(r.time.months > 0 ? km / r.time.months : 0)}\u00a0km/mes`}`
       : '';
   const split = r.split;
-  const where = whereText(o.terms, places, o.mine.place);
+  const where = whereText(o.terms, places);
   const herd = herdText(o.terms);
   const dates = datesText(o.terms) ? `${datesText(o.terms)} · ` : o.terms.year ? `${o.terms.year} · ` : '';
   const hours = num(o.terms.hoursPerDay) > 0 ? `${fTyped(o.terms.hoursPerDay)}\u00a0h/día` : 'horas sin poner';

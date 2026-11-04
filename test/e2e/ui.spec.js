@@ -310,7 +310,7 @@ test('«Solo oferta» is always shown: ticked and locked without a start date', 
   await expect(box).not.toBeChecked();
   await expect(page.locator('#offerOnlyHint')).toBeEmpty();
   await box.check();
-  expect(await page.evaluate(() => app.active().mine.offerOnly)).toBe(true);
+  expect(await page.evaluate(() => app.active().terms.offerOnly)).toBe(true);
 });
 
 test('the chart over time shows only worked offers', async ({ loaded: page }) => {

@@ -28,7 +28,8 @@
         "overnight": "yes",
         "totalAmount": 2205,
         "totalUnit": "month",
-        "vacation": "paidAtEnd"
+        "vacation": "paidAtEnd",
+        "offerOnly": true
       },
       "mine": {
         "car": "own",
@@ -38,8 +39,7 @@
         "kmHome": 108,
         "kmWorkPerDay": 6,
         "name": "Puerto A",
-        "commute": "liveIn",
-        "offerOnly": true
+        "commute": "liveIn"
       },
       "cmp": true
     },
@@ -71,7 +71,8 @@
         "overnight": "yes",
         "totalAmount": 2205,
         "totalUnit": "month",
-        "vacation": "included"
+        "vacation": "included",
+        "offerOnly": false
       },
       "mine": {
         "car": "own",
@@ -81,8 +82,7 @@
         "kmHome": 108,
         "kmWorkPerDay": 6,
         "name": "Puerto A, otra cuenta",
-        "commute": "liveIn",
-        "offerOnly": false
+        "commute": "liveIn"
       },
       "cmp": true
     },
@@ -114,7 +114,8 @@
         "overnight": "no",
         "totalAmount": 63,
         "totalUnit": "day",
-        "vacation": "paidAtEnd"
+        "vacation": "paidAtEnd",
+        "offerOnly": false
       },
       "mine": {
         "car": "own",
@@ -124,8 +125,7 @@
         "kmHome": 14,
         "kmWorkPerDay": 0,
         "name": "Campaña B",
-        "commute": "daily",
-        "offerOnly": false
+        "commute": "daily"
       },
       "cmp": true
     },
@@ -155,7 +155,8 @@
         "payrollMin": false,
         "overnight": "no",
         "totalUnit": "day",
-        "vacation": "taken"
+        "vacation": "taken",
+        "offerOnly": false
       },
       "mine": {
         "car": "own",
@@ -163,8 +164,7 @@
         "irpfMode": "auto",
         "kmHome": 27,
         "name": "Invernada C",
-        "commute": "daily",
-        "offerOnly": false
+        "commute": "daily"
       },
       "cmp": true
     },
@@ -193,7 +193,8 @@
         "payrollMin": false,
         "overnight": "no",
         "totalUnit": "day",
-        "vacation": "taken"
+        "vacation": "taken",
+        "offerOnly": false
       },
       "mine": {
         "car": "own",
@@ -201,8 +202,7 @@
         "irpfMode": "auto",
         "kmHome": 9,
         "name": "Sin contrato D",
-        "commute": "daily",
-        "offerOnly": false
+        "commute": "daily"
       },
       "cmp": true
     },
@@ -231,7 +231,8 @@
         "payrollMin": false,
         "overnight": "no",
         "totalUnit": "day",
-        "vacation": "included"
+        "vacation": "included",
+        "offerOnly": false
       },
       "mine": {
         "car": "own",
@@ -239,8 +240,7 @@
         "irpfMode": "manual",
         "kmHome": 33,
         "name": "Temporada E",
-        "commute": "daily",
-        "offerOnly": false
+        "commute": "daily"
       },
       "cmp": true
     },
@@ -270,7 +270,8 @@
         "overnight": "no",
         "totalAmount": 78.75,
         "totalUnit": "day",
-        "vacation": "included"
+        "vacation": "included",
+        "offerOnly": true
       },
       "mine": {
         "car": "noCar",
@@ -278,8 +279,7 @@
         "irpfMode": "auto",
         "kmHome": 24,
         "name": "Temporada F",
-        "commute": "daily",
-        "offerOnly": true
+        "commute": "daily"
       },
       "cmp": true
     },
@@ -308,7 +308,8 @@
         "overnight": "no",
         "totalUnit": "day",
         "vacationAuto": true,
-        "vacation": "paidAtEnd"
+        "vacation": "paidAtEnd",
+        "offerOnly": false
       },
       "mine": {
         "rentValue": 315,
@@ -316,8 +317,7 @@
         "irpfManual": 2,
         "irpfMode": "auto",
         "name": "Sin contrato G",
-        "commute": "liveIn",
-        "offerOnly": false
+        "commute": "liveIn"
       },
       "cmp": true
     }

@@ -64,7 +64,7 @@ export function paintEnd(terms) {
 /** Puts the offer's values in the form. */
 export function fillForm(o) {
   paintEnd(o.terms);
-  /** @type {HTMLInputElement} */ ($('#place')).value = o.mine.place;
+  /** @type {HTMLInputElement} */ ($('#place')).value = o.terms.place;
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
     if (!el.name || el.dataset.answer) continue; // «Pago» is read from the terms by paintAnswers
     const side = sideOf(o, el.name);
@@ -256,7 +256,7 @@ export function paintForm(o, r, offers, places) {
   const offerOnly = /** @type {HTMLInputElement} */ ($('#f [name=offerOnly]'));
   const noDate = !o.terms.start;
   offerOnly.disabled = noDate;
-  offerOnly.checked = noDate || !!o.mine.offerOnly;
+  offerOnly.checked = noDate || !!o.terms.offerOnly;
   text('#offerOnlyHint', noDate ? `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.` : '');
   text('#vacationHint', vacationHint(o, r));
   paintPlace(o, places);

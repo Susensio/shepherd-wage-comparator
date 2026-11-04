@@ -22,7 +22,7 @@ export const offersListView = (items, activeId) =>
   sorted(items).map(({ o, r }) => {
     const unit = offerUnit(r);
     const complete = isComplete(o.terms);
-    const worked = !!o.terms.start && !o.mine.offerOnly;
+    const worked = !!o.terms.start && !o.terms.offerOnly;
     const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
     return html`<div class="ocwrap"><button type="button" class=${worked ? 'ocard' : 'ocard offer-only'} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
       <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${

@@ -211,11 +211,9 @@ export function createAccount({
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
     known.offers = new Map(offerList.mine().map((o) => [o.id, fingerprint(o)]));
     known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
-    // Rows of an older format, or with offerOnly still in the shared terms, are unsynced until rewritten in today's.
-    for (const row of account.offers) {
-      const older = typeof row.schema_version === 'number' && row.schema_version < SCHEMA_VERSION;
-      if (older || (row.terms && 'offerOnly' in row.terms)) known.offers.delete(row.id);
-    }
+    // Rows of an older format are unsynced until rewritten in today's.
+    for (const row of account.offers)
+      if (typeof row.schema_version === 'number' && row.schema_version < SCHEMA_VERSION) known.offers.delete(row.id);
     if (left) {
       for (const offerId of left.changed) known.offers.delete(offerId);
       for (const offerId of left.removed) if (accountIds.has(offerId)) known.offers.set(offerId, '');
