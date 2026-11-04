@@ -938,18 +938,13 @@ details.plg > summary:has(.stat)::after {
   margin-left: 0;
 }
 
-.editinfo {
-  margin: -6px 0 0;
+.shared-conditions {
+  margin: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  cursor: pointer;
   gap: 3px 12px;
   font-size: 13px;
   line-height: 1.35;
-}
-.editinfo.readonly {
-  cursor: auto;
-  margin: 0;
 }
 .contact {
   margin: 0;
@@ -1006,10 +1001,10 @@ section.others p {
   color: var(--muted);
   font-style: italic;
 }
-.editinfo dt {
+.shared-conditions dt {
   color: var(--muted);
 }
-.editinfo dd {
+.shared-conditions dd {
   margin: 0;
   min-width: 0;
 }

@@ -168,7 +168,7 @@ test.describe('the read-only view', () => {
       'mailto:luis@example.com',
     );
     await expect(view.getByRole('link', { name: '611 222 333' })).toHaveAttribute('href', 'tel:611222333');
-    await expect(view.locator('.editinfo')).toContainText('Tiempo');
+    await expect(view.locator('.shared-conditions')).toContainText('Tiempo');
     await expect(view.locator('#sharedResult .big').first()).toBeVisible();
     await expect(view.locator('input, textarea, select')).toHaveCount(0);
     for (const action of ['edit', 'complete', 'copyCard', 'copyClaim', 'done', 'payslipMonth'])
@@ -200,7 +200,7 @@ test.describe('the read-only view', () => {
     const page = await openCompare(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });
     await include(page);
     await page.locator('.lr.other').first().click();
-    const conditions = page.locator('#sharedBlk .editinfo');
+    const conditions = page.locator('#sharedBlk .shared-conditions');
     await expect(conditions).toContainText('Municipio de Yebra de Basa · Huesca'); // named once the list arrives
     await expect(conditions).toContainText('800 ovejas · 1 vaca');
     expect(await page.evaluate(() => app.state.others.items[0].o.mine)).toEqual(
