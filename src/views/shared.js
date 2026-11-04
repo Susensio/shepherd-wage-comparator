@@ -27,10 +27,10 @@ export function sharedView({ o, r, sharer, label }, places) {
   const conditions = [
     ['Dónde', whereText(o.terms, places)], // never the village: it is not theirs to share
     ['Ganado', herdText(o.terms)],
-    ['Tiempo', s.time],
+    ['Tiempo', s.when],
     ['Nómina', s.payroll],
     ['En negro', s.b],
-    ['Casa y comida', s.housing],
+    ['El día a día', [s.workday, s.housing].join(' · ')], // as the step and the ficha's row
     ['Contrato', contractOf(o.terms).stat],
   ].filter(([, v]) => v);
   return html`<button type="button" class="back" data-action="closeShared"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Volver a Comparar</button>

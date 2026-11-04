@@ -169,6 +169,9 @@ test.describe('the read-only view', () => {
     );
     await expect(view.getByRole('link', { name: '611 222 333' })).toHaveAttribute('href', 'tel:611222333');
     await expect(view.locator('.shared-conditions')).toContainText('Tiempo');
+    await expect(view.locator('.shared-conditions')).toContainText(
+      /El día a día\s*\d+(,\d+)?\u00a0h\/día · libra .* · (Con|Sin) casa/,
+    );
     await expect(view.locator('#sharedResult .big').first()).toBeVisible();
     await expect(view.locator('input, textarea, select')).toHaveCount(0);
     for (const action of ['edit', 'complete', 'copyCard', 'copyClaim', 'done', 'payslipMonth'])
