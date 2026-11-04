@@ -6,14 +6,14 @@ import { html, nothing } from 'lit-html';
 
 /** @type {Record<string, Tip>} what each tab or page says to a guest; one without an entry has no tooltip */
 export const GUEST_TIPS = {
-  offers: { title: 'Guarda tus ofertas en una cuenta.', text: 'Ahora solo están en este navegador.' },
-  compare: { title: 'Compara con otros pastores.', text: 'Entra y, si compartes tus ofertas, verás las suyas.' },
-  settings: { title: 'Guarda tus ajustes en una cuenta.', text: 'Así los tienes en cualquier dispositivo.' },
+  offers: { title: 'Guarda las ofertas en una cuenta.', text: 'Ahora solo están en este navegador.' },
+  compare: { title: 'Compara con otros pastores.', text: 'Entra y, si se comparten las ofertas, se ven las suyas.' },
+  settings: { title: 'Guarda los ajustes en una cuenta.', text: 'Así están en cualquier dispositivo.' },
 };
 
 /** What a signed-in user sees on Ofertas while the browser's offers wait for a decision. */
 export const PENDING_TIP = {
-  title: 'No se pudieron subir tus ofertas a la cuenta.',
+  title: 'No se pudieron subir las ofertas a la cuenta.',
   go: 'Revisar',
   action: 'openAccountPage',
   dismissable: false,

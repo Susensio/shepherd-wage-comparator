@@ -30,7 +30,7 @@ export async function downloadBackup(msg) {
   } catch {
     const copied = await copyText(text, msg, {
       ok: 'No se pudo descargar: la copia está en el portapapeles. Pégala en una nota o mándatela por mensaje.',
-      failMsg: 'No se pudo descargar ni copiar. Aquí la tienes para copiarla a mano:',
+      failMsg: 'No se pudo descargar ni copiar. Aquí está para copiarla a mano:',
     });
     msg.dataset.kind = copied ? 'ok' : 'warn';
     if (copied) markBackup();
@@ -42,7 +42,7 @@ export async function downloadBackup(msg) {
 export async function copyBackup(msg) {
   const copied = await copyText(backupText(), msg, {
     ok: 'Copiada. Pégala en una nota o mándatela por mensaje.',
-    failMsg: 'No se pudo copiar. Aquí la tienes, ya seleccionada: cópiala a mano.',
+    failMsg: 'No se pudo copiar. Aquí está, ya seleccionada: cópiala a mano.',
   });
   msg.dataset.kind = copied ? 'ok' : 'warn';
   if (copied) {

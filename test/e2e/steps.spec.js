@@ -31,7 +31,7 @@ test('the entry has no tab bar, and a strip with what is earned so far', async (
   await page.check('input[name=vacation][value=included]');
   await goStep(page, 'day');
   await page.fill('#hoursPerDay', '9');
-  await expect(page.locator('#stripLabel')).toHaveText(/^Ganas (al día|al mes), por ahora$/);
+  await expect(page.locator('#stripLabel')).toHaveText(/^Se gana (al día|al mes), por ahora$/);
   const expected = await page.evaluate(async () => {
     const { fUnit, inUnit, offerUnit } = await import('./src/units.js');
     const r = app.calcOffer(app.active());
@@ -68,7 +68,7 @@ test('the entry has no «Luego» button, on any step', async ({ page }) => {
 test('the hours warning shows under the question while it is empty, and goes when it is filled', async ({ page }) => {
   await startOffer(page, 'day');
   const warning = page.locator('[data-required=hoursPerDay]');
-  await expect(warning).toHaveText('Sin las horas no se puede calcular cuánto ganas.');
+  await expect(warning).toHaveText('Sin las horas no se puede calcular cuánto se gana.');
   await expect(warning).toBeVisible();
   await page.fill('#hoursPerDay', '9');
   await expect(warning).toBeHidden();
@@ -81,7 +81,7 @@ test('the hours warning shows under the question while it is empty, and goes whe
 
 test('the pay, vacation and duration warnings show only while their answer is missing', async ({ page }) => {
   await startOffer(page, 'pay');
-  await expect(page.locator('[data-required=pay]')).toHaveText(/^Sin lo que te pagan/);
+  await expect(page.locator('[data-required=pay]')).toHaveText(/^Sin el pago/);
   await page.evaluate(() => {
     app.active().terms.vacation = ''; // a new offer starts with one chosen
   });
@@ -92,7 +92,7 @@ test('the pay, vacation and duration warnings show only while their answer is mi
   await expect(page.locator('[data-required=pay]')).toBeHidden();
   await expect(page.locator('[data-required=vacation]')).toBeHidden();
   await goStep(page, 'offer');
-  await expect(page.locator('[data-required=duration]')).toHaveText('Si no lo sabes, marca «no lo sé».');
+  await expect(page.locator('[data-required=duration]')).toHaveText('Si no se sabe, marca «No se sabe».');
   await page.check('input[name=durationUnit][value=unknown]');
   await expect(page.locator('[data-required=duration]')).toBeHidden();
 });

@@ -29,7 +29,7 @@ test('«Dinero en negro»: only with money en negro or no contract, and what eac
 
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(negro.locator('h3')).toHaveText('Dinero en negro');
-  await expect(negro).toContainText(/van en negro: no cuentan para tu jubilación ni para una baja/);
+  await expect(negro).toContainText(/van en negro: no cuentan para la jubilación ni para una baja/);
   await expect(negro).toContainText('Al paro no le afecta: lo que va en nómina ya da el máximo.');
 
   await loadOffers(page, sample, OFFER.campanaB);
@@ -37,7 +37,7 @@ test('«Dinero en negro»: only with money en negro or no contract, and what eac
 
   await loadOffers(page, sample, OFFER.sinContratoD);
   await expect(negro).toContainText(
-    'Sin contrato, nada de lo que cobras cuenta para la jubilación, una baja o el paro.',
+    'Sin contrato, nada de lo que se cobra cuenta para la jubilación, una baja o el paro.',
   );
   await expect(negro).toContainText(/Con contrato, este trabajo generaría 14 días de paro: unos 552\s€/);
 });

@@ -40,17 +40,17 @@
     </div>
   </header>
   <div class="tip-slot" id="accountTip" aria-live="polite"></div>
-  <p id="intro">Apunta las ofertas de pastoreo tal como te las proponen y mira cuánto ganas de verdad y si es legal.</p>
+  <p id="intro">Apunta las ofertas de pastoreo tal como las proponen y mira cuánto se gana de verdad y si es legal.</p>
 
   <div class="panel" data-panel="offers">
   <div class="backup-notice" id="backupNotice" hidden>
-    <p>Tus ofertas solo están guardadas en este navegador, que puede borrarlas. Guarda una copia.</p>
+    <p>Las ofertas solo están guardadas en este navegador, que puede borrarlas. Guarda una copia.</p>
     <div class="actions"><button type="button" class="sm pri" data-action="download">Descargar copia</button><button type="button" class="sm" data-action="snoozeBackup">Ahora no</button></div>
     <p class="hint" id="noticeMsg" aria-live="polite"></p>
   </div>
 
-  <section class="offers-list" id="offersList" aria-label="Tus ofertas">
-    <p class="sr-only" id="listLoading" role="status" hidden>Cargando tu cuenta…</p>
+  <section class="offers-list" id="offersList" aria-label="Las ofertas">
+    <p class="sr-only" id="listLoading" role="status" hidden>Cargando la cuenta…</p>
     <button type="button" class="pri newoffer" id="btnAdd" data-action="newOffer">+ Nueva oferta</button>
     <div class="cards" id="cards"></div>
   </section>
@@ -87,10 +87,10 @@
   <div class="panel laws-pan" data-panel="laws" hidden>
   <section class="doc" aria-label="Leyes y fuentes">
     <h3 class="q">Lo que dice la ley</h3>
-    <p class="hint">Lo que se comprueba en «¿Es legal?». Son mínimos: tu contrato o tu convenio pueden darte más, nunca menos.</p>
+    <p class="hint">Lo que se comprueba en «¿Es legal?». Son mínimos: el contrato o el convenio pueden dar más, nunca menos.</p>
     <dl class="docs">
       <dt>Salario mínimo</dt>
-      <dd>Cambia cada año; se usa el del año que pongas en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si trabajas menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. El mínimo por hora se calcula con <span data-law="annualHours"></span> horas de jornada al año, la del <a data-source="granada" data-art="5">convenio del campo de Granada</a> (artículo 5), que se usa de referencia: no hay una cifra estatal y otras provincias tienen otra. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
+      <dd>Cambia cada año; se usa el del año puesto en cada oferta. Por <span data-law="weeklyHours"></span> h a la semana: <span data-law="smiByYear"></span>. En contratos temporales de <span data-law="casualMaxDays"></span> días o menos, al menos <span data-law="smiCasualByYear"></span> por jornada, que incluye la parte de pagas extra, domingos y festivos; las vacaciones se pagan aparte. Si se trabaja menos de <span data-law="weeklyHours"></span> h, se reduce en proporción. El mínimo por hora se calcula con <span data-law="annualHours"></span> horas de jornada al año, la del <a data-source="granada" data-art="5">convenio del campo de Granada</a> (artículo 5), que se usa de referencia: no hay una cifra estatal y otras provincias tienen otra. <span class="source">Reales Decretos <span data-law="smiDecrees"></span>.</span></dd>
       <dt>Plus de pernocta</dt>
       <dd>Si pernoctas fuera por pastoreo (borda, cabaña), al menos un <span data-law="overnightPct"></span> % más de salario. <span class="source"><a data-source="agreement" target="_blank" rel="noopener">Convenio del campo de Huesca 2015–2017</a>, art. 29. Es el último publicado que se ha podido consultar: puede haber uno más reciente, y sus tablas salariales pueden fijar un sueldo mayor que el SMI.</span></dd>
       <dt>Vacaciones</dt>
@@ -98,11 +98,11 @@
       <dt>Descanso semanal</dt>
       <dd>Día y medio por semana. En ganadería se puede juntar en periodos de hasta <span data-law="restPeriodWeeks"></span> semanas. <span class="source"><a data-source="et" data-art="37.1" target="_blank" rel="noopener">Estatuto, art. 37.1</a>; <a data-source="rd1561" data-art="5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
       <dt>Festivos</dt>
-      <dd>Unos <span data-law="holidaysPerYear"></span> al año, pagados y sin recuperar. Si los trabajas, se pagan aparte o se compensan con descanso. <span class="source"><a data-source="et" data-art="37.2" target="_blank" rel="noopener">Estatuto, art. 37.2</a>.</span></dd>
+      <dd>Unos <span data-law="holidaysPerYear"></span> al año, pagados y sin recuperar. Si se trabajan, se pagan aparte o se compensan con descanso. <span class="source"><a data-source="et" data-art="37.2" target="_blank" rel="noopener">Estatuto, art. 37.2</a>.</span></dd>
       <dt>Jornada y horas extra</dt>
       <dd><span data-law="weeklyHours"></span> h a la semana. En ganadería se puede alargar hasta <span data-law="extraWeekHours"></span> h más, con un máximo de <span data-law="maxDayHours"></span> h al día y <span data-law="restBetweenDays"></span> h de descanso entre jornadas. Lo que pasa de <span data-law="weeklyHours"></span> son horas extra: se pagan, al menos como una hora normal, o se devuelven en descanso. <span class="source"><a data-source="et" data-art="34" target="_blank" rel="noopener">Estatuto, art. 34</a> y <a data-source="et" data-art="35" target="_blank" rel="noopener">35</a>; <a data-source="rd1561" data-art="5" target="_blank" rel="noopener">Real Decreto 1561/1995, art. 5</a>.</span></dd>
       <dt>Contrato y alta</dt>
-      <dd>Trabajar sin contrato ni alta en la Seguridad Social es ilegal, y la responsabilidad es del ganadero. Sin alta no cotizas: no generas paro ni jubilación, y si te accidentas no estás cubierto.</dd>
+      <dd>Trabajar sin contrato ni alta en la Seguridad Social es ilegal, y la responsabilidad es del ganadero. Sin alta no se cotiza: no se genera paro ni jubilación, y en un accidente no hay cobertura.</dd>
       <dt>Fin de contrato</dt>
       <dd>Al acabar un contrato temporal, <span data-law="severanceDaysPerYear"></span> días de salario por año trabajado. En el fijo discontinuo no hay indemnización al acabar cada temporada, pero la empresa tiene que volver a llamarte. <span class="source"><a data-source="et" data-art="16" target="_blank" rel="noopener">Estatuto, art. 16</a> y <a data-source="et" data-art="49" target="_blank" rel="noopener">49.1.c</a>.</span></dd>
     </dl>
@@ -110,22 +110,22 @@
     <h3 class="q">Cómo se hacen las cuentas</h3>
     <p class="hint">Son estimaciones para comparar ofertas, no una nómina. Las cifras que se pueden cambiar están en «Ajustes», en «Cómo se cuenta». Las cuentas de cada oferta, paso a paso, al final de la oferta.</p>
     <dl class="docs">
-      <dt>Lo que ganas</dt>
-      <dd>La nómina neta, las vacaciones que te pagan aparte, lo que cobras en negro, lo que te ahorras en casa y comida, los km que te pagan y la indemnización, menos tus gastos de coche y otros. Se reparte entre las horas, los días o los meses que trabajas. Un mes son 30,4 días.</dd>
+      <dt>Lo que se gana</dt>
+      <dd>La nómina neta, las vacaciones que se pagan aparte, lo que se cobra en negro, lo que se ahorra en casa y comida, los km que se pagan y la indemnización, menos los gastos de coche y otros. Se reparte entre las horas, los días o los meses que se trabajan. Un mes son 30,4 días.</dd>
       <dt>Nómina</dt>
-      <dd>Del bruto se quitan la Seguridad Social del trabajador (en el régimen agrario, <span data-law="ssWorkerTemporary"></span> % en un contrato temporal y <span data-law="ssWorkerIndefinite"></span> % en uno fijo o fijo discontinuo: <span data-law="ssWorker0"></span> % de contingencias comunes, <span data-law="ssWorker1"></span> % de paro (<span data-law="ssWorkerUnemploymentIndefinite"></span> % en los fijos), <span data-law="ssWorker2"></span> % de formación y <span data-law="ssWorker3"></span> % del mecanismo de equidad, MEI; <span class="source"><a data-source="ssOrder" data-art="34">Orden PJC/297/2026</a></span>) y la retención de IRPF. La retención es la que pongas tú o, si no, la que corresponde a lo que ganas en el año, con un mínimo del <span data-law="irpfWithholding"></span> % en los temporales, el de los eventuales agrarios. El IRPF del año se calcula con la escala general, el mínimo personal sin hijos, <span data-law="irpfExpenses"></span> € de gastos, la reducción por rendimientos del trabajo y la deducción para sueldos cerca del SMI del año de cada oferta (<span data-law="smiDeductionByYear"></span>). Si un contrato pasa de un año a otro, su sueldo se reparte por días entre los dos. Lo que se ajuste en la renta no se suma a lo que ganas.</dd>
+      <dd>Del bruto se quitan la Seguridad Social del trabajador (en el régimen agrario, <span data-law="ssWorkerTemporary"></span> % en un contrato temporal y <span data-law="ssWorkerIndefinite"></span> % en uno fijo o fijo discontinuo: <span data-law="ssWorker0"></span> % de contingencias comunes, <span data-law="ssWorker1"></span> % de paro (<span data-law="ssWorkerUnemploymentIndefinite"></span> % en los fijos), <span data-law="ssWorker2"></span> % de formación y <span data-law="ssWorker3"></span> % del mecanismo de equidad, MEI; <span class="source"><a data-source="ssOrder" data-art="34">Orden PJC/297/2026</a></span>) y la retención de IRPF. La retención es la que se ponga o, si no, la que corresponde a lo que se gana en el año, con un mínimo del <span data-law="irpfWithholding"></span> % en los temporales, el de los eventuales agrarios. El IRPF del año se calcula con la escala general, el mínimo personal sin hijos, <span data-law="irpfExpenses"></span> € de gastos, la reducción por rendimientos del trabajo y la deducción para sueldos cerca del SMI del año de cada oferta (<span data-law="smiDeductionByYear"></span>). Si un contrato pasa de un año a otro, su sueldo se reparte por días entre los dos. Lo que se ajuste en la renta no se suma a lo que se gana.</dd>
       <dt>Paro</dt>
-      <dd>Unos <span data-law="benefitDays"></span> días de paro por cada <span data-law="minDaysContributed"></span> cotizados. La prestación es el <span data-law="benefitPct1"></span> % de tu base los primeros <span data-law="benefitDays70"></span> días y el <span data-law="benefitPct2"></span> % después, con un mínimo de <span data-law="benefitMin"></span> € y un máximo de <span data-law="benefitMax"></span> € al mes (sin hijos), menos su cotización. Solo lo cobras si llegas a <span data-law="minDaysContributed"></span> días cotizados en <span data-law="windowYears"></span> años. Se suma a lo que ganas porque es dinero que te da la nómina y el dinero en negro no. Se puede quitar en «Cómo se cuenta».</dd>
-      <dt>Lo que te deben</dt>
-      <dd>Lo que falta para el mínimo de cada cosa por separado (salario, plus de pernocta y vacaciones), contado por meses, que es lo más seguro de reclamar. Lo que sobra en una no compensa lo que falta en otra. Lo que cobras en negro se descuenta, porque es dinero que te llega; aun así, si la nómina no llega al mínimo se marca como ilegal, porque lo de en negro no cotiza.</dd>
+      <dd>Unos <span data-law="benefitDays"></span> días de paro por cada <span data-law="minDaysContributed"></span> cotizados. La prestación es el <span data-law="benefitPct1"></span> % de la base los primeros <span data-law="benefitDays70"></span> días y el <span data-law="benefitPct2"></span> % después, con un mínimo de <span data-law="benefitMin"></span> € y un máximo de <span data-law="benefitMax"></span> € al mes (sin hijos), menos su cotización. Solo se cobra si se llega a <span data-law="minDaysContributed"></span> días cotizados en <span data-law="windowYears"></span> años. Se suma a lo que se gana porque es dinero que da la nómina y el dinero en negro no. Se puede quitar en «Cómo se cuenta».</dd>
+      <dt>Lo que debe el ganadero</dt>
+      <dd>Lo que falta para el mínimo de cada cosa por separado (salario, plus de pernocta y vacaciones), contado por meses, que es lo más seguro de reclamar. Lo que sobra en una no compensa lo que falta en otra. Lo que se cobra en negro se descuenta, porque es dinero que llega; aun así, si la nómina no llega al mínimo se marca como ilegal, porque lo de en negro no cotiza.</dd>
       <dt>Jornadas de más y horas extra</dt>
-      <dd>Se cuentan con las dos reglas de la ley: al menos día y medio de descanso por semana, más los festivos, y <span data-law="weeklyHours"></span> h de trabajo a la semana, repartidas en esos <span data-law="workDaysWeek"></span> días (unas <span data-law="normalWorkday"></span> h al día). Las jornadas de más son los días que trabajas sin librar ese descanso o los festivos; cada una vale una jornada normal al salario mínimo. Las horas extra son las que pasan de la jornada normal (<span data-law="weeklyHours"></span> h a la semana, repartidas en los días laborables) cada día que trabajas, también los de descanso, a la hora del salario mínimo. Las vacaciones que libras se descuentan; las que no libras son días de trabajo que paga el dinero de las vacaciones. Lo que te pagan por encima del mínimo, contando lo de en negro, cubre primero las jornadas de más y después las horas. Las horas son una estimación: en el monte no todas las horas son iguales.</dd>
+      <dd>Se cuentan con las dos reglas de la ley: al menos día y medio de descanso por semana, más los festivos, y <span data-law="weeklyHours"></span> h de trabajo a la semana, repartidas en esos <span data-law="workDaysWeek"></span> días (unas <span data-law="normalWorkday"></span> h al día). Las jornadas de más son los días que se trabajan sin librar ese descanso o los festivos; cada una vale una jornada normal al salario mínimo. Las horas extra son las que pasan de la jornada normal (<span data-law="weeklyHours"></span> h a la semana, repartidas en los días laborables) cada día que se trabaja, también los de descanso, a la hora del salario mínimo. Las vacaciones que se libran se descuentan; las que no se libran son días de trabajo que paga el dinero de las vacaciones. Lo que se paga por encima del mínimo, contando lo de en negro, cubre primero las jornadas de más y después las horas. Las horas son una estimación: en el monte no todas las horas son iguales.</dd>
       <dt>Para negociar: lo que se ahorra el ganadero</dt>
-      <dd>Es su margen para pagarte más. Por pagarte en negro: lo que le costaría de más ponerlo en nómina sin que cobraras menos (el bruto que haría falta más su cotización: un <span data-law="ssEmployerTemporary"></span> % en un contrato temporal y un <span data-law="ssEmployerIndefinite"></span> % en uno fijo o fijo discontinuo, los del régimen agrario: <span data-law="ssEmployer0"></span> % de contingencias comunes, <span data-law="ssEmployer1"></span> % de paro (<span data-law="ssEmployerUnemploymentIndefinite"></span> % en los fijos), <span data-law="ssEmployer2"></span> % de accidentes, <span data-law="ssEmployer3"></span> % de formación, <span data-law="ssEmployer4"></span> % de Fogasa y <span data-law="ssEmployer5"></span> % de MEI. Algunas empresas tienen además bonificaciones, así que puede salir algo alto). Por debajo del mínimo, por las jornadas de más y por las horas extra: lo que te falta, en bruto, más su cotización.</dd>
+      <dd>Es el margen del ganadero para pagar más. Por pagar en negro: lo que le costaría de más ponerlo en nómina sin que se cobrara menos (el bruto que haría falta más su cotización: un <span data-law="ssEmployerTemporary"></span> % en un contrato temporal y un <span data-law="ssEmployerIndefinite"></span> % en uno fijo o fijo discontinuo, los del régimen agrario: <span data-law="ssEmployer0"></span> % de contingencias comunes, <span data-law="ssEmployer1"></span> % de paro (<span data-law="ssEmployerUnemploymentIndefinite"></span> % en los fijos), <span data-law="ssEmployer2"></span> % de accidentes, <span data-law="ssEmployer3"></span> % de formación, <span data-law="ssEmployer4"></span> % de Fogasa y <span data-law="ssEmployer5"></span> % de MEI. Algunas empresas tienen además bonificaciones, así que puede salir algo alto). Por debajo del mínimo, por las jornadas de más y por las horas extra: lo que falta, en bruto, más su cotización.</dd>
     </dl>
 
     <h3 class="q">Dónde reclamar</h3>
-    <p>Un sindicato (CCOO, UGT) te puede asesorar y acompañar. A la Inspección de Trabajo puedes avisar de forma anónima en su <a href="https://oeitss.mites.gob.es/buzonitss/" target="_blank" rel="noopener">buzón</a>; para una denuncia formal, con tu nombre: <a href="https://www.mites.gob.es/itss/web/Atencion_al_Ciudadano/COMO_DENUNCIAR_ITSS.html" target="_blank" rel="noopener">cómo denunciar</a>. En cada oferta, «Copiar reclamación» te da un resumen para llevar.</p>
+    <p>Un sindicato (CCOO, UGT) puede asesorar y acompañar. A la Inspección de Trabajo se puede avisar de forma anónima en su <a href="https://oeitss.mites.gob.es/buzonitss/" target="_blank" rel="noopener">buzón</a>; para una denuncia formal, con nombre: <a href="https://www.mites.gob.es/itss/web/Atencion_al_Ciudadano/COMO_DENUNCIAR_ITSS.html" target="_blank" rel="noopener">cómo denunciar</a>. En cada oferta, «Copiar reclamación» da un resumen para llevar.</p>
 
     <h3 class="q">Fuentes</h3>
     <ul class="notes">
@@ -148,16 +148,16 @@
   <div id="account" hidden>
     <p class="hint account-msg" id="accountMsg" role="status" aria-live="polite"></p>
 
-    <p class="hint" id="accountLoading" role="status">Cargando tu cuenta…</p>
+    <p class="hint" id="accountLoading" role="status">Cargando la cuenta…</p>
 
     <div id="accountOut" class="account-body" hidden>
-      <p class="hint">Con una cuenta, tus ofertas se guardan en ella y las ves desde cualquier dispositivo. Si compartes las tuyas, también puedes compararlas con las de otros pastores.</p>
+      <p class="hint">Con una cuenta, las ofertas se guardan en ella y se ven desde cualquier dispositivo. Si se comparten, también se pueden comparar con las de otros pastores.</p>
       <div id="accountSignIn"></div>
     </div>
 
     <div id="accountPending" class="account-body" hidden>
       <h4>Ofertas de este navegador</h4>
-      <p>No se pudieron subir a tu cuenta:</p>
+      <p>No se pudieron subir a la cuenta:</p>
       <ul id="pendingList"></ul>
       <div class="actions">
         <button type="button" class="pri" data-action="uploadPending">Reintentar</button>
@@ -171,7 +171,7 @@
       <p class="account-sync" id="accountSync" role="status"></p>
       <div class="actions"><button type="button" class="sm" data-action="accountSignOut">Salir</button></div>
 
-      <h4>Tu perfil</h4>
+      <h4>Perfil</h4>
       <div class="assump">
         <label class="fld">Nombre<input type="text" id="profName" autocomplete="name"></label>
         <label class="fld">Correo<input type="text" id="profEmail" inputmode="email" autocomplete="email"></label>
@@ -180,7 +180,7 @@
       <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
 
       <h4>Otros pastores</h4>
-      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir tus ofertas</span></label>
+      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir las ofertas</span></label>
       <p class="hint" id="sharingState"></p>
       <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
         <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se ve</strong></p>
@@ -196,7 +196,7 @@
       <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar la cuenta</button></div>
       <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
         <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
-        <p>Se borran para siempre la cuenta, tu perfil y todo lo guardado en ella. También se borran las ofertas y los ajustes de este navegador. Para conservarlos, descarga antes una copia en Ajustes.</p>
+        <p>Se borran para siempre la cuenta, el perfil y todo lo guardado en ella. También se borran las ofertas y los ajustes de este navegador. Para conservarlos, descarga antes una copia en Ajustes.</p>
         <div class="actions">
           <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
           <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
@@ -213,12 +213,12 @@
     <p class="hint" id="settingsStorage" hidden></p>
   </div>
   <details id="yourdata" class="sec fixed" open>
-    <summary>Tus datos</summary>
-    <p class="hint">Lo que no depende de la oferta sino de ti. Vale para todas las ofertas. Las cifras que ves son las de por defecto: cámbialas si las tuyas son otras.</p>
+    <summary>Datos comunes</summary>
+    <p class="hint">Lo que no depende de la oferta sino de cada pastor. Vale para todas las ofertas. Las cifras son las de por defecto. Se cambian si no son estas.</p>
     <h4>Casa y comida</h4>
     <div class="assump">
-      <label class="fld">Lo que te costaría un alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="cfg_rent" data-cfg="rentValue"><span class="hint">Si en una oferta te ponen casa, te ahorras esto. En cada oferta puedes poner otro, si la zona es más cara o más barata.</span></label>
-      <div class="fld"><span>Lo que te cuesta cada comida (€)</span>
+      <label class="fld">Alquiler de referencia (€/mes)<input class="n" type="text" inputmode="decimal" id="cfg_rent" data-cfg="rentValue"><span class="hint">Si en una oferta el ganadero pone casa, se ahorra esto. En cada oferta se puede poner otro, si la zona es más cara o más barata.</span></label>
+      <div class="fld"><span>Coste de cada comida (€)</span>
         <div class="prices">
           <label>Desayuno<input class="n" type="text" inputmode="decimal" data-cfg="mealBreakfastP"></label>
           <label>Almuerzo<input class="n" type="text" inputmode="decimal" data-cfg="mealSnackP"></label>
@@ -226,15 +226,15 @@
           <label>Cena<input class="n" type="text" inputmode="decimal" data-cfg="mealDinnerP"></label>
         </div></div>
     </div>
-    <h4>Tu coche</h4>
+    <h4>Coche</h4>
     <div class="assump">
       <label class="fld">Consumo (l/100 km)<input class="n" type="text" inputmode="decimal" id="cfg_fuelUse" data-cfg="fuelUse"></label>
       <label class="fld">Combustible (€/l)<input class="n" type="text" inputmode="decimal" id="cfg_fuelPrice" data-cfg="fuelPrice"></label>
-      <label class="fld">Desgaste (€/km)<input class="n" type="text" inputmode="decimal" id="cfg_wear" data-cfg="wear"><span class="hint">Ruedas, aceite, averías, seguro… Unos 0,05–0,10 €/km en un coche viejo. Pon 0 si no quieres contarlo.</span></label>
+      <label class="fld">Desgaste (€/km)<input class="n" type="text" inputmode="decimal" id="cfg_wear" data-cfg="wear"><span class="hint">Ruedas, aceite, averías, seguro… Unos 0,05–0,10 €/km en un coche viejo. Pon 0 para no contarlo.</span></label>
     </div>
     <h4>IRPF</h4>
     <div class="assump">
-      <label class="fld">Otros ingresos en nómina del año que no están aquí (€ brutos)<input class="n" type="text" inputmode="decimal" id="cfg_others" data-cfg="others"><span class="hint">El IRPF depende de todo lo que cobras en el año. Lo de tus ofertas con fecha del mismo año ya se suma solo; pon aquí lo de otros trabajos.</span></label>
+      <label class="fld">Otros ingresos en nómina del año que no están aquí (€ brutos)<input class="n" type="text" inputmode="decimal" id="cfg_others" data-cfg="others"><span class="hint">El IRPF depende de todo lo que se cobra en el año. Lo de las ofertas con fecha del mismo año ya se suma solo; pon aquí lo de otros trabajos.</span></label>
     </div>
   </details>
 
@@ -255,7 +255,7 @@
         <p class="hint" id="backupAdvice"></p>
       </div>
       <div id="backupAccount" hidden>
-        <p class="bk-title ok">Tus ofertas se guardan en tu cuenta.</p>
+        <p class="bk-title ok">Las ofertas se guardan en la cuenta.</p>
         <p class="hint">Una copia en archivo es un respaldo extra, o sirve para pasarlas a otro sitio.</p>
       </div>
       <div class="actions">
@@ -265,7 +265,7 @@
       <div class="bk-result" id="backupSaveResult" role="status" aria-live="polite"></div>
     </div>
     <h4>Recuperar una copia</h4>
-    <p class="hint">Se añaden las ofertas de la copia que no tengas. Las que ya tienes no cambian.</p>
+    <p class="hint">Se añaden las ofertas de la copia que faltan. Las que ya hay no cambian.</p>
     <div class="drop" id="backupDrop">
       <label class="filebtn">Elegir el archivo<input type="file" id="backupFile"></label>
       <span>o arrástralo aquí</span>
@@ -295,17 +295,17 @@
 
     <section class="step" data-step="template">
       <div class="welcome" id="welcome" hidden>
-        <h2>¿Cuánto te pagan de verdad?</h2>
-        <p>En el pastoreo las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, la comida, las libranzas, el coche, las vacaciones «incluidas»… Apúntalas tal como te las proponen y mira cuánto ganas por hora, por día y por mes.</p>
+        <h2>¿Cuánto se paga de verdad?</h2>
+        <p>En el pastoreo las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, la comida, las libranzas, el coche, las vacaciones «incluidas»… Apúntalas tal como las proponen y mira cuánto se gana por hora, por día y por mes.</p>
         <ul>
-          <li><b>Compara</b> varias ofertas y mira cuál te deja más.</li>
-          <li><b>Comprueba</b> si la nómina llega al salario mínimo y al plus de pernocta, y cuánto te deben si no.</li>
-          <li><b>Mira</b> cuánto se ahorra el ganadero pagándote en negro y el paro que dejas de generar.</li>
+          <li><b>Compara</b> varias ofertas y mira cuál deja más.</li>
+          <li><b>Comprueba</b> si la nómina llega al salario mínimo y al plus de pernocta, y cuánto debe el ganadero si no.</li>
+          <li><b>Mira</b> cuánto se ahorra el ganadero pagando en negro y el paro que se deja de generar.</li>
         </ul>
-        <p class="hint">Nadie más ve tus ofertas, salvo que las compartas.</p>
-        <p class="hint" id="signedOutNotice" role="status" hidden>Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.</p>
+        <p class="hint">Nadie más ve las ofertas, salvo que se compartan.</p>
+        <p class="hint" id="signedOutNotice" role="status" hidden>Las ofertas siguen guardadas en la cuenta. Entra para verlas.</p>
       </div>
-      <p class="hint">Elige la plantilla más parecida. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
+      <p class="hint">Elige la plantilla más parecida. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) se escriben a mano.</p>
       <div class="tpl-grid" id="tplGrid"></div>
     </section>
 
@@ -314,7 +314,7 @@
         <fieldset aria-label="La oferta">
         <label class="fld full">Nombre de la oferta
           <input type="text" id="name" name="name" placeholder="p. ej. Puerto de Castanesa, verano">
-          <span class="hint">Con él la reconoces en la lista.</span>
+          <span class="hint">Con él se reconoce en la lista.</span>
         </label>
         <div class="fld full">
           <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
@@ -350,7 +350,7 @@
             <div class="seg" role="radiogroup" aria-label="Duración en">
               <label><input type="radio" name="durationUnit" value="months">meses</label>
               <label><input type="radio" name="durationUnit" value="days">días</label>
-              <label><input type="radio" name="durationUnit" value="unknown">no lo sé</label>
+              <label><input type="radio" name="durationUnit" value="unknown">No se sabe</label>
             </div>
           </div>
           <p class="hint warn" data-required="duration"></p>
@@ -362,7 +362,7 @@
             <input type="date" id="end">
             <button type="button" class="clear-x" data-action="clearEnd" data-show="hasEnd" aria-label="Quitar la fecha de fin">✕</button>
           </div>
-          <p class="hint">Se calcula con la duración. Si pones la fecha, la duración se ajusta.</p>
+          <p class="hint">Se calcula con la duración. Si se pone la fecha, la duración se ajusta.</p>
           <p class="hint overlap-warning" id="overlapHint"></p>
         </div>
         </fieldset>
@@ -371,7 +371,7 @@
         <fieldset aria-label="Pago">
         <p class="told full" id="payTold" aria-live="polite"></p>
         <div class="fld full">
-          <label class="ask" for="payTotal">Todo junto, lo que te llega</label>
+          <label class="ask" for="payTotal">Total que llega</label>
           <div class="combo">
             <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
             <div class="seg" role="radiogroup" aria-label="Por">
@@ -401,7 +401,7 @@
           <p class="hint warn" data-required="payrollPart"></p>
           <p class="hint" id="payHint"></p>
           <p class="cashline" id="payCash" hidden></p>
-          <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
+          <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que se cambie una respuesta.</p>
         </div>
         <div class="fld full" data-show="withContract">
           <span class="ask">Retención de IRPF</span>
@@ -421,9 +421,9 @@
         <div class="fld full" data-show="withContract">
           <span class="ask">¿Y las vacaciones?</span>
           <div class="opts">
-            <label class="opt"><input type="radio" name="vacation" value="included"><b>Van dentro de lo que me pagan</b></label>
-            <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Me las pagan aparte, al acabar</b></label>
-            <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Las libro, cobrando</b></label>
+            <label class="opt"><input type="radio" name="vacation" value="included"><b>Van dentro del pago</b></label>
+            <label class="opt"><input type="radio" name="vacation" value="paidAtEnd"><b>Se pagan aparte, al acabar</b></label>
+            <label class="opt" data-show="vacationTaken"><input type="radio" name="vacation" value="taken"><b>Se libran, cobrando</b></label>
           </div>
           <p class="hint warn" data-required="vacation"></p>
           <p class="hint" id="vacationHint"></p>
@@ -447,7 +447,7 @@
           <p class="hint">Contando el camino con el ganado, no el de casa.</p>
         </div>
         <div class="fld full">
-          <label class="ask" for="daysOff">¿Cuántos días libras?</label>
+          <label class="ask" for="daysOff">¿Cuántas libranzas?</label>
           <div class="combo">
             <input class="n" type="text" inputmode="decimal" id="daysOff" name="daysOff">
             <div class="seg" role="radiogroup" aria-label="Libranzas por">
@@ -459,8 +459,8 @@
           <p class="hint">Libranzas: días libres, sin contar las vacaciones.</p>
         </div>
         <div class="fld full">
-          <span class="ask">¿Libras también los festivos?</span>
-          <div class="seg" role="radiogroup" aria-label="¿Libras también los festivos?">
+          <span class="ask">¿Se libran también los festivos?</span>
+          <div class="seg" role="radiogroup" aria-label="¿Se libran también los festivos?">
             <label><input type="radio" name="holidays" value="yes">Sí</label>
             <label><input type="radio" name="holidays" value="no">No</label>
           </div>
@@ -469,7 +469,7 @@
         <p class="told full" id="daysOffHint"></p>
         
         <div class="fld full">
-          <span class="ask">¿Duermes en el monte?</span>
+          <span class="ask">¿Hay pernocta en el monte?</span>
           <div class="seg" role="radiogroup" aria-label="Pernocta">
             <label><input type="radio" name="overnight" value="yes">Sí</label>
             <label><input type="radio" name="overnight" value="no">No</label>
@@ -477,16 +477,16 @@
           <p class="hint" data-show="overnight">En borda o cabaña. No suma dinero: sube el mínimo legal un <span data-law="overnightPct"></span> % (convenio).</p>
         </div>
         <div class="fld full">
-          <span class="ask">¿Te ponen casa?</span>
+          <span class="ask">¿Pone casa el ganadero?</span>
           <div class="seg" role="radiogroup" aria-label="Casa">
             <label><input type="radio" name="housing" value="yes">Sí</label>
             <label><input type="radio" name="housing" value="no">No</label>
           </div>
         </div>
-        <label class="fld full" data-show="showRent">Lo que te ahorras de alquiler (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
+        <label class="fld full" data-show="showRent">Alquiler que se ahorra (€/mes)<input class="n" type="text" inputmode="decimal" id="rentValue" name="rentValue"><span class="hint" id="rentHint"></span></label>
         <div class="fld full">
-          <span class="ask">¿Qué comidas te dan?</span>
-          <div class="multi chips" role="group" aria-label="Comidas que te dan (puedes marcar varias)">
+          <span class="ask">¿Qué comidas se dan?</span>
+          <div class="multi chips" role="group" aria-label="Comidas que se dan (se pueden marcar varias)">
             <label><input type="checkbox" name="mealBreakfast">Desayuno</label>
             <label><input type="checkbox" name="mealSnack">Almuerzo</label>
             <label><input type="checkbox" name="mealLunch">Comida</label>
@@ -500,26 +500,26 @@
       <section class="step" data-step="trip" hidden>
         <fieldset aria-label="Coche y gastos">
         <div class="fld full">
-          <span class="ask">¿Cómo llegas al trabajo?</span>
-          <div class="opts" role="radiogroup" aria-label="Cómo llegas al trabajo">
-            <label class="opt"><input type="radio" name="car" value="own"><span><b>Con mi coche</b><span>Se cuentan los km, la gasolina y lo que te paguen por ellos.</span></span></label>
+          <span class="ask">¿Cómo se llega al trabajo?</span>
+          <div class="opts" role="radiogroup" aria-label="Cómo se llega al trabajo">
+            <label class="opt"><input type="radio" name="car" value="own"><span><b>Coche propio</b><span>Se cuentan los km, la gasolina y lo que se pague por ellos.</span></span></label>
             <label class="opt"><input type="radio" name="car" value="noCar"><span><b>Sin coche propio</b><span>No se cuentan gasolina ni desgaste.</span></span></label>
           </div>
         </div>
         <div class="fld full" data-show="trips">
-          <span class="ask">¿Cada cuánto haces el viaje?</span>
-          <div class="opts" role="radiogroup" aria-label="Cada cuánto haces el viaje">
+          <span class="ask">¿Cada cuánto se hace el viaje?</span>
+          <div class="opts" role="radiogroup" aria-label="Cada cuánto se hace el viaje">
             <label class="opt"><input type="radio" name="commute" value="daily"><b>Ida y vuelta cada día</b></label>
-            <label class="opt"><input type="radio" name="commute" value="liveIn"><span><b>Solo al empezar y al acabar</b><span>Es si vives allí.</span></span></label>
+            <label class="opt"><input type="radio" name="commute" value="liveIn"><span><b>Solo al empezar y al acabar</b><span>Si se vive allí.</span></span></label>
           </div>
         </div>
         <label class="fld half" data-show="trips">Km a casa (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
         <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada una, ida y vuelta.</span></label>
-        <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
-        <label class="fld half" data-show="kmRate">Te pagan por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
+        <label class="fld half" data-show="ownCar">Km con coche propio al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
+        <label class="fld half" data-show="kmRate">Pago por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
         <p class="told full" id="carHint"></p>
         
-        <label class="fld full">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
+        <label class="fld full">Otros gastos propios (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
         </fieldset>
       </section>
     </form>
@@ -536,7 +536,7 @@
 <div class="offer-menu" id="offerMenu" role="menu" aria-label="Acciones de la oferta" hidden>
   <button type="button" role="menuitem" tabindex="-1" data-menu="duplicate">Duplicar</button>
   <button type="button" role="menuitem" tabindex="-1" data-menu="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>
-  <button type="button" role="menuitem" tabindex="-1" data-menu="copyClaim" title="Para el sindicato, la inspección o tu propia nota">Copiar reclamación</button>
+  <button type="button" role="menuitem" tabindex="-1" data-menu="copyClaim" title="Para el sindicato, la inspección o una nota propia">Copiar reclamación</button>
   <button type="button" role="menuitem" tabindex="-1" class="danger" data-menu="delete">Borrar</button>
   <p class="hint menu-msg" role="status"></p>
 </div>

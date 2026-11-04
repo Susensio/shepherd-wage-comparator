@@ -143,7 +143,7 @@ export function paintEntry(o, r) {
   $('#entryNext').textContent = edit ? 'Guardar' : index === STEPS.length - 1 ? 'Ver la ficha' : 'Siguiente';
   $('.strip').hidden = pending;
   const unit = offerUnit(r);
-  $('#stripLabel').textContent = `Ganas ${unit === 'day' ? 'al día' : 'al mes'}, por ahora`;
+  $('#stripLabel').textContent = `Se gana ${unit === 'day' ? 'al día' : 'al mes'}, por ahora`;
   $('#stripFigure').textContent = missing(o.terms).length ? '—' : fUnit(inUnit(r.earnings.total, r, unit), unit);
   const welcome = !!state.placeholderId && index === 0 && !edit;
   $('#welcome').hidden = !welcome;

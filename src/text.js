@@ -26,9 +26,9 @@ import { isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js'
 export const MISSING_TEXT = {
   duration: 'la duración',
   hoursPerDay: 'las horas por día',
-  pay: 'lo que te pagan',
-  agreedTotal: 'lo que te pagan',
-  cashInHand: 'lo que te pagan',
+  pay: 'lo que se paga',
+  agreedTotal: 'lo que se paga',
+  cashInHand: 'lo que se paga',
   payrollPart: 'lo que va en nómina',
   vacation: 'qué pasa con las vacaciones',
 };
@@ -38,14 +38,6 @@ export const VACATION_SAYS = {
   paidAtEnd: 'vacaciones aparte',
   included: 'vacaciones dentro',
   taken: 'vacaciones libradas',
-};
-
-/** The same for another shepherd's offer: impersonal. */
-export const MISSING_TEXT_THIRD = {
-  ...MISSING_TEXT,
-  pay: 'el sueldo',
-  agreedTotal: 'el total pactado',
-  cashInHand: 'lo que se paga en negro',
 };
 
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
@@ -130,9 +122,8 @@ export const herdText = (terms) =>
 /**
  * One line per form section, for the folded summaries and the copied texts.
  * @param {import('./places.js').PlacesIndex | null} [places] to name the municipality and province
- * @param {boolean} [third] another shepherd's offer: impersonal instead of to the reader
  */
-export function summaries(o, r, places = null, third = false) {
+export function summaries(o, r, places = null) {
   const one = num(o.terms.duration) === 1;
   const duration =
     o.terms.durationUnit === 'unknown'
@@ -148,16 +139,14 @@ export function summaries(o, r, places = null, third = false) {
       : holidaysOff
         ? 'libra los festivos'
         : 'sin libranzas';
-  const vacation =
-    (third && o.terms.vacation === 'taken' ? 'las vacaciones se libran' : VACATION_SAYS[o.terms.vacation]) ||
-    'vacaciones sin poner';
+  const vacation = VACATION_SAYS[o.terms.vacation] || 'vacaciones sin poner';
   const extraPays =
     !['year', 'total'].includes(o.terms.payUnit) && o.terms.extraPays === 'separate' ? ' · 2 pagas extra' : '';
-  const meals = mealsGiven(o.terms).length ? `${third ? 'se dan' : 'te dan'} ${mealsList(o.terms)}` : 'sin comida';
+  const meals = mealsGiven(o.terms).length ? `se dan ${mealsList(o.terms)}` : 'sin comida';
   const km = r.car.km;
   const carKm =
     km > 0
-      ? ` · ~${isUnderAMonth(r) || r.time.months < 1 ? `${fN(km)}\u00a0km en total` : `${fN(r.time.months > 0 ? km / r.time.months : 0)}\u00a0km/mes`} con el tuyo`
+      ? ` · ~${isUnderAMonth(r) || r.time.months < 1 ? `${fN(km)}\u00a0km en total` : `${fN(r.time.months > 0 ? km / r.time.months : 0)}\u00a0km/mes`}`
       : '';
   const split = r.split;
   const where = whereText(o.terms, places, o.mine.place);
@@ -187,12 +176,15 @@ export function summaries(o, r, places = null, third = false) {
       : num(o.terms.cashAmount) > 0
         ? `${fTyped(o.terms.cashAmount)} ${UNIT_TEXT[o.terms.cashUnit]}`
         : 'Nada',
-    housing: `${o.terms.overnight === 'yes' ? (third ? 'Se duerme en borda · ' : 'Duermes en borda · ') : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
-    car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
+    housing: `${o.terms.overnight === 'yes' ? 'Se duerme en borda · ' : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
+    car: o.mine.car === 'noCar' ? 'Sin coche propio' : `Coche propio${carKm}`,
     expenses: num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos',
-    irpf: `IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
+    irpf:
+      o.terms.contract === 'none'
+        ? ''
+        : `IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
-  // «Lo que te pagan» is one section: told as the pay step tells it back, from its answers
+  // «Pago» is one section: told as the pay step tells it back, from its answers
   const hasCash = r.cash.total > 0.5;
   const pay = isAnswerable(o.terms)
     ? payToldPlain(o, r, vacation)
@@ -233,10 +225,10 @@ export const unitPhrase = (unit, r) => (unit === 'total' ? `en los ${fN(r.time.n
 /** What the employer does not pay of the minimum, for «Para negociar»: salary, overnight bonus or vacation. */
 export const minimumShortText = (r) =>
   (r.noContract ? isWorthCounting(r.debt.salary) : isWorthCounting(r.min.salary - r.pay.salary))
-    ? 'por pagarte por debajo del mínimo'
+    ? 'por pagar por debajo del mínimo'
     : isWorthCounting(r.debt.salary)
-      ? 'por no pagarte el plus de pernocta'
-      : 'por no pagarte las vacaciones';
+      ? 'por no pagar el plus de pernocta'
+      : 'por no pagar las vacaciones';
 
 /** The extra days and the overtime per week you are not paid for; if none is paid, all of them. */
 export function unpaidTime(r) {
@@ -283,7 +275,7 @@ export function cardText(o, r) {
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
   const levers = [
-    [savings.cash, r.noContract ? 'por no hacerte contrato' : 'por pagarte en negro'],
+    [savings.cash, r.noContract ? 'por no hacer contrato' : 'por pagar en negro'],
     [savings.minimum, minimumShortText(r)],
     [savings.days, 'por las jornadas de más'],
     [savings.overtime, 'por las horas extra (estimado)'],
@@ -294,7 +286,7 @@ export function cardText(o, r) {
     `Nómina: ${s.payroll}`,
     r.cash.total > 0 ? `En negro: ${lowerFirst(s.b)}` : '',
     `${s.housing} · ${s.car}`,
-    `Ganas: ${fE(r.earnings.perHour, 2)}/hora · ${fE(r.earnings.perDay)}/día · ${fE(r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(r.earnings.total)} en total`}`,
+    `Ganado: ${fE(r.earnings.perHour, 2)}/hora · ${fE(r.earnings.perDay)}/día · ${fE(r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(r.earnings.total)} en total`}`,
     legalLine(o, r)?.text || '',
     [
       x.daysValue > 0 && r.extraDays.extra >= 1 && `Jornadas de más: ${fCount(r.extraDays.extra)} en el contrato`,

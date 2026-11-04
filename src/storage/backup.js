@@ -18,7 +18,7 @@ export function planImport(content, { mine, config }) {
   } catch {
     return {
       valid: false,
-      text: 'Eso no es una copia válida. Usa el archivo o el texto completo que guardaste.',
+      text: 'Eso no es una copia válida. Usa el archivo o el texto completo guardado.',
       kind: 'warn',
     };
   }
@@ -27,23 +27,23 @@ export function planImport(content, { mine, config }) {
   const fresh = offers.filter((o) => !mine.some((x) => x.id === o.id));
   const alreadyHad = offers.length - fresh.length;
   const takeCfg = !hadOffers && !!saved.cfg;
-  const kept = hadOffers && saved.cfg ? ' «Tus datos» siguen como los tenías.' : '';
+  const kept = hadOffers && saved.cfg ? ' «Datos comunes» siguen como estaban.' : '';
   if (!fresh.length) {
     const reason = !alreadyHad
       ? 'la copia no tiene ofertas'
       : alreadyHad === 1
-        ? 'la de la copia ya la tenías'
-        : `las ${alreadyHad} de la copia ya las tenías`;
+        ? 'la de la copia ya estaba'
+        : `las ${alreadyHad} de la copia ya estaban`;
     return {
       valid: true,
       fresh,
       cfg: takeCfg ? cfg : null,
-      text: `No se ha añadido ninguna oferta: ${reason}.${takeCfg ? ' Se han tomado tus datos de la copia.' : kept}`,
+      text: `No se ha añadido ninguna oferta: ${reason}.${takeCfg ? ' Se han tomado los datos de la copia.' : kept}`,
       kind: 'warn',
     };
   }
   const others = alreadyHad
-    ? ` ${alreadyHad === 1 ? 'Otra ya la tenías y no ha cambiado' : `Otras ${alreadyHad} ya las tenías y no han cambiado`}.`
+    ? ` ${alreadyHad === 1 ? 'Otra ya estaba y no ha cambiado' : `Otras ${alreadyHad} ya estaban y no han cambiado`}.`
     : '';
   return {
     valid: true,

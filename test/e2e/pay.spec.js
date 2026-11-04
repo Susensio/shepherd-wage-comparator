@@ -28,7 +28,7 @@ test('«Todo»: the amount is the net payslip', async ({ page }) => {
     cashAmount: '',
   });
   await expect(page.locator('#payCash')).toBeHidden();
-  await expect(page.locator('#payTold')).toContainText('Te pagan 2.100 € al mes · todo en nómina · contrato');
+  await expect(page.locator('#payTold')).toContainText('Pago 2.100 € al mes · todo en nómina · contrato');
 });
 
 test('«El mínimo»: the amount is the agreed total and en negro is worked out', async ({ page }) => {
@@ -247,8 +247,8 @@ test('what is missing points at the amount', async ({ page }) => {
   await goStep(page, 'trip');
   await page.locator('#entryNext').click();
   await page.locator('#result [data-action=complete]').click();
-  await expect(page.locator('.fld.missing')).toContainText('Sin lo que te pagan no se puede calcular');
-  await expect(page.locator('.fld.missing')).toContainText('Todo junto, lo que te llega');
+  await expect(page.locator('.fld.missing')).toContainText('Sin el pago no se puede calcular');
+  await expect(page.locator('.fld.missing')).toContainText('Total que llega');
 });
 
 const EXPECTED = {

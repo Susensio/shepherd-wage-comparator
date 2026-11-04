@@ -14,7 +14,7 @@ const google = ({ googleFailed }) =>
 
 const emailStep = ({ email, busy }) =>
   html`<form class="signin-email" onsubmit="return false">
-    <label class="fld">Tu correo<input type="text" name="signInEmail" autocomplete="email" inputmode="email" pattern="[^@\\s]+@[^@\\s]+\\.[^@\\s]+"
+    <label class="fld">Correo<input type="text" name="signInEmail" autocomplete="email" inputmode="email" pattern="[^@\\s]+@[^@\\s]+\\.[^@\\s]+"
       .value=${email} required></label>
     <div class="actions"><button type="submit" ?disabled=${busy} data-action="sendEmailCode">Enviar un código</button></div>
   </form>`;
@@ -32,7 +32,7 @@ const codeStep = ({ email, busy }) =>
   </form>`;
 
 const email = (signIn) =>
-  html`<p class="signin-or"><span>o con tu correo</span></p>
+  html`<p class="signin-or"><span>o con correo</span></p>
     ${signIn.stage === 'code' ? codeStep(signIn) : emailStep(signIn)}`;
 
 /**

@@ -19,7 +19,7 @@ function costDetails(o, r) {
       vacation,
       o.terms.vacation === 'included'
         ? 'la parte del jornal que son vacaciones'
-        : 'las que no libras, pagadas al acabar',
+        : 'las que no se libran, pagadas al acabar',
     ],
     r.employer.ss > 0.5 && [
       'Seguridad Social que paga la empresa',
@@ -27,7 +27,7 @@ function costDetails(o, r) {
       `aprox. ${fN(r.pay.rates.employerPct, 1)} % del bruto`,
     ],
     r.cash.total > 0 && [r.noContract ? 'En negro, sin contrato' : 'En negro', r.cash.total, ''],
-    r.car.kmPaid > 0.5 && ['Kilometraje que te paga', r.car.kmPaid, ''],
+    r.car.kmPaid > 0.5 && ['Kilometraje que paga', r.car.kmPaid, ''],
     r.employer.severance > 0.5 && [
       'Indemnización por fin de contrato',
       r.employer.severance,
@@ -36,7 +36,7 @@ function costDetails(o, r) {
   ].filter(Boolean);
   const parts = items.map(([, value]) => value);
   const inKind = r.inKind.total > 0.5;
-  return html`<details class="plg" data-fold="cost"><summary>Cuánto le cuestas</summary><p class="hint">Por día trabajado y ${cols.other === 'month' ? 'al mes' : 'en todo el contrato'}.</p>
+  return html`<details class="plg" data-fold="cost"><summary>Cuánto cuesta al ganadero</summary><p class="hint">Por día trabajado y ${cols.other === 'month' ? 'al mes' : 'en todo el contrato'}.</p>
   <div class="rows">
     ${row('', cols.header, { cls: 'hd' })}
     ${items.map(([label, value, sub], i) => row(`${i ? '+ ' : ''}${label}`, cols.value(value), { sub }))}
@@ -50,13 +50,13 @@ function costDetails(o, r) {
   </details>`;
 }
 
-/** What the employer saves at your expense, item by item: their margin to pay you more. */
+/** What the employer saves at the shepherd's expense, item by item: their margin to pay more. */
 function savingsView(r, money) {
   const s = r.savings;
   if (!isWorthCounting(s.total))
-    return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a tu costa</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
+    return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a costa del pastor</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
   const items = [
-    [s.cash, r.noContract ? 'Por no hacerte contrato' : 'Por pagarte en negro'],
+    [s.cash, r.noContract ? 'Por no hacer contrato' : 'Por pagar en negro'],
     [s.minimum, capitalize(minimumShortText(r))],
     [s.days, 'Por las jornadas de más'],
     [s.overtime, 'Por las horas extra', true],
@@ -65,7 +65,7 @@ function savingsView(r, money) {
   const both = !(r.time.noDuration || money.unit === 'total');
   const per = unitPhrase(money.unit, r);
   const cell = (x) => (both ? two(money.figure(x), fE(x)) : money.figure(x));
-  return html`<div class="savings levers"><p class="lev-t">El ganadero se ahorra a tu costa${both ? '' : html` <span>${per}</span>`}</p>
+  return html`<div class="savings levers"><p class="lev-t">El ganadero se ahorra a costa del pastor${both ? '' : html` <span>${per}</span>`}</p>
     <div class="rows sv-rows">${both ? row('', two(capitalize(per), 'En total'), { cls: 'hd' }) : nothing}${items.map(
       ([value, label, estimate]) =>
         row(label, cell(value), { sub: estimate ? 'estimado' : '', cls: estimate ? 'est' : '' }),

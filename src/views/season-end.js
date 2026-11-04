@@ -113,7 +113,7 @@ function simulator(o, r, months) {
     <span>${monthName(x.month)}${x.share < 1 ? html` <small>(${x.days} días)</small>` : nothing} <small>· ${shown + 1} de ${months.length}</small></span>
     <button type="button" class="sm" data-action="payslipMonth" data-offer=${o.id} data-step="1" ?disabled=${shown >= months.length - 1} aria-label="Mes siguiente">›</button></div>`;
   return html`<details class="plg" data-fold="payslips"><summary>Simulador de nóminas<span class="stat dt">${months.length} ${months.length === 1 ? 'nómina' : 'nóminas'}</span></summary>${nav}${payslipTables(r, months, shown)}
-    <p class="hint">Es una estimación para comparar con tus nóminas: la real puede llevar bonificaciones, otros redondeos u otra base de cotización.</p></details>`;
+    <p class="hint">Es una estimación para comparar con las nóminas: la real puede llevar bonificaciones, otros redondeos u otra base de cotización.</p></details>`;
 }
 
 /** «Final de campaña». */

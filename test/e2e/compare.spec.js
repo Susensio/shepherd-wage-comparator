@@ -31,7 +31,7 @@ test('ranked by money plus paro: each row shows both, or «sin paro»', async ({
   await expect(noContract.locator('.paro')).toHaveText('sin paro');
   await expect(noContract.locator('.paro')).toHaveClass(/bad/);
   await expect(page.locator('#cmpBlk')).toContainText(
-    'Ordenadas por lo que ganas al mes y el paro que genera cada oferta.',
+    'Ordenadas por lo que se gana al mes y el paro que genera cada oferta.',
   );
 });
 
@@ -53,7 +53,7 @@ test('«Ordenar: Sin el paro» ranks by money alone and hides the paro lines', a
     'Invernada C',
   ]);
   await expect(page.locator('#cmpBlk .paro')).toHaveCount(0);
-  await expect(page.locator('#cmpBlk')).toContainText('Ordenadas por lo que ganas al mes.');
+  await expect(page.locator('#cmpBlk')).toContainText('Ordenadas por lo que se gana al mes.');
   await expect(page.locator('#cmpBlk')).not.toContainText('el paro que genera');
   // A way of looking, not saved
   await page.reload();

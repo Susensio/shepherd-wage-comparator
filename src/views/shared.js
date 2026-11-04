@@ -23,7 +23,7 @@ const contact = (sharer) => {
  * @param {import('../places.js').PlacesIndex | null} places to name the municipality and province, once loaded
  */
 export function sharedView({ o, r, sharer, label }, places) {
-  const s = summaries(o, r, null, true);
+  const s = summaries(o, r, null);
   const conditions = [
     ['Dónde', whereText(o.terms, places)], // never the village: it is not theirs to share
     ['Ganado', herdText(o.terms)],

@@ -8,17 +8,16 @@ import { claimDeadlines, hoursWeek } from '../model/time.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
 import { inUnit, UNITS } from '../units.js';
-import { voiceOf } from '../voice.js';
 import { figureCard, marker, row, segmentBar, unitSuffix, withTip } from './parts.js';
 
 /** Deadline to claim: each payment, `LAW.claimYears` after it was due. Only with dates. */
-function claimDeadline(o, debt, third) {
+function claimDeadline(o, debt) {
   const deadlines = claimDeadlines(o.terms);
   if (!deadlines || !isWorthCounting(debt)) return nothing;
   const { from, until } = deadlines;
   const period = LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`;
   const expired = until < new Date();
-  return html`<details class="detail deadline"><summary>Hasta cuándo ${third ? 'se puede' : 'puedes'} reclamar</summary><p class=${expired ? 'hint bad' : 'hint'}>${
+  return html`<details class="detail deadline"><summary>Hasta cuándo se puede reclamar</summary><p class=${expired ? 'hint bad' : 'hint'}>${
     expired
       ? `El plazo para reclamarlo acabó el ${fDate(until)}: cada pago se puede reclamar durante ${period}.`
       : `Cada pago se puede reclamar durante ${period} (${citeOf('et', '59.2').label}): ${+from === +until ? `hasta el ${fDate(until)}` : `lo del primer mes, hasta el ${fDate(from)}; lo del último, hasta el ${fDate(until)}`}.`
@@ -77,39 +76,35 @@ function minimumBar(r, money) {
  * The most serious issue. Without a contract, the unemployment benefit you do not generate; otherwise what you are
  * owed, counting cash; and if cash covers it, the payroll still below the minimum.
  */
-function owedCard(o, r, money, third) {
-  const say = voiceOf(third);
+function owedCard(o, r, money) {
   const per = UNITS[money.unit].short;
   const debt = r.debt.total;
   if (r.noContract) {
     const lost = r.unemployment.lost;
     const reasons = [
       isWorthCounting(r.debt.vacation) &&
-        `Sin contrato no ${say('te pagan', 'se pagan')} las vacaciones que ${say('te', 'le')} corresponden (${fDays(r.time.vacationDays)}): ${say('te deben', 'se le deben')} unos ${money.netAll(r.debt.vacation)} netos.`,
+        `Sin contrato no se pagan las vacaciones que corresponden (${fDays(r.time.vacationDays)}): debe el ganadero unos ${money.netAll(r.debt.vacation)} netos.`,
       isWorthCounting(r.debt.salary) &&
-        `Lo que ${say('te dan', 'se da')} no llega al salario mínimo: ${say('te deben', 'se le deben')} ${money.net(r.debt.salary)} ${per}.`,
-      say(
-        'Sin jubilación ni bajas pagadas: si te pones malo o te haces daño, no cobras.',
-        'Sin jubilación ni bajas pagadas: en caso de enfermedad o accidente, no se cobra.',
-      ),
+        `Lo que se da no llega al salario mínimo: debe el ganadero ${money.net(r.debt.salary)} ${per}.`,
+      'Sin jubilación ni bajas pagadas: en caso de enfermedad o accidente, no se cobra.',
     ].filter(Boolean);
     return html`<div class="owed">${
       lost.euros >= 1
         ? figureCard(
             fE(lost.euros),
-            say('De paro que no generas', 'De paro que no se genera'),
-            `Unos ${fDays(lost.days)} de prestación · sin contrato ${say('no cotizas', 'no se cotiza')}`,
+            'De paro que no se genera',
+            `Unos ${fDays(lost.days)} de prestación · sin contrato no se cotiza`,
             'Ilegal',
           )
         : figureCard(
             html`${fN(lost.days)}<small> días</small>`,
-            say('De paro que no generas', 'De paro que no se genera'),
-            `Sin contrato ${say('no cotizas', 'no se cotiza')}`,
+            'De paro que no se genera',
+            `Sin contrato no se cotiza`,
             'Ilegal',
           )
     }
       <ul class="reasons">${reasons.map((t) => html`<li>${t}</li>`)}</ul>
-      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${isWorthCounting(debt) ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${isWorthCounting(debt) ? claimDeadline(o, debt, third) : nothing}</div>`;
+      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${isWorthCounting(debt) ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${isWorthCounting(debt) ? claimDeadline(o, debt) : nothing}</div>`;
   }
   if (!isWorthCounting(debt)) return nothing;
   const reasons = owedReasons(o, r, money);
@@ -122,16 +117,16 @@ function owedCard(o, r, money, third) {
     const sub = [
       reasons.single && capitalize(reasons.single),
       total,
-      r.cash.total > 0 && `contando lo que ${say('cobras', 'se cobra')} en negro`,
+      r.cash.total > 0 && `contando lo que se cobra en negro`,
     ]
       .filter(Boolean)
       .join(' · ');
     return html`<details class="owed" data-fold="owed"><summary>${figureCard(
       html`${withTip(money.net(owed), `Netos. En bruto: ${money.figure(owed)} ${per}.`)}${unitSuffix(money.unit)}`,
-      say('Te deben', 'Se le deben'),
+      'Lo que debe el ganadero',
       sub,
       'Ilegal',
-    )}</summary>${reasons.rows || minimumBar(r, money)}${claimDeadline(o, owed, third)}</details>`;
+    )}</summary>${reasons.rows || minimumBar(r, money)}${claimDeadline(o, owed)}</details>`;
   }
   return html`<details class="owed" data-fold="owed"><summary>${figureCard(
     html`${money.net(debt)}${unitSuffix(money.unit)}`,
@@ -142,7 +137,7 @@ function owedCard(o, r, money, third) {
 }
 
 /** The extra days in one bar: due days worked, extra days and days off; the marker shows how far they are paid. */
-function extraDaysBar(r, third) {
+function extraDaysBar(r) {
   const days = r.extraDays;
   const { round } = dayRounder(days.worked);
   const contract = round(r.time.natDays);
@@ -155,7 +150,7 @@ function extraDaysBar(r, third) {
       [
         ['w', regular, 'laborables'],
         ['wx', days.extra, 'extra'],
-        ['l', free, third ? 'libres' : 'libras'],
+        ['l', free, 'libres'],
       ],
       scale,
       undefined,
@@ -198,11 +193,9 @@ const payStatus = (unpaid, value) => {
         ? 'mal pagadas'
         : 'sin pagar';
 };
-const payMark = (status, third) =>
+const payMark = (status) =>
   status === 'paid'
-    ? third
-      ? 'lo que se paga de más las cubre'
-      : 'lo que te pagan de más las cubre'
+    ? 'lo que se paga de más las cubre'
     : html`<b class=${status === 'casi todas pagadas' ? 'almost' : 'bad-pay'}>${status}</b>`;
 const PAY_STAMP = {
   'sin pagar': 'Sin pagar',
@@ -212,7 +205,7 @@ const PAY_STAMP = {
 };
 
 /** The extra days (the solid part) and the hours over 40 a week, each in its card with its bar. */
-function extraTimeCards(r, third) {
+function extraTimeCards(r) {
   if (!(r.pay.gross > 0 || r.noContract)) return nothing;
   const x = r.extra;
   const days = r.extraDays.extra;
@@ -223,10 +216,10 @@ function extraTimeCards(r, third) {
     cards.push(html`<details class="owed warn" data-fold="law-days"><summary>${figureCard(
       html`${fCount(days)}<small> ${fCount(days) === '1' ? 'día' : 'días'}</small>`,
       'Jornadas de más',
-      html`${over} · ${payMark(status, third)}`,
+      html`${over} · ${payMark(status)}`,
       PAY_STAMP[status],
     )}</summary>
-      ${extraDaysBar(r, third)}</details>`);
+      ${extraDaysBar(r)}</details>`);
   }
   if (x.overtime >= 0.5) {
     const status = payStatus(x.overtimeUnpaid, x.overtimeValue);
@@ -234,7 +227,7 @@ function extraTimeCards(r, third) {
       html`<details class="owed warn" data-fold="law-hours"><summary>${figureCard(
         html`${fN(x.over40PerWeek)}<small> h</small><small class="u">/sem</small>`,
         'Horas extra',
-        html`Por encima de ${LAW.weeklyHours} h a la semana · ${payMark(status, third)}`,
+        html`Por encima de ${LAW.weeklyHours} h a la semana · ${payMark(status)}`,
         'Estimado',
       )}</summary>${hoursBar(r)}</details>`,
     );
@@ -246,8 +239,8 @@ const RIGHT_ICON = { true: ['ok', '✔'], false: ['bad', '✘'], warn: ['warn', 
 const WARN_TEXT = { hours: 'las horas extra se tienen que pagar', vacation: 'las vacaciones se tienen que librar' };
 
 /** «¿Es legal?» */
-export function legalSection(o, r, money, third = false) {
-  const rights = rightsOf(o, r, money.unit, third);
+export function legalSection(o, r, money) {
+  const rights = rightsOf(o, r, money.unit);
   if (!rights) return nothing;
   const failures = rights.filter((x) => x.status === false);
   const warnings = rights.filter((x) => x.status === 'warn');
@@ -271,8 +264,8 @@ export function legalSection(o, r, money, third = false) {
     <h3 class="q">¿Es legal?</h3>
     <p class="verdict ${failures.length ? 'bad' : warnings.length ? 'warn' : 'ok'}">${headline}</p>
     ${failures.length ? html`<p class="failures">${failures.map((x) => html`<span>✘ ${capitalize(LAW_SHORT[x.id] || x.title)}</span>`)}</p>` : ''}
-    ${owedCard(o, r, money, third)}
-    ${extraTimeCards(r, third)}
+    ${owedCard(o, r, money)}
+    ${extraTimeCards(r)}
     <details class="plg" data-fold="laws"><summary>Lo que dice la ley</summary><ul class="laws">${rights
       .filter((x) => x.status !== true)
       .map(

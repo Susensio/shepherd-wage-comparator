@@ -49,7 +49,7 @@ test('signed out: the account page lists how to sign in, with Google through the
   await expect(page.locator('#account')).toBeVisible();
   await expect(page.locator('#account summary')).toHaveCount(0); // one heading: «Cuenta»
   await expect(page.locator('#accountOut')).toContainText('cualquier dispositivo');
-  await expect(page.locator('#accountOut')).toContainText('Si compartes las tuyas');
+  await expect(page.locator('#accountOut')).toContainText('Si se comparten');
   await expect(page.locator('#accountIn')).toBeHidden();
   await page.locator('#accountOut').getByRole('button', { name: 'Continuar con Google' }).click();
   await expect.poll(() => page.evaluate(() => window.fake.oauth?.provider)).toBe('google');
@@ -80,7 +80,7 @@ test.describe('the settings page', () => {
       beforeLoad: withProject,
     });
     await member.evaluate(() => app.openSettingsPage());
-    await expect(storage(member)).toHaveText('Se guardan en tu cuenta.');
+    await expect(storage(member)).toHaveText('Se guardan en la cuenta.');
   });
 
   test('the account page holds the account and none of the settings', async ({ openApp }) => {
@@ -119,7 +119,7 @@ test.describe('the account button', () => {
     await expect(button(page)).toHaveAttribute('data-status', 'guest');
     await expect(button(page).locator('.ic-person')).toBeVisible();
     await expect(button(page).locator('.status-dot')).toBeVisible();
-    await expect(button(page)).toHaveAttribute('aria-label', /Entrar\. Tus ofertas solo están/);
+    await expect(button(page)).toHaveAttribute('aria-label', /Entrar\. Las ofertas solo están/);
   });
 
   test('signed in: the initials, and the status in words', async ({ openApp }) => {
@@ -204,13 +204,13 @@ test.describe('the tooltip', () => {
     openApp,
   }) => {
     const page = await openGuest(openApp);
-    await expect(tip(page)).toContainText('Guarda tus ofertas en una cuenta. Ahora solo están en este navegador.');
+    await expect(tip(page)).toContainText('Guarda las ofertas en una cuenta. Ahora solo están en este navegador.');
     await page.locator('.tabs [data-tab=compare]').click();
     await expect(tip(page)).toContainText('Compara con otros pastores.');
     await page.locator('.tabs [data-tab=laws]').click();
     await expect(tip(page)).toHaveCount(0);
     await page.evaluate(() => app.openSettingsPage());
-    await expect(tip(page)).toContainText('Guarda tus ajustes en una cuenta.');
+    await expect(tip(page)).toContainText('Guarda los ajustes en una cuenta.');
     await page.locator('#accountButton').click();
     await expect(tip(page)).toHaveCount(0);
   });
@@ -286,7 +286,7 @@ test.describe('the tooltip', () => {
     const page = await openGuest(openApp);
     await page.locator('#accountButton').click();
     const form = page.locator('#accountSignIn');
-    await form.getByLabel('Tu correo').fill('ana@example.com');
+    await form.getByLabel('Correo').fill('ana@example.com');
     await form.getByRole('button', { name: 'Enviar un código' }).click();
     await expect(form).toContainText('Se ha enviado un código a ana@example.com');
     expect(await page.evaluate(() => window.fake.otp.email)).toBe('ana@example.com');
@@ -304,7 +304,7 @@ test.describe('the tooltip', () => {
     const page = await openGuest(openApp);
     await page.locator('#accountButton').click();
     const form = page.locator('#accountSignIn');
-    await form.getByLabel('Tu correo').fill('ana@example.com');
+    await form.getByLabel('Correo').fill('ana@example.com');
     await form.getByRole('button', { name: 'Enviar un código' }).click();
     await form.getByRole('button', { name: 'Enviar otro código' }).click();
     await expect(form).toContainText('Se ha enviado otro código.');
@@ -369,7 +369,7 @@ test.describe('first sign-in with offers only in this browser', () => {
 
 test('signed in: who, and signing out', async ({ openApp }) => {
   const page = await openAccount(openApp);
-  await expect(page.locator('#accountWho')).toHaveText('Has entrado como Ana Pastora.');
+  await expect(page.locator('#accountWho')).toHaveText('Sesión iniciada como Ana Pastora.');
   await page.getByRole('button', { name: 'Salir' }).click();
   await expect(page.locator('#accountOut')).toBeVisible();
   await expect(page.locator('#accountIn')).toBeHidden();
@@ -381,7 +381,7 @@ test('signed in: who, and signing out', async ({ openApp }) => {
 test('signed in: deleting the account is a section of its own, after «Otros pastores»', async ({ openApp }) => {
   const page = await openAccount(openApp);
   const headings = await page.locator('#accountIn h4').allTextContents();
-  expect(headings).toEqual(['Tu perfil', 'Otros pastores', 'Borrar la cuenta']);
+  expect(headings).toEqual(['Perfil', 'Otros pastores', 'Borrar la cuenta']);
   const under = await page.evaluate(() => {
     const heading = [...document.querySelectorAll('#accountIn h4')].find((h) => h.textContent === 'Borrar la cuenta');
     const sharing = document.querySelector('#profSharing').getBoundingClientRect();
@@ -402,11 +402,11 @@ test('signing out clears the browser copy, shows the welcome and says the offers
   await page.evaluate(() => app.openAccountPage());
   const inAccount = await page.evaluate(() => window.fake.data.offers.map((o) => o.id));
   await page.getByRole('button', { name: 'Salir' }).click();
-  await expect(page.locator('#accountMsg')).toHaveText('Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.');
+  await expect(page.locator('#accountMsg')).toHaveText('Las ofertas siguen guardadas en la cuenta. Entra para verlas.');
   await page.getByRole('button', { name: 'Volver' }).first().click();
   await expect(page.locator('#welcome')).toBeVisible();
   await expect(page.locator('#signedOutNotice')).toHaveText(
-    'Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.',
+    'Las ofertas siguen guardadas en la cuenta. Entra para verlas.',
   );
   expect(await page.evaluate(() => app.state.offers.length)).toBe(1);
   expect(await page.evaluate(() => app.state.placeholderId)).not.toBeNull();
@@ -417,7 +417,7 @@ test('signing out clears the browser copy, shows the welcome and says the offers
 test('signed in: online on the button and in the section, and no tooltip', async ({ openApp }) => {
   const page = await openAccount(openApp, { tables: { profiles: [{ ...PROFILE }], ...accountRows() } });
   await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
-  await expect(page.locator('#accountSync')).toContainText('se guardan en tu cuenta');
+  await expect(page.locator('#accountSync')).toContainText('se guardan en la cuenta');
   await expect(page.locator('#accountTitle')).toBeHidden();
   await page.evaluate(() => app.showTab('offers'));
   await expect(page.locator('#accountTip .tip')).toHaveCount(0);
@@ -450,7 +450,7 @@ test('a failed first upload: a tooltip on Ofertas that leads to it, and cannot b
   });
   const tip = page.locator('#accountTip .tip');
   await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'pending');
-  await expect(tip).toContainText('No se pudieron subir tus ofertas a la cuenta.');
+  await expect(tip).toContainText('No se pudieron subir las ofertas a la cuenta.');
   await expect(tip.getByRole('button', { name: 'Ahora no' })).toHaveCount(0);
   await page.locator('.tabs [data-tab=compare]').click();
   await expect(tip).toHaveCount(0);
@@ -530,7 +530,7 @@ test.describe('while the saved session is being connected', () => {
     await nothingForGuests();
     await expect(page.locator('#settingsStorage')).toBeHidden();
     await page.locator('#accountButton').click();
-    await expect(page.locator('#accountLoading')).toHaveText('Cargando tu cuenta…');
+    await expect(page.locator('#accountLoading')).toHaveText('Cargando la cuenta…');
     await expect(page.locator('#accountOut')).toBeHidden();
     await expect(page.locator('#accountIn')).toBeHidden();
     await nothingForGuests();
@@ -564,7 +564,7 @@ test.describe('while the saved session is being connected', () => {
       await expect(cards(page)).toHaveCount(0);
       await expect(page.locator('#btnAdd')).toBeHidden();
       await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'true');
-      await expect(page.locator('#listLoading')).toHaveText('Cargando tu cuenta…');
+      await expect(page.locator('#listLoading')).toHaveText('Cargando la cuenta…');
       expect(await page.evaluate(() => document.body.classList.contains('on-entry'))).toBe(false);
       await expect(page.locator('#tplGrid')).toBeHidden();
 
@@ -638,9 +638,9 @@ test('sharing asks first, and turning it off does not', async ({ openApp }) => {
   const sw = page.locator('#profSharing');
   await sw.click();
   await expect(page.locator('#shareConfirm')).toBeVisible();
-  await expect(page.locator('#shareConfirm')).toContainText('tu nombre, tu correo y tu teléfono');
+  await expect(page.locator('#shareConfirm')).toContainText('el nombre, el correo y el teléfono');
   await expect(page.locator('#shareConfirm')).toContainText('comparten al menos una oferta');
-  await expect(page.locator('#shareConfirm')).toContainText('No se ven tus km');
+  await expect(page.locator('#shareConfirm')).toContainText('No se ven los km');
   expect(await sharing()).toBe(false);
   await expect(sw).not.toBeChecked();
 
@@ -656,7 +656,7 @@ test('sharing asks first, and turning it off does not', async ({ openApp }) => {
 
   await sw.uncheck();
   await expect(page.locator('#shareConfirm')).toBeHidden();
-  await expect(page.locator('#sharingState')).toContainText('No compartes tus ofertas');
+  await expect(page.locator('#sharingState')).toContainText('No se comparten las ofertas');
   expect(await sharing()).toBe(false);
 });
 

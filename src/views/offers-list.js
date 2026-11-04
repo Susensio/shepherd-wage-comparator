@@ -41,7 +41,7 @@ export const templatesView = (chosen = null) =>
   html`${TEMPLATES.map(
     (t) =>
       html`<button type="button" class="tcard" data-action="template" data-template=${t.id} aria-pressed=${String(t.id === chosen)}><b>${t.title}</b><span>${t.text}</span><span class="tk">${t.sets}</span></button>`,
-  )}<button type="button" class="tcard blank" data-action="template" data-template="blank" aria-pressed=${String(chosen === 'blank')}><b>Empezar en blanco</b><span>Todo lo pones tú.</span></button>`;
+  )}<button type="button" class="tcard blank" data-action="template" data-template="blank" aria-pressed=${String(chosen === 'blank')}><b>Empezar en blanco</b><span>Todo se pone a mano.</span></button>`;
 
 /** Three grey cards where the offers will be, while the account they come from connects. */
 export const skeletonCardsView = () =>

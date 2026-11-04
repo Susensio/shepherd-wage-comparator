@@ -500,7 +500,7 @@ summary:focus-visible,
   align-items: stretch;
 }
 
-/* The questions of «Lo que te pagan» */
+/* The questions of «Pago» */
 .fld > span.ask:first-child,
 .fld > label.ask {
   font-size: 16px;
@@ -508,7 +508,7 @@ summary:focus-visible,
   color: var(--ink);
 }
 
-/* «Lo que te pagan»: the offer told back, and what goes en negro */
+/* «Pago»: the offer told back, and what goes en negro */
 .told {
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -880,7 +880,7 @@ details.plg {
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
-/* Collapsibles that are part of a section (the breakdown in «¿Cuánto ganas?», the law in «¿Es legal?», the cost
+/* Collapsibles that are part of a section (the breakdown in «¿Cuánto se gana?», the law in «¿Es legal?», the cost
    in «Para negociar»): no rule, so they do not look like another section. Sections do have the rule. */
 .legal details.plg,
 .employer details.plg,

@@ -80,8 +80,8 @@ test('summaries: one line per form section', () => {
     s.pay.replace(/\u00a0/g, ' '),
     '2.205 € al mes · 1.785 € en nómina · unos 420 € al mes en negro · contrato fijo discontinuo · vacaciones aparte',
   );
-  assert.match(s.housing, /^Duermes en borda/);
-  assert.match(s.car, /^Tu coche/);
+  assert.match(s.housing, /^Se duerme en borda/);
+  assert.match(s.car, /^Coche propio/);
 });
 
 test('summaries: the pay line tells the offer as the pay step does', () => {
@@ -94,14 +94,18 @@ test('summaries: the pay line tells the offer as the pay step does', () => {
   assert.doesNotMatch(summaries(worked, resultOf(worked)).pay, /en negro/);
 });
 
+test('summaries: no IRPF line without a contract', () => {
+  const none = offers.find((o) => o.mine.name === 'Sin contrato D');
+  assert.equal(summaries(none, resultOf(none)).irpf, '');
+  assert.match(summaries(byId('o1'), resultOf(byId('o1'))).irpf, /^IRPF /);
+});
+
 test('summaries: one word for each vacation answer', () => {
   const o = structuredClone(byId('o1'));
-  const say = (vacation, third) =>
-    summaries({ ...o, terms: { ...o.terms, vacation } }, resultOf(o), null, third).payroll;
-  assert.match(say('taken', false), /vacaciones libradas/);
-  assert.match(say('taken', true), /las vacaciones se libran/);
-  assert.match(say('paidAtEnd', false), /vacaciones aparte/);
-  assert.match(say('included', false), /vacaciones dentro/);
+  const say = (vacation) => summaries({ ...o, terms: { ...o.terms, vacation } }, resultOf(o)).payroll;
+  assert.match(say('taken'), /vacaciones libradas/);
+  assert.match(say('paidAtEnd'), /vacaciones aparte/);
+  assert.match(say('included'), /vacaciones dentro/);
 });
 
 const places = buildIndex({
@@ -173,13 +177,13 @@ test('card: a negotiation lever appears exactly when the employer saves somethin
     assert.equal(card.includes('Para negociar'), r.savings.total > 1, o.mine.name);
   }
   const card = cardText(byId('o1'), resultOf(byId('o1')));
-  assert.match(card, /Para negociar, el ganadero se ahorra al mes: .* por pagarte en negro/);
+  assert.match(card, /Para negociar, el ganadero se ahorra al mes: .* por pagar en negro/);
 });
 
 test('card: no-contract offers name the missing contract and no unemployment benefit', () => {
   const o = byId('o5');
   const card = cardText(o, resultOf(o));
-  assert.match(card, /por no hacerte contrato/);
+  assert.match(card, /por no hacer contrato/);
   assert.match(card, /No cumple: sin contrato/);
   assert.match(card, /No genera paro/);
 });

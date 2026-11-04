@@ -1,5 +1,5 @@
 /**
- * «Lo que te pagan»: the pay questions of the offer form as a view over `terms`. Nothing here is saved on its own:
+ * «Pago»: the pay questions of the offer form as a view over `terms`. Nothing here is saved on its own:
  * `answersOf` reads the answers out of the fields and `writeAnswers` puts them back (mapping in docs/model.md,
  * «Pay questions»).
  * Offers saved in a shape the questions cannot say are converted by `toAnswerable`, keeping their figures.

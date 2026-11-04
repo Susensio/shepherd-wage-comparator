@@ -9,7 +9,7 @@ import { resultParts } from './result.js';
 
 const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
 
-/** What is missing in each step, as the sentence says it: `{ pay: 'lo que te pagan' }`. */
+/** What is missing in each step, as the sentence says it: `{ pay: 'lo que se paga' }`. */
 export function missingBySteps(terms) {
   /** @type {Record<string, string[]>} */
   const byStep = {};
@@ -40,7 +40,12 @@ export function fichaView(o, r, places) {
         (step) =>
           html`<button type="button" class=${lacking[step.id] ? 'crow missing' : 'crow'} data-action="editStep" data-step=${step.id}>
             <span class="ck">${step.label}</span>
-            <span class="cv">${step.summary.map((key) => lines[key]).join(' · ')}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
+            <span class="cv">${step.summary
+              .map((key) => lines[key])
+              .filter(Boolean)
+              .join(
+                ' · ',
+              )}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
           </button>`,
       )}</div>
     </details>

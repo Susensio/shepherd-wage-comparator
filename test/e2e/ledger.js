@@ -19,7 +19,7 @@ export function ledgerProblems(root) {
     for (const row of rows.querySelectorAll(':scope > .row')) {
       if (row.classList.contains('hd')) continue;
       const figure = row.lastElementChild;
-      // The breakdown has no signs: its rows are added (those starting with «−» taken off) up to «Cobras» and «Ganas»
+      // The breakdown has no signs: its rows are added (those starting with «−» taken off) up to «Cobrado» and «Ganado»
       const op =
         figure.querySelector('.op')?.textContent ||
         (rows.closest('[data-fold="breakdown2"]')

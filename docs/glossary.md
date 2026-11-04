@@ -27,16 +27,17 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | sueldo en nómina | the pay the offer puts on the payslip, as told | `terms.payAmount`, `payType` | | salario en nómina |
 | nómina bruta / nómina neta | the payslip before / after Social Security and IRPF | `r.pay.*` | | |
 | en negro | money paid off the payslip | `terms.cash*`, `r.cash.*` | | en mano |
-| cobras | money you receive: payslip plus en negro | Desglose «Cobras» | | te entra, entra al mes |
-| ganas | what the job is worth to you: what you receive, plus housing and food when counted, minus your car and other expenses | `r.earnings.*` | | |
+| cobrado | money received: payslip plus en negro. A noun in rows and ledgers («Cobrado»), «se cobra» in a sentence | Desglose «Cobrado» (`r.earnings.received`) | | cobras, te entra, entra al mes |
+| se gana / ganado | what the job is worth to the shepherd: what is received, plus housing and food when counted, minus the car and other expenses. «Se gana» in the headline, the tags and sentences; «Ganado» in rows and ledgers | `r.earnings.*` | | ganas |
 | salario mínimo | the minimum wage of the year | `minWageOf`, `r.min.*` | RD 126/2026 | SMI (only in legal citations) |
 | plus de pernocta | the bonus for sleeping at the work site | `terms.overnight`, `LAW.overnightPct` | convenio del campo de Huesca | plus por dormir en el monte |
 | pagas extra | | `terms.extraPays` | | |
 | indemnización | what is owed when a temporary contract ends | `r.severance` | ET art. 49.1.c | finiquito (that is the final settlement, which includes it) |
-| paro | unemployment benefit earned by contributing. Not part of «ganas»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Dinero en negro» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
+| paro | unemployment benefit earned by contributing. Not part of «se gana»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Dinero en negro» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
 | Seguridad Social | contributions, worker and employer | `ssOf(contract)`, `r.pay.rates` | Orden PJC/297/2026 | cotización (in explanations only) |
 | retención de IRPF | | `r.pay.irpf`, `irpfPct` | | |
-| te pagan | everything the offer pays together, payslip and en negro: the first answer of «Lo que te pagan», what reaches the shepherd | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | | cobras (that is the Desglose figure) |
+| lo que se paga / Pago | everything the offer pays together, payslip and en negro: the first answer of the step «Pago», what reaches the shepherd. «Pago» is the step and the label; «lo que se paga» in a sentence | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | | te pagan, lo que te pagan, cobras (that is the Desglose figure) |
+| lo que debe el ganadero | what the employer owes when the pay falls short of the minimum: «Lo que debe el ganadero» as a row, «Debe el ganadero X» in a sentence | `r.debt.*` | | te deben, se le deben |
 | casa y comida | housing and meals given by the employer | `terms.housing`, `terms.meal*` | | |
 
 ## Contract
@@ -63,12 +64,14 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set) | `offerOnly` | |
 | solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
 | «⋯» (Más acciones) | the menu of an offer, on the ficha and on each card: Duplicar, Copiar ficha, Copiar reclamación, Borrar | `ui/offer-menu.js` | menú, opciones |
-| solo lo que ganas | Comparar ranking by money alone, without the paro each offer generates | `moneyOnly` | |
+| solo lo que se gana | Comparar ranking by money alone, without the paro each offer generates | `moneyOnly` | |
 | ganadero | the employer | | empresario, patrón |
 | pastor, pastora | the worker; «pastores y pastoras» when addressing both | | |
 | otros pastores | other users who share their offers | `state.others` | otros usuarios, los demás |
 | pueblo | the village of the job, kept private | `mine.place` | localidad |
 | municipio, provincia | the council and province of the job, shared | `terms.municipality`, `terms.province` | |
+| coche propio | the shepherd drives their own car to the job: «Coche propio», «Sin coche propio» | `mine.car = 'own'` / `'noCar'` | tu coche, con mi coche |
+| Datos comunes | the figures shared by every offer, set in Ajustes (rent, meal prices, fuel, other income) | `cfg` | Tus datos |
 | ganado: ovejas, cabras, vacas | head counts per species | `terms.sheep`, `terms.goats`, `terms.cattle` | rebaño (in counts) |
 
 ## Units

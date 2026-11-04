@@ -145,11 +145,11 @@ test('head to head, in the unit Comparar is in', async ({ loaded: page }) => {
   await page.click('.lr[data-id=o3]');
   const pair = page.locator('#pairBlk');
   await expect(pair).toContainText('Cara a cara');
-  for (const label of ['Ganas por hora', 'Ganas por día', 'Para el ganadero', 'Dinero que pone por día'])
+  for (const label of ['Ganado por hora', 'Ganado por día', 'Para el ganadero', 'Dinero que pone por día'])
     await expect(pair).toContainText(label);
-  await expect(pair).not.toContainText('Ganas al mes');
+  await expect(pair).not.toContainText('Ganado al mes');
   await page.click("#cmpView label:has-text('mes')");
-  // What the employer pays a month is the model's own figure, at that rate for the short one; «Le cuestas» appears
+  // What the employer pays a month is the model's own figure, at that rate for the short one; «Le cuesta» appears
   // only with housing or food given
   const check = await page.evaluate(async () => {
     const { fE } = await import('./src/format.js');
@@ -164,7 +164,7 @@ test('head to head, in the unit Comparar is in', async ({ loaded: page }) => {
     return {
       shown: [first, second],
       expected: results.map((r, n) => `${fE((r.employer.cost - r.inKind.total) / r.time.months)}${n === 1 ? '*' : ''}`),
-      costRow: cells('Le cuestas al mes') !== undefined,
+      costRow: cells('Le cuesta al mes') !== undefined,
       inKind: results.some((x) => x.inKind.total > 0.5),
     };
   });
@@ -185,7 +185,7 @@ test('head to head shows totals when both last about the same', async ({ loaded:
   await page.click('[data-action=startPair]');
   await page.click('.lr[data-id=o4]');
   await page.click('.lr[data-id=o6]');
-  await expect(page.locator('#pairBlk')).toContainText('Ganas en total');
+  await expect(page.locator('#pairBlk')).toContainText('Ganado en total');
   await expect(page.locator('#pairBlk')).not.toContainText('Duran distinto');
 });
 
@@ -270,7 +270,7 @@ test('without accounts, a backup, downloaded and loaded in another browser', asy
   await other.setInputFiles('#backupFile', backup);
   await expect(other.locator('#backupResult')).toHaveText(/^Añadida 1 oferta/);
   await other.setInputFiles('#backupFile', backup);
-  await expect(other.locator('#backupResult')).toContainText('ya la tenías');
+  await expect(other.locator('#backupResult')).toContainText('ya estaba');
 });
 
 test('opening a card in «¿Es legal?» does not shrink its title while it animates', async ({ loaded: page }) => {
@@ -349,7 +349,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
   const toggle = page.locator('input[name=showOfferOnly]');
   await toggle.uncheck();
   await expect(rows).toHaveCount(6);
-  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2 que no trabajaste.');
+  await expect(page.locator('#cmpBlk')).toContainText('Se ocultan 2 que no se trabajaron.');
   await expect(page.locator('#cmpBlk .lr[data-id=o1]')).toHaveCount(0);
   await toggle.check();
   await expect(rows).toHaveCount(8);

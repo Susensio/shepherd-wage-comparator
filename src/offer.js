@@ -72,7 +72,7 @@ export const termsOnly = (offer) => ({
 /** The side of an offer a field lives on: `offer.mine` or `offer.terms`. */
 export const sideOf = (offer, field) => (field in DEF_MINE ? offer.mine : offer.terms);
 
-/** Your own figures, the same for every offer («Tus datos»). */
+/** The shepherd's own figures, the same for every offer («Datos comunes»). */
 const YOUR_DATA = {
   rentValue: 350,
   mealBreakfastP: 2,
@@ -84,7 +84,7 @@ const YOUR_DATA = {
   wear: 0.06,
 };
 
-/** Your figures and the two counting choices («Tus datos», «Cómo se cuenta»). Law figures are not here: see law.js. */
+/** The shepherd's figures and the two counting choices («Datos comunes», «Cómo se cuenta»). Law figures are not here: see law.js. */
 export const DEF_CFG = {
   inKind: true, // count housing and food as money
   others: 0, // other gross pay in the year, for IRPF
@@ -104,8 +104,8 @@ export const TEMPLATES = [
   {
     id: 'summer',
     title: 'Puerto',
-    text: 'Verano en el monte. Duermes en la borda; bajas cuando libras.',
-    sets: 'Fijo discontinuo · duermes en borda · vives allí',
+    text: 'Verano en el monte. Borda; bajadas en las libranzas.',
+    sets: 'Fijo discontinuo · borda · se vive allí',
     terms: { contract: 'seasonal', durationUnit: 'months', overnight: 'yes', housing: 'no' },
     mine: { commute: 'liveIn' },
   },
@@ -113,7 +113,7 @@ export const TEMPLATES = [
     id: 'season',
     title: 'Temporada con casa',
     text: 'Invernada u otra zona: varios meses con casa y libranzas.',
-    sets: 'Temporal · con casa · vives allí',
+    sets: 'Temporal · con casa · se vive allí',
     terms: { contract: 'temporary', durationUnit: 'months', overnight: 'no', housing: 'yes' },
     mine: { commute: 'liveIn' },
   },
@@ -121,15 +121,15 @@ export const TEMPLATES = [
     id: 'harvest',
     title: 'Campaña o jornales',
     text: 'Unos días o semanas a jornal: esquileo, partos, días sueltos.',
-    sets: 'Temporal · por días · cobras por día, neto · vuelves cada día',
+    sets: 'Temporal · por días · se cobra por día, neto · ida y vuelta cada día',
     terms: { contract: 'temporary', durationUnit: 'days', payType: 'net', payUnit: 'day' },
     mine: { commute: 'daily' },
   },
   {
     id: 'permanent',
     title: 'Fijo todo el año',
-    text: 'Contrato anual en una explotación. Vuelves a casa cada día.',
-    sets: 'Fijo · 12 meses · cobras al mes · vuelves cada día',
+    text: 'Contrato anual en una explotación; ida y vuelta a casa cada día.',
+    sets: 'Fijo · 12 meses · se cobra al mes · ida y vuelta cada día',
     terms: { contract: 'permanent', durationUnit: 'months', duration: 12, payUnit: 'month' },
     mine: { commute: 'daily' },
   },

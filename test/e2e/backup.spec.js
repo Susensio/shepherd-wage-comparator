@@ -27,10 +27,10 @@ test.describe('the status card', () => {
   }) => {
     const page = await openSettings(openApp, 'guest');
     await loadOffers(page, sample);
-    await expect(page.locator('#backupStatus')).toHaveText('Aún no has guardado ninguna copia.');
+    await expect(page.locator('#backupStatus')).toHaveText('Aún no se ha guardado ninguna copia.');
     await expect(page.locator('#backupStatus')).toHaveClass(/warn/);
     await expect(page.locator('#backupAdvice')).toContainText(
-      'El navegador puede borrar tus ofertas: guarda una copia',
+      'El navegador puede borrar las ofertas: guarda una copia',
     );
     await expect(page.locator('#backupAccount')).toBeHidden();
 
@@ -41,7 +41,7 @@ test.describe('the status card', () => {
     expect(download.suggestedFilename()).toMatch(/\.json$/);
     await expect(page.locator('#backupStatus')).toContainText('Última copia: hoy');
     await expect(page.locator('#backupStatus')).toHaveClass(/ok/);
-    await expect(page.locator('#backupAdvice')).toContainText('Incluye todo lo que tienes ahora');
+    await expect(page.locator('#backupAdvice')).toContainText('Incluye todo lo guardado ahora');
     await expect(page.locator('#backupSaveResult')).toContainText('Copia guardada');
     await expect(result(page)).toBeHidden();
 
@@ -49,13 +49,13 @@ test.describe('the status card', () => {
       app.state.offers[0].mine.name = 'Cambiada';
     });
     await page.evaluate(async () => (await import('./src/ui/settings-page.js')).paintBackup());
-    await expect(page.locator('#backupAdvice')).toContainText('Has cambiado ofertas desde entonces');
+    await expect(page.locator('#backupAdvice')).toContainText('Se han cambiado ofertas desde entonces');
     await expect(page.locator('#backupStatus')).toHaveClass(/warn/);
   });
 
   test('signed in, the card says the offers are in the account and a file is an extra', async ({ openApp }) => {
     const page = await openSettings(openApp, 'member');
-    await expect(page.locator('#backupAccount')).toContainText('Tus ofertas se guardan en tu cuenta.');
+    await expect(page.locator('#backupAccount')).toContainText('Las ofertas se guardan en la cuenta.');
     await expect(page.locator('#backupAccount')).toContainText('Una copia en archivo es un respaldo extra');
     await expect(page.locator('#backupGuest')).toBeHidden();
     await expect(page.getByRole('button', { name: 'Descargar copia' }).last()).toBeVisible();
@@ -140,7 +140,7 @@ test('the backup box styling stays off the offer result, and nothing-added keeps
   const empty = JSON.stringify({ offers: [], cfg: sample.cfg });
   await page.setInputFiles('#backupFile', { name: 'c.json', mimeType: 'application/json', buffer: Buffer.from(empty) });
   await expect(result(page)).toHaveAttribute('data-kind', 'warn');
-  await expect(result(page)).toContainText('Se han tomado tus datos de la copia');
+  await expect(result(page)).toContainText('Se han tomado los datos de la copia');
   expect(await page.evaluate(() => app.state.placeholderId)).toBe(placeholder);
   const style = await page.evaluate(() => {
     const css = getComputedStyle(document.getElementById('result'));

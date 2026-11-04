@@ -40,11 +40,11 @@ const SHOW = {
 
 /** Under a required question, while it is empty: what cannot be done without it. */
 const REQUIRED_TEXT = {
-  duration: 'Si no lo sabes, marca «no lo sé».',
-  hoursPerDay: 'Sin las horas no se puede calcular cuánto ganas.',
-  pay: 'Sin lo que te pagan no se puede calcular cuánto ganas.',
+  duration: 'Si no se sabe, marca «No se sabe».',
+  hoursPerDay: 'Sin las horas no se puede calcular cuánto se gana.',
+  pay: 'Sin el pago no se puede calcular cuánto se gana.',
   payrollPart: 'Sin la parte en nómina no se puede calcular cuánto va en negro.',
-  vacation: 'Sin esto no se puede comprobar si te pagan las vacaciones.',
+  vacation: 'Sin esto no se puede comprobar si se pagan las vacaciones.',
 };
 /** The `missing()` ids that share another's line. */
 const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
@@ -62,7 +62,7 @@ export function fillForm(o) {
   paintEnd(o.terms);
   /** @type {HTMLInputElement} */ ($('#place')).value = o.mine.place;
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
-    if (!el.name || el.dataset.answer) continue; // «Lo que te pagan» is read from the terms by paintAnswers
+    if (!el.name || el.dataset.answer) continue; // «Pago» is read from the terms by paintAnswers
     const side = sideOf(o, el.name);
     if (el.type === 'radio') el.checked = String(side[el.name]) === el.value;
     else if (el.type === 'date') el.value = side[el.name] || '';
@@ -108,7 +108,7 @@ function paintPlace(o, { index, status }) {
     status === 'loading'
       ? 'Cargando pueblos…'
       : status === 'error'
-        ? 'No se pudo cargar la lista de pueblos. Se guarda lo que escribas.'
+        ? 'No se pudo cargar la lista de pueblos. Se guarda lo que se escriba.'
         : '',
   );
 }
@@ -136,7 +136,7 @@ function payTold(o, r, a) {
   if (!(amount > 0)) return html`Responde abajo y aquí se resume la oferta.`;
   const per = UNIT_PER[a.unit];
   /** @type {(string | import('lit-html').TemplateResult)[]} */
-  const parts = [html`Te pagan <b>${fEntered(amount)} ${per}</b>`];
+  const parts = [html`Pago <b>${fEntered(amount)} ${per}</b>`];
   if (a.payroll === 'none') parts.push('todo en negro, sin contrato');
   else {
     if (a.payroll === 'all') parts.push('todo en nómina');
@@ -159,11 +159,11 @@ function cashLine(r, a) {
   if (!(amount > 0) || a.payroll === 'all' || (a.payroll === 'part' && !(num(a.part) > 0))) return null;
   const per = UNIT_PER[a.unit];
   if (a.payroll === 'none') return `Todo en negro: ${fEntered(amount)} ${per}.`;
-  if (r.split?.shortfall) return 'Lo que va en nómina supera lo que te pagan: no queda nada en negro.';
+  if (r.split?.shortfall) return 'Lo que va en nómina supera el pago: no queda nada en negro.';
   return r.split?.cash > 0.5 ? `Unos ${fE(r.split.cash)} ${per} van en negro.` : 'Nada en negro.';
 }
 
-/** «Lo que te pagan»: the answers read from the terms, and what is told from them. Inputs being typed in are not touched. */
+/** «Pago»: the answers read from the terms, and what is told from them. Inputs being typed in are not touched. */
 function paintAnswers(o, r) {
   const a = answersOf(o.terms);
   const set = (selector, value) => {
@@ -204,7 +204,7 @@ function payHint(o, r) {
     o.terms.payType === 'net'
       ? `Unos ${fE(r.pay.entered.gross)} brutos${per} (${rates}).`
       : `Unos ${fE(r.pay.entered.net)} netos${per} (${rates}).`,
-    isWorthCounting(refund) ? ` En la renta te devolverían unos ${fE(refund)} (no contado).` : '',
+    isWorthCounting(refund) ? ` En la renta se devolverían unos ${fE(refund)} (no contado).` : '',
     o.terms.payUnit === 'total' && o.terms.vacation === 'paidAtEnd'
       ? ' Pon el total sin las vacaciones, que se suman aparte.'
       : '',
@@ -228,7 +228,7 @@ function daysOffHint(o, r) {
 function carHint(o, r) {
   if (o.mine.car === 'noCar') return 'No se cuentan gasolina ni desgaste.';
   if (!(r.car.km > 0)) return '';
-  return `Unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes con tu coche. Consumo y gasolina, en «Tus datos».`;
+  return `Unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes en coche propio. Consumo y gasolina, en «Datos comunes».`;
 }
 
 /** Only what the dates leave out; the minimum wage itself is in the Leyes tab. */
@@ -265,11 +265,11 @@ export function paintForm(o, r, offers, places) {
   text(
     '#mealsHint',
     mealsGiven(o.terms).length
-      ? `Te ahorras ${fE(food, food % 1 ? 2 : 0)} por día trabajado (precios en «Tus datos»).`
+      ? `Se ahorra ${fE(food, food % 1 ? 2 : 0)} por día trabajado (precios en «Datos comunes»).`
       : '',
   );
   /** @type {HTMLInputElement} */ ($('#rentValue')).placeholder = fInputValue(num(cfg.rentValue), 0);
-  text('#rentHint', `Vacío: ${fE(num(cfg.rentValue))}, el de «Tus datos». Pon 0 si sigues pagando tu casa.`);
+  text('#rentHint', `Vacío: ${fE(num(cfg.rentValue))}, el de «Datos comunes». Pon 0 si sigue pagándose la casa.`);
   text('#yearHint', yearHint(o, r));
   const overlaps = overlapsOf(o, offers);
   text(

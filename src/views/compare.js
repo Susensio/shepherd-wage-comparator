@@ -6,9 +6,8 @@ import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
 import { datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
-import { MISSING_TEXT, MISSING_TEXT_THIRD, unpaidTime } from '../text.js';
+import { MISSING_TEXT, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
-import { voiceOf } from '../voice.js';
 import { incomeBar, legend, swatch } from './parts.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest. */
@@ -29,12 +28,12 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
     forced
       ? 'Con ofertas de otros pastores se comparan sin desplazamientos ni gastos de nadie.'
       : termsOnly
-        ? 'Sin tus desplazamientos ni gastos, y con el IRPF como si no cobraras nada más ese año.'
+        ? 'Sin desplazamientos ni gastos propios, y con el IRPF como si no se cobrara nada más ese año.'
         : '',
     offerOnlyCount && !showOfferOnly
       ? offerOnlyCount === 1
-        ? 'Se oculta 1 que no trabajaste.'
-        : `Se ocultan ${offerOnlyCount} que no trabajaste.`
+        ? 'Se oculta 1 que no se trabajó.'
+        : `Se ocultan ${offerOnlyCount} que no se trabajaron.`
       : '',
   ]
     .filter(Boolean)
@@ -45,10 +44,10 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
     <div class="view"><span class="view-l">Ordenar</span><div class="seg" role="radiogroup" aria-label="Ordenar">${sortBy('paro', 'Con el paro')}${sortBy('money', 'Sin el paro')}</div></div>
     ${
       offerOnlyCount
-        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las que no trabajaste</label>`
+        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las que no se trabajaron</label>`
         : nothing
     }
-    <label class="check"><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Sin tus desplazamientos ni gastos</label>
+    <label class="check"><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
   </div>${hint ? html`<p class="hint">${hint}</p>` : nothing}`;
 }
 
@@ -66,7 +65,7 @@ const othersControl = ({ available, include, status, items }) =>
                     ? 'Aparecen con el nombre de quien las comparte.'
                     : 'Todavía no hay ofertas compartidas por otros pastores.'
             } <button type="button" class="linkbtn" data-action="refreshOthers">${status === 'error' ? 'Reintentar' : 'Actualizar'}</button></p>`
-          : html`<p class="hint">Se comparan con las tuyas, sin tus desplazamientos ni gastos.</p>`
+          : html`<p class="hint">Se comparan solo las condiciones, sin desplazamientos ni gastos propios.</p>`
       }</div>`
     : nothing;
 
@@ -136,7 +135,6 @@ function headToHead(list, pairing, unit) {
   pairing.ids = pairing.ids.filter((id) => list.some((x) => x.o.id === id)); // in case one was deleted
   if (pairing.ids.length < 2) return nothing;
   const [a, b] = pairing.ids.map((id) => list.find((x) => x.o.id === id));
-  const say = voiceOf(a.sharer || b.sharer); // a column of another shepherd's: impersonal
   const debt = (x) => (isWorthCounting(x.r.debt.owed) ? x.r.debt.owed * x.r.netFactor : 0);
   // Totals only compare when both last about the same (under 10 % apart): otherwise the longer one always wins
   const similar =
@@ -170,14 +168,9 @@ function headToHead(list, pairing, unit) {
     [
       'Dinero',
       [
-        unit !== 'hour' && [
-          say('Ganas por hora', 'Se gana por hora'),
-          (x) => x.r.earnings.perHour,
-          (v) => fE(v, 2),
-          'max',
-        ],
-        money(say('Ganas', 'Se gana'), (x) => x.r.earnings.total, 'max'),
-        money(say('Cobras', 'Se cobra'), (x) => x.r.earnings.received, 'max'),
+        unit !== 'hour' && ['Ganado por hora', (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
+        money('Ganado', (x) => x.r.earnings.total, 'max'),
+        money('Cobrado', (x) => x.r.earnings.received, 'max'),
       ],
     ],
     [
@@ -185,7 +178,7 @@ function headToHead(list, pairing, unit) {
       [
         // What the employer pays in money (payroll, Social Security, cash, km, severance), and with housing and food
         money('Dinero que pone', (x) => employerMoney(x.r), ''),
-        inKind && money(say('Le cuestas', 'Le cuesta'), (x) => x.r.employer.cost, ''),
+        inKind && money('Le cuesta', (x) => x.r.employer.cost, ''),
       ],
     ],
     [
@@ -212,7 +205,7 @@ function headToHead(list, pairing, unit) {
       'Derechos',
       [
         ['En negro', (x) => x.r.cash.share, (v) => (v <= 0.005 ? 'nada' : `${fN(v * 100)} %`), 'min'],
-        [say('Te deben', 'Se le deben'), debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
+        ['Lo que debe el ganadero', debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
         // In the unit Comparar is in, like the money rows above: the days would not add to them
         !totalsHidden && [
           `Paro que genera ${U.short}`,
@@ -311,7 +304,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     const v = unit === 'total' && r.time.noDuration ? Number.NaN : r.earnings[U.key];
     return Number.isFinite(v) ? v : -1e12;
   };
-  // What ranks an offer: its money plus the paro it generates, in the unit (only its money with «Solo lo que ganas»)
+  // What ranks an offer: its money plus the paro it generates, in the unit (only its money with «Sin el paro»)
   const rankValue = (r) =>
     sortValue(r) + (moneyOnly || sortValue(r) <= -1e11 ? 0 : inUnit(r.unemployment.euros, r, unit));
   const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => rankValue(b.r) - rankValue(a.r));
@@ -330,7 +323,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
       body: html`<p class="empty">${
         all.length < 2
           ? 'Añade otra oferta con «+ Nueva» para compararlas.'
-          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => (x.sharer ? MISSING_TEXT_THIRD : MISSING_TEXT)[id]))}.`).join(' ')}`
+          : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>${controls}`,
       more: nothing,
     };
@@ -363,7 +356,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
       ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
-          ? html`<span class="bad">${x.sharer ? 'se le deben' : 'te deben'} ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
+          ? html`<span class="bad">Debe el ganadero ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;
     return pairing.on
@@ -376,7 +369,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
   return {
     picker: unitPicker(unit),
     body: html`${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
-    <p class="hint">${moneyOnly ? `Ordenadas por lo que ganas ${U.short}.` : `Ordenadas por lo que ganas ${U.short} y el paro que genera cada oferta.`}</p>
+    <p class="hint">${moneyOnly ? `Ordenadas por lo que se gana ${U.short}.` : `Ordenadas por lo que se gana ${U.short} y el paro que genera cada oferta.`}</p>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${controls}`,
     // After the «Otros pastores» section, which sits right under the ranking
@@ -478,9 +471,9 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.mine.name} · ${datesText(p.o.terms)}: ganas ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
-  return html`<div class="trend"><h4 class="sub">Lo que ganas ${U.label}, en el tiempo</h4>
-    <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que ganas ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
+    `${p.o.mine.name} · ${datesText(p.o.terms)}: se gana ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
+  return html`<div class="trend"><h4 class="sub">Lo que se gana ${U.label}, en el tiempo</h4>
+    <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que se gana ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
       .join('')}/>${points.map(
       (p) =>
@@ -526,10 +519,10 @@ export function yearlyView(all) {
   return html`<div class="yearly"><h4 class="sub">Año a año</h4><div class="tablew"><table class="table">
     <thead><tr><th></th>${columns.map((c) => html`<th>${c.year}<small>${c.jobs === 1 ? '1 trabajo' : `${c.jobs} trabajos`}</small></th>`)}</tr></thead><tbody>
     ${row('Días trabajados', (c) => fN(c.days))}
-    ${row('Dinero que cobras', (c) => fE(c.money))}
+    ${row('Dinero cobrado', (c) => fE(c.money))}
     ${columns.some((c) => c.cash > 0.5) ? row('de ello, en negro', (c) => (c.cash > 0.5 ? `${fN((c.cash / c.money) * 100)}\u00a0%` : '—')) : nothing}
     ${row('Dinero por hora', (c) => fE(c.perHour, 2))}
-    ${row('Lo que ganas', (c) => fE(c.earned))}
+    ${row('Ganado', (c) => fE(c.earned))}
     ${row('Días cotizados', (c) => fN(c.contrib))}
     </tbody></table></div><p class="hint">Sin las que solo eran ofertas. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
 }

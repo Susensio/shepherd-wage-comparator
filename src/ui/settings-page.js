@@ -14,7 +14,7 @@ export function paintBackup() {
   const { last, days } = status;
   const title = $('#backupStatus');
   title.textContent = !last
-    ? 'Aún no has guardado ninguna copia.'
+    ? 'Aún no se ha guardado ninguna copia.'
     : `Última copia: ${days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`} (${new Date(last.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})`;
   // No copy yet is a warning too, for a guest; `changed` alone is true then, but by accident
   const stale = !last || status.changed;
@@ -23,22 +23,22 @@ export function paintBackup() {
   const since = !last
     ? ''
     : status.changed
-      ? 'Has cambiado ofertas desde entonces. '
-      : 'Incluye todo lo que tienes ahora. ';
-  $('#backupAdvice').textContent = `${since}El navegador puede borrar tus ofertas: guarda una copia de vez en cuando.`;
+      ? 'Se han cambiado ofertas desde entonces. '
+      : 'Incluye todo lo guardado ahora. ';
+  $('#backupAdvice').textContent = `${since}El navegador puede borrar las ofertas: guarda una copia de vez en cuando.`;
 }
 
 /** @typedef {import('../account-state.js').AccountView} AccountView */
 
 const STATUS_TEXT = {
   connecting: 'Conectando con la cuenta…',
-  guest: 'Entrar. Tus ofertas solo están en este navegador.',
+  guest: 'Entrar. Las ofertas solo están en este navegador.',
   pending: 'No se pudieron subir a la cuenta las ofertas de este navegador.',
   offline: 'Sin conexión: los cambios se guardan en este navegador y se suben al volver la conexión.',
   outdated: 'Hay una versión nueva. Recarga la página.',
   error: 'No se pudieron guardar los últimos cambios en la cuenta. Se vuelve a intentar con el próximo cambio.',
   saving: 'Guardando en la cuenta…',
-  online: 'Conectado: tus ofertas y ajustes se guardan en tu cuenta.',
+  online: 'Conectado: las ofertas y los ajustes se guardan en la cuenta.',
 };
 
 /** Up to two capitals: the first letters of the first two words of the name, or of the email's name part. */
@@ -54,7 +54,7 @@ const initialsOf = (/** @type {string} */ text) =>
 
 /** Where the settings page says they are kept: nothing until the saved session has been looked at. */
 const storageLine = (/** @type {AccountView} */ view) =>
-  view.user ? 'Se guardan en tu cuenta.' : view.started ? 'Se guardan solo en este navegador.' : '';
+  view.user ? 'Se guardan en la cuenta.' : view.started ? 'Se guardan solo en este navegador.' : '';
 
 /**
  * The account button (a person for a guest, the initials once signed in) with its status dot, and what depends on the
@@ -118,7 +118,7 @@ export function paintAccount({
   const name = profile?.name || user.user_metadata?.name;
   const email = profile?.email || user.email;
   // The profile below already shows the email and the phone
-  $('#accountWho').textContent = `Has entrado como ${name || email}.`;
+  $('#accountWho').textContent = `Sesión iniciada como ${name || email}.`;
   if (!profile) return;
   if (filledProfile !== profile) {
     filledProfile = profile;
@@ -128,8 +128,8 @@ export function paintAccount({
   }
   /** @type {HTMLInputElement} */ ($('#profSharing')).checked = profile.sharing && confirm !== 'share';
   $('#sharingState').textContent = profile.sharing
-    ? 'Compartes tus ofertas y ves las de otros pastores.'
-    : 'No compartes tus ofertas ni ves las de otros pastores.';
+    ? 'Se comparten las ofertas y se ven las de otros pastores.'
+    : 'No se comparten las ofertas ni se ven las de otros pastores.';
   $('#shareConfirm').hidden = confirm !== 'share';
   $('#deleteConfirm').hidden = confirm !== 'delete';
 }

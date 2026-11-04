@@ -226,7 +226,7 @@ export function createAccountState({
   const setSharing = (/** @type {boolean} */ on, /** @type {'message' | 'othersMessage'} */ line) =>
     attempt(
       on
-        ? 'No se pudieron compartir tus ofertas. Inténtalo de nuevo.'
+        ? 'No se pudieron compartir las ofertas. Inténtalo de nuevo.'
         : 'No se pudo dejar de compartir. Inténtalo de nuevo.',
       async () => {
         view.profile = await account.updateProfile({ sharing: on });

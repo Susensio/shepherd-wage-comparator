@@ -49,7 +49,7 @@ describe('planImport', () => {
     assert.equal(plan.kind, 'ok');
     assert.equal(
       plan.text,
-      'Añadida 1 oferta. Otras 2 ya las tenías y no han cambiado. «Tus datos» siguen como los tenías.',
+      'Añadida 1 oferta. Otras 2 ya estaban y no han cambiado. «Datos comunes» siguen como estaban.',
     );
   });
 
@@ -60,14 +60,14 @@ describe('planImport', () => {
     assert.equal(plan.kind, 'warn');
     assert.equal(
       plan.text,
-      'No se ha añadido ninguna oferta: la de la copia ya la tenías. «Tus datos» siguen como los tenías.',
+      'No se ha añadido ninguna oferta: la de la copia ya estaba. «Datos comunes» siguen como estaban.',
     );
   });
 
   test('several already had are counted', () => {
     const mine = [offer('a'), offer('b')];
     const plan = planImport(copy([offer('a'), offer('b')], null), { mine, config });
-    assert.equal(plan.text, 'No se ha añadido ninguna oferta: las 2 de la copia ya las tenías.');
+    assert.equal(plan.text, 'No se ha añadido ninguna oferta: las 2 de la copia ya estaban.');
   });
 
   test('a copy without offers, for someone with none, still takes the settings and says so', () => {
@@ -77,7 +77,7 @@ describe('planImport', () => {
     assert.equal(plan.kind, 'warn');
     assert.equal(
       plan.text,
-      'No se ha añadido ninguna oferta: la copia no tiene ofertas. Se han tomado tus datos de la copia.',
+      'No se ha añadido ninguna oferta: la copia no tiene ofertas. Se han tomado los datos de la copia.',
     );
   });
 

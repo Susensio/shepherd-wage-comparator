@@ -1,4 +1,4 @@
-/** Events: the offer form's steps, «Tus datos», collapsibles, and every button, by its data-action. */
+/** Events: the offer form's steps, «Datos comunes», collapsibles, and every button, by its data-action. */
 
 import { animateNextPaint, commit, fillVacation, openOffer, paintAll, select, show, viewShared } from './app.js';
 import { $ } from './dom.js';
@@ -62,7 +62,7 @@ function endDateTyped(value) {
   return false;
 }
 
-/** Reads what changed in «Lo que te pagan» into the terms, through the answers they give. */
+/** Reads what changed in «Pago» into the terms, through the answers they give. */
 function payAnswerTyped(el, terms) {
   const answers = answersOf(terms);
   const amount = el.value.trim() === '' ? '' : num(el.value);
@@ -115,7 +115,7 @@ function onFormInput(e) {
   else if (el.type === 'date') side[el.name] = el.value;
   else if (el.name === 'name') side.name = el.value;
   else if (el.name === 'rentValue' && el.value.trim() === '')
-    side.rentValue = ''; // empty: the one in «Tus datos»
+    side.rentValue = ''; // empty: the one in «Datos comunes»
   else if (HERD.some(([field]) => field === el.name) && el.value.trim() === '')
     side[el.name] = ''; // no head count
   else side[el.name] = num(el.value);
@@ -136,7 +136,7 @@ function onFormFocusOut(e) {
   commit();
 }
 
-/* --- «Tus datos» and the assumptions: they apply to every offer --- */
+/* --- «Datos comunes» and the assumptions: they apply to every offer --- */
 
 function onSettingsInput(e) {
   const el = /** @type {HTMLInputElement} */ (e.target);
@@ -207,12 +207,12 @@ function runMenuAction(action, id, msg) {
   if (action === 'copyCard')
     return copyText(cardText(o, calcOffer(o)), msg, {
       ok: 'Ficha copiada.',
-      failMsg: 'No se pudo copiar. Aquí la tienes para seleccionarla:',
+      failMsg: 'No se pudo copiar. Aquí está para seleccionarla:',
       rows: 7,
     });
   return copyText(claimText(o, calcOffer(o)), msg, {
     ok: 'Texto copiado.',
-    failMsg: 'No se pudo copiar. Aquí lo tienes para seleccionarlo:',
+    failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
     rows: 12,
   });
 }

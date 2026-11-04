@@ -241,7 +241,7 @@ test.describe('the read-only view', () => {
   });
 });
 
-// Second-person verbs and possessives about pay, rights and what is owed
+// Second-person verbs and possessives that would speak to the reader in a question, an answer or a label
 const SECOND_PERSON =
   /\b(ganas|cobras|trabajas|libras|pasas|cumples|generas|disfrutas|ahorras|tienes|puedes|tu|tus|te|tuyo|ti)\b/i;
 
@@ -266,25 +266,26 @@ test.describe('whose voice an offer speaks in', () => {
       });
     });
 
-  test('the read-only view of every sample offer says nothing to «tú»; own offers still do', async ({ openApp }) => {
+  test('no question, answer or label of an offer says «tú», own or shared', async ({ openApp }) => {
     const page = await openApp();
     await loadOffers(page, sample);
     const all = await voices(page);
     expect(all.length).toBeGreaterThan(5);
-    for (const { name, shared } of all) expect(shared.match(new RegExp(SECOND_PERSON, 'gi')), name).toBeNull();
-    expect(all.some(({ own }) => SECOND_PERSON.test(own))).toBe(true);
-    expect(all.some(({ own }) => /¿Cuánto ganas\?/.test(own) && /Te deben/.test(own))).toBe(true);
-    expect(all.some(({ shared }) => /¿Cuánto se gana\?/.test(shared) && /Se le deben/.test(shared))).toBe(true);
+    for (const { name, own, shared } of all) {
+      expect(own.match(new RegExp(SECOND_PERSON, 'gi')), `own ${name}`).toBeNull();
+      expect(shared.match(new RegExp(SECOND_PERSON, 'gi')), `shared ${name}`).toBeNull();
+    }
+    expect(all.some(({ own }) => /¿Cuánto se gana\?/.test(own) && /Debe el ganadero/.test(own))).toBe(true);
+    expect(all.some(({ shared }) => /¿Cuánto se gana\?/.test(shared) && /Debe el ganadero/.test(shared))).toBe(true);
   });
 
-  test("another shepherd's ranking rows say «se le deben»; own rows keep «te deben»", async ({ openApp }) => {
+  test("another shepherd's ranking rows say «Debe el ganadero», like own rows", async ({ openApp }) => {
     const others = sample.offers.map((o, i) => ({ id: sharedId(i + 1), user_id: OTHER, terms: o.terms }));
     const page = await openCompare(openApp, { others });
     await include(page);
     const theirs = (await page.locator('.lr.other').allTextContents()).join('\n');
-    expect(theirs).toContain('se le deben');
+    expect(theirs).toContain('Debe el ganadero');
     expect(theirs).not.toMatch(SECOND_PERSON);
-    expect(theirs).not.toContain('te deben');
   });
 });
 
@@ -359,7 +360,7 @@ test.describe('the «Otros pastores» section', () => {
       beforeLoad: withProject,
     });
     await page.evaluate(() => app.showTab('compare'));
-    await expect(section(page)).toContainText('¿Pagan mejor en otros sitios? Entra y compara tus ofertas');
+    await expect(section(page)).toContainText('¿Pagan mejor en otros sitios? Entra y compara las ofertas');
     await expect(section(page).locator('.skel-row')).toHaveCount(3);
     await expect(section(page)).not.toContainText('Luis');
     await expect(section(page)).not.toContainText('€');
@@ -389,7 +390,7 @@ test.describe('the «Otros pastores» section', () => {
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     for (const phrase of [
       '¿Pagan mejor en otros sitios?',
-      'se comparten las tuyas: sus condiciones, tu nombre, tu correo y tu teléfono',
+      'se comparten las propias: sus condiciones, el nombre, el correo y el teléfono',
       'solo con quien también comparte',
     ])
       await expect(section(page)).toContainText(phrase);
@@ -403,19 +404,19 @@ test.describe('the «Otros pastores» section', () => {
     const page = await openCompare(openApp, { sharing: false });
     const visible = section(page).locator('.account-confirm > p').nth(1);
     await expect(visible).toBeVisible();
-    await expect(visible).toContainText('tu nombre, tu correo y tu teléfono');
+    await expect(visible).toContainText('el nombre, el correo y el teléfono');
     await expect(visible).toContainText('solo con quien también comparte');
     await expect(section(page).locator('details')).toHaveCount(0);
     await page.evaluate(() => app.openAccountPage());
-    await page.getByLabel('Compartir tus ofertas').click();
+    await page.getByLabel('Compartir las ofertas').click();
     await expect(page.locator('#shareConfirm')).toContainText('Las ven los pastores que han entrado y comparten');
-    await expect(page.locator('#shareConfirm')).toContainText('No se ven tus km');
+    await expect(page.locator('#shareConfirm')).toContainText('No se ven los km');
   });
 
   test("accepting in Comparar closes the account page's own confirmation", async ({ openApp }) => {
     const page = await openCompare(openApp, { sharing: false });
     await page.evaluate(() => app.openAccountPage());
-    await page.getByLabel('Compartir tus ofertas').click();
+    await page.getByLabel('Compartir las ofertas').click();
     await expect(page.locator('#shareConfirm')).toBeVisible();
     await page
       .getByRole('button', { name: /Volver/ })
@@ -425,7 +426,7 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.locator('.lr.other')).toHaveCount(2);
     await page.evaluate(() => app.openAccountPage());
     await expect(page.locator('#shareConfirm')).toBeHidden();
-    await expect(page.getByLabel('Compartir tus ofertas')).toBeChecked();
+    await expect(page.getByLabel('Compartir las ofertas')).toBeChecked();
   });
 
   test('the section sits right under the ranking, before the weekly hours', async ({ openApp }) => {
@@ -442,10 +443,10 @@ test.describe('the «Otros pastores» section', () => {
     await section(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(section(page).getByRole('button', ask)).toHaveCount(1);
     await expect(section(page).getByRole('button', { name: 'Compartir y comparar' })).toBeVisible();
-    await expect(section(page)).not.toContainText('se comparten las tuyas');
+    await expect(section(page)).not.toContainText('se comparten las propias');
     await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
     await expect(section(page)).toContainText('¿Pagan mejor en otros sitios?');
-    await expect(section(page)).toContainText('se comparten las tuyas');
+    await expect(section(page)).toContainText('se comparten las propias');
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
   });
 
@@ -457,7 +458,7 @@ test.describe('the «Otros pastores» section', () => {
     });
     await page.evaluate(() => app.showTab('compare'));
     await section(page).getByRole('button', ask).click();
-    await expect(section(page)).toContainText('No se pudieron compartir tus ofertas. Inténtalo de nuevo.');
+    await expect(section(page)).toContainText('No se pudieron compartir las ofertas. Inténtalo de nuevo.');
     await expect(page.locator('.lr.other')).toHaveCount(0);
   });
 
@@ -483,7 +484,7 @@ test.describe('the «Otros pastores» section', () => {
 
   test('without a phone a hint links to the account page; with one, no hint', async ({ openApp }) => {
     const page = await openCompare(openApp);
-    await expect(section(page)).toContainText('Añade un teléfono a tu perfil para que te puedan contactar.');
+    await expect(section(page)).toContainText('Añade un teléfono al perfil para que puedan contactar.');
     await section(page).getByRole('button', { name: 'Ir al perfil' }).click();
     await expect(page.locator('[data-panel=account]')).toBeVisible();
     await page.locator('#profPhone').fill('600 000 000');

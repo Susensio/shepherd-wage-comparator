@@ -1,11 +1,11 @@
-/** The settings page's fields («Tus datos», «Cómo se cuenta»). */
+/** The settings page's fields («Datos comunes», «Cómo se cuenta»). */
 
 import { $$ } from '../dom.js';
 import { fInputValue, num } from '../format.js';
 import { DEF_CFG } from '../offer.js';
 
 /**
- * Fills in «Tus datos» and the two counting choices. Values left at their default stay empty, with the default in grey.
+ * Fills in «Datos comunes» and the two counting choices. Values left at their default stay empty, with the default in grey.
  * @param {any} cfg the settings
  * @param {HTMLElement} [skip] the field being typed in, left alone
  */
