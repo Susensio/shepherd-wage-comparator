@@ -171,35 +171,38 @@
       <p class="account-sync" id="accountSync" role="status"></p>
       <div class="actions"><button type="button" class="sm" data-action="accountSignOut">Salir</button></div>
 
-      <h4>Perfil</h4>
-      <div class="assump">
-        <label class="fld">Nombre<input type="text" id="profName" autocomplete="name"></label>
-        <label class="fld">Correo<input type="text" id="profEmail" inputmode="email" autocomplete="email"></label>
-        <label class="fld">Teléfono<input type="text" id="profPhone" inputmode="tel" autocomplete="tel"></label>
-      </div>
-      <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
-
-      <h4>Otros pastores</h4>
-      <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir las ofertas</span></label>
-      <p class="hint" id="sharingState"></p>
-      <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
-        <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se ve</strong></p>
-        <div id="shareTerms"></div>
-        <div class="actions">
-          <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
-          <button type="button" class="sm" data-action="cancelShare">Cancelar</button>
+      <!-- Only once the profile is read: offline it would show empty, and saving it would blank it -->
+      <div id="accountProfile">
+        <h4>Perfil</h4>
+        <div class="assump">
+          <label class="fld">Nombre<input type="text" id="profName" autocomplete="name"></label>
+          <label class="fld">Correo<input type="text" id="profEmail" inputmode="email" autocomplete="email"></label>
+          <label class="fld">Teléfono<input type="text" id="profPhone" inputmode="tel" autocomplete="tel"></label>
         </div>
-      </div>
+        <div class="actions"><button type="button" class="sm pri" data-action="saveProfile">Guardar perfil</button></div>
 
-      <h4 class="account-delete">Borrar la cuenta</h4>
-      <p class="hint">Se borra para siempre lo guardado en la cuenta.</p>
-      <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar la cuenta</button></div>
-      <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
-        <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
-        <p>Se borran para siempre la cuenta, el perfil y todo lo guardado en ella. También se borran las ofertas y los ajustes de este navegador. Para conservarlos, descarga antes una copia en Ajustes.</p>
-        <div class="actions">
-          <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
-          <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
+        <h4>Otros pastores</h4>
+        <label class="switch"><input type="checkbox" id="profSharing"><span>Compartir las ofertas</span></label>
+        <p class="hint" id="sharingState"></p>
+        <div class="account-confirm" id="shareConfirm" role="alertdialog" aria-labelledby="shareConfirmTitle" hidden>
+          <p id="shareConfirmTitle"><strong>Antes de compartir, esto es lo que se ve</strong></p>
+          <div id="shareTerms"></div>
+          <div class="actions">
+            <button type="button" class="sm pri" data-action="confirmShare">Sí, compartir</button>
+            <button type="button" class="sm" data-action="cancelShare">Cancelar</button>
+          </div>
+        </div>
+
+        <h4 class="account-delete">Borrar la cuenta</h4>
+        <p class="hint">Se borra para siempre lo guardado en la cuenta.</p>
+        <div class="actions"><button type="button" class="sm danger" data-action="askDeleteAccount">Borrar la cuenta</button></div>
+        <div class="account-confirm" id="deleteConfirm" role="alertdialog" aria-labelledby="deleteConfirmTitle" hidden>
+          <p id="deleteConfirmTitle"><strong>¿Borrar la cuenta?</strong></p>
+          <p>Se borran para siempre la cuenta, el perfil y todo lo guardado en ella. También se borran las ofertas y los ajustes de este navegador. Para conservarlos, descarga antes una copia en Ajustes.</p>
+          <div class="actions">
+            <button type="button" class="sm danger" data-action="confirmDeleteAccount">Sí, borrar la cuenta</button>
+            <button type="button" class="sm" data-action="cancelDeleteAccount">Cancelar</button>
+          </div>
         </div>
       </div>
     </div>

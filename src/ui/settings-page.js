@@ -119,6 +119,7 @@ export function paintAccount({
   const email = profile?.email || user.email;
   // The profile below already shows the email and the phone
   $('#accountWho').textContent = `Sesión iniciada como ${name || email}.`;
+  $('#accountProfile').hidden = !profile;
   if (!profile) return;
   if (filledProfile !== profile) {
     filledProfile = profile;

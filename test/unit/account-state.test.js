@@ -23,7 +23,16 @@ const sharedRows = () => ({
 });
 
 /** The state over a loader that builds the real account on the fake client, as `createAccountLoader` does on the page. */
-function setUp({ session, tables = ownRows(), enabled = true, wantsOthers = () => false, offers, synced = ME } = {}) {
+function setUp({
+  session,
+  tables = ownRows(),
+  enabled = true,
+  wantsOthers = () => false,
+  offers,
+  synced = ME,
+  savedUser = null,
+  retryMs,
+} = {}) {
   const fake = fakeClient({ session, tables: { ...tables, profiles: [profile(false), ...(tables.profiles ?? [])] } });
   const list = offers ?? [{ ...makeOffer(), id: id(9) }];
   const pageState = {
@@ -58,6 +67,7 @@ function setUp({ session, tables = ownRows(), enabled = true, wantsOthers = () =
       const account = await open(hooks);
       return { account, ...(await account.connect()) };
     },
+    savedUser: () => savedUser,
   };
   const online = { value: true };
   const account = createAccountState({
@@ -67,6 +77,7 @@ function setUp({ session, tables = ownRows(), enabled = true, wantsOthers = () =
     ingestShared,
     isOnline: () => online.value,
     wantsOthers,
+    retryMs,
   });
   const events = [];
   const statuses = [];
@@ -120,6 +131,50 @@ describe('status', () => {
     assert.equal(account.view.started, true);
     assert.equal(account.status(), 'guest');
     assert.equal(account.view.message, 'No se pudo conectar con la cuenta.');
+  });
+
+  /** Runs `call` with `console.error` silenced: the failures it provokes are expected. */
+  const quietly = async (call) => {
+    const silence = console.error;
+    console.error = () => {};
+    try {
+      return await call();
+    } finally {
+      console.error = silence;
+    }
+  };
+
+  test('a failed connection with a saved session stays signed in, offline, and connects when the network is back', async () => {
+    const { account, client } = setUp({ savedUser: { id: ME, email: 'ana@example.com' }, retryMs: 60_000 });
+    const getSession = client.auth.getSession;
+    client.auth.getSession = async () => {
+      throw new Error('network');
+    };
+    await quietly(() => account.start());
+    assert.equal(account.status(), 'offline');
+    assert.equal(account.view.user.id, ME);
+    assert.equal(account.view.message, '');
+    client.auth.getSession = getSession;
+    account.setOnline(true);
+    await settle();
+    assert.equal(account.status(), 'online');
+    assert.equal(account.view.profile.name, 'Ana');
+  });
+
+  test('a failed connection with a saved session is tried again on its own', async () => {
+    const { account, client } = setUp({ savedUser: { id: ME }, retryMs: 5 });
+    const getSession = client.auth.getSession;
+    let failures = 2;
+    client.auth.getSession = async (...args) => {
+      if (failures-- > 0) throw new Error('network');
+      return getSession(...args);
+    };
+    await quietly(async () => {
+      await account.start();
+      assert.equal(account.status(), 'offline');
+      await settle();
+    });
+    assert.equal(account.status(), 'online');
   });
 
   test('saving, then online again; an error until the next save succeeds', async () => {

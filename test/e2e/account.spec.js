@@ -544,6 +544,37 @@ test.describe('while the saved session is being connected', () => {
     expect(await page.evaluate(() => window.fake.google.themes.length)).toBe(0);
   });
 
+  test('a failed connection keeps the user and the cached offers, offline; changes reach the account once it connects', async ({
+    openApp,
+  }) => {
+    const page = await connecting(openApp, {
+      holdSession: false,
+      failSession: true,
+      localOffers: [{ ...sample.offers[0], id: ACCOUNT_OFFER }], // this browser's copy of the account
+    });
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'offline');
+    await expect(page.locator('#accountButton .initials')).toBeVisible();
+    await expect(page.locator('#accountTip .tip')).toHaveCount(0);
+    await expect(page.locator('#cards .ocard:not(.skeleton)')).toHaveCount(1);
+    await page.locator('#accountButton').click();
+    await expect(page.locator('#accountIn')).toBeVisible();
+    await expect(page.locator('#account')).not.toContainText('No se pudo conectar');
+    await expect(page.locator('#accountProfile')).toBeHidden(); // not read yet: saving it would blank it
+    await page.evaluate(() => app.openFicha());
+    await openStep(page, 'offer');
+    await page.fill('#name', 'Cambiada sin red');
+    await page.locator('#entryNext').click();
+
+    await page.evaluate(() => {
+      window.fake.sessionFails = false;
+      dispatchEvent(new Event('online'));
+    });
+    await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'online');
+    await expect
+      .poll(() => page.evaluate(() => window.fake.data.offer_mine.find((row) => row.offer_id)?.mine.name))
+      .toBe('Cambiada sin red');
+  });
+
   test('a guest is never told to wait', async ({ openApp }) => {
     const page = await connecting(openApp, { signedOut: true, holdSession: false });
     await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'guest');

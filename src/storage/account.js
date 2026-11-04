@@ -523,6 +523,8 @@ export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = load
   let opening = null;
   /** @type {Promise<any> | null} */
   let bundle = null;
+  /** Stops recording changes for the account; kept across failed starts, so a retry goes on from the same record. */
+  let stopTracking = null;
 
   /** A project is configured and this browser has a session, or a login is on its way back from the emailed link or Google. */
   function returningUser() {
@@ -580,25 +582,29 @@ export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = load
      */
     async start(hooks = {}) {
       if (!returningUser()) return null;
-      const stopTracking = trackUntilConnected();
-      let keepTracking = false;
-      try {
-        // replaceWith takes over the record (and the saves) from onReplaced on
-        const account = await open({
-          ...hooks,
-          onReplaced: (info) => {
-            stopTracking();
-            hooks.onReplaced?.(info);
-          },
-        });
-        const connected = await account.connect();
-        // A page too old to sync keeps recording what changes, for the load after the reload.
-        keepTracking = !!connected.outdated;
-        return { account, ...connected };
-      } finally {
-        if (!keepTracking) stopTracking();
-      }
+      stopTracking ??= trackUntilConnected();
+      const stop = () => {
+        stopTracking?.();
+        stopTracking = null;
+      };
+      // A failure keeps recording, for the retry; a page too old to sync too, for the load after the reload.
+      let keepTracking = true;
+      // replaceWith takes over the record (and the saves) from onReplaced on
+      const account = await open({
+        ...hooks,
+        onReplaced: (info) => {
+          stop();
+          hooks.onReplaced?.(info);
+        },
+      });
+      const connected = await account.connect();
+      keepTracking = !!connected.outdated;
+      if (!keepTracking) stop();
+      return { account, ...connected };
     },
+
+    /** The user of the session saved in this browser, read from localStorage alone; null without one. */
+    savedUser: () => store.get(SESSION_KEY, null)?.user ?? null,
 
     /**
      * The account for a sign-in button: loads the bundle on first use.

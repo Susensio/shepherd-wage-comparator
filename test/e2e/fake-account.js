@@ -31,11 +31,28 @@ export const withoutProject = (page) => serveConfig(page, { url: null, anonKey: 
  * Runs in the page before the app: a saved session (unless `signedOut`), the tables, and `window.supabase`. The
  * client has only what the account layer calls, over `window.fake.data`; `fake` also records oauth, the ID token, the
  * emailed code (and every one sent, in `otps`), rpc and sign-outs. `failUpload` fails the first offer upload; `holdSession`
- * keeps the first `getSession` pending until the test calls `fake.releaseSession()`; `google` adds a fake Google script whose
+ * keeps the first `getSession` pending until the test calls `fake.releaseSession()`; `failSession` makes `getSession` throw, as with no network, until the test sets `fake.sessionFails = false`; `google` adds a fake Google script whose
  * button hands over a token, and which records its nonce, the theme of each button drawn and how often the account chooser was opened.
  */
-export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google, holdSession }) {
-  if (!signedOut) localStorage.setItem('cj.session', '{}');
+export function installFake({
+  signedOut,
+  tables,
+  localOffers,
+  failProfile,
+  failUpload,
+  google,
+  holdSession,
+  failSession,
+}) {
+  // With `failSession` the saved session names its user, as supabase-js saves it, and this browser synced with them
+  if (!signedOut)
+    localStorage.setItem(
+      'cj.session',
+      failSession
+        ? JSON.stringify({ user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } })
+        : '{}',
+    );
+  if (failSession) localStorage.setItem('cj.accountUser', JSON.stringify('00000000-0000-0000-0000-00000000000a'));
   if (localOffers) localStorage.setItem('cj.ofertas2', JSON.stringify(localOffers));
   const data = {
     offers: [],
@@ -54,6 +71,7 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
     rpc: [],
     signedOut: false,
     sharedReads: 0,
+    sessionFails: !!failSession,
     google: { nonce: null, prompts: 0, themes: [] },
   };
   let session = signedOut ? null : { user: { id: '00000000-0000-0000-0000-00000000000a', email: 'ana@example.com' } };
@@ -165,6 +183,7 @@ export function installFake({ signedOut, tables, localOffers, failProfile, failU
     },
     auth: {
       getSession: async () => {
+        if (fake.sessionFails) throw new Error('network');
         await held;
         held = null;
         return { data: { session }, error: null };

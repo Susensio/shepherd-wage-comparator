@@ -2442,6 +2442,10 @@ details.paste > summary {
 .account-body[hidden] {
   display: none;
 }
+/* A wrapper only to hide the profile while it is not read: its parts keep the card's spacing */
+#accountProfile:not([hidden]) {
+  display: contents;
+}
 /* Deleting the account: a section of its own, at the end */
 .account-body h4.account-delete {
   margin-top: 12px;

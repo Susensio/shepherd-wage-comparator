@@ -27,6 +27,7 @@
  * @property {boolean} started the saved session has been looked at: until then the tooltip would only flash
  * @property {'saved' | 'saving' | 'error' | 'outdated'} sync how the background saving goes
  * @property {boolean} offline
+ * @property {boolean} reconnecting the saved session's first connection failed: its user and cached offers stay, and it is retried
  * @property {boolean} tipDismissed the tooltip was sent away with «Ahora no» or a sign-out: gone from every tab for this visit
  * @property {SignIn} signIn
  */
@@ -49,6 +50,7 @@ const freshSignIn = (googleFailed = false) =>
  * @param {{
  *   start(hooks: import('./storage/account.js').AccountHooks): Promise<any>,
  *   open(hooks: import('./storage/account.js').AccountHooks): Promise<any>,
+ *   savedUser?(): any,
  * }} deps.loader the account behind the page (`createAccountLoader`)
  * @param {{ available: boolean, include: boolean, status: string, items: any[], viewId: string | null }} deps.others
  *   `state.others`: written here, read by Comparar
@@ -56,6 +58,7 @@ const freshSignIn = (googleFailed = false) =>
  * @param {() => boolean} [deps.isOnline]
  * @param {() => boolean} [deps.wantsOthers] Comparar is in view: availability then fetches at once
  * @param {() => void} [deps.forgetGoogleChoice] a sign-out or a deletion
+ * @param {number} [deps.retryMs] how long after a failed first connection it is tried again
  */
 export function createAccountState({
   enabled,
@@ -65,6 +68,7 @@ export function createAccountState({
   isOnline = () => true,
   wantsOthers = () => false,
   forgetGoogleChoice = () => {},
+  retryMs = 30_000,
 }) {
   /** @type {AccountView} */
   const view = {
@@ -82,6 +86,7 @@ export function createAccountState({
     started: false,
     sync: 'saved',
     offline: false,
+    reconnecting: false,
     tipDismissed: false,
     signIn: freshSignIn(),
   };
@@ -101,6 +106,7 @@ export function createAccountState({
   /** Where the account stands, as the dot on its button shows it. */
   function status() {
     if (!view.started) return 'connecting';
+    if (view.reconnecting) return 'offline';
     if (!view.user) return 'guest';
     if (view.pending.length) return 'pending';
     if (view.offline) return 'offline';
@@ -201,6 +207,37 @@ export function createAccountState({
     if (view.user && !view.pending.length) view.profile = await account.profile();
   }
 
+  let retryTimer = 0;
+  let connecting = false;
+  /**
+   * Connects the session saved in this browser. If that fails while the browser holds one (no network, a server
+   * error), its user and cached offers stay on screen as offline and it is tried again, later or when the network
+   * comes back: the changes meanwhile are recorded and written once connected. Without one, a line says it failed.
+   */
+  async function connectSaved() {
+    if (connecting) return;
+    connecting = true;
+    clearTimeout(retryTimer);
+    try {
+      const started = await loader.start(hooks);
+      view.reconnecting = false;
+      if (started) await enter(started);
+      else view.user = null;
+    } catch (error) {
+      console.error(error);
+      const saved = loader.savedUser?.() ?? null;
+      if (saved) {
+        view.reconnecting = true;
+        view.user ??= saved;
+        retryTimer = setTimeout(connectSaved, retryMs);
+      } else view.message = 'No se pudo conectar con la cuenta.';
+    } finally {
+      connecting = false;
+      view.started = true;
+      changed();
+    }
+  }
+
   /** Signed in by whatever way: read the account, upload this browser's offers, show who is in. */
   async function connect(opened) {
     await enter({ account: opened, ...(await opened.connect()) });
@@ -253,19 +290,13 @@ export function createAccountState({
       view.enabled = true;
       view.offline = !isOnline();
       changed();
-      await attempt('No se pudo conectar con la cuenta.', async () => {
-        try {
-          const started = await loader.start(hooks);
-          if (started) await enter(started);
-        } finally {
-          view.started = true;
-        }
-      });
+      await connectSaved();
     },
 
     setOnline(/** @type {boolean} */ online) {
       view.offline = !online;
-      if (online) account?.changed(); // what failed while offline is written now
+      if (online && view.reconnecting) connectSaved();
+      else if (online) account?.changed(); // what failed while offline is written now
       changed();
     },
 
