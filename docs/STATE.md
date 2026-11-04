@@ -72,3 +72,22 @@ Volume is not the issue: 100 users and a few thousand offers fit Supabase's free
 - `npm run check` and `npm test` pass; `rls.test.js` applies every migration including the new ones.
 - On GitHub: the Database workflow green on `master` (push, schedule, manual), the drift check reporting no difference, the snapshot committed, one backup artifact present and decrypted once.
 - A browser tab with the previous page version shows the reload notice after `min_page_version` is raised and does not write.
+
+## Entry form: six steps, name and «Solo oferta» first
+
+Decided with the owner on 4 November 2026, after an audit of every field against its step. Not started; waits for the voice decision below, since both rewrite the same labels.
+
+### Layout
+
+1. Plantilla (as now; fix «el/la más parecido» and give templates a glossary term).
+2. La oferta: name, «Solo oferta, no trabajada» (still ticked and locked without a start date; the date is now in the same step), village, herd, start, duration, end.
+3. Pago: total, payslip, **IRPF withholding** (moved from the expenses step, where its % was shown three steps earlier), contract, vacations, pagas extra.
+4. Jornada y libranzas (as now; «días de trabajo» → «jornadas», per the glossary).
+5. Casa y comida (as now).
+6. Coche, viajes y gastos: trip, how often, km home, trips home, km at work, € per km, other expenses.
+
+Also: one name per step across title, Condiciones label and fieldset label; the overlap hint points to «Solo oferta» in step 2. Touches `STEPS`, `STEP_OF_MISSING`, `CONDITION_STEPS`, the glossary's Condiciones row, `index.html` sections, e2e tests that drive the steps, and an ADR amending ADR-0020's step list.
+
+### Open: the voice
+
+The owner asked (4 November 2026) whether the whole page could be impersonal instead of «tú». A draft of what that implies is being prepared; the first-person answers («me pagan», «mi coche») go either way.
