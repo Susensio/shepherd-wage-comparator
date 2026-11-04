@@ -62,8 +62,8 @@ Volume is not the issue: 100 users and a few thousand offers fit Supabase's free
    - `AGENTS.md` «Saved data»: «a field change is a batch migration + an upgrader + a fixture test, and raises `min_page_version` when old pages could write the old shape; a table change is a migration; expand, then contract; never change the live schema in the SQL editor».
    - `docs/model.md`: the format module and the version gate.
    - `docs/BACKLOG.md`: drop the ops item once the owner steps are done.
-7. First real use: the «oferta trabajada» change (backlog item «offer | Decided by the owner on 1 November 2026…»).
-   - Migration: move `offer_mine.mine->'offerOnly'` into `offers.terms` for every row (default `false`), remove it from `mine`, set `schema_version = 3`, raise `min_page_version`.
+7. First real use: the «oferta trabajada» change (backlog item «offer | Decided by the owner on 1 November 2026…»), and in the same migration the village moving to `terms` (backlog item «privacy | Decided by the owner on 4 November 2026…»).
+   - Migration: move `offer_mine.mine->'offerOnly'` into `offers.terms` for every row (default `false`), and `offer_mine.mine->'place'` likewise; remove both from `mine`, set `schema_version = 3`, raise `min_page_version`.
    - Page: `offerOnly` back in `DEF_TERMS`; upgrader v2 → v3 for browser copies and backups; «Solo oferta» shown on others' offers; a «Solo las trabajadas» filter for others' offers in Comparar, off by default.
    - New ADR superseding the first half of ADR-0017 (the sign-out half stands).
 
