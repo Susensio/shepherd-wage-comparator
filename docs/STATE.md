@@ -32,7 +32,7 @@ Volume is not the issue: 100 users and a few thousand offers fit Supabase's free
    - `SUPABASE_PROJECT_ID`: `etvrgexvjviavulflcqr`.
 3. After plan step 1 is merged: Actions → Database → Run workflow → «mark baseline applied». Expect the migration list to show `20261031000000` on both sides and the drift check to report no difference.
 4. For plan step 5: create a second free Supabase project for staging (same region, EU), and add `SUPABASE_STAGING_PROJECT_ID` and `SUPABASE_STAGING_DB_PASSWORD` as GitHub secrets. Configure Google sign-in on it only if the page will ever point at it (not needed for migration tests).
-5. For plan step 4: create an encryption key for backups (e.g. `age-keygen`), store the public key as `BACKUP_PUBLIC_KEY` in GitHub secrets and the private key somewhere safe off GitHub (password manager). Without the private key the backups cannot be read.
+5. For plan step 4 (the only backup there is: the owner confirmed on 4 November 2026 that the free plan offers none): create an encryption key for backups (e.g. `age-keygen`), store the public key as `BACKUP_PUBLIC_KEY` in GitHub secrets and the private key somewhere safe off GitHub (password manager). Without the private key the backups cannot be read.
 
 ### Plan
 
