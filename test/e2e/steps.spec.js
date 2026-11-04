@@ -182,6 +182,41 @@ test('Back from a new offer closes the entry and keeps the offer', async ({ page
   await expect(page.locator('#cards .ocard')).toHaveCount(1);
 });
 
+/** Where the tab is in its history: a stale entry left behind shows as one more. */
+const historyIndex = (page) => page.evaluate(() => navigation.currentEntry?.index);
+/** Deletes the offer shown in the ficha, through its «⋯» menu. */
+async function deleteFromFicha(page) {
+  await page.locator('#ficha .omenu:visible').click();
+  await page.locator('#offerMenu [data-menu=delete]').click();
+  await page.locator('#offerMenu [data-menu=delete]').click(); // «¿Seguro?»
+}
+
+test('deleting from the ficha drops its history entry: Back does not stop on a list that is already shown', async ({
+  loaded: page,
+}) => {
+  await page.click('[data-action=closeFicha]');
+  const list = await historyIndex(page);
+  await page.locator('#cards .ocard').nth(1).click();
+  await deleteFromFicha(page);
+  await expect(page.locator('#cards')).toBeVisible();
+  await expect.poll(() => historyIndex(page)).toBe(list);
+});
+
+test('deleting the last offer opens the templates in place of its ficha; Back goes to the list once', async ({
+  page,
+}) => {
+  const entry = await historyIndex(page);
+  await page.locator('.tcard').first().click();
+  for (let i = 0; i < 4; i++) await page.locator('#entryNext').click();
+  await expect(page.locator('#ficha')).toBeVisible();
+  await deleteFromFicha(page);
+  await expect(page.locator('#entry .tcard').first()).toBeVisible();
+  expect(await historyIndex(page)).toBe(entry);
+  await page.goBack();
+  await expect(page.locator('#entry')).toBeHidden();
+  expect(await historyIndex(page)).toBe(entry - 1);
+});
+
 test('a new offer from the list opens the entry over it, and «Cerrar» goes back', async ({ loaded: page }) => {
   await page.click('[data-action=closeFicha]');
   await page.click('#btnAdd');

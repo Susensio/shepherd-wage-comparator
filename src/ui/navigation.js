@@ -173,16 +173,22 @@ export function openFicha() {
 export function closeFicha() {
   if (!wide.matches) go({ ficha: false, entry: false }, 'back');
 }
-/** The guided entry, over the list (a new offer) or the ficha (one step of it). */
-export const openEntry = () => go({ ficha: view.ficha, entry: true }, 'push');
+/**
+ * The guided entry, over the list (a new offer) or the ficha (one step of it). `inPlaceOfFicha`: the ficha's offer is
+ * gone, so the entry takes the ficha's history entry instead of stacking on it.
+ */
+export const openEntry = (inPlaceOfFicha = false) =>
+  inPlaceOfFicha
+    ? go({ ficha: false, entry: true }, history.state?.ficha ? 'replace' : 'push')
+    : go({ ficha: view.ficha, entry: true }, 'push');
 /** Out of the entry, to what it covered. */
 export const closeEntry = () => go({ ficha: view.ficha, entry: false }, 'back');
 /** The last step of a new offer: its ficha, where the entry was. */
 export const entryToFicha = () => go({ ficha: true, entry: false }, view.ficha ? 'back' : 'replace');
 /** Every offer was replaced: whatever was open is gone. Leaves history as it is. */
 export const resetViews = () => go({ ficha: false, entry: false }, 'none');
-/** The ficha's offer is gone: the list, with no ficha to come back to. */
-export const leaveFicha = () => go({ ficha: false, entry: false }, 'replace');
+/** The ficha's offer is gone: back to the list, dropping the ficha's history entry so Back does not stop on it. */
+export const leaveFicha = () => go({ ficha: false, entry: false }, 'back');
 
 /** A sign-in completed: if it began at the tooltip, back to where it began. */
 export function returnAfterSignIn() {

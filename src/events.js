@@ -194,9 +194,10 @@ function duplicate(o) {
 
 function remove(o) {
   const backToWelcome = offers.remove(o);
-  leaveFicha();
+  // Not both: going back through history and then pushing the entry would race
+  if (!backToWelcome) leaveFicha();
   show();
-  if (backToWelcome) startEntry();
+  if (backToWelcome) startEntry(true);
 }
 
 /** What the menu does with an offer; true if it copied. */
@@ -274,7 +275,7 @@ const ACTIONS = {
   /* Offers */
   openOffer: (b) => openOffer(b.dataset.id),
   closeFicha,
-  newOffer: startEntry,
+  newOffer: () => startEntry(),
   template: (b) => pickTemplate(b.dataset.template),
   editStep: (b) => editStep(b.dataset.step, b.classList.contains('missing')),
   complete: () => editStep(stepOfMissing(active().terms), true),

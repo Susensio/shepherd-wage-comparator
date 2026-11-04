@@ -48,10 +48,10 @@ function show(index) {
   $('#entryTitle').focus({ preventScroll: true });
 }
 
-/** A new offer: from the templates. */
-export function startEntry() {
+/** A new offer: from the templates. `inPlaceOfFicha`: the ficha's offer was just deleted. */
+export function startEntry(inPlaceOfFicha = false) {
   Object.assign(entry, { editing: false, snapshot: null, createdId: null, template: null, asked: false });
-  openEntry();
+  openEntry(inPlaceOfFicha);
   show(0);
 }
 
