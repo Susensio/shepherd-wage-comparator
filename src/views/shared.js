@@ -26,7 +26,7 @@ export function sharedView({ o, r, sharer, label }, places) {
   const s = summaries(o, r, null);
   const conditions = [
     ['Dónde', whereText(o.terms, places)],
-    ['Ganado', herdText(o.terms)],
+    ['Rebaño', herdText(o.terms)],
     ['Tiempo', s.when],
     ['Nómina', s.payroll],
     ['En negro', s.b],

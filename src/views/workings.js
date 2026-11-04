@@ -86,7 +86,7 @@ function earningsSection(r) {
   const hours = `${fN(t.hours)}\u00a0h`;
   return section(
     'Lo que se gana',
-    [row('Total ganado', fE(e.total), { cls: 'tot' })],
+    [row('Total', fE(e.total), { cls: 'tot' })],
     `Repartido: ÷ ${hours} = ${fE(e.perHour, 2)}/h · ÷ ${fN(t.daysWorked)} días = ${fE(e.perDay)}/día${t.noDuration ? '' : ` · ÷ ${fN(t.months, 1)} meses = ${fE(e.perMonth)}/mes`}.`,
   );
 }

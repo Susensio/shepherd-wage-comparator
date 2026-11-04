@@ -145,9 +145,9 @@ test('head to head, in the unit Comparar is in', async ({ loaded: page }) => {
   await page.click('.lr[data-id=o3]');
   const pair = page.locator('#pairBlk');
   await expect(pair).toContainText('Cara a cara');
-  for (const label of ['Ganado por hora', 'Ganado por día', 'Para el ganadero', 'Dinero que pone por día'])
+  for (const label of ['Total por hora', 'Total por día', 'Para el ganadero', 'Dinero que pone por día'])
     await expect(pair).toContainText(label);
-  await expect(pair).not.toContainText('Ganado al mes');
+  await expect(pair).not.toContainText('Total al mes');
   await page.click("#cmpView label:has-text('mes')");
   // What the employer pays a month is the model's own figure, at that rate for the short one; «Le cuesta» appears
   // only with housing or food given
@@ -185,7 +185,7 @@ test('head to head shows totals when both last about the same', async ({ loaded:
   await page.click('[data-action=startPair]');
   await page.click('.lr[data-id=o4]');
   await page.click('.lr[data-id=o6]');
-  await expect(page.locator('#pairBlk')).toContainText('Ganado en total');
+  await expect(page.locator('#pairBlk').getByText('Total', { exact: true })).toBeVisible();
   await expect(page.locator('#pairBlk')).not.toContainText('Duran distinto');
 });
 

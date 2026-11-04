@@ -168,9 +168,9 @@ function headToHead(list, pairing, unit) {
     [
       'Dinero',
       [
-        unit !== 'hour' && ['Ganado por hora', (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
+        unit !== 'hour' && ['Total por hora', (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
         !totalsHidden && [
-          `Ganado ${U.short}`,
+          unit === 'total' ? 'Total' : `Total ${U.short}`,
           (x) => earnedShown(x.r)[unit] ?? inPicked(x, x.r.earnings.total), // as the ficha shows it
           inUnitText,
           'max',
@@ -334,7 +334,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     };
   }
   const atRate = (r) => unit === 'month' && isUnderAMonth(r); // shorter than a month: «al mes» is at that rate
-  // As the ficha's headline: the breakdown's «Ganado», where it has a column in this unit
+  // As the ficha's headline: the breakdown's «Total», where it has a column in this unit
   const figure = (r) =>
     sortValue(r) <= -1e11
       ? '–'
@@ -528,7 +528,7 @@ export function yearlyView(all) {
     ${row('Dinero cobrado', (c) => fE(c.money))}
     ${columns.some((c) => c.cash > 0.5) ? row('de ello, en negro', (c) => (c.cash > 0.5 ? `${fN((c.cash / c.money) * 100)}\u00a0%` : '—')) : nothing}
     ${row('Dinero por hora', (c) => fE(c.perHour, 2))}
-    ${row('Ganado', (c) => fE(c.earned))}
+    ${row('Total', (c) => fE(c.earned))}
     ${row('Días cotizados', (c) => fN(c.contrib))}
     </tbody></table></div><p class="hint">Sin las que solo eran ofertas. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
 }

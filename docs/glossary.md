@@ -28,7 +28,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | nómina bruta / nómina neta | the payslip before / after Social Security and IRPF | `r.pay.*` | | |
 | en negro | money paid off the payslip | `terms.cash*`, `r.cash.*` | | en mano |
 | cobrado | money received: payslip plus en negro. A noun in rows and ledgers («Cobrado»), «se cobra» in a sentence | Desglose «Cobrado» (`r.earnings.received`) | | cobras, te entra, entra al mes |
-| se gana / ganado | what the job is worth to the shepherd: what is received, plus housing and food when counted, minus the car and other expenses. «Se gana» in the headline, the tags and sentences; «Ganado» in rows and ledgers | `r.earnings.*` | | ganas |
+| se gana / total | what the job is worth to the shepherd: what is received, plus housing and food when counted, minus the car and other expenses. «Se gana» in the headline, the tags, the share card and sentences; «Total» in rows and ledgers (owner, 4 November 2026: «Ganado» read as livestock) | `r.earnings.*` | | ganas, ganado, beneficio |
 | salario mínimo | the minimum wage of the year | `minWageOf`, `r.min.*` | RD 126/2026 | SMI (only in legal citations) |
 | plus de pernocta | the bonus for sleeping at the work site | `terms.overnight`, `LAW.overnightPct` | convenio del campo de Huesca | plus por dormir en el monte |
 | pagas extra | | `terms.extraPays` | | |
@@ -72,7 +72,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | municipio, provincia | the council and province of the job, shared | `terms.municipality`, `terms.province` | |
 | coche propio | the shepherd drives their own car to the job: «Coche propio», «Sin coche propio» | `mine.car = 'own'` / `'noCar'` | tu coche, con mi coche |
 | Datos comunes | the figures shared by every offer, set in Ajustes (rent, meal prices, fuel, other income) | `cfg` | Tus datos |
-| ganado: ovejas, cabras, vacas | head counts per species | `terms.sheep`, `terms.goats`, `terms.cattle` | rebaño (in counts) |
+| rebaño: ovejas, cabras, vacas | the herd, as head counts per species | `terms.sheep`, `terms.goats`, `terms.cattle` | ganado |
 
 ## Units
 

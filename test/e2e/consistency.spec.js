@@ -25,14 +25,14 @@ async function invariantProblems() {
     problems.push('overtime per week × weeks ≠ total overtime');
   if (r.savings.days > 1 && !close(r.savings.days, x.daysUnpaid * (1 + r.pay.rates.employerPct / 100)))
     problems.push('extra-days savings ≠ unpaid × employer rate');
-  // The headline is the breakdown's «Ganado» in its unit: per day (rounded to euros) under a month, else per month
+  // The headline is the breakdown's «Total» in its unit: per day (rounded to euros) under a month, else per month
   const big = document.querySelector('#result .tag .big');
   const earned = document.querySelectorAll('#result [data-fold="breakdown2"] .row.tot .two > span');
   if (big && earned.length === 2) {
     const read = (el) => Number.parseFloat(el.textContent.replace(/\./g, '').replace(',', '.'));
     const underAMonth = !t.noDuration && t.months < 0.97;
     const ledger = underAMonth ? Math.round(read(earned[0])) : read(earned[1]);
-    if (read(big) !== ledger) problems.push(`headline ${big.textContent} ≠ breakdown «Ganado» ${ledger}`);
+    if (read(big) !== ledger) problems.push(`headline ${big.textContent} ≠ breakdown «Total» ${ledger}`);
   }
   const onPayroll = r.pay.net + r.employer.severance;
   const legend = document.querySelector('#secSeason .rc-legend');
@@ -137,15 +137,15 @@ test('Comparar and the share card give each offer the ficha headline figure, in 
     const big = page.locator('#result .tag .big');
     if (!(await big.count())) continue;
     headlines.push({ id: offer.id, unit: UNIT_OF_LABEL[label.trim()], figure: amount(await big.textContent()) });
-    // The share card's «Ganado» says the same, in that unit
+    // The share card's «Se gana» says the same, in that unit
     const card = await page.evaluate(() => app.cardText(app.active(), app.calcOffer(app.active())));
     const unit = UNIT_OF_LABEL[label.trim()];
     const inCard = card.match(
-      new RegExp(`Ganado:.*?([\\d.,]+)\\s€${{ mes: '/mes', día: '/día', total: ' en total' }[unit]}`),
+      new RegExp(`Se gana:.*?([\\d.,]+)\\s€${{ mes: '/mes', día: '/día', total: ' en total' }[unit]}`),
     );
     expect(
       inCard && amount(inCard[1]),
-      `${offer.id}: card «${card.split('\n').find((line) => line.startsWith('Ganado'))}»`,
+      `${offer.id}: card «${card.split('\n').find((line) => line.startsWith('Se gana'))}»`,
     ).toBe(amount(await big.textContent()));
   }
   expect(headlines.length).toBeGreaterThan(4);

@@ -111,8 +111,8 @@ export const sumsInColumns = (r, plus, minus = []) =>
   );
 
 /**
- * «Ganado» as the breakdown adds it up from its rounded rows, in each of its columns: `{ day, month }`, or
- * `{ day, total }` under a month. What every view and the share card show as «Ganado» in those units, so none
+ * «Total» as the breakdown adds it up from its rounded rows, in each of its columns: `{ day, month }`, or
+ * `{ day, total }` under a month. What every view and the share card show as what is earned in those units, so none
  * differs by a rounding.
  * @returns {Partial<Record<'day' | 'month' | 'total', number>>}
  */

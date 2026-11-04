@@ -287,7 +287,7 @@ export function cardText(o, r) {
     `Nómina: ${s.payroll}`,
     r.cash.total > 0 ? `En negro: ${lowerFirst(s.b)}` : '',
     `${s.housing} · ${s.car}`,
-    `Ganado: ${fE(r.earnings.perHour, 2)}/hora · ${fE(shown.day ?? r.earnings.perDay)}/día · ${fE(shown.month ?? r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(shown.total ?? r.earnings.total)} en total`}`,
+    `Se gana: ${fE(r.earnings.perHour, 2)}/hora · ${fE(shown.day ?? r.earnings.perDay)}/día · ${fE(shown.month ?? r.earnings.perMonth)}/mes${r.time.noDuration ? ' (sin saber la duración)' : ` · ${fE(shown.total ?? r.earnings.total)} en total`}`,
     legalLine(o, r)?.text || '',
     [
       x.daysValue > 0 && r.extraDays.extra >= 1 && `Jornadas de más: ${fCount(r.extraDays.extra)} en el contrato`,

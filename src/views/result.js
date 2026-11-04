@@ -192,7 +192,7 @@ function breakdown(o, r, unit) {
       ]}
       ${showCar ? row(withTip('Coche', carTip), cols.minus(r.car.cost), { swatch: 'expense', valueCls: 'minus' }) : nothing}
       ${showOther ? row('Otros', cols.minus(r.expenses.other), { swatch: 'expense', valueCls: 'minus' }) : nothing}
-      ${row('Ganado', cols.sum(earned, expenses), { swatch: '', cls: 'tot' })}
+      ${row('Total', cols.sum(earned, expenses), { swatch: '', cls: 'tot' })}
     </div>
     </details>`,
   };
@@ -214,7 +214,7 @@ export function resultParts(o, r, { readOnly = false } = {}) {
   const money = moneyIn(r, unit);
   const { earnTip, html: breakdownView } = breakdown(o, r, unit);
   const shown = earnedShown(r);
-  // The headline is the ledger's «Ganado» in the same unit, so the two never differ by a rounding
+  // The headline is the ledger's «Total» in the same unit, so the two never differ by a rounding
   const headline = unit in shown ? fUnit(shown[unit], unit) : money.figure(r.earnings.total);
   const year = actualYear(o.terms);
   const head = html`${
