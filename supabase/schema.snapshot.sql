@@ -105,6 +105,16 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "public"."app_meta" (
+    "singleton" boolean DEFAULT true NOT NULL,
+    "min_page_version" integer DEFAULT 1 NOT NULL,
+    CONSTRAINT "app_meta_singleton_check" CHECK ("singleton")
+);
+
+
+ALTER TABLE "public"."app_meta" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."offer_mine" (
     "offer_id" "uuid" NOT NULL,
     "mine" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
@@ -150,6 +160,11 @@ CREATE TABLE IF NOT EXISTS "public"."settings" (
 ALTER TABLE "public"."settings" OWNER TO "postgres";
 
 
+ALTER TABLE ONLY "public"."app_meta"
+    ADD CONSTRAINT "app_meta_pkey" PRIMARY KEY ("singleton");
+
+
+
 ALTER TABLE ONLY "public"."offer_mine"
     ADD CONSTRAINT "offer_mine_pkey" PRIMARY KEY ("offer_id");
 
@@ -191,6 +206,13 @@ ALTER TABLE ONLY "public"."profiles"
 
 ALTER TABLE ONLY "public"."settings"
     ADD CONSTRAINT "settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE "public"."app_meta" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "app_meta_read" ON "public"."app_meta" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
 
@@ -428,6 +450,12 @@ GRANT ALL ON FUNCTION "public"."is_sharing"("owner" "uuid") TO "authenticated";
 
 
 
+
+
+
+GRANT ALL ON TABLE "public"."app_meta" TO "service_role";
+GRANT SELECT ON TABLE "public"."app_meta" TO "anon";
+GRANT SELECT ON TABLE "public"."app_meta" TO "authenticated";
 
 
 
