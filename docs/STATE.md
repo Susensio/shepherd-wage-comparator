@@ -2,7 +2,7 @@
 
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
-Decided with the owner on 1 November 2026. Not started. To be built from the owner's laptop; nothing below has been run against the live project yet.
+Decided with the owner on 1 November 2026. Started 4 November 2026 in a cloud session: plan steps 1–2 (workflow) and 3 (versioned JSON) in progress; steps 4–5 wait for owner steps 4–5. Nothing below has been run against the live project yet. Order: master gets step 1 alone, the owner runs owner step 3, and only then step 2 (whose push trigger would otherwise run `db push` against the unrepaired log) and step 3's migration.
 
 ### Why
 
@@ -25,8 +25,8 @@ Volume is not the issue: 100 users and a few thousand offers fit Supabase's free
 
 ### Owner steps (Supabase and GitHub dashboards)
 
-1. Done 1 November 2026: the old `SUPABASE_ACCESS_TOKEN` environment secret's token was revoked. Remove the secret from the Claude environment if it is still listed.
-2. GitHub, repo → Settings → Secrets and variables → Actions, add:
+1. Done 1 November 2026: the old `SUPABASE_ACCESS_TOKEN` environment secret's token was revoked; by 4 November it is no longer in the Claude environment.
+2. Done 4 November 2026 (repository secrets, no GitHub Environment). GitHub, repo → Settings → Secrets and variables → Actions, add:
    - `SUPABASE_ACCESS_TOKEN`: a personal access token from supabase.com/dashboard/account/tokens.
    - `SUPABASE_DB_PASSWORD`: the project's database password (Project Settings → Database; resetting it breaks nothing, the page uses the publishable key).
    - `SUPABASE_PROJECT_ID`: `etvrgexvjviavulflcqr`.
