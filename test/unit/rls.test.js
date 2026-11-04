@@ -168,6 +168,35 @@ describe('anon', () => {
   });
 });
 
+describe('min_page_version', () => {
+  test('anon and every signed-in user read the one row', async () => {
+    for (const who of ['anon', 'ana', 'dan']) {
+      assert.deepEqual(await column(who, 'select min_page_version from app_meta'), [1], who);
+    }
+  });
+
+  test('nobody writes it through the API, not even to look at it', async () => {
+    for (const who of ['anon', 'ana']) {
+      await assert.rejects(as(who, 'update app_meta set min_page_version = 99'), /permission denied/, who);
+      await assert.rejects(
+        as(who, 'insert into app_meta (singleton, min_page_version) values (false, 99)'),
+        /permission denied/,
+        who,
+      );
+      await assert.rejects(as(who, 'delete from app_meta'), /permission denied/, who);
+    }
+    assert.deepEqual(await column(null, 'select min_page_version from app_meta'), [1]);
+  });
+
+  test('it holds a single row, and loading the migrations again keeps its value', async () => {
+    await assert.rejects(as(null, 'insert into app_meta (singleton, min_page_version) values (false, 2)'), /check/);
+    await as(null, 'update app_meta set min_page_version = 5');
+    await migrate();
+    assert.deepEqual(await column('anon', 'select min_page_version from app_meta'), [5]);
+    await as(null, 'update app_meta set min_page_version = 1');
+  });
+});
+
 describe('writes for someone else', () => {
   test('insert with another user_id is refused', async () => {
     await assert.rejects(
