@@ -52,10 +52,13 @@ test('«Condiciones» is the first block, under the name, one row that opens the
   );
   await expect(conditions.locator('.cs')).toContainText('21 jun');
   await expect(page.locator('.crow').first()).toBeHidden();
+  const title = conditions.locator('summary b');
+  const closedTop = (await title.boundingBox())?.y;
   await conditions.locator('summary').click();
   await expect(page.locator('.crow')).toHaveCount(4);
   await expect(page.locator('.crow').first()).toBeVisible();
   await expect(conditions.locator('.cs')).toBeHidden(); // the rows repeat it
+  expect((await title.boundingBox())?.y).toBe(closedTop); // faded in place: the title does not jump
   await page.locator('.crow[data-step=pay]').click();
   await expect(page.locator('#entry .step[data-step=pay]')).toBeVisible();
 });

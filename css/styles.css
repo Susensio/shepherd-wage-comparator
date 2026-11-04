@@ -1202,9 +1202,18 @@ div.welcome {
   font-weight: 600;
   color: var(--accent);
 }
-.conditions[open] > summary .cmore,
+.conditions[open] > summary .cmore {
+  display: none;
+}
+/* The rows below say it in full. Faded, not removed: it keeps its space, so the title does not jump as the card opens */
+.cs {
+  transition:
+    opacity var(--t),
+    visibility var(--t);
+}
 .conditions[open] > summary .cs {
-  display: none; /* the rows below say it in full */
+  opacity: 0;
+  visibility: hidden;
 }
 .conditions > summary::after {
   margin-left: 0;
