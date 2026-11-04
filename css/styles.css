@@ -576,9 +576,12 @@ summary:focus-visible,
   color: var(--bg);
   font-weight: 650;
 }
-/* A chosen «Sí» carries a tick: a light cue for the positive answer, without colour (green and red mean legal status) */
+/* A chosen «Sí» or «No» carries a mark: a light cue for the answer, without colour (green and red mean legal status) */
 .seg label:has(input[value="yes"]:checked)::before {
   content: "✓\00a0";
+}
+.seg label:has(input[value="no"]:checked)::before {
+  content: "✕\00a0";
 }
 .opts {
   display: flex;
