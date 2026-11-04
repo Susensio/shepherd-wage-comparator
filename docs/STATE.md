@@ -97,6 +97,6 @@ Decided on 4 November 2026, ADR-0024: impersonal for questions, answers, labels 
 
 ### Plan
 
-1. Wording table: every user-facing string that changes (entry, ficha, Comparar, Leyes, Ajustes, account, notices), now → proposed, with the new glossary terms. The owner approves it before anything is applied.
+1. Done 4 November 2026: the wording table, approved by the owner with the decisions at its top, is `.scratch/voice-wording.md`; delete it once applied.
 2. Build, in one branch: the five steps and the one-card Condiciones (structure), then the approved wording, glossary and `AGENTS.md` rule, then the tests. One concern per commit.
 3. Records: ADR amending ADR-0020's step list; drop the backlog items this settles («Lo que te pagan», first-person answers).
