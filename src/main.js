@@ -1,6 +1,6 @@
 /** Startup. */
 
-import { commit, paintAll, paintCompare, restoreStaticFolds, select, setLoadingAccount } from './app.js';
+import { commit, paintAll, paintCompare, restoreStaticFolds, select, setLoadingAccount, showSelected } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
@@ -32,7 +32,7 @@ for (const o of state.offers) defaultVacation(o.terms);
 fillLawFigures();
 restoreStaticFolds();
 resetHistory();
-setUpEntry({ paint: paintAll, select });
+setUpEntry({ paint: paintAll, select, showSelected });
 setUpEvents();
 setUpTooltips();
 setUpPullRefresh();

@@ -1,6 +1,6 @@
 /** Events: the offer form's steps, «Datos comunes», collapsibles, and every button, by its data-action. */
 
-import { animateNextPaint, commit, fillVacation, openOffer, paintAll, select, show, viewShared } from './app.js';
+import { commit, fillVacation, openOffer, paintAll, show, showSelected, viewShared } from './app.js';
 import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
 import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, HERD, isoOf, missing, newId, parseDate, sideOf } from './offer.js';
@@ -83,17 +83,17 @@ function onFormInput(e) {
   const { terms } = o;
   if (el.dataset.answer) {
     payAnswerTyped(el, terms);
-    animateNextPaint();
+
     if (defaultVacation(terms)) fillVacation(o);
-    commit();
+    commit({ animate: true });
     return;
   }
   if (el.id === 'end') {
     if (!endDateTyped(el.value)) return;
-    animateNextPaint();
+
     defaultVacation(terms);
     fillForm(o);
-    commit();
+    commit({ animate: true });
     return;
   }
   if (!el.name) return;
@@ -119,11 +119,11 @@ function onFormInput(e) {
   else if (HERD.some(([field]) => field === el.name) && el.value.trim() === '')
     side[el.name] = ''; // no head count
   else side[el.name] = num(el.value);
-  animateNextPaint();
+
   if (el.name === 'vacation') delete terms.vacationAuto;
   if (defaultVacation(terms)) fillVacation(o);
   if (['start', 'duration', 'durationUnit'].includes(el.name)) paintEnd(terms);
-  commit();
+  commit({ animate: true });
 }
 
 /** An empty name does not leave the offer without one. */
@@ -189,7 +189,7 @@ function duplicate(o) {
   };
   copy.mine.name = `${o.mine.name} (copia)`;
   offers.add(copy, { after: o });
-  select(copy.id);
+  showSelected();
 }
 
 function remove(o) {
@@ -287,15 +287,15 @@ const ACTIONS = {
     active().terms.durationUnit = 'unknown';
     /** @type {HTMLInputElement} */ ($('#f [name=durationUnit][value=unknown]')).checked = true;
     paintEnd(active().terms);
-    animateNextPaint();
-    commit();
+
+    commit({ animate: true });
   },
   clearStart() {
     active().terms.start = '';
     /** @type {HTMLInputElement} */ ($('#start')).value = '';
     paintEnd(active().terms);
-    animateNextPaint();
-    commit();
+
+    commit({ animate: true });
   },
   offerMenu: (b) => offerMenu.open(b, b.dataset.id),
 

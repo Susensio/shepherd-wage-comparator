@@ -29,17 +29,11 @@ import { sharedView } from './views/shared.js';
 const ui = {
   /** A saved session is connecting and the browser has no offers of its own: skeleton cards instead of the list. */
   loadingAccount: false,
-  /** Fade in the form fields that appear: only after you touch the form, not when switching offers or starting. */
-  animateFields: false,
 };
 
 /** Takes effect at the next paint. */
 export const setLoadingAccount = (/** @type {boolean} */ loading) => {
   ui.loadingAccount = loading;
-};
-
-export const animateNextPaint = () => {
-  ui.animateFields = true;
 };
 
 /* --- Painting --- */
@@ -154,8 +148,11 @@ function paintTimeline(all = compared()) {
   render(dated ? yearlyView(all) : '', $('#yearly'));
 }
 
-/** Repaints everything from the state. */
-export function paintAll() {
+/**
+ * Repaints everything from the state. `animate`: fade in the form fields that appear, only after the form was
+ * touched, not when switching offers or starting.
+ */
+export function paintAll({ animate = false } = {}) {
   const o = active();
   const r = calcOffer(o);
   needPlacesFor(o);
@@ -178,8 +175,7 @@ export function paintAll() {
   render(fichaView(o, r, placesIfLoaded()), $('#result'));
   restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
-  if (ui.animateFields) for (const el of appeared) fadeIn(el);
-  ui.animateFields = false;
+  if (animate) for (const el of appeared) fadeIn(el);
   render(templatesView(chosenTemplate()), $('#tplGrid'));
   if (entryOpen()) paintEntry(o, r);
   markMissing();
@@ -188,16 +184,25 @@ export function paintAll() {
   paintAccountStatus();
 }
 
-/** Saves the offers and repaints. */
-export function commit() {
+/** Saves the offers and repaints; `animate` as in `paintAll`. */
+export function commit({ animate = false } = {}) {
   offers.save();
-  paintAll();
+  paintAll({ animate });
 }
 
 /** Makes an offer the active one, in the form and in the ficha. */
 export function select(id) {
   defaultVacation(state.offers.find((o) => o.id === id).terms);
   offers.select(id);
+  show();
+}
+
+/**
+ * Shows the active offer after an `offers` transition that already selected and saved it (adding, choosing a template,
+ * importing): saves again only if the vacation default changed it.
+ */
+export function showSelected() {
+  if (defaultVacation(active().terms)) offers.save();
   show();
 }
 

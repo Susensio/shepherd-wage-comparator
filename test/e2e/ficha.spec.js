@@ -93,6 +93,25 @@ test.describe('the «⋯» menu on each card', () => {
     await expect(page.locator('#ficha')).toBeVisible();
   });
 
+  test('Duplicar saves once, and so does choosing a template', async ({ loaded: page }) => {
+    await page.evaluate(() => app.closeEntry());
+    await page.evaluate(async () => {
+      const { onSave } = await import('./src/state.js');
+      window.saves = 0;
+      onSave(() => window.saves++);
+    });
+    const card = page.locator('#cards .ocwrap', { hasText: 'Temporada E' }).first();
+    await card.getByRole('button', { name: 'Más acciones' }).click();
+    await page.locator('#offerMenu [data-menu=duplicate]').click();
+    expect(await page.evaluate(() => window.saves)).toBe(1);
+    await page.evaluate(() => {
+      window.saves = 0;
+    });
+    await page.locator('#btnAdd').click();
+    await page.locator('.tcard').first().click();
+    expect(await page.evaluate(() => window.saves)).toBe(1);
+  });
+
   test('Duplicar and Borrar act on the card they were opened from, not on the open offer', async ({ loaded: page }) => {
     await page.evaluate(() => app.closeEntry());
     const before = await names(page);

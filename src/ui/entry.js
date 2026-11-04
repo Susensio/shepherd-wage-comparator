@@ -28,9 +28,9 @@ const entry = {
   asked: false,
 };
 
-/** @type {{ paint: () => void, select: (id: string) => void }} */
-const callbacks = { paint: () => {}, select: () => {} };
-/** @param {typeof callbacks} given `paint` repaints everything; `select` shows an offer */
+/** @type {{ paint: () => void, select: (id: string) => void, showSelected: () => void }} */
+const callbacks = { paint: () => {}, select: () => {}, showSelected: () => {} };
+/** @param {typeof callbacks} given `paint` repaints everything; `select` shows an offer; `showSelected` the one an `offers` transition just selected and saved */
 export function setUpEntry(given) {
   Object.assign(callbacks, given);
 }
@@ -78,11 +78,15 @@ export function pickTemplate(id) {
     ...template?.mine,
     name: uniqueName(template?.title || 'Oferta', old?.id),
   });
-  if (old) Object.assign(old, { terms: fresh.terms, mine: fresh.mine });
-  else offers.chooseTemplate(fresh);
   entry.createdId = old?.id ?? fresh.id;
   entry.template = id;
-  callbacks.select(entry.createdId);
+  if (old) {
+    Object.assign(old, { terms: fresh.terms, mine: fresh.mine });
+    callbacks.select(old.id);
+  } else {
+    offers.chooseTemplate(fresh);
+    callbacks.showSelected();
+  }
   show(1);
 }
 
