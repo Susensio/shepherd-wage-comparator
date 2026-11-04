@@ -1164,17 +1164,15 @@ div.welcome {
   gap: 12px;
 }
 .conditions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-/* One row that opens the seven condition rows */
-.conditions > summary {
-  min-height: 56px;
-  padding: 8px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
+  overflow: hidden;
+}
+/* One row that opens the condition rows inside the same card */
+.conditions > summary {
+  min-height: 56px;
+  padding: 8px 14px;
 }
 .cinfo {
   display: flex;
@@ -1211,14 +1209,11 @@ div.welcome {
 .crows {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  overflow: hidden;
+  border-top: 1px solid var(--line);
 }
 .crow {
   display: grid;
-  grid-template-columns: 5.5em minmax(0, 1fr) 20px;
+  grid-template-columns: 6.5em minmax(0, 1fr) 20px;
   align-items: center;
   gap: 4px 12px;
   min-height: 52px;
