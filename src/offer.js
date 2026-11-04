@@ -44,9 +44,6 @@ export const DEF_TERMS = {
   cattle: '',
 };
 
-/** Version of the offer shape written to the account; shared rows are read by other users' pages (ADR-0006). */
-export const SCHEMA_VERSION = 2;
-
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',

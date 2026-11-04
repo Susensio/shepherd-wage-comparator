@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "offers": [
+    {
+      "id": "split-1",
+      "cmp": true,
+      "terms": {
+        "payAmount": 1785,
+        "payType": "net",
+        "payUnit": "month",
+        "contract": "seasonal",
+        "start": "2026-06-21",
+        "duration": 102,
+        "futureTermsField": "kept"
+      },
+      "mine": { "name": "Puerto A", "kmHome": 108, "car": "own", "offerOnly": true, "futureMineField": 7 },
+      "futureTopField": [1, 2]
+    },
+    {
+      "id": "split-2",
+      "terms": { "payAmount": 1200, "offerOnly": true },
+      "mine": { "name": "Puerto B" }
+    }
+  ],
+  "cfg": { "rentValue": 350, "fuelUse": 7, "futureCfgField": "kept" }
+}

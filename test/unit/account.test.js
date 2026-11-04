@@ -2,8 +2,9 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer, SCHEMA_VERSION } from '../../src/offer.js';
+import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
+import { SCHEMA_VERSION } from '../../src/schema.js';
 import { notifySaved, state as pageState } from '../../src/state.js';
 import { createAccount, createAccountLoader } from '../../src/storage/account.js';
 import { fakeClient, ME } from './fake-client.js';
@@ -305,6 +306,37 @@ describe('saving changes', () => {
     assert.equal(mine.rows[0].cmp, false);
     assert.equal('mine' in offers.rows[0], false);
     assert.equal('terms' in mine.rows[0], false);
+  });
+
+  test('a row of a newer format is read without unknown fields and never written, edited or not', async () => {
+    const newer = accountRow(2, { futureTerm: 1 });
+    newer[0].schema_version = SCHEMA_VERSION + 1;
+    const { account, state, calls, data } = setUp({ tables: accountTables(accountRow(1), newer) });
+    await account.connect();
+    assert.equal('futureTerm' in state.offers[1].terms, false);
+    assert.equal(state.offers[1].schema_version, SCHEMA_VERSION + 1);
+    state.offers[1].terms.payAmount = 1;
+    state.offers[0].terms.payAmount = 2;
+    await account.flush();
+    assert.deepEqual(
+      calls.filter((c) => c.table === 'offers').flatMap((c) => c.rows.map((r) => r.id)),
+      [id(1)],
+    );
+    assert.equal(data.offers[1].terms.futureTerm, 1);
+    await account.signOut(); // would loop forever if a skipped offer stayed "unsynced"
+  });
+
+  test('a row of an older format is rewritten in the current one on connect', async () => {
+    const older = accountRow(2);
+    older[0].schema_version = 1;
+    const { account, calls } = setUp({ tables: accountTables(accountRow(1), older) });
+    await account.connect();
+    await account.flush();
+    const [offers] = calls;
+    assert.deepEqual(
+      offers.rows.map((r) => [r.id, r.schema_version]),
+      [[id(2), SCHEMA_VERSION]],
+    );
   });
 
   test('an offer whose shared terms still hold offerOnly is rewritten without it', async () => {
@@ -743,15 +775,15 @@ describe('other users and the profile', () => {
     ],
   });
 
-  test('shared offers come as { id, terms } with the sharer', async () => {
+  test('shared offers come as { id, terms, schema_version } with the sharer', async () => {
     const t = tables();
-    t.offers.push({ id: id(5), user_id: OTHER, terms: { payAmount: 80 } });
+    t.offers.push({ id: id(5), user_id: OTHER, terms: { payAmount: 80 }, schema_version: 2 });
     t.offer_mine.push({ offer_id: id(5), mine: { name: 'privado' }, cmp: true });
     const { account } = setUp({ tables: t });
     await account.connect();
     const shared = await account.sharedOffers();
     assert.equal(shared.length, 1);
-    assert.deepEqual(shared[0].offer, { id: id(5), terms: { payAmount: 80 } });
+    assert.deepEqual(shared[0].offer, { id: id(5), terms: { payAmount: 80 }, schema_version: 2 });
     assert.equal('mine' in shared[0].offer, false);
     assert.deepEqual(shared[0].sharer, { user_id: OTHER, name: 'Ana', email: 'ana@example.com', phone: '600' });
   });

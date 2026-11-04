@@ -10,7 +10,7 @@ import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
 import { DEF_CFG, DEF_MINE, parseDate } from '../../src/offer.js';
-import { normalizeOffer } from '../../src/saved.js';
+import { normalizeOffer } from '../../src/schema.js';
 import { incomeOf } from '../../src/units.js';
 import { offerOf } from './flat-offer.js';
 

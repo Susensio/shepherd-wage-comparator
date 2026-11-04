@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "offers": [
+    {
+      "id": "next-1",
+      "cmp": true,
+      "schema_version": 3,
+      "terms": {
+        "payAmount": 1785,
+        "payType": "net",
+        "payUnit": "month",
+        "contract": "seasonal",
+        "offerOnly": true,
+        "newTerm": "x"
+      },
+      "mine": { "name": "Puerto A", "kmHome": 108, "newMine": 1 },
+      "newTop": true
+    }
+  ],
+  "cfg": { "rentValue": 350, "newSetting": 5 }
+}

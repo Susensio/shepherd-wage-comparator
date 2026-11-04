@@ -205,7 +205,7 @@ test('the sentence tells the part as typed', async ({ page }) => {
 
 test('an offer saved with a payslip and en negro money keeps both when an answer changes', async ({ page }) => {
   await page.evaluate(async () => {
-    const { ingestSaved } = await import('./src/saved.js');
+    const { ingestSaved } = await import('./src/schema.js');
     const { DEF_CFG } = await import('./src/offer.js');
     const { offers } = ingestSaved(
       {

@@ -1,7 +1,7 @@
 /** The list of offers: the active one, the first-visit placeholder, and saving them. Callers ask for transitions; none sets these fields itself. */
 
 import { makeOffer } from './offer.js';
-import { ingestSaved } from './saved.js';
+import { ingestSaved } from './schema.js';
 import { KEY, notifySaved, offersOf, state, store } from './state.js';
 
 /**

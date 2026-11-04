@@ -1,7 +1,7 @@
 // Test helper: an offer written as one flat object of fields, split into terms and mine like the real thing.
 
 import { DEF_MINE } from '../../src/offer.js';
-import { normalizeOffer } from '../../src/saved.js';
+import { normalizeOffer } from '../../src/schema.js';
 
 /** `{ id, terms, mine }` from flat fields; the ones in DEF_MINE go to `mine`, the rest to `terms`. */
 export function offerOf({ id, ...fields }) {

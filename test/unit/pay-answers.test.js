@@ -14,7 +14,7 @@ import {
   vacationPayable,
   writeAnswers,
 } from '../../src/pay-answers.js';
-import { ingestSaved, normalizeOffer } from '../../src/saved.js';
+import { ingestSaved, normalizeOffer } from '../../src/schema.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const cfg = { ...DEF_CFG, ...sample.cfg };

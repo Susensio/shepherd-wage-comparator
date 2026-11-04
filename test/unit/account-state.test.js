@@ -5,7 +5,7 @@ import { describe, test } from 'node:test';
 import { createAccountState } from '../../src/account-state.js';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
-import { ingestShared } from '../../src/saved.js';
+import { ingestShared } from '../../src/schema.js';
 import { createAccount } from '../../src/storage/account.js';
 import { fakeClient, ME } from './fake-client.js';
 

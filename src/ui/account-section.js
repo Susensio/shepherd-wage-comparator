@@ -3,7 +3,7 @@
 import { render } from 'lit-html';
 import { createAccountState } from '../account-state.js';
 import { $, $$ } from '../dom.js';
-import { ingestShared } from '../saved.js';
+import { ingestShared } from '../schema.js';
 import { state } from '../state.js';
 import { createAccountLoader } from '../storage/account.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';

@@ -3,9 +3,9 @@
  * out, the page never touches the network and the bundle is not even loaded.
  */
 
-import { DEF_CFG, SCHEMA_VERSION } from '../offer.js';
+import { DEF_CFG } from '../offer.js';
 import { offers as pageOffers } from '../offers.js';
-import { ingestSaved } from '../saved.js';
+import { ingestSaved, SCHEMA_VERSION } from '../schema.js';
 import { KEY, onSave, saveConfig, state, store } from '../state.js';
 import { ACCOUNT_CONFIG } from './account-config.js';
 
@@ -26,6 +26,9 @@ function unwrap({ data, error }) {
   if (error) throw error;
   return data;
 }
+
+/** Offers of a newer format are read without what this page does not know, so writing them would cut it (docs/model.md). */
+const writable = (offer) => !(offer.schema_version > SCHEMA_VERSION);
 
 /** What is written for an offer besides its id, to tell whether it changed. */
 const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cmp !== false]);
@@ -79,7 +82,7 @@ export function createAccount({
 
   async function readOwn() {
     const [offerRows, mineRows, settingsRow] = await Promise.all([
-      client.from('offers').select('id, terms').eq('user_id', user?.id),
+      client.from('offers').select('id, terms, schema_version').eq('user_id', user?.id),
       client.from('offer_mine').select('offer_id, mine, cmp'),
       client.from('settings').select('cfg').eq('user_id', user?.id).maybeSingle(),
     ]);
@@ -88,13 +91,15 @@ export function createAccount({
       id: row.id,
       cmp: mineById.get(row.id)?.cmp ?? true,
       terms: row.terms,
+      schema_version: row.schema_version,
       mine: mineById.get(row.id)?.mine ?? {},
     }));
     return { offers, cfg: unwrap(settingsRow)?.cfg ?? null };
   }
 
   /** Snapshots first: an edit made during the request must not be recorded as written. */
-  async function writeOffers(offers) {
+  async function writeOffers(all) {
+    const offers = all.filter(writable);
     if (!offers.length) return;
     const updatedAt = new Date().toISOString();
     const written = structuredClone(
@@ -126,7 +131,7 @@ export function createAccount({
   function unsynced() {
     const offers = offerList.mine();
     return {
-      changed: offers.filter((o) => known.offers.get(o.id) !== fingerprint(o)),
+      changed: offers.filter(writable).filter((o) => known.offers.get(o.id) !== fingerprint(o)),
       removed: [...known.offers.keys()].filter((offerId) => !offers.some((o) => o.id === offerId)),
       cfg: known.cfg !== JSON.stringify(state.config),
     };
@@ -175,8 +180,11 @@ export function createAccount({
     // After onReplaced: showing an offer may complete its fields, which is not a change to write.
     known.offers = new Map(offerList.mine().map((o) => [o.id, fingerprint(o)]));
     known.cfg = account.cfg ? JSON.stringify(ingested.cfg) : null;
-    // Rows written before offerOnly moved to `mine` still hold it in the shared terms: unsynced until rewritten.
-    for (const row of account.offers) if (row.terms && 'offerOnly' in row.terms) known.offers.delete(row.id);
+    // Rows of an older format, or with offerOnly still in the shared terms, are unsynced until rewritten in today's.
+    for (const row of account.offers) {
+      const older = typeof row.schema_version === 'number' && row.schema_version < SCHEMA_VERSION;
+      if (older || (row.terms && 'offerOnly' in row.terms)) known.offers.delete(row.id);
+    }
     if (left) {
       for (const offerId of left.changed) known.offers.delete(offerId);
       for (const offerId of left.removed) if (accountIds.has(offerId)) known.offers.set(offerId, '');
@@ -371,12 +379,12 @@ export function createAccount({
     /** `[{ offer: { id, terms }, sharer }]`: other users' shared offers and who shared them. */
     async sharedOffers() {
       const [offerRows, profileRows] = await Promise.all([
-        client.from('offers').select('id, user_id, terms').neq('user_id', user?.id),
+        client.from('offers').select('id, user_id, terms, schema_version').neq('user_id', user?.id),
         client.from('profiles').select('user_id, name, email, phone').neq('user_id', user?.id),
       ]);
       const sharers = new Map(unwrap(profileRows).map((p) => [p.user_id, p]));
       return unwrap(offerRows).map((row) => ({
-        offer: { id: row.id, terms: row.terms },
+        offer: { id: row.id, terms: row.terms, schema_version: row.schema_version },
         sharer: sharers.get(row.user_id) ?? { user_id: row.user_id },
       }));
     },

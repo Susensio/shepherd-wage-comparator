@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG } from '../../src/offer.js';
 import { buildIndex } from '../../src/places.js';
-import { normalizeOffer } from '../../src/saved.js';
+import { normalizeOffer } from '../../src/schema.js';
 import { cardText, claimText, herdText, summaries, whereText } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 

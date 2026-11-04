@@ -1,0 +1,31 @@
+{
+  "offers": [
+    {
+      "id": "flat-1",
+      "cmp": false,
+      "name": "Puerto A",
+      "payAmount": 1785,
+      "payType": "net",
+      "payUnit": "month",
+      "contract": "seasonal",
+      "start": "2026-06-21",
+      "duration": 102,
+      "kmHome": 108,
+      "car": "own",
+      "offerOnly": true,
+      "vacationAuto": true,
+      "ssPct": 6.5,
+      "oldThing": "legacy"
+    }
+  ],
+  "cfg": {
+    "rentValue": 350,
+    "fuelUse": 7,
+    "ssPct": 6.5,
+    "ssEmp": 30,
+    "annualHours": 1800,
+    "overnightPct": 25,
+    "vacationDaysPerYear": 30,
+    "unemployment": true
+  }
+}

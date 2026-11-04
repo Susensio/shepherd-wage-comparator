@@ -1,11 +1,13 @@
 /** What a backup holds (your offers and settings) and when you last saved one. */
 
+import { SCHEMA_VERSION } from '../schema.js';
 import { KEY, myOffers, state, store } from '../state.js';
 
 const DAY = 864e5;
 
 /** Your offers and settings, as the text of a backup. */
-export const backupText = () => JSON.stringify({ offers: myOffers(), cfg: state.config });
+export const backupText = () =>
+  JSON.stringify({ schema_version: SCHEMA_VERSION, offers: myOffers(), cfg: state.config });
 
 /** A short fingerprint of your offers, to know whether they changed since the last backup. */
 function signature() {

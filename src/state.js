@@ -2,7 +2,7 @@
 
 import { calc } from './model/calc.js';
 import { DEF_CFG } from './offer.js';
-import { ingestSaved } from './saved.js';
+import { ingestSaved } from './schema.js';
 import { UNITS } from './units.js';
 
 /** Storage keys. Changing one abandons what was saved under it; `offers` was renamed for the terms/mine shape (ADR-0007). */

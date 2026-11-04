@@ -1,6 +1,6 @@
 /** Reading a backup: which of its offers are new, whether its settings are taken, and what to tell the shepherd. */
 
-import { ingestSaved } from '../saved.js';
+import { ingestSaved } from '../schema.js';
 
 /**
  * What loading a backup would do, without doing it: `{ valid: false, text, kind }` if `content` is not a backup,

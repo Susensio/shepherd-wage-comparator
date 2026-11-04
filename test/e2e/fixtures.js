@@ -11,7 +11,7 @@ export const sample = read('offers.json');
 export async function loadOffers(page, data, show = 1) {
   await page.evaluate(
     async ({ data, show }) => {
-      const { ingestSaved } = await import('./src/saved.js');
+      const { ingestSaved } = await import('./src/schema.js');
       const { DEF_CFG } = await import('./src/offer.js');
       const { saveConfig } = await import('./src/state.js');
       app.closeEntry();
