@@ -2,7 +2,7 @@
 
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
-Decided with the owner on 1 November 2026. Started 4 November 2026 in a cloud session: plan steps 1–2 (workflow) and 3 (versioned JSON) in progress; steps 4–5 wait for owner steps 4–5. Nothing below has been run against the live project yet. Order: master gets step 1 alone, the owner runs owner step 3, and only then step 2 (whose push trigger would otherwise run `db push` against the unrepaired log) and step 3's migration.
+Decided with the owner on 1 November 2026. Started 4 November 2026 in a cloud session. Done on the branch: plan step 1 (on `master` since 032e8d2), step 2 (fb99262, held), step 3 (schema.js, app_meta migration 20261104000000, version gate; ADR-0023), step 6's ADR-0023 and AGENTS.md lines. Next: the owner runs owner step 3; if green, step 2 then step 3 go to `master` (step 3's migration then reaches the live project through `db push`). Steps 4–5 wait for owner steps 4–5 (backups: owner deciding between deferring, age-encrypted artifacts, R2 and Supabase Pro). Order rule: step 2's push trigger would run `db push` against the unrepaired log, so nothing beyond step 1 reaches `master` before owner step 3.
 
 ### Why
 

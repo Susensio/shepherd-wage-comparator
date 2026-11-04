@@ -1,6 +1,6 @@
 # ADR-0005: Allow breaking saved data while the app has one user, instead of freezing storage keys
 
-Status: Accepted
+Status: Superseded by [ADR-0023](0023-versioned-saved-data.md)
 Date: 2026-10-30
 Supersedes: [ADR-0002](0002-frozen-storage-keys.md)
 
