@@ -89,8 +89,14 @@ About seven fields per step, one phone screen; «Pago» stays alone as the heavi
 
 ### Condiciones on the ficha
 
-Proposed, waiting for the owner's word: the «Condiciones» fold opens in place as one card, its rows (one per step) inside it with dividers only, instead of opening a second bordered box under its summary. Built with the five steps, since the rows follow them.
+Decided by the owner on 4 November 2026 (option A): the «Condiciones» fold opens in place as one card, its rows (one per step) inside it with dividers only, instead of opening a second bordered box under its summary. Built with the five steps, since the rows follow them.
 
-### Open: the voice
+### Voice
 
-The owner asked (4 November 2026) whether the whole page could be impersonal instead of «tú». A draft of what that implies is being prepared; the first-person answers («me pagan», «mi coche») go either way.
+Decided on 4 November 2026, ADR-0024: impersonal for questions, answers, labels and explanations, rewritten for the plainest style rather than translated; «tú» only for instructions to the reader. `AGENTS.md` «Language» changes in the same commit as the text.
+
+### Plan
+
+1. Wording table: every user-facing string that changes (entry, ficha, Comparar, Leyes, Ajustes, account, notices), now → proposed, with the new glossary terms. The owner approves it before anything is applied.
+2. Build, in one branch: the five steps and the one-card Condiciones (structure), then the approved wording, glossary and `AGENTS.md` rule, then the tests. One concern per commit.
+3. Records: ADR amending ADR-0020's step list; drop the backlog items this settles («Lo que te pagan», first-person answers).
