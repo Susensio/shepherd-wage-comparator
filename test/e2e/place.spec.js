@@ -10,16 +10,16 @@ const watchPlacesRequests = (page, requests) =>
     if (PLACES_FILE.test(request.url())) requests.push(request.url());
   });
 
-/** A new offer from the first template, on the «¿Dónde es?» step. */
-const startOffer = (page) => startEntry(page, 'place');
+/** A new offer from the first template, on the «La oferta» step. */
+const startOffer = (page) => startEntry(page, 'offer');
 
-/** What the ficha's «Dónde» row says, once the entry is left. */
+/** What the ficha's «La oferta» row says, once the entry is left. */
 async function placeRow(page) {
   await page.evaluate(() => {
     app.closeEntry();
     app.openFicha();
   });
-  return page.locator('.crow[data-step=place] .cv');
+  return page.locator('.crow[data-step=offer] .cv');
 }
 
 const pick = async (page, query, option) => {
@@ -29,7 +29,7 @@ const pick = async (page, query, option) => {
 
 test('the step has the field and three head counts', async ({ page }) => {
   await startOffer(page);
-  await expect(page.locator('#entryTitle')).toHaveText('¿Dónde es?');
+  await expect(page.locator('#entryTitle')).toHaveText('La oferta');
   await expect(page.getByRole('combobox', { name: 'Pueblo' })).toBeVisible();
   for (const name of ['Ovejas', 'Cabras', 'Vacas']) await expect(page.getByLabel(name)).toBeVisible();
 });
@@ -53,7 +53,7 @@ test('the list is downloaded once: a later visit reads it from Cache Storage', a
   await page.reload();
   await page.waitForFunction(() => window.app);
   await page.locator('.ocard').first().click();
-  await expect(page.locator('.crow[data-step=place]')).toContainText('Municipio de Yebra de Basa · Huesca');
+  await expect(page.locator('.crow[data-step=offer]')).toContainText('Municipio de Yebra de Basa · Huesca');
   expect(requests).toHaveLength(1);
 });
 
@@ -111,7 +111,7 @@ test('a village inside a municipality names both', async ({ page }) => {
   const option = page.getByRole('option', { name: /^Sarvisé/ });
   await expect(option).toContainText('Municipio de Broto · Huesca'); // accents do not matter
   await option.click();
-  await expect(await placeRow(page)).toHaveText('Sarvisé · Municipio de Broto · Huesca');
+  await expect(await placeRow(page)).toContainText('Sarvisé · Municipio de Broto · Huesca');
 });
 
 test('an article is said first, not last', async ({ page }) => {
@@ -150,10 +150,10 @@ test('keyboard: arrows move, Enter picks, Escape closes', async ({ page }) => {
   await expect(page.getByRole('listbox')).toBeHidden();
 });
 
-/** Back to the «¿Dónde es?» step of the offer being made. */
+/** Back to the «La oferta» step of the offer being made. */
 async function openPlaceAgain(page) {
-  await openCondition(page, 'place');
-  await expect(page.locator('#entry .step[data-step=place]')).toBeVisible();
+  await openCondition(page, 'offer');
+  await expect(page.locator('#entry .step[data-step=offer]')).toBeVisible();
 }
 
 test('typing without picking keeps the text and leaves the codes empty', async ({ page }) => {
@@ -162,7 +162,7 @@ test('typing without picking keeps the text and leaves the codes empty', async (
   let offer = await page.evaluate(() => app.active());
   expect(offer.mine.place).toBe('Mi aldea');
   expect(offer.terms).toMatchObject({ municipality: '', province: '' });
-  await expect(await placeRow(page)).toHaveText('Mi aldea');
+  await expect(await placeRow(page)).toContainText('Mi aldea');
   await openPlaceAgain(page);
 
   await pick(page, 'yebra de basa', /^Yebra de Basa/);
@@ -195,12 +195,12 @@ test('head counts go to the terms, empty stays empty, and the summaries show the
   offer = await page.evaluate(() => app.active());
   expect(offer.terms.cattle).toBe('');
 
-  await expect(await placeRow(page)).toHaveText('Municipio de Yebra de Basa · Huesca · 600 ovejas');
+  await expect(await placeRow(page)).toContainText('Municipio de Yebra de Basa · Huesca · 600 ovejas');
 });
 
 test('an offer with neither place nor herd says so in its row', async ({ page }) => {
   await startOffer(page);
-  await expect(await placeRow(page)).toHaveText('Sin poner');
+  await expect(await placeRow(page)).toContainText('Sin poner');
 });
 
 test('a saved offer is named once the list arrives, with the page not waiting for it', async ({ openApp }) => {
@@ -220,10 +220,10 @@ test('a saved offer is named once the list arrives, with the page not waiting fo
     },
   });
   await page.locator('.ocard').first().click();
-  await expect(page.locator('.crow[data-step=place] .cv')).toContainText(
+  await expect(page.locator('.crow[data-step=offer] .cv')).toContainText(
     'Sarvisé · Municipio de Yebra de Basa · Huesca',
   );
-  await expect(page.locator('.crow[data-step=place] .cv')).toContainText('40 cabras');
+  await expect(page.locator('.crow[data-step=offer] .cv')).toContainText('40 cabras');
 });
 
 test.describe('data saving', () => {

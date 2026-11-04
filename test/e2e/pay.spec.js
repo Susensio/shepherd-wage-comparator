@@ -7,9 +7,9 @@ const answer = (page, name, value) => page.check(`input[name=${name}][value=${va
 
 /** A new offer with a 4-month contract, on the pay step. */
 async function newOffer(page, duration = '4') {
-  await startOffer(page, 'when');
+  await startOffer(page, 'offer');
   await page.fill('#duration', duration);
-  await goStep(page, 'workday');
+  await goStep(page, 'day');
   await page.fill('#hoursPerDay', '9');
   await goStep(page, 'pay');
   await page.fill('#payTotal', '2100');
@@ -103,7 +103,7 @@ test('«en total» only with a duration', async ({ page }) => {
   const total = page.locator('input[name=payPer][value=total]');
   await expect(total).toBeAttached();
   await expect(page.locator('label', { has: total })).toBeVisible();
-  await goStep(page, 'when');
+  await goStep(page, 'offer');
   await answer(page, 'durationUnit', 'unknown');
   await goStep(page, 'pay');
   await expect(page.locator('label', { has: total })).toBeHidden();
@@ -112,7 +112,7 @@ test('«en total» only with a duration', async ({ page }) => {
 test('a total with the duration cleared becomes a month of the same amount', async ({ page }) => {
   await newOffer(page);
   await answer(page, 'payPer', 'total');
-  await goStep(page, 'when');
+  await goStep(page, 'offer');
   await answer(page, 'durationUnit', 'unknown');
   await goStep(page, 'pay');
   expect(await terms(page)).toMatchObject({ payUnit: 'month', payAmount: 2100 });
@@ -178,7 +178,7 @@ test('an offer that already takes its vacation keeps it, shown with a hint, when
 
 /** Changes the duration on its step and comes back to the pay. */
 async function setDuration(page, value, unit) {
-  await goStep(page, 'when');
+  await goStep(page, 'offer');
   if (unit) await answer(page, 'durationUnit', unit);
   await page.fill('#duration', value);
   await goStep(page, 'pay');
@@ -240,11 +240,11 @@ test('an offer saved with a payslip and en negro money keeps both when an answer
 });
 
 test('what is missing points at the amount', async ({ page }) => {
-  await startOffer(page, 'when');
+  await startOffer(page, 'offer');
   await page.fill('#duration', '4');
-  await goStep(page, 'workday');
+  await goStep(page, 'day');
   await page.fill('#hoursPerDay', '9');
-  await goStep(page, 'expenses');
+  await goStep(page, 'trip');
   await page.locator('#entryNext').click();
   await page.locator('#result [data-action=complete]').click();
   await expect(page.locator('.fld.missing')).toContainText('Sin lo que te pagan no se puede calcular');

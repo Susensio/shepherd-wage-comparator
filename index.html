@@ -305,13 +305,22 @@
         <p class="hint">Nadie más ve tus ofertas, salvo que las compartas.</p>
         <p class="hint" id="signedOutNotice" role="status" hidden>Tus ofertas siguen guardadas en tu cuenta. Entra para verlas.</p>
       </div>
-      <p class="hint">Elige el más parecido. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
+      <p class="hint">Elige la plantilla más parecida. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) las pones tú.</p>
       <div class="tpl-grid" id="tplGrid"></div>
     </section>
 
     <form id="f" autocomplete="off" onsubmit="return false">
-      <section class="step" data-step="place" hidden>
-        <fieldset aria-label="Dónde y qué ganado">
+      <section class="step" data-step="offer" hidden>
+        <fieldset aria-label="La oferta">
+        <label class="fld full">Nombre de la oferta
+          <input type="text" id="name" name="name" placeholder="p. ej. Puerto de Castanesa, verano">
+          <span class="hint">Con él la reconoces en la lista.</span>
+        </label>
+        <div class="fld full">
+          <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
+          <p class="hint" id="yearHint"></p>
+          <p class="hint" id="offerOnlyHint"></p>
+        </div>
         <div class="fld full place-fld">
           <label class="ask" for="place">Pueblo</label>
           <input type="text" id="place" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeList" aria-describedby="placeHint placePicked" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="p. ej. San Juan de Plan">
@@ -327,15 +336,6 @@
             <label>Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
           </div>
         </div>
-        <label class="fld full">Nombre de la oferta
-          <input type="text" id="name" name="name" placeholder="p. ej. Puerto de Castanesa, verano">
-          <span class="hint">Con él la reconoces en la lista.</span>
-        </label>
-        </fieldset>
-      </section>
-
-      <section class="step" data-step="when" hidden>
-        <fieldset aria-label="Cuándo y cuánto tiempo">
         <div class="fld full">
           <label class="ask" for="start">¿Cuándo empieza?</label>
           <div class="clearable">
@@ -363,18 +363,12 @@
             <button type="button" class="clear-x" data-action="clearEnd" data-show="hasEnd" aria-label="Quitar la fecha de fin">✕</button>
           </div>
           <p class="hint">Se calcula con la duración. Si pones la fecha, la duración se ajusta.</p>
-        </div>
-        <div class="fld full">
-          <label class="check"><input type="checkbox" name="offerOnly">Solo oferta, no trabajada</label>
-          <p class="hint" id="yearHint"></p>
-          <p class="hint" id="offerOnlyHint"></p>
           <p class="hint overlap-warning" id="overlapHint"></p>
         </div>
         </fieldset>
       </section>
-
       <section class="step" data-step="pay" hidden>
-        <fieldset aria-label="Lo que te pagan">
+        <fieldset aria-label="Pago">
         <p class="told full" id="payTold" aria-live="polite"></p>
         <div class="fld full">
           <label class="ask" for="payTotal">Todo junto, lo que te llega</label>
@@ -410,6 +404,13 @@
           <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que cambies una respuesta.</p>
         </div>
         <div class="fld full" data-show="withContract">
+          <span class="ask">Retención de IRPF</span>
+          <div class="combo">
+            <div class="seg" role="radiogroup" aria-label="Modo IRPF">
+              <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
+              <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
+            </div>
+        <div class="fld full" data-show="withContract">
           <span class="ask">¿Qué contrato?</span>
           <div class="seg" role="radiogroup" aria-label="Contrato">
             <label><input type="radio" name="contract" value="temporary">Temporal</label>
@@ -434,11 +435,11 @@
             <label class="opt"><input type="radio" name="extraPays" value="separate"><b>Dos pagas aparte</b></label>
           </div>
         </div>
+        
         </fieldset>
       </section>
-
-      <section class="step" data-step="workday" hidden>
-        <fieldset aria-label="Jornada y libranzas">
+      <section class="step" data-step="day" hidden>
+        <fieldset aria-label="El día a día">
         <div class="fld full">
           <label class="ask" for="hoursPerDay">¿Cuántas horas al día?</label>
           <input class="n" type="text" inputmode="decimal" id="hoursPerDay" name="hoursPerDay">
@@ -466,11 +467,7 @@
           <p class="hint">Unos <span data-law="holidaysPerYear"></span> al año. Si ya van en las libranzas, pon «No».</p>
         </div>
         <p class="told full" id="daysOffHint"></p>
-        </fieldset>
-      </section>
-
-      <section class="step" data-step="home" hidden>
-        <fieldset aria-label="Casa y comida">
+        
         <div class="fld full">
           <span class="ask">¿Duermes en el monte?</span>
           <div class="seg" role="radiogroup" aria-label="Pernocta">
@@ -497,11 +494,11 @@
           </div>
           <p class="hint" id="mealsHint" data-show="showMeals"></p>
         </div>
+        
         </fieldset>
       </section>
-
       <section class="step" data-step="trip" hidden>
-        <fieldset aria-label="Coche y desplazamientos">
+        <fieldset aria-label="Coche y gastos">
         <div class="fld full">
           <span class="ask">¿Cómo llegas al trabajo?</span>
           <div class="opts" role="radiogroup" aria-label="Cómo llegas al trabajo">
@@ -521,22 +518,8 @@
         <label class="fld half" data-show="ownCar">Km con tu coche al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el ganado o entre fincas.</span></label>
         <label class="fld half" data-show="kmRate">Te pagan por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
         <p class="told full" id="carHint"></p>
-        </fieldset>
-      </section>
-
-      <section class="step" data-step="expenses" hidden>
-        <fieldset aria-label="Otros gastos e IRPF">
+        
         <label class="fld full">Otros gastos que pones tú (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
-        <div class="fld full" data-show="withContract">
-          <span class="ask">Retención de IRPF</span>
-          <div class="combo">
-            <div class="seg" role="radiogroup" aria-label="Modo IRPF">
-              <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
-              <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
-            </div>
-            <input type="text" inputmode="decimal" id="irpfManual" name="irpfManual" class="n pct" aria-label="Porcentaje de IRPF" data-show="irpfManual">
-          </div>
-        </div>
         </fieldset>
       </section>
     </form>

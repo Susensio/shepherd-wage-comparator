@@ -40,7 +40,7 @@ export function fichaView(o, r, places) {
         (step) =>
           html`<button type="button" class=${lacking[step.id] ? 'crow missing' : 'crow'} data-action="editStep" data-step=${step.id}>
             <span class="ck">${step.label}</span>
-            <span class="cv">${lines[step.summary]}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
+            <span class="cv">${step.summary.map((key) => lines[key]).join(' · ')}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
           </button>`,
       )}</div>
     </details>

@@ -42,7 +42,7 @@ export const isAskingMissing = () => entryOpen() && entry.editing && entry.asked
 
 function show(index) {
   entry.step = index;
-  if (STEPS[index].id === 'place') preloadPlaces();
+  if (STEPS[index].id === 'offer') preloadPlaces();
   callbacks.paint();
   scrollToTop(0, 'instant');
   $('#entryTitle').focus({ preventScroll: true });

@@ -189,7 +189,8 @@ export function summaries(o, r, places = null, third = false) {
         : 'Nada',
     housing: `${o.terms.overnight === 'yes' ? (third ? 'Se duerme en borda · ' : 'Duermes en borda · ') : ''}${o.terms.housing === 'yes' ? 'Con casa' : 'Sin casa'} · ${meals}`,
     car: o.mine.car === 'noCar' ? 'Sin tu coche' : `Tu coche${carKm}`,
-    others: `${num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos'} · IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
+    expenses: num(o.mine.expenses) > 0 ? `Gastos ${fE(num(o.mine.expenses))}/mes` : 'Sin otros gastos',
+    irpf: `IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
   // «Lo que te pagan» is one section: told as the pay step tells it back, from its answers
   const hasCash = r.cash.total > 0.5;

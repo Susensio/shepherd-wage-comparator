@@ -275,7 +275,7 @@ export function paintForm(o, r, offers, places) {
   text(
     '#overlapHint',
     overlaps.length
-      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.mine.name}»`))}. Si una no la trabajaste, márcala como solo oferta.`
+      ? `Coincide en fechas con ${joinAnd(overlaps.map((p) => `«${p.mine.name}»`))}. Si no se trabajó, marca «Solo oferta» en este paso.`
       : '',
   );
   text('#daysOffHint', daysOffHint(o, r));

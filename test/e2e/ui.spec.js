@@ -6,14 +6,14 @@ import { expect, goStep, openStep, startOffer, test } from './fixtures.js';
 
 /** Starts an offer from the first template and fills what the figures need, ending on the ficha. */
 async function newOffer(page, { duration = '4', hours = '11', pay = '70', template = null } = {}) {
-  await startOffer(page, 'when', template);
+  await startOffer(page, 'offer', template);
   await page.fill('#duration', duration);
   await goStep(page, 'pay');
   await page.fill('#payTotal', pay);
   await page.check('input[name=vacation][value=included]');
-  await goStep(page, 'workday');
+  await goStep(page, 'day');
   await page.fill('#hoursPerDay', hours);
-  await goStep(page, 'expenses');
+  await goStep(page, 'trip');
   await page.locator('#entryNext').click();
   await expect(page.locator('#ficha')).toBeVisible();
 }
@@ -21,25 +21,25 @@ async function newOffer(page, { duration = '4', hours = '11', pay = '70', templa
 const offerNames = (page) => page.evaluate(() => app.state.offers.map((o) => o.mine.name));
 
 test('a new offer from a template, through every step', async ({ page }) => {
-  await expect(page.locator('#entryCounter')).toHaveText('Paso 1 de 8');
+  await expect(page.locator('#entryCounter')).toHaveText('Paso 1 de 5');
   await newOffer(page);
   await expect(page.locator('#result .tag .big')).toContainText('€');
-  await expect(page.locator('.crow')).toHaveCount(7);
+  await expect(page.locator('.crow')).toHaveCount(4);
   // Changing the unit converts the duration: 4 months are 122 days
-  await openStep(page, 'when');
+  await openStep(page, 'offer');
   await page.check('input[name=durationUnit][value=days]');
   await expect(page.locator('#duration')).toHaveValue('122');
 });
 
 test('each field is written to its own side of the offer', async ({ page }) => {
   await newOffer(page);
-  await openStep(page, 'place');
+  await openStep(page, 'offer');
   await page.fill('#name', 'Mía');
   await page.locator('#entryNext').click();
   await openStep(page, 'trip');
   await page.fill('#kmHome', '30');
   await page.locator('#entryNext').click();
-  await openStep(page, 'home');
+  await openStep(page, 'day');
   await page.check('input[name=housing][value=yes]');
   const offer = await page.evaluate(() => app.active());
   expect(offer.mine).toMatchObject({ name: 'Mía', kmHome: 30 });
@@ -49,7 +49,7 @@ test('each field is written to its own side of the offer', async ({ page }) => {
 });
 
 test('the end date sets the duration', async ({ page }) => {
-  await startOffer(page, 'when');
+  await startOffer(page, 'offer');
   await page.fill('#start', '2026-06-21');
   await page.fill('#end', '2026-09-30');
   await expect(page.locator('#duration')).toHaveValue('102');
@@ -230,7 +230,7 @@ test('the page never calls the settings «Supuestos del cálculo»', async ({ lo
 });
 
 test('a ficha with data missing marks its row and opens that step', async ({ page }) => {
-  await startOffer(page, 'expenses', 'season');
+  await startOffer(page, 'trip', 'season');
   await page.locator('#entryNext').click();
   await expect(page.locator('#result .empty')).toContainText('falta');
   await expect(page.locator('#analysis-none, .analysis-title')).toHaveCount(0);
@@ -296,7 +296,7 @@ test('opening a card in «¿Es legal?» does not shrink its title while it anima
 });
 
 test('«Solo oferta» is always shown: ticked and locked without a start date', async ({ page }) => {
-  await startOffer(page, 'when');
+  await startOffer(page, 'offer');
   const box = page.locator('#f [name=offerOnly]');
   await page.fill('#start', '');
   await page.locator('#start').dispatchEvent('input');
@@ -325,7 +325,7 @@ test('the chart over time shows only worked offers', async ({ loaded: page }) =>
 });
 
 test('«Quitar» empties the start date, and hides itself', async ({ page }) => {
-  await startOffer(page, 'when');
+  await startOffer(page, 'offer');
   const clear = page.getByRole('button', { name: 'Quitar la fecha de inicio' });
   await expect(clear).toBeHidden();
   await page.fill('#start', '2026-06-01');
@@ -357,7 +357,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
 
 test('clearing the end date leaves the duration unknown', async ({ loaded: page }) => {
   await page.evaluate(() => app.select('o4'));
-  await openStep(page, 'when');
+  await openStep(page, 'offer');
   const clear = page.locator('[data-action=clearEnd]');
   await expect(clear).toBeVisible();
   await clear.click();

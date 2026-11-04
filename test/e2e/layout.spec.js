@@ -32,7 +32,7 @@ test('buttons, tabs, chips, bar icons and fold titles are at least 40 px tall', 
 });
 
 test('the steps of the entry have taps of at least 40 px', async ({ loaded: page }) => {
-  for (const id of ['place', 'when', 'pay', 'workday', 'home', 'trip', 'expenses']) {
+  for (const id of ['offer', 'pay', 'day', 'trip']) {
     await openStep(page, id);
     expect(await tooShort(page, '#entry'), id).toEqual([]);
     await page.locator('#entryClose').click();

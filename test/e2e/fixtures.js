@@ -27,10 +27,10 @@ export async function loadOffers(page, data, show = 1) {
 }
 
 /** The steps in the order of the entry. */
-const STEP_IDS = ['template', 'place', 'when', 'pay', 'workday', 'home', 'trip', 'expenses'];
+const STEP_IDS = ['template', 'offer', 'pay', 'day', 'trip'];
 
 /** In the entry of a new offer, picks a template (the first by default, or `template`) and goes on to step `id`. */
-export async function startOffer(page, id = 'place', template = null) {
+export async function startOffer(page, id = 'offer', template = null) {
   await page
     .locator(template ? `.tcard[data-template=${template}]` : '.tcard')
     .first()

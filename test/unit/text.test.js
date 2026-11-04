@@ -67,7 +67,8 @@ test('summaries: one line per form section', () => {
     'b',
     'housing',
     'car',
-    'others',
+    'expenses',
+    'irpf',
     'pay',
   ]);
   assert.match(s.time, /102 días/);
