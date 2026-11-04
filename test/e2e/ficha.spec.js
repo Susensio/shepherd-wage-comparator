@@ -42,7 +42,9 @@ test('«Dinero en negro»: only with money en negro or no contract, and what eac
   await expect(negro).toContainText(/Con contrato, este trabajo generaría 14 días de paro: unos 552\s€/);
 });
 
-test('«Condiciones» is the first block, under the name, one row that opens the four', async ({ page }) => {
+test('«Condiciones» is the first block, under the name, one row that opens the four and hides its own line', async ({
+  page,
+}) => {
   await loadOffers(page, sample, OFFER.puertoA);
   const conditions = page.locator('.conditions');
   expect(await page.evaluate(() => document.querySelector('#result')?.firstElementChild?.matches('.conditions'))).toBe(
@@ -53,6 +55,7 @@ test('«Condiciones» is the first block, under the name, one row that opens the
   await conditions.locator('summary').click();
   await expect(page.locator('.crow')).toHaveCount(4);
   await expect(page.locator('.crow').first()).toBeVisible();
+  await expect(conditions.locator('.cs')).toBeHidden(); // the rows repeat it
   await page.locator('.crow[data-step=pay]').click();
   await expect(page.locator('#entry .step[data-step=pay]')).toBeVisible();
 });

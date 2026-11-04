@@ -1200,8 +1200,9 @@ div.welcome {
   font-weight: 600;
   color: var(--accent);
 }
-.conditions[open] > summary .cmore {
-  display: none;
+.conditions[open] > summary .cmore,
+.conditions[open] > summary .cs {
+  display: none; /* the rows below say it in full */
 }
 .conditions > summary::after {
   margin-left: 0;
