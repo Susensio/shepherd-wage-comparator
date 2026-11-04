@@ -24,3 +24,5 @@ Weighed and discarded:
 - The page (GitHub Pages) and the database deploy from the same push, so a migration must work with both the old and the new page: add, never rename or drop.
 - Changes made in the SQL editor outside migrations break `db push`.
 
+
+Narrowed by [ADR-0026](0026-db-workflow-drift-snapshot.md) on 4 November 2026: the workflow runs on every push and daily, checks drift and commits a generated schema snapshot.
