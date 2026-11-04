@@ -4,6 +4,15 @@ on:
   push:
     branches: [master]
     paths: ['supabase/migrations/**']
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        default: push
+        options:
+          - push
+          - mark-baseline-applied
 
 # One push at a time; never cancel one half-way.
 concurrency:
@@ -46,4 +55,20 @@ jobs:
       - run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
         if: steps.gate.outputs.ready == 'true'
       - run: supabase db push
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.ready == 'true' && github.event.inputs.task != 'mark-baseline-applied'
+      # One-off: the live schema predates the migration log, so record the baseline as applied without running it.
+      - run: supabase migration repair --status applied 20261031000000
+        if: steps.gate.outputs.ready == 'true' && github.event.inputs.task == 'mark-baseline-applied'
+      - run: supabase migration list
+        if: steps.gate.outputs.ready == 'true' && github.event.inputs.task == 'mark-baseline-applied'
+      # `db diff` builds a shadow database from the migrations in Docker (present on GitHub's runners).
+      # Diff goes to stdout and the exit code is 0 either way, so the check reads the output.
+      - name: Drift check
+        if: steps.gate.outputs.ready == 'true' && github.event.inputs.task == 'mark-baseline-applied'
+        run: |
+          supabase db diff --linked --schema public > drift.sql
+          if grep -v '^No schema changes found$' drift.sql | grep -q .; then
+            cat drift.sql
+            echo "::error::The live schema differs from the migrations."
+            exit 1
+          fi
