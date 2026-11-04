@@ -24,7 +24,7 @@ test('a new offer goes through the steps in order, from the templates to the fic
 test('the entry has no tab bar, and a strip with what is earned so far', async ({ page }) => {
   await startOffer(page, 'offer');
   await expect(page.locator('.tabs')).toBeHidden();
-  await expect(page.locator('#stripFigure')).toHaveText('—'); // data missing
+  await expect(page.locator('#stripFigure')).toHaveText('sin calcular'); // data missing
   await page.fill('#duration', '4');
   await goStep(page, 'pay');
   await page.fill('#payTotal', '70');
@@ -39,6 +39,17 @@ test('the entry has no tab bar, and a strip with what is earned so far', async (
     return fUnit(inUnit(r.earnings.total, r, unit), unit);
   });
   await expect(page.locator('#stripFigure')).toHaveText(expected);
+});
+
+test('an answer that cannot be right says so on its step', async ({ page }) => {
+  await startOffer(page, 'offer');
+  await page.fill('#duration', '-5');
+  await expect(page.locator('[data-required=duration]')).toHaveText('La duración tiene que ser mayor que cero.');
+  await page.fill('#duration', '4');
+  await expect(page.locator('[data-required=duration]')).toBeEmpty();
+  await goStep(page, 'day');
+  await page.fill('#hoursPerDay', '30');
+  await expect(page.locator('[data-required=hoursPerDay]')).toHaveText('Un día tiene 24 horas: revisa la cifra.');
 });
 
 test('«Siguiente» goes on with a required answer empty, and the ficha shows what is missing', async ({ page }) => {

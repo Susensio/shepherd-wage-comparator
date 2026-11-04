@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { DEF_MINE, DEF_TERMS, isComplete, makeOffer, missing, sideOf } from '../../src/offer.js';
+import { DEF_MINE, DEF_TERMS, implausible, isComplete, makeOffer, missing, sideOf } from '../../src/offer.js';
 
 const makeTerms = (changes = {}) => ({
   ...DEF_TERMS,
@@ -76,4 +76,16 @@ test('a field is found on its own side of the offer', () => {
   assert.equal(sideOf(offer, 'name'), offer.mine);
   assert.equal(offer.terms.payAmount, 900);
   assert.equal(offer.mine.kmHome, 20);
+});
+
+test('implausible: a day over 24 hours, a duration of zero or less, a negative amount', () => {
+  assert.deepEqual([...implausible(makeTerms())], []);
+  assert.deepEqual([...implausible(makeTerms({ hoursPerDay: 30 }))], ['hoursPerDay']);
+  assert.deepEqual([...implausible(makeTerms({ hoursPerDay: 24 }))], []);
+  assert.deepEqual([...implausible(makeTerms({ duration: -5 }))], ['duration']);
+  assert.deepEqual([...implausible(makeTerms({ duration: 0 }))], ['duration']);
+  assert.deepEqual([...implausible(makeTerms({ duration: '' }))], [], 'empty is missing, not wrong');
+  assert.deepEqual([...implausible(makeTerms({ duration: -5, durationUnit: 'unknown' }))], []);
+  assert.deepEqual([...implausible(makeTerms({ payAmount: -100 }))], ['pay']);
+  assert.deepEqual([...implausible(makeTerms({ cashAmount: -1 }))], ['pay']);
 });

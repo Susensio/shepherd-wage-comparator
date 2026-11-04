@@ -35,7 +35,11 @@ export function columns(r) {
   };
   return {
     other,
-    header: two('Día', other === 'month' ? 'Mes' : 'Total'),
+    // Under a month the column is the whole job: its length says so, and leaves «Total» to the row that adds up
+    header: two(
+      'Día',
+      other === 'month' ? 'Mes' : `${fCount(r.time.natDays)} ${r.time.natDays === 1 ? 'día' : 'días'}`,
+    ),
     value: (x) => two(cell(x, 'day'), cell(x, other)),
     minus: (x) => two(`−${cell(x, 'day')}`, `−${cell(x, other)}`),
     shown,

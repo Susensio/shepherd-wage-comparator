@@ -56,15 +56,15 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | Term on screen | Meaning | Code | Not |
 |---|---|---|---|
 | oferta | a job offer as told by the employer, with the shepherd's own figures | `{ id, terms, mine }` | trabajo, empleo |
-| ficha | the read-only page of one offer: its result with the paro line, the «Análisis» and, last, «Condiciones» | `views/ficha.js` | página de la oferta, resumen |
-| Condiciones | the ficha's last block, one row with a one-line summary that opens one row per step: La oferta, Pago, El día a día, Coche y gastos; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
+| ficha | the read-only page of one offer: «Condiciones» first, then its result with the paro line and the «Análisis» | `views/ficha.js` | página de la oferta, resumen |
+| Condiciones | the ficha's first block, one row with a one-line summary that opens one row per step: La oferta, Pago, El día a día, Coche y gastos; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
 | Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Dinero en negro (only with money en negro or no contract), Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
 | paso | one screen of the guided entry («Paso 2 de 5»): Plantilla, La oferta, Pago, El día a día, Coche y gastos. The title, the row in Condiciones and the fieldset share one name; a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar» | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
 | plantilla | a starting point picked in the first step of the entry; it fills the contract, the housing and the trips, not the figures | `TEMPLATES` (`offer.js`) | modelo |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set); shared (ADR-0028) | `terms.offerOnly` | |
-| solo las condiciones | comparing offers on their terms alone, without the shepherd's own travel and expenses | `termsOnly` | solo las condiciones de la oferta |
+| sin desplazamientos ni gastos propios | comparing offers on their terms alone, without the shepherd's own travel and expenses: the Comparar switch | `termsOnly` | solo las condiciones (reads as the ficha's «Condiciones») |
 | «⋯» (Más acciones) | the menu of an offer, on the ficha and on each card: Duplicar, Copiar ficha, Copiar reclamación, Borrar | `ui/offer-menu.js` | menú, opciones |
-| solo lo que se gana | Comparar ranking by money alone, without the paro each offer generates | `moneyOnly` | |
+| con el paro / sin el paro | how Comparar ranks: «Ordenar: Con el paro · Sin el paro», with or without the paro each offer generates (ADR-0022) | `moneyOnly` | solo lo que se gana |
 | ganadero | the employer | | empresario, patrón |
 | pastor, pastora | the worker; «pastores y pastoras» when addressing both | | |
 | otros pastores | other users who share their offers | `state.others` | otros usuarios, los demás |

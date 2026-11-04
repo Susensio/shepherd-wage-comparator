@@ -4,7 +4,7 @@
  */
 
 import { html, nothing } from 'lit-html';
-import { clamp, fCount, fDate, fE, fN } from '../format.js';
+import { capitalize, clamp, fCount, fDate, fE, fN } from '../format.js';
 import { LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
 import { monthlyPayslips } from '../model/payslips.js';
@@ -125,7 +125,10 @@ export function seasonEndSection(o, r) {
   const cash = r.cash.total;
   const total = payroll + cash;
   const cashShare = total > 0 ? cash / total : 0;
+  // Not the Desglose's «Cobrado»: what reaches the account and the hand, so the finiquito counts and the km do not
   const facts = [
+    r.employer.severance > 0.5 && 'con la indemnización',
+    r.earnings.parts.km > 0.5 && 'sin los km que se pagan',
     `${fN(r.time.daysWorked)} días trabajados (${fN(r.time.hours)}\u00a0h)`,
     r.car.km > 0.5 && `${fN(r.car.km)} km, unos ${fE(r.car.cost)} de coche`,
     r.unemployment.contribDays > 0 &&
@@ -134,7 +137,7 @@ export function seasonEndSection(o, r) {
     .filter(Boolean)
     .join(' · ');
   return html`<section class="season-end" id="secSeason" aria-label="Final de campaña"><h3 class="q">Final de campaña</h3>
-    <div class="received">${figureCard(fE(total), 'Total cobrado', `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`, '')}${
+    <div class="received">${figureCard(fE(total), 'En nómina y en negro', `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`, '')}${
       cash > 0.5 && payroll > 0.5
         ? html`<div class="rc-bar" aria-hidden="true"><i style="flex:${1 - cashShare}"></i><i class="b" style="flex:${cashShare}"></i></div>`
         : nothing
@@ -146,7 +149,7 @@ export function seasonEndSection(o, r) {
       cash > 0.5
         ? html`<span><i class="sw" style="background:var(--c-cash)"></i>En negro${payroll > 0.5 ? html` <small>${fN(cashShare * 100)}\u00a0%</small>` : nothing}</span><b>${fE(cash)}</b>`
         : nothing
-    }</div><p class="hint">${facts}.</p></div>
+    }</div><p class="hint">${capitalize(facts)}.</p></div>
     ${simulator(o, r, months)}
   </section>`;
 }

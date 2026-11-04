@@ -148,7 +148,9 @@ export function paintEntry(o, r) {
   $('.strip').hidden = pending;
   const unit = offerUnit(r);
   $('#stripLabel').textContent = `Se gana ${unit === 'day' ? 'al día' : 'al mes'}, por ahora`;
-  $('#stripFigure').textContent = missing(o.terms).length ? '—' : fUnit(inUnit(r.earnings.total, r, unit), unit);
+  $('#stripFigure').textContent = missing(o.terms).length
+    ? 'sin calcular'
+    : fUnit(inUnit(r.earnings.total, r, unit), unit);
   const welcome = !!state.placeholderId && index === 0 && !edit;
   $('#welcome').hidden = !welcome;
   document.body.classList.toggle('welcome', welcome);

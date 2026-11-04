@@ -221,6 +221,20 @@ export function missing(terms) {
   ].filter(Boolean);
 }
 
+/**
+ * Answers that cannot be right, by the line of the step that warns about them: a day longer than 24 hours, a
+ * duration of zero or less, a negative amount. `missing` already stops the figures for the first two; this says why.
+ * @returns {Set<string>}
+ */
+export function implausible(terms) {
+  const typed = (x) => x !== '' && x !== undefined && x !== null;
+  const odd = new Set();
+  if (terms.durationUnit !== 'unknown' && typed(terms.duration) && num(terms.duration) <= 0) odd.add('duration');
+  if (num(terms.hoursPerDay) > 24) odd.add('hoursPerDay');
+  if ([terms.payAmount, terms.cashAmount, terms.totalAmount].some((x) => typed(x) && num(x) < 0)) odd.add('pay');
+  return odd;
+}
+
 /** Nothing is missing to give figures. */
 export const isComplete = (terms) => missing(terms).length === 0;
 

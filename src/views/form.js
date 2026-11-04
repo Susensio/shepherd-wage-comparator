@@ -7,7 +7,18 @@ import { html, render } from 'lit-html';
 import { $, $$ } from '../dom.js';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import { actualYear, contractOf, endOf, foodPerDay, isoOf, mealsGiven, missing, overlapsOf, sideOf } from '../offer.js';
+import {
+  actualYear,
+  contractOf,
+  endOf,
+  foodPerDay,
+  implausible,
+  isoOf,
+  mealsGiven,
+  missing,
+  overlapsOf,
+  sideOf,
+} from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
@@ -50,6 +61,13 @@ const REQUIRED_TEXT = {
 };
 /** @param {string | (() => string)} text */
 const textOf = (text) => (typeof text === 'function' ? text() : text);
+/** Under a question whose answer cannot be right (`implausible`): why. It takes the place of the missing line. */
+const IMPLAUSIBLE_TEXT = {
+  duration: 'La duración tiene que ser mayor que cero.',
+  hoursPerDay: 'Un día tiene 24 horas: revisa la cifra.',
+  pay: 'Una cantidad no puede ser negativa.',
+};
+
 /** The `missing()` ids that share another's line. */
 const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
 
@@ -261,8 +279,11 @@ export function paintForm(o, r, offers, places) {
   text('#vacationHint', vacationHint(o, r));
   paintPlace(o, places);
   const lines = missing(o.terms).map((id) => REQUIRED_LINE[id] ?? id);
-  for (const line of $$('[data-required]'))
-    line.textContent = lines.includes(line.dataset.required) ? textOf(REQUIRED_TEXT[line.dataset.required]) : '';
+  const odd = implausible(o.terms);
+  for (const line of $$('[data-required]')) {
+    const id = line.dataset.required;
+    line.textContent = odd.has(id) ? IMPLAUSIBLE_TEXT[id] : lines.includes(id) ? textOf(REQUIRED_TEXT[id]) : '';
+  }
   text('#payHint', payHint(o, r));
   paintAnswers(o, r);
   const food = foodPerDay(o.terms, cfg);

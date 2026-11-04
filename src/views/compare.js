@@ -327,7 +327,7 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
       picker: nothing,
       body: html`<p class="empty">${
         all.length < 2
-          ? 'Añade otra oferta con «+ Nueva» para compararlas.'
+          ? 'Para compararlas, añade otra oferta con «+ Nueva oferta», en Ofertas.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>${controls}`,
       more: nothing,
@@ -479,7 +479,7 @@ export function trendView(all, unit, width) {
   const tip = (p) =>
     `${p.o.mine.name} · ${datesText(p.o.terms)}: se gana ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que se gana ${U.label}, en el tiempo</h4>
-    <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que se gana ${U.label} en cada trabajo, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
+    <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que se gana ${U.label} en cada oferta trabajada, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
       .join('')}/>${points.map(
       (p) =>
@@ -488,6 +488,7 @@ export function trendView(all, unit, width) {
       (p) =>
         svg`<rect class="hit" data-tip=${tip(p)} tabindex="0" role="button" x=${X(p.a) - 4} y=${Y(p.y) - 16} width=${xEnd(p) - X(p.a) + 8} height="28"/>`,
     )}</svg>
+    <p class="hint">Solo las ofertas trabajadas: con fecha y sin «solo oferta».</p>
     </div>`;
 }
 
@@ -523,11 +524,11 @@ export function yearlyView(all) {
   });
   const row = (label, cell) => html`<tr><th>${label}</th>${columns.map((c) => html`<td>${cell(c)}</td>`)}</tr>`;
   return html`<div class="yearly"><h4 class="sub">Año a año</h4><div class="tablew"><table class="table">
-    <thead><tr><th></th>${columns.map((c) => html`<th>${c.year}<small>${c.jobs === 1 ? '1 trabajo' : `${c.jobs} trabajos`}</small></th>`)}</tr></thead><tbody>
+    <thead><tr><th></th>${columns.map((c) => html`<th>${c.year}<small>${c.jobs === 1 ? '1 oferta' : `${c.jobs} ofertas`}</small></th>`)}</tr></thead><tbody>
     ${row('Días trabajados', (c) => fN(c.days))}
-    ${row('Dinero cobrado', (c) => fE(c.money))}
+    ${row('Cobrado', (c) => fE(c.money))}
     ${columns.some((c) => c.cash > 0.5) ? row('de ello, en negro', (c) => (c.cash > 0.5 ? `${fN((c.cash / c.money) * 100)}\u00a0%` : '—')) : nothing}
-    ${row('Dinero por hora', (c) => fE(c.perHour, 2))}
+    ${row('Cobrado por hora', (c) => fE(c.perHour, 2))}
     ${row('Total', (c) => fE(c.earned))}
     ${row('Días cotizados', (c) => fN(c.contrib))}
     </tbody></table></div><p class="hint">Sin las que solo eran ofertas. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
