@@ -4,7 +4,7 @@ import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { yearShares } from '../model/calc.js';
-import { datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
+import { DAY_MS, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, unpaidTime } from '../text.js';
 import { earnedShown, fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
@@ -70,7 +70,7 @@ const othersControl = ({ available, include, status, items }) =>
     : nothing;
 
 /** The button action that opens a row: your offer in the offers tab, another shepherd's read-only. */
-const openAction = (x) => (x.sharer ? 'viewShared' : 'view');
+const openAction = (x) => (x.sharer ? 'viewShared' : 'openOffer');
 
 /** What the offer is called: another shepherd's offers carry what tells same-named ones apart. */
 /** The offer's name in one piece, with what tells it apart from the same-named ones of other shepherds. */
@@ -384,8 +384,6 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
 }
 
 /* --- Over time --- */
-
-const DAY_MS = 864e5;
 
 /** A round axis step: 1, 2, 2.5 or 5 times a power of 10. */
 function axisStep(x) {

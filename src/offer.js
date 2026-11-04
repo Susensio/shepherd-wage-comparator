@@ -203,6 +203,9 @@ export function defaultVacation(terms) {
 }
 
 /** Ids of what is still missing to give figures. */
+/** Every id `missing()` can report. Each map keyed by them (step, field, texts) is checked against this list. */
+export const MISSING_IDS = ['duration', 'hoursPerDay', 'pay', 'agreedTotal', 'cashInHand', 'payrollPart', 'vacation'];
+
 export function missing(terms) {
   const noContract = terms.contract === 'none';
   const pay = noContract
@@ -239,6 +242,15 @@ export function implausible(terms) {
 export const isComplete = (terms) => missing(terms).length === 0;
 
 /* --- Dates --- */
+
+/** Milliseconds in a day. */
+export const DAY_MS = 864e5;
+
+/**
+ * Days from `from` to `to`, both counted. Rounded, so a daylight-saving change between them (a day of 23 or 25 hours)
+ * does not leave a fraction that depends on the computer's time zone.
+ */
+export const daysInclusive = (from, to) => Math.round((+to - +from) / DAY_MS) + 1;
 
 /** «2026-06-21» → a local date. */
 export const parseDate = (iso) => {

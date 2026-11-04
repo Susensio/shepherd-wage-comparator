@@ -1,9 +1,8 @@
 /** What a backup holds (your offers and settings) and when you last saved one. */
 
+import { DAY_MS } from '../offer.js';
 import { SCHEMA_VERSION } from '../schema.js';
 import { KEY, myOffers, state, store } from '../state.js';
-
-const DAY = 864e5;
 
 /** Your offers and settings, as the text of a backup. */
 export const backupText = () =>
@@ -20,7 +19,7 @@ function signature() {
 export const markBackup = () => store.set(KEY.backup, { date: Date.now(), signature: signature() });
 
 /** «Ahora no»: the reminder is not shown for a week. */
-export const snoozeReminder = () => store.set(KEY.backupNotice, Date.now() + 7 * DAY);
+export const snoozeReminder = () => store.set(KEY.backupNotice, Date.now() + 7 * DAY_MS);
 
 /**
  * The last backup: when, how long ago, whether your offers changed since, and whether to remind you to save one
@@ -29,10 +28,10 @@ export const snoozeReminder = () => store.set(KEY.backupNotice, Date.now() + 7 *
 export function backupStatus(hasCompleteOffers) {
   const last = store.get(KEY.backup, null);
   const changed = !last || last.signature !== signature();
-  const pending = !last || (changed && Date.now() - last.date > 7 * DAY);
+  const pending = !last || (changed && Date.now() - last.date > 7 * DAY_MS);
   return {
     last,
-    days: last ? Math.floor((Date.now() - last.date) / DAY) : 0,
+    days: last ? Math.floor((Date.now() - last.date) / DAY_MS) : 0,
     changed,
     remind: hasCompleteOffers && pending && Date.now() > store.get(KEY.backupNotice, 0),
   };

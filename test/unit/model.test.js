@@ -287,3 +287,17 @@ test('claim deadlines: a year after the first month ends and after the last day'
   assert.equal(until.toDateString(), parseDate('2027-05-08').toDateString());
   assert.equal(claimDeadlines({ ...terms, start: '' }), null);
 });
+
+test('yearShares counts whole days, whatever the time zone (a daylight-saving change between the dates)', async () => {
+  const { yearShares } = await import('../../src/model/calc.js');
+  const zone = process.env.TZ;
+  process.env.TZ = 'Europe/Madrid';
+  try {
+    const { DEF_TERMS } = await import('../../src/offer.js');
+    const shares = yearShares({ ...DEF_TERMS, start: '2025-12-01', duration: 200, durationUnit: 'days' });
+    assert.deepEqual(shares, { 2025: 31 / 200, 2026: 169 / 200 });
+  } finally {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  }
+});

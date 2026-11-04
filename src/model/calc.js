@@ -9,6 +9,7 @@ import { extraDaysRounded } from '../ledger.js';
 import {
   actualYear,
   DAYS_PER_MONTH,
+  daysInclusive,
   endOf,
   foodPerDay,
   isComplete,
@@ -26,12 +27,12 @@ import { extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
 export function yearShares(terms) {
   if (!terms.start || !endOf(terms)) return { [actualYear(terms)]: 1 };
   const [start, end] = spanOf(terms);
-  const days = (+end - +start) / 864e5 + 1;
+  const days = daysInclusive(start, end);
   const shares = {};
   for (let y = start.getFullYear(); y <= end.getFullYear(); y++) {
     const from = Math.max(+start, +new Date(y, 0, 1));
     const to = Math.min(+end, +new Date(y, 11, 31));
-    if (to >= from) shares[y] = ((to - from) / 864e5 + 1) / days;
+    if (to >= from) shares[y] = daysInclusive(from, to) / days;
   }
   return shares;
 }

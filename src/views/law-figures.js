@@ -39,7 +39,7 @@ const LAW_FIGURES = {
   smiByYear: wages
     .map(
       ([y, m], i) =>
-        `en ${y}, ${eur(m.annual)}${i ? '' : ' brutos al año'} (${eur(m.annual / 14)}${i ? '' : ' en 14 pagas'})`,
+        `en ${y}, ${eur(m.annual)}${i ? '' : ' brutos al año'} (${eur(m.annual / LAW.paymentsPerYear)}${i ? '' : ` en ${LAW.paymentsPerYear} pagas`})`,
     )
     .join('; '),
   smiCasualByYear: joinAnd(wages.map(([, m]) => eur(m.casual, 2))),

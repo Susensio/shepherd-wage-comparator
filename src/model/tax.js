@@ -61,7 +61,7 @@ export function unemploymentBenefit(gross, contribDays) {
   const u = LAW.unemployment;
   const days = contribDays / u.contribPerDay;
   const base = gross / contribDays;
-  const perDay = (pct) => clamp(base * pct, u.minMonth / 30, u.maxMonth / 30);
+  const perDay = (pct) => clamp(base * pct, u.minMonth / LAW.payrollMonthDays, u.maxMonth / LAW.payrollMonthDays);
   const first = Math.min(days, u.days70);
   return { days, euros: (first * perDay(u.pct1) + (days - first) * perDay(u.pct2)) * (1 - u.contribRate) };
 }

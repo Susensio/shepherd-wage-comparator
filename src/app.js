@@ -9,7 +9,7 @@ import { calcTermsOnly } from './model/calc.js';
 import { defaultVacation, missing, workedOffers } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
-import { STEP_OF_MISSING } from './steps.js';
+import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
@@ -21,7 +21,7 @@ import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { fichaView } from './views/ficha.js';
-import { fillForm, fillVacation, paintForm } from './views/form.js';
+import { fillForm, paintForm } from './views/form.js';
 import { offersListView, skeletonCardsView, templatesView } from './views/offers-list.js';
 import { sharedView } from './views/shared.js';
 
@@ -38,29 +38,18 @@ export const setLoadingAccount = (/** @type {boolean} */ loading) => {
 
 /* --- Painting --- */
 
-/** The form field where each thing `missing()` reports goes. */
-const MISSING_FIELD = {
-  agreedTotal: '#payTotal',
-  duration: '#duration',
-  hoursPerDay: '#hoursPerDay',
-  pay: '#payTotal',
-  cashInHand: '#payTotal',
-  payrollPart: '#payPart',
-  vacation: 'input[name=vacation]',
-};
-
 /** Marks in the step opened because something is missing in it what is missing there. */
 function markMissing() {
   const o = active();
   const step = currentStep().id;
   const shortfall = isAskingMissing() ? missing(o.terms).filter((id) => STEP_OF_MISSING[id] === step) : [];
   // Several things can point at one field (the pay questions have a single amount)
-  for (const selector of new Set(Object.values(MISSING_FIELD)))
+  for (const selector of new Set(Object.values(FIELD_OF_MISSING)))
     $(selector)
       .closest('.fld')
       .classList.toggle(
         'missing',
-        shortfall.some((what) => MISSING_FIELD[what] === selector),
+        shortfall.some((what) => FIELD_OF_MISSING[what] === selector),
       );
 }
 
@@ -238,5 +227,3 @@ onNavigate({
 
 /** Opens the named collapsibles of the static page as you left them. */
 export const restoreStaticFolds = () => restoreFolds(document);
-
-export { fillVacation };

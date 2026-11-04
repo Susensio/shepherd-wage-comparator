@@ -79,7 +79,7 @@ export function toggleFold(d, opening) {
 
 let scrollTimer;
 /** Stops a pending second aim of scrollToElement. */
-export const cancelScroll = () => clearTimeout(scrollTimer);
+const cancelScroll = () => clearTimeout(scrollTimer);
 
 /**
  * Scrolls what scrolls to an element. Only this page moves (scrollIntoView would also move the outer one, if embedded),

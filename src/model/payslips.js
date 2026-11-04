@@ -1,6 +1,7 @@
 /** Estimated payslips, month by month, for a dated season. */
 
-import { endOf, parseDate } from '../offer.js';
+import { LAW } from '../law.js';
+import { daysInclusive, endOf, parseDate } from '../offer.js';
 
 /**
  * Each calendar month gets its share of the salary (partial months by days at 1/30, adjusted so the sum is the
@@ -17,9 +18,9 @@ export function monthlyPayslips(terms, r) {
     const last = new Date(y, m + 1, 0);
     const from = Math.max(+start, +first);
     const to = Math.min(+end, +last);
-    const days = Math.round((to - from) / 864e5) + 1;
+    const days = daysInclusive(from, to);
     const whole = from === +first && to === +last;
-    months.push({ month: first, days, share: whole ? 1 : Math.min(30, days) / 30 });
+    months.push({ month: first, days, share: whole ? 1 : Math.min(LAW.payrollMonthDays, days) / LAW.payrollMonthDays });
   }
   const shares = months.reduce((sum, x) => sum + x.share, 0) || 1;
   const scale = r.time.months / shares;

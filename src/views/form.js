@@ -50,7 +50,7 @@ const SHOW = {
 };
 
 /** Under a required question, while it is empty: what cannot be done without it. */
-const REQUIRED_TEXT = {
+export const REQUIRED_TEXT = {
   // the label of the radio itself, so the two cannot drift
   duration: () =>
     `Si no se sabe, marca «${$('input[name=durationUnit][value=unknown]').parentElement.textContent.trim()}».`,
@@ -69,7 +69,7 @@ const IMPLAUSIBLE_TEXT = {
 };
 
 /** The `missing()` ids that share another's line. */
-const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
+export const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
 
 export const form = () => /** @type {HTMLFormElement} */ ($('#f'));
 

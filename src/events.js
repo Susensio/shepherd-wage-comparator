@@ -1,9 +1,20 @@
 /** Events: the offer form's steps, «Datos comunes», collapsibles, and every button, by its data-action. */
 
-import { commit, fillVacation, openOffer, paintAll, show, showSelected, viewShared } from './app.js';
+import { commit, openOffer, paintAll, show, showSelected, viewShared } from './app.js';
 import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
-import { DAYS_PER_MONTH, DEF_CFG, defaultVacation, HERD, isoOf, missing, newId, parseDate, sideOf } from './offer.js';
+import {
+  DAYS_PER_MONTH,
+  DEF_CFG,
+  daysInclusive,
+  defaultVacation,
+  HERD,
+  isoOf,
+  missing,
+  newId,
+  parseDate,
+  sideOf,
+} from './offer.js';
 import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
@@ -28,7 +39,7 @@ import {
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
-import { fillForm, form, paintEnd } from './views/form.js';
+import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
 import { stepPayslipMonth } from './views/season-end.js';
 import { fillSettings } from './views/settings.js';
 
@@ -43,7 +54,7 @@ function endDateTyped(value) {
   if (!value) return false;
   const end = parseDate(value);
   if (terms.start) {
-    const days = Math.round((+end - +parseDate(terms.start)) / 864e5) + 1;
+    const days = daysInclusive(parseDate(terms.start), end);
     if (days < 1) return false;
     terms.duration = days;
     terms.durationUnit = 'days';
@@ -263,7 +274,6 @@ const COMPARE_ACTIONS = {
   viewShared: (b) => viewShared(b.dataset.id),
   closeShared: () => viewShared(null),
   refreshOthers: () => loadOthers(),
-  view: (b) => openOffer(b.dataset.id),
 
   beee(b) {
     const bubble = $('.beee', b);
@@ -325,7 +335,7 @@ const BACKUP_ACTIONS = {
       box.focus();
       return;
     }
-    if (loadBackup(box.value, $('#backupResult'))) box.value = '';
+    if (loadBackup(box.value, $('#backupResult'), showSelected)) box.value = '';
   },
 };
 
@@ -364,13 +374,13 @@ function setUpBackupFile() {
     drop.classList.remove('dragging');
     if (!file) return;
     e.preventDefault();
-    loadBackup(await file.text(), $('#backupResult'));
+    loadBackup(await file.text(), $('#backupResult'), showSelected);
   });
   $('#backupFile').addEventListener('change', async (e) => {
     const input = /** @type {HTMLInputElement} */ (e.target);
     const file = input.files?.[0];
     if (!file) return;
-    loadBackup(await file.text(), $('#backupResult'));
+    loadBackup(await file.text(), $('#backupResult'), showSelected);
     input.value = '';
   });
 }

@@ -131,7 +131,7 @@ test('compare, and go to an offer from there', async ({ page }) => {
   await page.click("#cmpView label:has-text('total')");
   expect(await page.evaluate(() => app.state.cmpUnit)).toBe('total');
   await expect(rows.first().locator('.v')).not.toContainText('/día');
-  await page.locator('#cmpBlk [data-action=view]').nth(1).click();
+  await page.locator('#cmpBlk [data-action=openOffer]').nth(1).click();
   await expect(page.locator('.tabs [aria-selected=true]')).toHaveAttribute('data-tab', 'offers');
   await expect(page.locator('#ficha')).toBeVisible();
   await expect(page.locator('#fichaName')).not.toBeEmpty();

@@ -41,7 +41,7 @@ export const VACATION_SAYS = {
 };
 
 /** An amount in the unit of an agreed total: 52,93 €/día · 1.140 €/mes · 4.000 € en total. */
-export const fSplit = (v, unit) =>
+const fSplit = (v, unit) =>
   unit === 'total'
     ? `${fE(v)} en total`
     : unit === 'day'

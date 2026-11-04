@@ -34,8 +34,9 @@ test('browser storage', async ({ openApp }) => {
 test('a backup file', async ({ page }) => {
   const [ok, message, loaded] = await page.evaluate(async (text) => {
     const { loadBackup } = await import('./src/ui/backup.js');
+    const { showSelected } = await import('./src/app.js');
     const msg = document.createElement('p');
-    return [loadBackup(text, msg), msg.textContent, app.state.offers];
+    return [loadBackup(text, msg, showSelected), msg.textContent, app.state.offers];
   }, JSON.stringify(sample));
   expect(ok).toBe(true);
   expect(message).toBe('Añadidas 8 ofertas.');
@@ -51,8 +52,9 @@ test('offers saved in the old flat shape are converted, from the browser and fro
   ]);
   const message = await page.evaluate(async () => {
     const { loadBackup } = await import('./src/ui/backup.js');
+    const { showSelected } = await import('./src/app.js');
     const msg = document.createElement('p');
-    loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Otra vieja', kmHome: 30 }] }), msg);
+    loadBackup(JSON.stringify({ offers: [{ id: 'y', name: 'Otra vieja', kmHome: 30 }] }), msg, showSelected);
     return msg.textContent;
   });
   expect(message).toBe('Añadida 1 oferta.');

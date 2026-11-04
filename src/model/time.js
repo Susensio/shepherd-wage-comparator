@@ -2,7 +2,7 @@
 
 import { clamp, num } from '../format.js';
 import { LAW } from '../law.js';
-import { DAYS_PER_MONTH, endOf, parseDate } from '../offer.js';
+import { DAY_MS, DAYS_PER_MONTH, endOf, parseDate } from '../offer.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest (5.5). */
 const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
@@ -20,7 +20,7 @@ export function payrollMonths(start, days) {
   };
   let n = 0;
   while (monthsLater(n + 1) <= after) n++;
-  return n + Math.min(30, Math.round((+after - +monthsLater(n)) / 864e5)) / 30;
+  return n + Math.min(30, Math.round((+after - +monthsLater(n)) / DAY_MS)) / 30;
 }
 
 /**

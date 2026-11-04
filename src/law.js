@@ -93,7 +93,13 @@ export const RULES = {
     value: 120,
     note: 'temporary contracts this long or shorter use the casual-worker daily minimum (each year’s minimum-wage decree)',
   },
-  smiDaysPerYear: { value: 420, note: '14 payments of 30 days: daily minimum wage = annual / 420' },
+  extraPaysPerYear: { value: 2, source: 'et', art: '31', note: 'two extra payments a year, one at Christmas' },
+  paymentsPerYear: { value: 14, source: 'et', art: '31', note: '12 monthly payments plus the two extra pays' },
+  payrollMonthDays: { value: 30, note: 'a payroll month counts 30 days, as payslips and the unemployment benefit do' },
+  smiDaysPerYear: {
+    value: 14 * 30,
+    note: 'paymentsPerYear payments of payrollMonthDays days: daily minimum wage = annual / 420',
+  },
 };
 
 /**

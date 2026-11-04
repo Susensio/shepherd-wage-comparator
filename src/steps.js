@@ -15,6 +15,17 @@ export const STEPS = [
 /** The steps shown as «Condiciones». */
 export const CONDITION_STEPS = STEPS.filter((step) => step.label);
 
+/** The form field where each thing `missing()` reports is filled in, within its step. */
+export const FIELD_OF_MISSING = {
+  agreedTotal: '#payTotal',
+  duration: '#duration',
+  hoursPerDay: '#hoursPerDay',
+  pay: '#payTotal',
+  cashInHand: '#payTotal',
+  payrollPart: '#payPart',
+  vacation: 'input[name=vacation]',
+};
+
 /** The step where each thing `missing()` reports is filled in. */
 export const STEP_OF_MISSING = {
   agreedTotal: 'pay',

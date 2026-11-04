@@ -1,6 +1,5 @@
 /** Backups on the page: downloading or copying one, and adding the offers of one you saved. */
 
-import { showSelected } from '../app.js';
 import { offers } from '../offers.js';
 import { myOffers, saveConfig, state } from '../state.js';
 import { planImport } from '../storage/backup.js';
@@ -53,9 +52,10 @@ export async function copyBackup(msg) {
 
 /**
  * Adds the offers of a backup that you do not have (see `planImport`) and says what happened in `msg`, as a warning
- * if nothing was added. Returns whether it was a valid backup.
+ * if nothing was added. Returns whether it was a valid backup. `showSelected` paints the offer the import selected
+ * (from `app.js`, which `ui/` does not import).
  */
-export function loadBackup(content, msg) {
+export function loadBackup(content, msg, showSelected) {
   const plan = planImport(content, { mine: myOffers(), config: state.config });
   say(msg, plan.text, plan.kind);
   if (!plan.valid) return false;

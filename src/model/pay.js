@@ -61,11 +61,13 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
   // not have 30.4 days: multiplying by months would inflate or shrink the pay.
   let base = terms.payUnit === 'day' ? amount * time.paidDays : monthly * time.months;
   let extraPays =
-    terms.extraPays === 'separate' && !['year', 'total'].includes(terms.payUnit) ? (monthly * 2 * time.months) / 12 : 0;
+    terms.extraPays === 'separate' && !['year', 'total'].includes(terms.payUnit)
+      ? (monthly * LAW.extraPaysPerYear * time.months) / 12
+      : 0;
   // A vacation day: the month's salary divided by 30, as payslips do; never below a day at the minimum wage, which
   // would invent a debt (it is the page's estimate, not your data)
   const partTime = Math.min(1, (time.workFrac * 7 * time.hoursPerDay) / LAW.weeklyHours);
-  const vacationDay = Math.max(monthly / 30, (wage.annual / LAW.smiDaysPerYear) * partTime);
+  const vacationDay = Math.max(monthly / LAW.payrollMonthDays, (wage.annual / LAW.smiDaysPerYear) * partTime);
   // vacationGross: with «the minimum on payroll», the legal-minimum vacation
   let vacationPay =
     terms.vacation === 'paidAtEnd'
@@ -76,7 +78,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
   // «Included in the daily wage»: the agreed pay already contains the vacation. It is split into salary and vacation
   // (a vacation day, as above, from the salary left); the total does not change.
   if (terms.vacation === 'included' && base > 0 && time.months > 0) {
-    const day = 1 / 30;
+    const day = 1 / LAW.payrollMonthDays;
     const monthlyLeft = base / (time.months + time.vacationDays * day);
     vacationPay = time.vacationDays * monthlyLeft * day;
     base = monthlyLeft * time.months;
