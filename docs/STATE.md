@@ -2,7 +2,7 @@
 
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
-Decided with the owner on 1 November 2026. Started 4 November 2026 in a cloud session. Done on the branch: plan step 1 (on `master` since 032e8d2), step 2 (fb99262, held), step 3 (schema.js, app_meta migration 20261104000000, version gate; ADR-0023), step 6's ADR-0023 and AGENTS.md lines. Next: the owner runs owner step 3; if green, step 2 then step 3 go to `master` (step 3's migration then reaches the live project through `db push`). Steps 4–5 wait for owner steps 4–5 (backups: owner deciding between deferring, age-encrypted artifacts, R2 and Supabase Pro). Order rule: step 2's push trigger would run `db push` against the unrepaired log, so nothing beyond step 1 reaches `master` before owner step 3.
+Decided with the owner on 1 November 2026. Started 4 November 2026. Live on `master` the same day: plan steps 1 (manual baseline task; owner step 3 run, green), 2 (every push and daily, drift check, schema snapshot by the bot) and 3 (`schema.js`, `app_meta` migration applied to the live project, version gate; ADR-0023). Steps 4–5 deferred until a second shepherd uses the account (backlog «backups»; owner steps 4–5 not needed until then). Left: step 6's ADR narrowing ADR-0016 (triggers, drift check, snapshot; `npm ci --ignore-scripts` in the job so the snapshot push skips the pre-push hook), and step 7, the first real batch migration. Lesson: `git push` to `master` from a cloud session can fail with «Internal Server Error» while the pre-push hook runs its 3 minutes of tests with the connection open; run `npm run check && npm test` first and push the same commit with `--no-verify`.
 
 ### Why
 
@@ -72,31 +72,3 @@ Volume is not the issue: 100 users and a few thousand offers fit Supabase's free
 - `npm run check` and `npm test` pass; `rls.test.js` applies every migration including the new ones.
 - On GitHub: the Database workflow green on `master` (push, schedule, manual), the drift check reporting no difference, the snapshot committed, one backup artifact present and decrypted once.
 - A browser tab with the previous page version shows the reload notice after `min_page_version` is raised and does not write.
-
-## Entry form: five steps, name and «Solo oferta» first
-
-Decided with the owner on 4 November 2026, after an audit of every field against its step (six steps proposed, then narrowed to five by the owner the same day). Not started; waits for the voice decision below, since both rewrite the same labels.
-
-### Layout
-
-1. Plantilla (as now; fix «el/la más parecido» and give templates a glossary term).
-2. La oferta: name, «Solo oferta, no trabajada» (still ticked and locked without a start date; the date is now in the same step), village, herd, start, duration, end.
-3. Pago: total, payslip, **IRPF withholding** (moved from the expenses step, where its % was shown three steps earlier), contract, vacations, pagas extra.
-4. El día a día (name follows the voice): hours a day, days off, holidays, sleeping on the mountain, housing, rent saved, meals.
-5. Coche y gastos: trip, how often, km home, trips home, km at work, € per km, other expenses.
-
-About seven fields per step, one phone screen; «Pago» stays alone as the heaviest step. Also: one name per step across title, Condiciones label and fieldset label; «días de trabajo» → «jornadas» (glossary); the overlap hint points to «Solo oferta» in step 2. Touches `STEPS`, `STEP_OF_MISSING`, `CONDITION_STEPS`, the glossary's Condiciones row, `index.html` sections, e2e tests that drive the steps, and an ADR amending ADR-0020's step list.
-
-### Condiciones on the ficha
-
-Decided by the owner on 4 November 2026 (option A): the «Condiciones» fold opens in place as one card, its rows (one per step) inside it with dividers only, instead of opening a second bordered box under its summary. Built with the five steps, since the rows follow them.
-
-### Voice
-
-Decided on 4 November 2026, ADR-0024: impersonal for questions, answers, labels and explanations, rewritten for the plainest style rather than translated; «tú» only for instructions to the reader. `AGENTS.md` «Language» changes in the same commit as the text.
-
-### Plan
-
-1. Done 4 November 2026: the wording table, approved by the owner with the decisions at its top, is `.scratch/voice-wording.md`; delete it once applied.
-2. Build, in one branch: the five steps and the one-card Condiciones (structure), then the approved wording, glossary and `AGENTS.md` rule, then the tests. One concern per commit.
-3. Records: ADR amending ADR-0020's step list; drop the backlog items this settles («Lo que te pagan», first-person answers).
