@@ -32,12 +32,15 @@ const lines = (file) => readFileSync(file, 'utf8').split('\n').filter(Boolean);
 
 const dir = await sourceDir(process.argv[2]);
 
+/** The provinces GeoNames names in English or Galician only («Province of Asturias», «Provincia da Coruña»). */
+const SPANISH_NAME = { O: 'Asturias', CO: 'Córdoba', TO: 'Toledo', C: 'A Coruña' };
+
 /** Province code → name; «ES.52.HU» is the admin2 key for Huesca. */
 const provinceNames = new Map();
 for (const line of lines(join(dir, 'admin2Codes.txt'))) {
   const [key, name] = line.split('\t');
   const [country, , code] = key.split('.');
-  if (country === 'ES') provinceNames.set(code, name.replace(/^Provin?cia de /, '').replace(/^Província de /, ''));
+  if (country === 'ES') provinceNames.set(code, SPANISH_NAME[code] ?? name.replace(/^(Provin?cia|Província) de /, ''));
 }
 
 const rows = lines(join(dir, 'ES.txt')).map((line) => line.split('\t'));

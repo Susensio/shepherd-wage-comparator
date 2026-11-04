@@ -53,6 +53,14 @@ test('the built list has no trailing articles', () => {
   );
 });
 
+test('the built list names every province by its name alone, never «Province of…»', () => {
+  assert.deepEqual(
+    real.provinces.map(([, name]) => name).filter((name) => /^Provin|^Província/.test(name)),
+    [],
+  );
+  assert.equal(new Map(real.provinces).get('C'), 'A Coruña');
+});
+
 test('search: words start or whole; the municipality name finds its places; accents and case do not matter', () => {
   const index = buildIndex(small);
   assert.deepEqual(names(index, 'AINSA'), ['Aínsa', 'Mediano Aínsa', 'Ribainsa', 'Sobrarbe']);
