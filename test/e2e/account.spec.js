@@ -423,6 +423,15 @@ test('signed in: online on the button and in the section, and no tooltip', async
   await expect(page.locator('#accountTip .tip')).toHaveCount(0);
 });
 
+test('a page older than the database allows asks for a reload and does not write', async ({ openApp }) => {
+  const page = await openAccount(openApp, {
+    tables: { profiles: [{ ...PROFILE }], ...accountRows(), app_meta: [{ min_page_version: 999 }] },
+  });
+  await expect(page.locator('#accountButton')).toHaveAttribute('data-status', 'outdated');
+  await expect(page.locator('#accountSync')).toHaveText('Hay una versión nueva. Recarga la página.');
+  expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(1);
+});
+
 test('an empty account opens the templates, like a first visit', async ({ openApp }) => {
   const page = await openApp({
     init: installFake,

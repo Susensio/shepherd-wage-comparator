@@ -37,7 +37,14 @@ export const withoutProject = (page) => serveConfig(page, { url: null, anonKey: 
 export function installFake({ signedOut, tables, localOffers, failProfile, failUpload, google, holdSession }) {
   if (!signedOut) localStorage.setItem('cj.session', '{}');
   if (localOffers) localStorage.setItem('cj.ofertas2', JSON.stringify(localOffers));
-  const data = { offers: [], offer_mine: [], settings: [], profiles: [], ...tables };
+  const data = {
+    offers: [],
+    offer_mine: [],
+    settings: [],
+    profiles: [],
+    app_meta: [{ min_page_version: 1 }],
+    ...tables,
+  };
   const fake = {
     data,
     oauth: null,

@@ -1998,7 +1998,8 @@ section.blk {
 [data-status="saving"] {
   --status: var(--c-pay);
 }
-[data-status="error"] {
+[data-status="error"],
+[data-status="outdated"] {
   --status: var(--neg);
 }
 [data-status="offline"],

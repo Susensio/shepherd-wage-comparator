@@ -25,13 +25,13 @@
  * @property {'share' | 'delete' | null} confirm
  * @property {boolean} enabled accounts are configured: without a project nothing of this shows
  * @property {boolean} started the saved session has been looked at: until then the tooltip would only flash
- * @property {'saved' | 'saving' | 'error'} sync how the background saving goes
+ * @property {'saved' | 'saving' | 'error' | 'outdated'} sync how the background saving goes
  * @property {boolean} offline
  * @property {boolean} tipDismissed the tooltip was sent away with «Ahora no» or a sign-out: gone from every tab for this visit
  * @property {SignIn} signIn
  */
 
-/** @typedef {'connecting' | 'guest' | 'pending' | 'offline' | 'error' | 'saving' | 'online'} AccountStatus */
+/** @typedef {'connecting' | 'guest' | 'pending' | 'offline' | 'outdated' | 'error' | 'saving' | 'online'} AccountStatus */
 
 /**
  * What a listener is told: `account` the view changed, `status` only the background saving, `others` what Comparar
@@ -104,6 +104,7 @@ export function createAccountState({
     if (!view.user) return 'guest';
     if (view.pending.length) return 'pending';
     if (view.offline) return 'offline';
+    if (view.sync === 'outdated') return 'outdated';
     if (view.sync === 'error') return 'error';
     return view.sync === 'saving' ? 'saving' : 'online';
   }

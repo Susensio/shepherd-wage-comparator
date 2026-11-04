@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, makeOffer } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
-import { SCHEMA_VERSION } from '../../src/schema.js';
+import { PAGE_VERSION, SCHEMA_VERSION } from '../../src/schema.js';
 import { notifySaved, state as pageState } from '../../src/state.js';
 import { createAccount, createAccountLoader } from '../../src/storage/account.js';
 import { fakeClient, ME } from './fake-client.js';
@@ -279,6 +279,121 @@ describe('first sign-in on a browser with offers', () => {
     const { account, state } = setUp({ localOffers: local(), tables: accountTables(accountRow(1)) });
     await account.connect();
     assert.deepEqual(ids(state), [id(1)]);
+  });
+});
+
+describe('the page version gate', () => {
+  const tooOld = { app_meta: [{ min_page_version: PAGE_VERSION + 1 }] };
+  const tablesWith = (extra) => ({ ...accountTables(accountRow(1), accountRow(2)), ...extra });
+
+  test('a page at or above min_page_version syncs as usual', async () => {
+    const { account, state, calls, statuses } = setUp({
+      tables: tablesWith({ app_meta: [{ min_page_version: PAGE_VERSION }] }),
+    });
+    await account.connect();
+    state.offers[0].terms.payAmount = 7;
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
+    assert.ok(!statuses.includes('outdated'));
+  });
+
+  test('on connect a page that is too old reads nothing into the browser and says so', async () => {
+    const { account, state, statuses, calls } = setUp({ tables: tablesWith(tooOld) });
+    const before = ids(state);
+    await account.connect();
+    assert.deepEqual(ids(state), before);
+    assert.deepEqual(statuses, ['outdated']);
+    state.offers[0].terms.payAmount = 7;
+    account.changed();
+    await account.flush();
+    assert.deepEqual(calls, []);
+  });
+
+  test('raised while the page is open, the next flush writes nothing and keeps the changes for after the reload', async () => {
+    const { account, state, store, calls, data, statuses } = setUp({ tables: tablesWith({}) });
+    await account.connect();
+    data.app_meta[0].min_page_version = PAGE_VERSION + 1;
+    state.offers[1].terms.payAmount = 7;
+    await account.flush();
+    assert.deepEqual(calls, []);
+    assert.deepEqual(statuses, ['outdated']);
+    assert.deepEqual(store.get('cj.accountUnsynced').changed, [id(2)]);
+    state.offers[0].terms.payAmount = 8;
+    account.changed(); // later edits are recorded for the reload, neither written nor timed
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(calls, []);
+    assert.deepEqual(statuses, ['outdated']);
+    assert.deepEqual(store.get('cj.accountUnsynced').changed.sort(), [id(1), id(2)]);
+  });
+
+  test('a reconnect after the minimum was lowered syncs again and reports saved', async () => {
+    const { account, state, data, calls, statuses } = setUp({ tables: tablesWith(tooOld) });
+    await account.connect();
+    assert.deepEqual(statuses, ['outdated']);
+    data.app_meta[0].min_page_version = PAGE_VERSION;
+    await account.connect();
+    state.offers[0].terms.payAmount = 7;
+    await account.flush();
+    await account.signOut(); // not refused any more
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
+  });
+
+  test('a row-less app_meta sets no minimum', async () => {
+    const { account, state, calls } = setUp({ tables: tablesWith({ app_meta: [] }) });
+    await account.connect();
+    state.offers[0].terms.payAmount = 7;
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
+  });
+
+  test('a background save that finds the page too old reports outdated, not saved', async () => {
+    const { account, state, data, statuses } = setUp({ tables: tablesWith({}) });
+    await account.connect();
+    data.app_meta[0].min_page_version = PAGE_VERSION + 1;
+    state.offers[0].terms.payAmount = 7;
+    account.changed();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(statuses.at(-1), 'outdated');
+    assert.ok(!statuses.includes('saved'));
+  });
+
+  test('signing out is refused while unsaved changes cannot be written', async () => {
+    const { account, state, data, fake } = setUp({ tables: tablesWith({}) });
+    await account.connect();
+    data.app_meta[0].min_page_version = PAGE_VERSION + 1;
+    state.offers[0].terms.payAmount = 7;
+    await assert.rejects(account.signOut(), /out of date/);
+    assert.equal(fake.signedOut, false);
+    assert.equal(state.offers[0].terms.payAmount, 7);
+  });
+
+  test('signing out is allowed when the page was too old on connect and nothing was recorded', async () => {
+    const { account, fake } = setUp({ tables: tablesWith(tooOld) });
+    await account.connect();
+    await account.signOut();
+    assert.equal(fake.signedOut, true);
+  });
+
+  test('a project without app_meta yet sets no minimum', async () => {
+    const { account, state, calls, fake, statuses } = setUp({ tables: tablesWith({}) });
+    fake.selectErrors.app_meta = { code: 'PGRST205', message: 'Could not find the table' };
+    await account.connect();
+    state.offers[0].terms.payAmount = 7;
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
+    assert.ok(!statuses.includes('outdated'));
+  });
+
+  test('any other error reading it fails the save, which is retried with the next change', async () => {
+    const { account, state, fake, calls } = setUp({ tables: tablesWith({}) });
+    await account.connect();
+    fake.selectErrors.app_meta = { code: '500', message: 'boom' };
+    state.offers[0].terms.payAmount = 7;
+    await assert.rejects(account.flush(), { message: 'boom' });
+    assert.deepEqual(calls, []);
+    delete fake.selectErrors.app_meta;
+    await account.flush();
+    assert.equal(calls.filter((c) => c.table === 'offers').length, 1);
   });
 });
 

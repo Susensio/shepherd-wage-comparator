@@ -5,7 +5,7 @@
 
 import { DEF_CFG } from '../offer.js';
 import { offers as pageOffers } from '../offers.js';
-import { ingestSaved, SCHEMA_VERSION } from '../schema.js';
+import { ingestSaved, PAGE_VERSION, SCHEMA_VERSION } from '../schema.js';
 import { KEY, onSave, saveConfig, state, store } from '../state.js';
 import { ACCOUNT_CONFIG } from './account-config.js';
 
@@ -19,6 +19,8 @@ const SYNCED_KEY = 'cj.accountUser';
 const UNSYNCED_KEY = 'cj.accountUnsynced';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** PostgREST's and Postgres's codes for a table that does not exist. */
+const MISSING_TABLE = ['PGRST205', '42P01'];
 const PROFILE_FIELDS = ['name', 'email', 'phone', 'sharing'];
 
 /** The data of a supabase-js result, or its error thrown. */
@@ -43,7 +45,7 @@ const fingerprint = (offer) => JSON.stringify([offer.terms, offer.mine, offer.cm
  * @param {{ get(key: string, fallback: any): any, set(key: string, value: any): void }} deps.store
  * @param {(info?: { activeKept: boolean }) => void} [deps.onReplaced] the offers were replaced: repaint. `activeKept`: the offer shown is still there
  * @param {(error: unknown) => void} [deps.onError] a background save failed; it is retried with the next change
- * @param {(status: 'saving' | 'saved' | 'error') => void} [deps.onStatus] how the background saving goes
+ * @param {(status: 'saving' | 'saved' | 'error' | 'outdated') => void} [deps.onStatus] how the background saving goes; `outdated`: the database wants a newer page, nothing is written
  * @param {number} [deps.debounceMs]
  */
 export function createAccount({
@@ -61,6 +63,10 @@ export function createAccount({
   let user = null;
   /** Only while true are changes written. */
   let syncing = false;
+  /** The database's `min_page_version` is above this page's: nothing is read into the browser or written until a reload. */
+  let outdated = false;
+  /** `known` reflects the account (set when `replaceWith` ran), so `unsynced()` can be trusted. */
+  let knownValid = false;
   let timer = 0;
   let queue = Promise.resolve();
   /** What the account holds: fingerprint per offer id, and the settings (null: no row yet). */
@@ -78,6 +84,24 @@ export function createAccount({
       remapped = true;
     }
     if (remapped) persist();
+  }
+
+  /**
+   * Whether this page is new enough to sync. Too old: syncing stops (what is unsynced stays recorded for after the
+   * reload) and the status says so. A project that has no `app_meta` yet (migration not pushed) sets no minimum.
+   */
+  async function pageIsCurrent() {
+    const { data, error } = await client.from('app_meta').select('min_page_version').maybeSingle();
+    if (error && !MISSING_TABLE.includes(error.code)) throw error;
+    if (PAGE_VERSION >= (data?.min_page_version ?? 0)) {
+      outdated = false;
+      return true;
+    }
+    outdated = true;
+    syncing = false;
+    clearTimeout(timer);
+    onStatus('outdated');
+    return false;
   }
 
   async function readOwn() {
@@ -148,6 +172,13 @@ export function createAccount({
     store.set(UNSYNCED_KEY, hasUnsynced() ? { user: user?.id, changed: changed.map((o) => o.id), removed, cfg } : null);
   }
 
+  /** Whether the record of unsynced changes lists any: it is what the next page load writes first. */
+  function hasRecordedChanges() {
+    if (knownValid) saveUnsynced();
+    const left = store.get(UNSYNCED_KEY, null);
+    return !!(left?.user === user?.id && (left.changed.length || left.removed.length || left.cfg));
+  }
+
   /**
    * The account's offers and settings become the browser's, and changes start being written. `left` (from
    * `saveUnsynced`) are local changes the account lacks: they are kept over the account's copy, and written next.
@@ -192,6 +223,7 @@ export function createAccount({
     }
     store.set(SYNCED_KEY, user?.id);
     syncing = true;
+    knownValid = true;
     saveUnsynced();
   }
 
@@ -201,7 +233,8 @@ export function createAccount({
     const offers = offerList.mine();
     remapIds(offers);
     saveUnsynced(); // after remapIds, so the ids kept are the ones written
-    const { changed, removed } = unsynced();
+    const { changed, removed, cfg } = unsynced();
+    if ((changed.length || removed.length || cfg) && !(await pageIsCurrent())) return;
     await writeOffers(changed);
     if (removed.length) {
       unwrap(await client.from('offers').delete().in('id', removed));
@@ -222,7 +255,7 @@ export function createAccount({
   /** A flush whose failure is reported, not thrown; the changes stay unsynced and go with the next one. */
   function saveInBackground() {
     return flush().then(
-      () => onStatus('saved'),
+      () => onStatus(outdated ? 'outdated' : 'saved'),
       (error) => {
         onError(error);
         onStatus('error');
@@ -254,6 +287,7 @@ export function createAccount({
 
   function stop() {
     syncing = false;
+    knownValid = false;
     clearTimeout(timer);
     pending = null;
     store.set(SYNCED_KEY, null);
@@ -305,6 +339,8 @@ export function createAccount({
         onStatus('error');
         throw error;
       }
+      // Signing out clears the browser copy: not while this page cannot write what it holds.
+      if (outdated && hasRecordedChanges()) throw new Error('This page is out of date: reload before signing out');
       syncing = false; // edits from here on are not written, which would fail without the session
       try {
         unwrap(await client.auth.signOut());
@@ -327,6 +363,7 @@ export function createAccount({
       const { session } = unwrap(await client.auth.getSession());
       user = session?.user ?? null;
       if (!user) return { user, pending: [] };
+      if (!(await pageIsCurrent())) return { user, pending: [], outdated: true };
       const account = await readOwn();
       const firstOnThisBrowser = store.get(SYNCED_KEY, null) !== user.id;
       const extras = offerList.mine().filter((o) => !account.offers.some((x) => x.id === o.id));
@@ -366,6 +403,10 @@ export function createAccount({
 
     /** A local change was saved: the changed offers are written after a pause. */
     changed() {
+      if (outdated) {
+        if (knownValid) saveUnsynced(); // the next page load writes it
+        return;
+      }
       if (!syncing) return;
       clearTimeout(timer);
       saveUnsynced();
@@ -470,7 +511,7 @@ export function loadSupabase() {
 /**
  * @typedef {object} AccountHooks
  * @property {(info?: { activeKept: boolean }) => void} [onReplaced] the account's offers replace the browser's
- * @property {(status: 'saving' | 'saved' | 'error') => void} [onStatus] background saves start, succeed or fail
+ * @property {(status: 'saving' | 'saved' | 'error' | 'outdated') => void} [onStatus] background saves start, succeed or fail; the page is too old to write
  */
 
 /**
@@ -540,6 +581,7 @@ export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = load
     async start(hooks = {}) {
       if (!returningUser()) return null;
       const stopTracking = trackUntilConnected();
+      let keepTracking = false;
       try {
         // replaceWith takes over the record (and the saves) from onReplaced on
         const account = await open({
@@ -549,9 +591,12 @@ export function createAccountLoader({ config = ACCOUNT_CONFIG, loadBundle = load
             hooks.onReplaced?.(info);
           },
         });
-        return { account, ...(await account.connect()) };
+        const connected = await account.connect();
+        // A page too old to sync keeps recording what changes, for the load after the reload.
+        keepTracking = !!connected.outdated;
+        return { account, ...connected };
       } finally {
-        stopTracking();
+        if (!keepTracking) stopTracking();
       }
     },
 

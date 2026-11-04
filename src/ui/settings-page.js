@@ -35,6 +35,7 @@ const STATUS_TEXT = {
   guest: 'Entrar. Tus ofertas solo están en este navegador.',
   pending: 'No se pudieron subir a la cuenta las ofertas de este navegador.',
   offline: 'Sin conexión: los cambios se guardan en este navegador y se suben al volver la conexión.',
+  outdated: 'Hay una versión nueva. Recarga la página.',
   error: 'No se pudieron guardar los últimos cambios en la cuenta. Se vuelve a intentar con el próximo cambio.',
   saving: 'Guardando en la cuenta…',
   online: 'Conectado: tus ofertas y ajustes se guardan en tu cuenta.',

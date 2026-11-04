@@ -4,12 +4,28 @@ export const ME = '00000000-0000-0000-0000-00000000000a';
 
 /**
  * Only the supabase-js calls the account uses, over in-memory tables. `calls` records every write as
- * `{ table, op, rows | ids }`; `fake.failNext` makes the next write fail once.
+ * `{ table, op, rows | ids }`; `fake.failNext` makes the next write fail once; `fake.selectErrors[table]` makes reads of a table fail.
  */
 export function fakeClient({ session = { user: { id: ME } }, tables = {} } = {}) {
-  const data = { offers: [], offer_mine: [], settings: [], profiles: [], ...tables };
+  const data = {
+    offers: [],
+    offer_mine: [],
+    settings: [],
+    profiles: [],
+    app_meta: [{ min_page_version: 1 }],
+    ...tables,
+  };
   const calls = [];
-  const fake = { failNext: false, signedOut: false, oauth: null, idToken: null, otp: null, verified: null, rpc: [] };
+  const fake = {
+    selectErrors: {},
+    failNext: false,
+    signedOut: false,
+    oauth: null,
+    idToken: null,
+    otp: null,
+    verified: null,
+    rpc: [],
+  };
   const keyOf = { offer_mine: 'offer_id', offers: 'id', settings: 'user_id', profiles: 'user_id' };
   const matches = { eq: (a, b) => a === b, neq: (a, b) => a !== b, in: (a, list) => list.includes(a) };
 
@@ -78,6 +94,7 @@ export function fakeClient({ session = { user: { id: ME } }, tables = {} } = {})
       const rows = data[table].filter((row) =>
         this.filters.every(([kind, col, value]) => matches[kind](row[col], value)),
       );
+      if (op === 'select' && fake.selectErrors[table]) return { data: null, error: fake.selectErrors[table] };
       if (op !== 'select' && fake.failNext) {
         fake.failNext = false;
         return { data: null, error: new Error('network') };
