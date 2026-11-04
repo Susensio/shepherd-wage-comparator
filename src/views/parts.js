@@ -56,6 +56,20 @@ export function columns(r) {
 }
 
 /**
+ * «Ganado» as the breakdown adds it up from its rounded rows, in each of its columns: `{ day, month }`, or
+ * `{ day, total }` under a month. What every view shows as «Ganado» in those units, so none differs by a rounding.
+ * @returns {Partial<Record<'day' | 'month' | 'total', number>>}
+ */
+export function earnedShown(r) {
+  const cols = columns(r);
+  const shows = (x) => cols.shown(x).some((shown) => shown !== 0);
+  const earned = PARTS.map((part) => part.value(r.earnings.parts)).filter((x) => x > 0.5);
+  const expenses = [r.car.cost, r.expenses.other].filter(shows);
+  const [day, other] = cols.sums(earned, expenses);
+  return { day, [cols.other]: other };
+}
+
+/**
  * A label–figure row.
  * A label starting with «− », «+ », «= » or «× » puts the sign in its own column next to the figure, and «=» gets a
  * rule above, like a sum on paper.

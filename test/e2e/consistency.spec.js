@@ -120,3 +120,27 @@ for (const offer of sample.offers) {
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
   });
 }
+
+test('Comparar ranks each offer with the ficha headline figure, in the headline unit', async ({ loaded: page }) => {
+  const UNIT_OF_LABEL = { 'Se gana al mes': 'mes', 'Se gana por día trabajado': 'día', 'Se gana en total': 'total' };
+  const amount = (text) => Number.parseFloat(text.replace(/\./g, '').replace(',', '.'));
+  // At this pay the exact monthly figure rounds to 1 € less than the sum of the breakdown's rounded rows
+  await page.evaluate(() => {
+    app.state.offers.find((o) => o.id === 'o1').terms.payAmount = 1794;
+  });
+  const headlines = [];
+  for (const offer of sample.offers) {
+    await page.evaluate((id) => app.select(id), offer.id);
+    const label = await page.locator('#result .tag .lbl').textContent();
+    const big = page.locator('#result .tag .big');
+    if (!(await big.count())) continue;
+    headlines.push({ id: offer.id, unit: UNIT_OF_LABEL[label.trim()], figure: amount(await big.textContent()) });
+  }
+  expect(headlines.length).toBeGreaterThan(4);
+  await page.click('.tabs [data-tab=compare]');
+  for (const { id, unit, figure } of headlines) {
+    await page.click(`#cmpView label:has-text('${unit}')`);
+    const ranked = await page.locator(`#cmpBlk .lr[data-id="${id}"] .fig`).textContent();
+    expect(amount(ranked), `${id} in ${unit}`).toBe(figure);
+  }
+});

@@ -22,7 +22,7 @@ import {
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { negroSection } from './negro.js';
-import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
+import { columns, earnedShown, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
 import { workings } from './workings.js';
 
@@ -175,11 +175,8 @@ function breakdown(o, r, unit) {
   const earned = present.map((part) => part.value(p));
   const [showCar, showOther] = [shows(r.car.cost), shows(r.expenses.other)];
   const expenses = [showCar && r.car.cost, showOther && r.expenses.other].filter(Boolean);
-  const [earnedDay, earnedOther] = cols.sums(earned, expenses);
   return {
     earnTip,
-    // «Ganado» as the ledger adds it up, in each of its columns: the headline shows the one in its unit
-    earnedShown: { day: earnedDay, [cols.other]: earnedOther },
     html: html`
     <details class="plg" data-fold="breakdown2"><summary>Desglose<span class="stat dt">cobrado <b>${cols.sumTexts(received)[1]}</b> ${cols.other === 'month' ? 'al mes' : 'en total'}</span></summary>
     ${incomeBar(r, incomeOf(r) || 1)}
@@ -214,9 +211,10 @@ export function resultParts(o, r, { readOnly = false } = {}) {
     };
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
-  const { earnTip, earnedShown, html: breakdownView } = breakdown(o, r, unit);
+  const { earnTip, html: breakdownView } = breakdown(o, r, unit);
+  const shown = earnedShown(r);
   // The headline is the ledger's «Ganado» in the same unit, so the two never differ by a rounding
-  const headline = unit in earnedShown ? fUnit(earnedShown[unit], unit) : money.figure(r.earnings.total);
+  const headline = unit in shown ? fUnit(shown[unit], unit) : money.figure(r.earnings.total);
   const year = actualYear(o.terms);
   const head = html`${
     year !== r.year

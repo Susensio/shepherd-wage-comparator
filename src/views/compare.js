@@ -8,7 +8,7 @@ import { datesText, isComplete, missing, spanOf, workedOffers } from '../offer.j
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, unpaidTime } from '../text.js';
 import { fUnit, incomeOf, inUnit, isUnderAMonth, UNIT_ORDER, UNITS } from '../units.js';
-import { incomeBar, legend, swatch } from './parts.js';
+import { earnedShown, incomeBar, legend, swatch } from './parts.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest. */
 const WEEK_WORK_DAYS = 7 - LAW.weeklyRest;
@@ -169,7 +169,12 @@ function headToHead(list, pairing, unit) {
       'Dinero',
       [
         unit !== 'hour' && ['Ganado por hora', (x) => x.r.earnings.perHour, (v) => fE(v, 2), 'max'],
-        money('Ganado', (x) => x.r.earnings.total, 'max'),
+        !totalsHidden && [
+          `Ganado ${U.short}`,
+          (x) => earnedShown(x.r)[unit] ?? inPicked(x, x.r.earnings.total), // as the ficha shows it
+          inUnitText,
+          'max',
+        ],
         money('Cobrado', (x) => x.r.earnings.received, 'max'),
       ],
     ],
@@ -329,10 +334,11 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
     };
   }
   const atRate = (r) => unit === 'month' && isUnderAMonth(r); // shorter than a month: «al mes» is at that rate
+  // As the ficha's headline: the breakdown's «Ganado», where it has a column in this unit
   const figure = (r) =>
     sortValue(r) <= -1e11
       ? '–'
-      : `${fUnit(r.earnings[U.key], unit)}${U.key === 'total' ? '' : U.suffix}${atRate(r) ? '*' : ''}`;
+      : `${fUnit(earnedShown(r)[unit] ?? r.earnings[U.key], unit)}${U.key === 'total' ? '' : U.suffix}${atRate(r) ? '*' : ''}`;
   // Colour bars like the offer's, in the same unit: what is left unhatched is the row's figure
   const per = (r) => {
     const d = unit === 'total' && r.time.noDuration ? r.time.months : U.per(r);
