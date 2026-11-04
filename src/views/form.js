@@ -40,12 +40,16 @@ const SHOW = {
 
 /** Under a required question, while it is empty: what cannot be done without it. */
 const REQUIRED_TEXT = {
-  duration: 'Si no se sabe, marca «No se sabe».',
+  // the label of the radio itself, so the two cannot drift
+  duration: () =>
+    `Si no se sabe, marca «${$('input[name=durationUnit][value=unknown]').parentElement.textContent.trim()}».`,
   hoursPerDay: 'Sin las horas no se puede calcular cuánto se gana.',
   pay: 'Sin el pago no se puede calcular cuánto se gana.',
   payrollPart: 'Sin la parte en nómina no se puede calcular cuánto va en negro.',
   vacation: 'Sin esto no se puede comprobar si se pagan las vacaciones.',
 };
+/** @param {string | (() => string)} text */
+const textOf = (text) => (typeof text === 'function' ? text() : text);
 /** The `missing()` ids that share another's line. */
 const REQUIRED_LINE = { agreedTotal: 'pay', cashInHand: 'pay' };
 
@@ -258,7 +262,7 @@ export function paintForm(o, r, offers, places) {
   paintPlace(o, places);
   const lines = missing(o.terms).map((id) => REQUIRED_LINE[id] ?? id);
   for (const line of $$('[data-required]'))
-    line.textContent = lines.includes(line.dataset.required) ? REQUIRED_TEXT[line.dataset.required] : '';
+    line.textContent = lines.includes(line.dataset.required) ? textOf(REQUIRED_TEXT[line.dataset.required]) : '';
   text('#payHint', payHint(o, r));
   paintAnswers(o, r);
   const food = foodPerDay(o.terms, cfg);
