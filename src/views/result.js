@@ -24,7 +24,6 @@ import {
 } from '../units.js';
 import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
-import { negroSection } from './negro.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
 import { workings } from './workings.js';
@@ -248,10 +247,9 @@ export function resultParts(o, r, { readOnly = false } = {}) {
     ${pills(o, r)}`;
   const analysis = html`${breakdownView}
     ${legalSection(o, r, money)}
-    ${negroSection(r, money)}
     ${readOnly ? nothing : negotiationSection(o, r, money)}
     ${readOnly ? nothing : seasonEndSection(o, r)}
-    <details class="plg" data-fold="workings"><summary>Las cuentas, paso a paso</summary><div class="doc">${workings(o, r)}</div></details>`;
+    <details class="plg" data-fold="workings"><summary>Cómo se calcula</summary><div class="doc">${workings(o, r)}</div></details>`;
   return { head, analysis };
 }
 

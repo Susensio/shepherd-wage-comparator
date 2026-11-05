@@ -20,26 +20,33 @@ test('the headline and the Desglose leave the paro out', async ({ page }) => {
   await expect(page.locator('details[data-fold=breakdown2]')).not.toContainText('Paro');
 });
 
-test('«Dinero en negro»: only with money en negro or no contract, and what each says about the paro', async ({
-  page,
-}) => {
-  const negro = page.locator('#secNegro');
+test('«Para negociar»: en negro as a lever with both sides, and what it means for the paro', async ({ page }) => {
+  const cash = page.locator('#secEmployer .lever[data-lever=cash]');
+  await expect(page.locator('#secNegro')).toHaveCount(0); // its own section is gone
   await loadOffers(page, sample, OFFER.temporadaF);
-  await expect(negro).toHaveCount(0);
+  await expect(cash).toHaveCount(0);
 
   await loadOffers(page, sample, OFFER.puertoA);
-  await expect(negro.locator('h3')).toHaveText('Dinero en negro');
-  await expect(negro).toContainText(/van en negro: no cuentan para la jubilación ni para una baja/);
-  await expect(negro).toContainText('Al paro no le afecta: lo que va en nómina ya da el máximo.');
+  await expect(cash.locator('.lever-t')).toHaveText('En negro');
+  await expect(cash).toContainText('El ganadero se ahorra');
+  await expect(cash).toContainText('No cuenta para la jubilación ni la baja.'); // the paro is already at its maximum
 
   await loadOffers(page, sample, OFFER.campanaB);
-  await expect(negro).toContainText(/En nómina, generarían unos 30\s€ más de paro/);
+  await expect(cash).toContainText(/Unos 30\s€ menos de paro/);
 
   await loadOffers(page, sample, OFFER.sinContratoD);
-  await expect(negro).toContainText(
-    'Sin contrato, nada de lo que se cobra cuenta para la jubilación, una baja o el paro.',
-  );
-  await expect(negro).toContainText(/Con contrato, este trabajo generaría 14 días de paro: unos 552\s€/);
+  await expect(cash.locator('.lever-t')).toHaveText('Sin contrato');
+  await expect(cash).toContainText(/ni paro \(unos 552\s€\)/);
+});
+
+test('«Copiar para hablarlo» copies the neutral text of a lever, impersonal', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await loadOffers(page, sample, OFFER.puertoA);
+  const lever = page.locator('#secEmployer .lever[data-lever=cash]');
+  await lever.getByRole('button', { name: 'Copiar para hablarlo' }).click();
+  await expect(lever.locator('.copy-msg')).toHaveText('Texto copiado.');
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text).toMatch(/^Van .* en negro .*\. Pasarlos a nómina costaría unos .* de Seguridad Social/);
 });
 
 test('«Condiciones» is the first block, under the name, one row that opens the four and hides its own line', async ({

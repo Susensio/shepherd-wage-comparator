@@ -145,7 +145,7 @@ function headToHead(list, pairing, unit) {
     !b.r.time.noDuration &&
     Math.abs(a.r.time.natDays - b.r.time.natDays) <= 0.1 * Math.max(a.r.time.natDays, b.r.time.natDays);
   const totalsHidden = unit === 'total' && !similar;
-  // «Le cuestas» adds the housing and food given; without them it repeats «Dinero que pone»
+  // «Le cuesta» adds the housing and food given; without them it repeats «Dinero que pone»
   const inKind = [a, b].some((x) => x.r.inKind.total > 0.5);
   const duration = (x) =>
     x.r.time.noDuration

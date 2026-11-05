@@ -891,15 +891,14 @@ details.plg[data-fold="breakdown2"] {
   border-top: 0;
   padding-top: 4px;
 }
-/* And the other way round: «Final de campaña» and «Las cuentas, paso a paso» are sections, even if they fold: section title */
+/* «Cómo se calcula»: the workings, in the background at the end of the ficha, as a small link */
 details.plg[data-fold="workings"] > summary {
-  font-family: var(--f-display);
-  font-weight: 750;
-  font-stretch: 85%;
-  font-size: 21px;
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: 14px;
   text-transform: none;
   letter-spacing: 0;
-  color: var(--ink);
+  color: var(--accent);
 }
 details.plg > summary {
   font-family: var(--f-display);
@@ -3114,44 +3113,65 @@ details > * {
   flex-shrink: 0;
 }
 
-.levers .lev-t {
+.lev-t {
+  margin: 0 0 8px;
   font-weight: 650;
   font-size: 15px;
-  margin: 0;
   color: var(--ink);
 }
-.levers .lev-t span {
+.lev-t b {
+  font-family: var(--f-num);
+  color: var(--c-cash-t);
+}
+.lev-t span {
   font-weight: 400;
   color: var(--muted);
   font-size: 13px;
 }
-.levers .sv-rows .row > :last-child {
+/* «Para negociar»: one card per thing the ganadero saves, with both sides and a text to send */
+.levers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lever {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-cash) 13%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c-cash) 40%, var(--surface));
+}
+.lever-t {
+  margin: 0 0 6px;
+  font-weight: 650;
   font-size: 15px;
-  font-weight: 600;
+}
+.lever .sides {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 12px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.lever .sides dt {
+  color: var(--muted);
+}
+.lever .sides dd {
+  margin: 0;
+}
+.lever .sides b {
+  font-family: var(--f-num);
   color: var(--c-cash-t);
 }
-.levers .sv-rows .row.est > :last-child {
+.lever .sides small {
   color: var(--muted);
 }
-.levers .hint {
-  margin: 6px 0 0;
-  font-size: 12px;
+.lever .copy-msg {
+  margin: 4px 0 0;
+  font-size: 12.5px;
 }
-.levers .row .two {
-  grid-template-columns: minmax(4.2em, auto) minmax(5.4em, auto);
-  gap: 12px;
-}
-.levers .row:not(.hd) .two > :last-child {
-  color: var(--ink);
-  font-weight: 500;
-}
-.levers .row.hd .two {
-  color: var(--muted);
-}
-.levers .row.hd > :last-child {
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--f-body);
+.lever .copy-msg:empty {
+  display: none;
 }
 details.savings .hint {
   margin-top: 2px;

@@ -1,6 +1,7 @@
 /** Texts: one-line summaries of an offer, and the texts people copy (the offer card and the claim). */
 
 import {
+  capitalize,
   f1,
   fCount,
   fDays,
@@ -419,4 +420,70 @@ export function claimText(o, r) {
 
   add('', 'Cálculo aproximado hecho con Zurrón sindical. Conviene revisarlo con el convenio vigente y un sindicato.');
   return lines.join('\n');
+}
+
+/**
+ * «Para negociar»: each thing the ganadero saves at the shepherd's expense, with both sides, as figures over the whole
+ * contract (or a month without a duration). `employer`: what the ganadero saves, with their Social Security;
+ * `shepherd`: what it means for the shepherd, in words; `proposal`: a neutral text to send, impersonal like the claim.
+ * @returns {{id: string, title: string, employer: number, shepherd: string, estimate: boolean, proposal: string}[]}
+ */
+export function leversOf(r) {
+  const s = r.savings;
+  const x = r.extra;
+  const net = (v) => fE(v * r.netFactor);
+  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const lost = r.unemployment.lost;
+  const paroLost = isWorthCounting(lost.euros);
+  const levers = [];
+  if (isWorthCounting(s.cash))
+    levers.push(
+      r.noContract
+        ? {
+            id: 'cash',
+            title: 'Sin contrato',
+            employer: s.cash,
+            shepherd: `No cotiza: ni paro${paroLost ? ` (unos ${fE(lost.euros)})` : ''}, ni jubilación, ni baja.`,
+            estimate: false,
+            proposal: `Con contrato, la Seguridad Social costaría unos ${fE(s.cash)} ${over}, y se cotizaría para el paro${paroLost ? ` (unos ${fE(lost.euros)})` : ''}, la jubilación y la baja.`,
+          }
+        : {
+            id: 'cash',
+            title: 'En negro',
+            employer: s.cash,
+            shepherd: paroLost
+              ? `Unos ${fE(lost.euros)} menos de paro, y no cuenta para la jubilación ni la baja.`
+              : 'No cuenta para la jubilación ni la baja.',
+            estimate: false,
+            proposal: `Van ${fE(r.cash.total)} en negro ${over}. Pasarlos a nómina costaría unos ${fE(s.cash)} de Seguridad Social, y contarían para ${paroLost ? `el paro (unos ${fE(lost.euros)} más), ` : ''}la jubilación y la baja.`,
+          },
+    );
+  if (isWorthCounting(s.minimum))
+    levers.push({
+      id: 'minimum',
+      title: capitalize(minimumShortText(r).replace(/^por /, '')),
+      employer: s.minimum,
+      shepherd: `Unos ${net(r.debt.owed)} netos menos de lo que marca el mínimo.`,
+      estimate: false,
+      proposal: `Con estas condiciones faltan unos ${fE(r.debt.owed)} brutos ${over} para llegar al mínimo legal (${r.wage.decree}).`,
+    });
+  if (isWorthCounting(s.days))
+    levers.push({
+      id: 'days',
+      title: 'Jornadas de más',
+      employer: s.days,
+      shepherd: `Unos ${fCount(x.daysUnpaidCount)} días sin pagar: unos ${net(x.daysUnpaid)} netos.`,
+      estimate: false,
+      proposal: `Salen unos ${fCount(r.extraDays.extra)} días de trabajo más de los que corresponden ${over}. Pagados, serían unos ${fE(x.daysUnpaid)} brutos.`,
+    });
+  if (isWorthCounting(s.overtime))
+    levers.push({
+      id: 'overtime',
+      title: 'Horas extra',
+      employer: s.overtime,
+      shepherd: `Unas ${fN(x.overtimeUnpaidPerWeek)}\u00a0h a la semana sin pagar: unos ${net(x.overtimeUnpaid)} netos.`,
+      estimate: true,
+      proposal: `Salen unas ${fN(x.over40PerWeek)} horas a la semana por encima de ${LAW.weeklyHours}. Pagadas, serían unos ${fE(x.overtimeUnpaid)} brutos ${over} (estimado).`,
+    });
+  return levers;
 }

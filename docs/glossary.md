@@ -33,7 +33,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | plus de pernocta | the bonus for sleeping at the work site | `terms.overnight`, `LAW.overnightPct` | convenio del campo de Huesca | plus por dormir en el monte |
 | pagas extra | | `terms.extraPays` | | |
 | indemnización | what is owed when a temporary contract ends | `r.severance` | ET art. 49.1.c | finiquito (that is the final settlement, which includes it) |
-| paro | unemployment benefit earned by contributing. Not part of «se gana»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Dinero en negro» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
+| paro | unemployment benefit earned by contributing. Not part of «se gana»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in the lever «En negro» of «Para negociar» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
 | autónomo | a shepherd who invoices the ganadero instead of being on a payslip: the answer «Nada: se factura como autónomo» to «¿Cuánto va en nómina?», the stamp and pill «Autónomo» (ADR-0029) | `terms.contract: 'selfEmployed'`, `r.selfEmployed` | LGSS art. 305 | por cuenta propia (only in citations), freelance |
 | factura | what the ganadero pays an autónomo, without IVA: the breakdown's row «Factura» | `r.selfEmployed.invoiced` | | |
 | cuota de autónomos | the self-employed Social Security contribution, by tramo of income | `r.selfEmployed.quota` | Orden PJC/297/2026 art. 18 | RETA (only in citations), cuota del RETA |
@@ -63,7 +63,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | oferta | a job offer as told by the employer, with the shepherd's own figures | `{ id, terms, mine }` | trabajo, empleo |
 | ficha | the read-only page of one offer: «Condiciones» first, then its result with the paro line and the «Análisis» | `views/ficha.js` | página de la oferta, resumen |
 | Condiciones | the ficha's first block, one row with a one-line summary that opens one row per step: La oferta, Pago, El día a día, Coche y gastos; tapping one opens only that step | `CONDITION_STEPS` (`steps.js`) | datos de la oferta |
-| Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Dinero en negro (only with money en negro or no contract), Para negociar, Final de campaña, Las cuentas | `resultParts().analysis` | |
+| Análisis | the ficha's sections under the headline: Desglose, ¿Es legal?, Para negociar, Final de campaña, and the small link «Cómo se calcula» (the workings) | `resultParts().analysis` | |
 | paso | one screen of the guided entry («Paso 2 de 5»): Plantilla, La oferta, Pago, El día a día, Coche y gastos. The title, the row in Condiciones and the fieldset share one name; a step opened from the ficha says «Cambiar» and ends with «Guardar» or «Cancelar» | `STEPS` (`steps.js`), `ui/entry.js` | pantalla, sección |
 | plantilla | a starting point picked in the first step of the entry; it fills the contract, the housing and the trips, not the figures | `TEMPLATES` (`offer.js`) | modelo |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set); shared (ADR-0028) | `terms.offerOnly` | |
@@ -84,3 +84,4 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | Term on screen | Code |
 |---|---|
 | por hora, por día trabajado, al mes, en total | `UNITS` (`units.js`) |
+| palanca (Para negociar) | one thing the ganadero saves at the shepherd's expense, with both sides («El ganadero se ahorra», «Para el pastor») and a neutral text to send («Copiar para hablarlo») | `leversOf` (`text.js`) | | exigencia, reclamación (a claim is something else) |

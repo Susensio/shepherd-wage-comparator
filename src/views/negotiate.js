@@ -1,10 +1,10 @@
-/** «Para negociar»: what the employer saves at your expense, and what you cost them. */
+/** «Para negociar»: what the ganadero saves at the shepherd's expense, both sides of each lever, and what the shepherd costs. */
 
 import { html, nothing } from 'lit-html';
-import { capitalize, fE, fN, isWorthCounting } from '../format.js';
+import { fE, fN } from '../format.js';
 import { LAW } from '../law.js';
-import { minimumShortText, unitPhrase } from '../text.js';
-import { columns, row, two } from './parts.js';
+import { leversOf, unitPhrase } from '../text.js';
+import { columns, row } from './parts.js';
 
 /** What you cost the employer, per day and per month (or over the whole contract). Every row adds up. */
 function costDetails(o, r) {
@@ -22,7 +22,7 @@ function costDetails(o, r) {
         : 'las que no se libran, pagadas al acabar',
     ],
     r.employer.ss > 0.5 && [
-      'Seguridad Social que paga la empresa',
+      'Seguridad Social que paga el ganadero',
       r.employer.ss,
       `aprox. ${fN(r.pay.rates.employerPct, 1)} % del bruto`,
     ],
@@ -45,36 +45,38 @@ function costDetails(o, r) {
         ? html`${row('= Dinero que pone', cols.sum(parts), { cls: 'strong' })}${row(`+ ${inKindLabel}`, cols.value(r.inKind.total), { sub: 'lo que vale, no lo que le cuesta' })}`
         : nothing
     }
-    ${row('= Le cuestas', cols.sum(inKind ? [...parts, r.inKind.total] : parts), { cls: 'tot' })}
+    ${row('= Le cuesta en total', cols.sum(inKind ? [...parts, r.inKind.total] : parts), { cls: 'tot' })}
   </div>
   </details>`;
 }
 
-/** What the employer saves at the shepherd's expense, item by item: their margin to pay more. */
-function savingsView(r, money) {
-  const s = r.savings;
-  if (!isWorthCounting(s.total))
+/**
+ * What the ganadero saves at the shepherd's expense, lever by lever, with both sides and a neutral text to send:
+ * figures put on the table, not claims.
+ */
+function leversView(r, money) {
+  const levers = leversOf(r);
+  if (!levers.length)
     return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a costa del pastor</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
-  const items = [
-    [s.cash, r.noContract ? 'Por no hacer contrato' : 'Por pagar en negro'],
-    [s.minimum, capitalize(minimumShortText(r))],
-    [s.days, 'Por las jornadas de más'],
-    [s.overtime, 'Por las horas extra', true],
-  ].filter(([value]) => isWorthCounting(value));
-  // Two columns, in the offer's unit and over the whole contract; one if it is already the total or has no duration
-  const both = !(r.time.noDuration || money.unit === 'total');
-  const per = unitPhrase(money.unit, r);
-  const cell = (x) => (both ? two(money.figure(x), fE(x)) : money.figure(x));
-  return html`<div class="savings levers"><p class="lev-t">El ganadero se ahorra a costa del pastor${both ? '' : html` <span>${per}</span>`}</p>
-    <div class="rows sv-rows">${both ? row('', two(capitalize(per), 'En total'), { cls: 'hd' }) : nothing}${items.map(
-      ([value, label, estimate]) =>
-        row(label, cell(value), { sub: estimate ? 'estimado' : '', cls: estimate ? 'est' : '' }),
-    )}</div></div>`;
+  const total = levers.reduce((sum, lever) => sum + lever.employer, 0);
+  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  return html`<p class="lev-t">El ganadero se ahorra unos <b>${fE(total)}</b> ${over} a costa del pastor${money.unit !== 'total' && !r.time.noDuration ? html` <span>(${money.figure(total)} ${unitPhrase(money.unit, r)})</span>` : nothing}.</p>
+    <div class="levers">${levers.map(
+      (lever) => html`<div class="lever" data-lever=${lever.id}>
+        <p class="lever-t">${lever.title}</p>
+        <dl class="sides">
+          <dt>El ganadero se ahorra</dt><dd><b>${fE(lever.employer)}</b>${lever.estimate ? html` <small>estimado</small>` : nothing}</dd>
+          <dt>Para el pastor</dt><dd>${lever.shepherd}</dd>
+        </dl>
+        <button type="button" class="linkbtn" data-action="copyProposal" data-lever=${lever.id}>Copiar para hablarlo</button>
+        <p class="hint copy-msg" aria-live="polite"></p>
+      </div>`,
+    )}</div>`;
 }
 
 /** «Para negociar». */
 export function negotiationSection(o, r, money) {
   // Its levers are labour law's (minimum, en negro, overtime): none applies to an invoice
   if (r.employer.cost <= 0 || r.selfEmployed) return nothing;
-  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${savingsView(r, money)}${costDetails(o, r)}</section>`;
+  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${leversView(r, money)}${costDetails(o, r)}</section>`;
 }

@@ -1,4 +1,4 @@
-/** «Las cuentas, paso a paso»: what is behind each figure of the offer, in € over the whole contract. */
+/** «Cómo se calcula»: what is behind each figure of the offer, in € over the whole contract. */
 
 import { html, nothing } from 'lit-html';
 import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
