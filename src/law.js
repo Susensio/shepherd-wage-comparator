@@ -40,6 +40,21 @@ export const SOURCES = {
     url: 'https://www.hacienda.gob.es/es-ES/Prensa/Noticias/Paginas/2026/20260217-NP-CM-SMI-DEDUCCION-2026.aspx',
   },
   sepe: { cite: 'SEPE', title: 'SEPE: prestación por desempleo', url: 'https://www.sepe.es' },
+  lgss: {
+    cite: 'LGSS',
+    title: 'Ley General de la Seguridad Social',
+    url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2015-11724',
+  },
+  modules: {
+    cite: 'Orden HAC/1425/2025',
+    title: 'Orden HAC/1425/2025, estimación objetiva (módulos) del IRPF para 2026',
+    url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2025-25272',
+  },
+  vatLaw: {
+    cite: 'Ley del IVA',
+    title: 'Ley 37/1992, del Impuesto sobre el Valor Añadido',
+    url: 'https://www.boe.es/buscar/act.php?id=BOE-A-1992-28740',
+  },
 };
 /** Link to an article of a source: ET and RD 1561/1995 have one anchor per article («#a37»). */
 export const articleUrl = (source, art) =>
@@ -201,6 +216,55 @@ const UNEMPLOYMENT = {
   contribRate: 0.047, // what the benefit itself pays to Social Security
 };
 
+/**
+ * Self-employed (autónomo) in 2026, for a shepherd who herds someone else's livestock and invoices for it.
+ * Read in the BOE on 5 November 2026; the tables checked against the Orden's own text.
+ */
+const SELF_EMPLOYED = {
+  /**
+   * RETA bases by tramo of net income per month (Orden PJC/297/2026 art. 18.1): [up to €/month, minimum base,
+   * maximum base]. The first three are the reduced table, the rest the general one. The quota is taken at the
+   * tramo's minimum base, the usual choice.
+   */
+  tramos: [
+    [670, 653.59, 718.94],
+    [900, 718.95, 900],
+    [1166.7, 849.67, 1166.7],
+    [1300, 950.98, 1300],
+    [1500, 960.78, 1500],
+    [1700, 960.78, 1700],
+    [1850, 1143.79, 1850],
+    [2030, 1209.15, 2030],
+    [2330, 1274.51, 2330],
+    [2760, 1356.21, 2760],
+    [3190, 1437.91, 3190],
+    [3620, 1519.61, 3620],
+    [4050, 1601.31, 4050],
+    [6000, 1732.03, 5101.2],
+    [Infinity, 1928.1, 5101.2],
+  ],
+  // RETA rates, % of the base: Orden PJC/297/2026 art. 18.2 (comunes, profesionales, equidad) and 37.5.a, 37.6
+  rates: [
+    ['Contingencias comunes', 28.3],
+    ['Contingencias profesionales', 1.3],
+    ['MEI', 0.9],
+    ['Cese de actividad', 0.9],
+    ['Formación profesional', 0.1],
+  ],
+  // The tramo's income: the módulos «rendimiento neto previo minorado» less 7 % generic expenses, spread over the
+  // months registered (LGSS art. 308.1.c, rules 1ª to 3ª)
+  genericExpensesPct: 7,
+  // Módulos 2026 (Orden HAC/1425/2025): «servicios de cría, guarda y engorde de ganado», index 0,37 on the income
+  // (Anexo I; 0,56 is «otros trabajos y servicios accesorios», not this one); the general 5 % reduction (DA 1ª)
+  moduleIndex: 0.37,
+  moduleReductionPct: 5,
+  // IVA on herding for a livestock holder: 10 % (Ley 37/1992 art. 91.Uno.2.3º, «cría, guarda y engorde de animales»).
+  // Not confirmed by a ruling for a provider who is not a holder himself; outside the farming special regime (art. 124)
+  vatPct: 10,
+  // IRPF withheld on invoices for livestock activities: 2 % (RD 439/2007 art. 95.6). The tax is the year's, not this
+  withholdingPct: 2,
+};
+
 /** IRPF (Ley 35/2006): general scale (state and regional together), no children. */
 export const IRPF = {
   expenses: 2000, // art. 19.2.f
@@ -227,11 +291,12 @@ export const IRPF = {
 };
 
 /** The figures in the shape the model reads them. */
-/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF}} */
+/** @type {{[K in keyof typeof RULES]: number} & {unemployment: typeof UNEMPLOYMENT, irpf: typeof IRPF, selfEmployed: typeof SELF_EMPLOYED}} */
 export const LAW = {
   .../** @type {any} */ (Object.fromEntries(Object.entries(RULES).map(([k, r]) => [k, r.value]))),
   unemployment: UNEMPLOYMENT,
   irpf: IRPF,
+  selfEmployed: SELF_EMPLOYED,
 };
 /** «Estatuto, art. 38» and its link. */
 export const citeOf = (source, art) => ({

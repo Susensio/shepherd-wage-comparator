@@ -54,3 +54,10 @@ test('Social Security rates depend on the contract (Orden PJC/297/2026)', () => 
   assert.deepEqual(ssOf('none'), ssOf('seasonal'), 'without a contract, the fijo discontinuo rates are the reference');
   assert.deepEqual(ssOf(undefined), ssOf('temporary'));
 });
+
+test('self-employed 2026: RETA rates add up to 31,50 %, tramos ascend, the lowest quota is about 206 €', () => {
+  const se = LAW.selfEmployed;
+  assert.equal(Math.round(se.rates.reduce((sum, [, pct]) => sum + pct, 0) * 100) / 100, 31.5);
+  for (let i = 1; i < se.tramos.length; i++) assert.ok(se.tramos[i][0] > se.tramos[i - 1][0], `tramo ${i + 1}`);
+  assert.equal(Math.round(se.tramos[0][1] * 31.5) / 100, 205.88);
+});
