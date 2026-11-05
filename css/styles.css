@@ -1086,8 +1086,10 @@ div.welcome {
 }
 .year-head {
   margin: 8px 0 -2px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--muted);
 }
 .year-head:first-child {
@@ -2880,6 +2882,10 @@ details.paste > summary {
   color: var(--muted);
   font-weight: 700;
   text-align: left;
+}
+.cmp-mode button {
+  flex: none;
+  white-space: nowrap;
 }
 .cmp-mode {
   display: flex;
