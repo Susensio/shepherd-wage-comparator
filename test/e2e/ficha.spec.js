@@ -86,7 +86,11 @@ test('«Condiciones» is the first block, under the name, one row that opens the
   await expect(page.locator('.crow')).toHaveCount(4);
   await expect(page.locator('.crow').first()).toBeVisible();
   await expect(conditions.locator('.cs')).toBeHidden(); // the rows repeat it
-  expect((await title.boundingBox())?.y).toBe(closedTop); // faded in place: the title does not jump
+  expect((await title.boundingBox())?.y).toBe(closedTop); // anchored at the top: the title does not jump
+  const summary = await conditions.locator('summary').boundingBox();
+  const titleBox = await title.boundingBox();
+  // …and no empty room where the line was: the open summary is the title and its padding
+  expect((summary?.height ?? 0) - (titleBox?.height ?? 0)).toBeLessThanOrEqual(24);
   await page.locator('.crow[data-step=pay]').click();
   await expect(page.locator('#entry .step[data-step=pay]')).toBeVisible();
 });

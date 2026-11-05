@@ -1190,8 +1190,9 @@ div.welcome {
 }
 /* One row that opens the condition rows inside the same card */
 .conditions > summary {
-  min-height: 56px;
-  padding: 8px 14px;
+  padding: 10px 14px;
+  /* The title stays where it is when the line under it goes: anchored at the top, not centred */
+  align-items: flex-start;
 }
 .cinfo {
   display: flex;
@@ -1222,15 +1223,9 @@ div.welcome {
 .conditions[open] > summary .cmore {
   display: none;
 }
-/* The rows below say it in full. Faded, not removed: it keeps its space, so the title does not jump as the card opens */
-.cs {
-  transition:
-    opacity var(--t),
-    visibility var(--t);
-}
+/* The rows below say it in full: the line goes, and with the title anchored at the top nothing moves but the card's edge */
 .conditions[open] > summary .cs {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
 }
 .conditions > summary::after {
   margin-left: 0;
