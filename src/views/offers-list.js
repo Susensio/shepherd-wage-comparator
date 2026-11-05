@@ -3,18 +3,21 @@
 import { html, nothing } from 'lit-html';
 import { fCount, fE } from '../format.js';
 import { yearShares } from '../model/calc.js';
-import { datesText, isComplete, TEMPLATES, workedOffers } from '../offer.js';
+import { datesText, isComplete, isoOf, TEMPLATES, workedOffers } from '../offer.js';
 import { herdText } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
 /** The «⋯» of a card (the ficha's is in index.html). */
 const DOTS = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
 
-/** Offers without a start date: not decided yet, so they come first. */
+/** Offers without a start date, or starting in the future: not decided yet, so they come first. */
 const UNDECIDED = 'undecided';
 
+/** Whether an offer starts after today (ISO dates compare as text). */
+const startsLater = (o) => !!o.terms.start && o.terms.start > isoOf(new Date());
+
 /** The year an offer starts in, or `UNDECIDED`. */
-const groupOf = (o) => (o.terms.start ? o.terms.start.slice(0, 4) : UNDECIDED);
+const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
 
 /**
  * What was worked each year: how many offers, the money received and the days contributed. Each contract is split by
@@ -26,7 +29,7 @@ function yearTotals(items) {
   const worked = new Set(workedOffers(items.map((x) => x.o)));
   const parts = {};
   for (const { o, r } of items) {
-    if (!worked.has(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
+    if (!worked.has(o) || startsLater(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
     for (const [year, share] of Object.entries(yearShares(o.terms)))
       parts[year] = [...(parts[year] || []), { r, share }];
   }
@@ -58,7 +61,7 @@ function yearHeading(year, totals) {
  * apart (hours, en negro, what is owed) are in Comparar and the ficha. An offer not worked (marked «solo oferta», or
  * without a start date) is muted with a dashed edge, as in Comparar; one with data missing says so instead of a figure.
  * Cards go by start date, the latest first, under a header per year with that year's figures; those without a start
- * date go first, under «Por decidir» (ADR-0030).
+ * date, or starting later than today, go first, under «Por decidir» (ADR-0030), the soonest first and the undated last.
  * @param {{ o: any, r: any }[]} items your offers with their figures
  * @param {string} activeId the offer shown on the ficha, marked on wide screens where the list stays beside it
  */
@@ -73,7 +76,9 @@ export function offersListView(items, activeId) {
     .sort()
     .reverse();
   const order = (group) => [...group].sort((a, b) => (b.o.terms.start || '').localeCompare(a.o.terms.start || ''));
-  const undecided = groups.get(UNDECIDED);
+  const undecided = groups
+    .get(UNDECIDED)
+    .sort((a, b) => (a.o.terms.start || '9').localeCompare(b.o.terms.start || '9'));
   return html`${undecided.length ? html`<h3 class="year-head"><b>Por decidir</b></h3>${undecided.map((x) => card(x, activeId))}` : nothing}${years.map(
     (year) => html`${yearHeading(year, totals[year])}${order(groups.get(year)).map((x) => card(x, activeId))}`,
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;

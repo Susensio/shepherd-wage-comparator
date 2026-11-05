@@ -76,3 +76,16 @@ test('without undated offers there is no «Por decidir»', async ({ loaded: page
   await page.click('.tabs [data-tab=offers]');
   await expect(page.locator('#cards .year-head', { hasText: 'Por decidir' })).toHaveCount(0);
 });
+
+test('an offer starting after today is «Por decidir» too, and counts in no year', async ({ loaded: page }) => {
+  const future = structuredClone(sample.offers[3]);
+  future.id = 'future';
+  future.mine.name = 'Futura';
+  future.terms.start = '2099-05-01';
+  await loadOffers(page, { ...sample, offers: [...sample.offers, future] });
+  await page.click('.tabs [data-tab=offers]');
+  const heads = await page.locator('#cards .year-head').allTextContents();
+  expect(heads.map((h) => h.split(' · ')[0])).not.toContain('2099');
+  expect(heads[0]).toBe('Por decidir');
+  await expect(page.locator('#cards .ocard').first()).toContainText('Futura');
+});

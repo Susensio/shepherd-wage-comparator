@@ -73,7 +73,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | ganadero | the employer | | empresario, patrón |
 | pastor, pastora | the worker; «pastores y pastoras» when addressing both | | |
 | otros pastores | other users who share their offers; also the name of the third tab, where they are ranked with your own offers (ADR-0030) | `state.others`, `data-tab=others` | otros usuarios, los demás |
-| Por decidir | the header over the offers without a start date, first in Ofertas (ADR-0030) | `UNDECIDED` (`views/offers-list.js`) | sin fecha, pendientes |
+| Por decidir | the header over the offers without a start date or starting after today, first in Ofertas (ADR-0030) | `UNDECIDED` (`views/offers-list.js`) | sin fecha, pendientes |
 | Leyes y fuentes | the page of the laws and their sources, opened from the balance button of the app bar, as Ajustes and Cuenta (ADR-0030) | `data-panel=laws`, `openLawsPage` | pestaña de Leyes |
 | pueblo | the village of the job, shared (ADR-0028) | `terms.place` | localidad |
 | municipio, provincia | the council and province of the job, shared | `terms.municipality`, `terms.province` | |
