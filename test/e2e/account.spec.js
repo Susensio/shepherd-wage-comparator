@@ -435,13 +435,14 @@ test('a page older than the database allows asks for a reload and does not write
   expect(await page.evaluate(() => window.fake.data.offers.length)).toBe(1);
 });
 
-test('an empty account opens the templates, like a first visit', async ({ openApp }) => {
+test('an empty account opens the welcome and then the templates, like a first visit', async ({ openApp }) => {
   const page = await openApp({
     init: installFake,
     arg: { tables: { profiles: [{ ...PROFILE }] } },
     beforeLoad: withProject,
   });
   await expect(page.locator('#welcome')).toBeVisible();
+  await page.locator('#welcomeStart').click();
   await expect(page.locator('#tplGrid button').first()).toBeVisible();
 });
 
@@ -615,13 +616,13 @@ test.describe('while the saved session is being connected', () => {
       await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(3);
       await expect(page.locator('#tplGrid')).toBeHidden();
       await release(page);
-      await expect(page.locator('#tplGrid')).toBeVisible();
+      await expect(page.locator('#welcome')).toBeVisible();
       await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
     });
 
-    test('a guest never sees a skeleton and starts with the templates', async ({ openApp }) => {
+    test('a guest never sees a skeleton and starts with the welcome', async ({ openApp }) => {
       const page = await noCache(openApp, { signedOut: true, holdSession: false });
-      await expect(page.locator('#tplGrid')).toBeVisible();
+      await expect(page.locator('#welcome')).toBeVisible();
       await expect(page.locator('#cards .ocard.skeleton')).toHaveCount(0);
       await expect(page.locator('#offersList')).toHaveAttribute('aria-busy', 'false');
     });

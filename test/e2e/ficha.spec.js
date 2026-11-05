@@ -1,6 +1,6 @@
 // The ficha: the paro under the headline, what the negro costs, and «Condiciones» as one row at the end.
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, leaveWelcome, loadOffers, sample, test } from './fixtures.js';
 
 const OFFER = { puertoA: 0, campanaB: 2, invernadaC: 3, sinContratoD: 4, temporadaF: 6 };
 
@@ -122,6 +122,7 @@ test.describe('the «⋯» menu on each card', () => {
       window.saves = 0;
     });
     await page.locator('#btnAdd').click();
+    await leaveWelcome(page);
     await page.locator('.tcard').first().click();
     expect(await page.evaluate(() => window.saves)).toBe(1);
   });

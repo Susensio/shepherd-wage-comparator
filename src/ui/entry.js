@@ -15,9 +15,6 @@ import { fUnit, inUnit, offerUnit } from '../units.js';
 import { closeEntry, entryOpen, entryToFicha, openEntry } from './navigation.js';
 import { scrollToTop } from './scroller.js';
 
-/** The headline of a first visit, in place of the first step's question. */
-const WELCOME_TITLE = 'Apunta la oferta y mira cuánto se gana';
-
 const entry = {
   /** Index in `STEPS` of the step shown. */
   step: 0,
@@ -30,6 +27,10 @@ const entry = {
   template: /** @type {string | null} */ (null),
   /** The step was opened because something is missing in it: the fields are marked. */
   asked: false,
+  /** The first-visit welcome was left for the templates. Without it, a first visit shows the welcome. */
+  started: false,
+  /** …by its button, so that going back returns to it. */
+  welcomed: false,
   /** The new offer as it was when its template was picked, to tell whether anything was typed since. */
   picked: '',
   /** The template tapped once while something typed would be lost: a second tap confirms. */
@@ -43,6 +44,9 @@ export function setUpEntry(given) {
   Object.assign(callbacks, given);
 }
 
+/** A first visit that has not left the welcome yet. */
+const isWelcoming = () => !!state.placeholderId && entry.step === 0 && !entry.editing && !entry.started;
+
 export const currentStep = () => STEPS[entry.step];
 export const chosenTemplate = () => entry.template;
 /** Whether the fields missing in the step shown are marked. */
@@ -54,7 +58,7 @@ function show(index) {
   if (STEPS[index].id === 'offer') preloadPlaces();
   callbacks.paint();
   scrollToTop(0, 'instant');
-  $('#entryTitle').focus({ preventScroll: true });
+  $(isWelcoming() ? '#welcomeTitle' : '#entryTitle').focus({ preventScroll: true });
 }
 
 /** A new offer: from the templates. `inPlaceOfFicha`: the ficha's offer was just deleted. */
@@ -148,8 +152,18 @@ export function next() {
   callbacks.paint();
 }
 
-/** The arrow: the step before, or out of the entry. */
+/** «Empezar»: from the welcome to the templates. */
+export function leaveWelcome() {
+  Object.assign(entry, { started: true, welcomed: true });
+  show(0);
+}
+
+/** The arrow: the step before, back to the welcome, or out of the entry. */
 export function back() {
+  if (entry.welcomed && !entry.editing && entry.step === 0) {
+    Object.assign(entry, { started: false, welcomed: false });
+    return show(0);
+  }
   if (entry.editing || entry.step === 0) return close();
   show(entry.step - 1);
 }
@@ -164,9 +178,9 @@ export function paintEntry(o, r) {
   const edit = entry.editing;
   const pending = index === 0 && !entry.createdId && !edit;
   for (const section of $$('#entry .step')) section.hidden = section.dataset.step !== step.id;
-  const welcome = !!state.placeholderId && index === 0 && !edit;
-  // The first visit opens with what the page does, not with the templates' question
-  $('#entryTitle').textContent = welcome ? WELCOME_TITLE : step.title;
+  const welcoming = isWelcoming();
+  $('#entry').classList.toggle('welcoming', welcoming);
+  $('#entryTitle').textContent = step.title;
   $('#entryCounter').textContent = edit ? 'Cambiar' : `Paso ${index + 1} de ${STEPS.length}`;
   $('#entryClose').textContent = edit ? 'Cancelar' : 'Cerrar';
   $('#entryBack').setAttribute('aria-label', edit ? 'Cancelar' : index === 0 ? 'Cerrar' : 'Paso anterior');
@@ -181,8 +195,8 @@ export function paintEntry(o, r) {
     ? 'sin calcular'
     : fUnit(inUnit(r.earnings.total, r, unit), unit);
   $('#tplWarn').hidden = !entry.armed;
-  $('#welcome').hidden = !welcome;
-  document.body.classList.toggle('welcome', welcome);
+  $('#welcome').hidden = !welcoming;
+  document.body.classList.toggle('welcome', !!state.placeholderId && index === 0 && !edit);
 }
 
 /** Every offer was replaced (the account's): a step held open is abandoned, nothing of it is saved. */

@@ -1,6 +1,6 @@
 // Where the job is and which herd: the «Pueblo» field, the place list loading, and what the summaries show.
 
-import { expect, openCondition, startOffer as startEntry, test } from './fixtures.js';
+import { expect, leaveWelcome, openCondition, startOffer as startEntry, test } from './fixtures.js';
 
 const PLACES_FILE = /\/data\/places-[\d.-]+\.json$/;
 
@@ -37,8 +37,9 @@ test('the step has the field and three head counts', async ({ page }) => {
 test('the list is requested when the form opens, not on a plain page load', async ({ openApp }) => {
   const requests = [];
   const page = await openApp({ beforeLoad: (p) => watchPlacesRequests(p, requests) });
-  await expect(page.locator('.tcard').first()).toBeVisible();
+  await expect(page.locator('#welcomeStart')).toBeVisible();
   expect(requests).toHaveLength(0);
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click(); // a new offer opens the form
   await expect.poll(() => requests.length).toBe(1);
   await expect(page.locator('#placeHint')).toHaveText('');

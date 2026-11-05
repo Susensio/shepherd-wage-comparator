@@ -1037,13 +1037,22 @@ section.others p {
 div.welcome {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--line);
+  gap: 14px;
+}
+div.welcome[hidden] {
+  display: none;
 }
 .welcome h2 {
   font-size: clamp(24px, 5.5vw, 34px);
+  outline: 0;
+}
+.welcome .pri {
+  align-self: stretch;
+  margin-top: 6px;
+}
+/* The welcome is a screen of its own: no step header, title, steps or footer */
+.entry.welcoming :is(.entryhead, #entryTitle, .step, .entryfoot) {
+  display: none;
 }
 .welcome ul {
   margin: 0;

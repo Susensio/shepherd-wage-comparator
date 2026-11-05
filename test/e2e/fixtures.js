@@ -18,6 +18,7 @@ export async function loadOffers(page, data, show = 1) {
       const loaded = ingestSaved(data, { fallbackCfg: DEF_CFG });
       app.state.offers = loaded.offers;
       app.state.config = loaded.cfg;
+      app.state.placeholderId = null; // offers were loaded: not a first visit
       saveConfig();
       app.select(app.state.offers[show].id);
       if (!document.body.classList.contains('on-page')) app.openFicha();
@@ -26,11 +27,18 @@ export async function loadOffers(page, data, show = 1) {
   );
 }
 
+/** On a first visit, leaves the welcome for the templates; nothing to do anywhere else. */
+export async function leaveWelcome(page) {
+  const start = page.locator('#welcomeStart');
+  if (await start.isVisible()) await start.click();
+}
+
 /** The steps in the order of the entry. */
 const STEP_IDS = ['template', 'offer', 'pay', 'day', 'trip'];
 
 /** In the entry of a new offer, picks a template (the first by default, or `template`) and goes on to step `id`. */
 export async function startOffer(page, id = 'offer', template = null) {
+  await leaveWelcome(page);
   await page
     .locator(template ? `.tcard[data-template=${template}]` : '.tcard')
     .first()

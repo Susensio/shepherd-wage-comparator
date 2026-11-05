@@ -312,17 +312,21 @@
   <main class="entrymain">
     <h2 id="entryTitle"></h2>
 
+    <div class="welcome" id="welcome" hidden>
+      <h2 id="welcomeTitle" tabindex="-1">Apunta la oferta y mira cuánto se gana</h2>
+      <p>Las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, el coche, las vacaciones «incluidas»… Apúntala tal como la proponen y se ve cuánto se gana por hora, por día y por mes.</p>
+      <ul>
+        <li><b>Compara</b> varias ofertas y mira cuál deja más.</li>
+        <li><b>Comprueba</b> si se llega al mínimo de la ley.</li>
+        <li><b>Mira</b> cuánto se ahorra el ganadero pagando en negro.</li>
+      </ul>
+      <button type="button" class="pri" id="welcomeStart" data-action="startFromWelcome">Empezar</button>
+      <p class="hint">Nadie más ve las ofertas, salvo que se compartan.</p>
+      <p class="hint" id="signedOutNotice" role="status" hidden>Las ofertas siguen guardadas en la cuenta. Entra para verlas.</p>
+    </div>
+
+
     <section class="step" data-step="template">
-      <div class="welcome" id="welcome" hidden>
-        <p>Las ofertas llegan de palabra y cada una a su manera: tanto al día, una parte en negro, la borda, el coche, las vacaciones «incluidas»… Apúntala tal como la proponen y se ve cuánto se gana por hora, por día y por mes.</p>
-        <ul>
-          <li><b>Compara</b> varias ofertas y mira cuál deja más.</li>
-          <li><b>Comprueba</b> si se llega al mínimo de la ley.</li>
-          <li><b>Mira</b> cuánto se ahorra el ganadero pagando en negro.</li>
-        </ul>
-        <p class="hint">Nadie más ve las ofertas, salvo que se compartan.</p>
-        <p class="hint" id="signedOutNotice" role="status" hidden>Las ofertas siguen guardadas en la cuenta. Entra para verlas.</p>
-      </div>
       <p class="hint">Elige la plantilla más parecida. Se rellenan el contrato, la casa y los viajes; las cifras (horas, sueldo…) se escriben a mano.</p>
       <p class="hint warn" id="tplWarn" role="status" hidden>Cambiar de plantilla borra lo ya escrito. Para seguir, toca la plantilla otra vez.</p>
       <div class="tpl-grid" id="tplGrid"></div>

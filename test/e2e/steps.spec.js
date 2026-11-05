@@ -1,13 +1,28 @@
 // The guided entry and the ficha: the order of the steps, «Siguiente» that never blocks, changing one step, and the phone's Back button.
 
-import { expect, goStep, loadOffers, openCondition, openStep, sample, saveStep, startOffer, test } from './fixtures.js';
+import {
+  expect,
+  goStep,
+  leaveWelcome,
+  loadOffers,
+  openCondition,
+  openStep,
+  sample,
+  saveStep,
+  startOffer,
+  test,
+} from './fixtures.js';
 
 const active = (page) => page.evaluate(() => app.active());
 const counter = (page) => page.locator('#entryCounter');
 
 test('a new offer goes through the steps in order, from the templates to the ficha', async ({ page }) => {
-  await expect(page.locator('#entryTitle')).toHaveText('Apunta la oferta y mira cuánto se gana'); // a first visit opens with the pitch
+  await expect(page.locator('#welcomeTitle')).toHaveText('Apunta la oferta y mira cuánto se gana'); // a first visit opens with the pitch
+  await expect(page.locator('#entryTitle')).toBeHidden();
+  await page.locator('#welcomeStart').click();
+  await expect(page.locator('#entryTitle')).toHaveText('¿Se parece a alguna de estas?');
   await expect(page.locator('#entryNext')).toBeHidden(); // until a template is picked
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   const titles = ['La oferta', 'Pago', 'El día a día', 'Coche y gastos'];
   for (const [i, title] of titles.entries()) {
@@ -109,6 +124,7 @@ test('the pay, vacation and duration warnings show only while their answer is mi
 });
 
 test('picking another template on coming back replaces the offer, it does not add one', async ({ page }) => {
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   await goStep(page, 'template');
   await expect(page.locator('.tcard[aria-pressed=true]')).toHaveCount(1);
@@ -184,18 +200,22 @@ test('a step changed is saved only on «Guardar»: until then nothing is stored,
 
 test('another template asks twice when something was typed, and not when nothing was', async ({ page }) => {
   await page.goto('/');
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   await goStep(page, 'template');
+  await leaveWelcome(page);
   await page.locator('.tcard').nth(1).click(); // nothing typed yet: changes at once
   await expect(page.locator('#tplWarn')).toBeHidden();
   await expect(counter(page)).toHaveText('Paso 2 de 5');
   await goStep(page, 'day');
   await page.fill('#hoursPerDay', '7');
   await goStep(page, 'template');
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   await expect(page.locator('#tplWarn')).toBeVisible();
   await expect(counter(page)).toHaveText('Paso 1 de 5');
   expect((await active(page)).terms.hoursPerDay).toBe(7);
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   await expect(counter(page)).toHaveText('Paso 2 de 5');
   expect((await active(page)).terms.hoursPerDay).not.toBe(7);
@@ -229,6 +249,7 @@ test('the «Ofertas» link and the page Back stay in step', async ({ loaded: pag
 });
 
 test('Back from a new offer closes the entry and keeps the offer', async ({ page }) => {
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   await page.goBack();
   await expect(page.locator('#entry')).toBeHidden();
@@ -259,6 +280,7 @@ test('deleting the last offer opens the templates in place of its ficha; Back go
   page,
 }) => {
   const entry = await historyIndex(page);
+  await leaveWelcome(page);
   await page.locator('.tcard').first().click();
   for (let i = 0; i < 4; i++) await page.locator('#entryNext').click();
   await expect(page.locator('#ficha')).toBeVisible();
