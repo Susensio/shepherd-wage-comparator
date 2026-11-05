@@ -1,6 +1,6 @@
 // The guided entry and the ficha: the order of the steps, «Siguiente» that never blocks, changing one step, and the phone's Back button.
 
-import { expect, goStep, loadOffers, openCondition, openStep, sample, startOffer, test } from './fixtures.js';
+import { expect, goStep, loadOffers, openCondition, openStep, sample, saveStep, startOffer, test } from './fixtures.js';
 
 const active = (page) => page.evaluate(() => app.active());
 const counter = (page) => page.locator('#entryCounter');
@@ -157,6 +157,48 @@ test('«Cancelar» puts the offer back as it was', async ({ loaded: page }) => {
   await expect(page.locator('#ficha')).toBeVisible();
   expect(await active(page)).toEqual(before);
   await expect(page.locator('.crow[data-step=pay]')).not.toContainText('999');
+});
+
+/** What is in the browser's storage for the active offer: what a reload, the account or a sharing would see. */
+const stored = (page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem('cj.ofertas2')).find((o) => o.id === app.state.activeId));
+
+test('a step changed is saved only on «Guardar»: until then nothing is stored, and «Cancelar» leaves it as it was', async ({
+  loaded: page,
+}) => {
+  const before = (await stored(page)).terms.hoursPerDay;
+  await openStep(page, 'day');
+  await page.fill('#hoursPerDay', '3');
+  expect((await active(page)).terms.hoursPerDay).toBe(3); // the page already shows it
+  expect((await stored(page)).terms.hoursPerDay).toBe(before);
+  await page.locator('#entryClose').click();
+  expect((await stored(page)).terms.hoursPerDay).toBe(before);
+  expect((await active(page)).terms.hoursPerDay).toBe(before);
+
+  await openStep(page, 'day');
+  await page.fill('#hoursPerDay', '4');
+  expect((await stored(page)).terms.hoursPerDay).toBe(before);
+  await saveStep(page);
+  expect((await stored(page)).terms.hoursPerDay).toBe(4);
+});
+
+test('another template asks twice when something was typed, and not when nothing was', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('.tcard').first().click();
+  await goStep(page, 'template');
+  await page.locator('.tcard').nth(1).click(); // nothing typed yet: changes at once
+  await expect(page.locator('#tplWarn')).toBeHidden();
+  await expect(counter(page)).toHaveText('Paso 2 de 5');
+  await goStep(page, 'day');
+  await page.fill('#hoursPerDay', '7');
+  await goStep(page, 'template');
+  await page.locator('.tcard').first().click();
+  await expect(page.locator('#tplWarn')).toBeVisible();
+  await expect(counter(page)).toHaveText('Paso 1 de 5');
+  expect((await active(page)).terms.hoursPerDay).toBe(7);
+  await page.locator('.tcard').first().click();
+  await expect(counter(page)).toHaveText('Paso 2 de 5');
+  expect((await active(page)).terms.hoursPerDay).not.toBe(7);
 });
 
 test('the phone Back button goes from the step to the ficha to the list, and restores a cancelled step', async ({

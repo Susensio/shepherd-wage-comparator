@@ -12,9 +12,12 @@ import { KEY, notifySaved, offersOf, state, store } from './state.js';
  */
 export function createOffers({ state, store, notify = () => {} }) {
   let persistRequested = false;
+  /** A step is being changed: edits stay in memory until `release(true)`, so cancelling leaves nothing saved or synced. */
+  let held = false;
 
   /** Writes the offers and the active id, and tells the listeners. */
   function save() {
+    if (held) return;
     store.set(KEY.offers, state.offers);
     store.set(KEY.active, state.activeId);
     notify();
@@ -23,6 +26,17 @@ export function createOffers({ state, store, notify = () => {} }) {
       persistRequested = true;
       globalThis.navigator?.storage?.persist?.().catch(() => {});
     }
+  }
+
+  /** Starts keeping edits in memory. */
+  function hold() {
+    held = true;
+  }
+
+  /** Stops keeping them; `keep` saves what was changed, else the caller has put it back and nothing is written. */
+  function release(keep) {
+    held = false;
+    if (keep) save();
   }
 
   /** Reads the saved offers (after `state.config`). Nothing saved is a first visit: a placeholder, replaced by the template picked. */
@@ -123,6 +137,8 @@ export function createOffers({ state, store, notify = () => {} }) {
 
   return {
     save,
+    hold,
+    release,
     start,
     select,
     add,

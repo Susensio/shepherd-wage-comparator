@@ -7,7 +7,7 @@ import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
 import { accountLoader, accountState, setUpAccountSection } from './ui/account-section.js';
-import { setUpEntry, startEntry } from './ui/entry.js';
+import { abandonEntry, setUpEntry, startEntry } from './ui/entry.js';
 import {
   openAccountPage,
   openFicha,
@@ -83,7 +83,10 @@ window.app = {
     resetViews();
     showTab(tab);
   },
-  closeEntry: resetViews,
+  closeEntry: () => {
+    abandonEntry();
+    resetViews();
+  },
   openAccountPage,
   openSettingsPage,
   openLawsPage,

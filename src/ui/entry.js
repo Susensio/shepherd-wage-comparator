@@ -1,7 +1,8 @@
 /**
  * The guided entry: one step at a time, in order for a new offer (a template first), or a single step opened from the
  * ficha to change it, where «Cancelar» puts the offer back as it was. What is typed in a step is read into the offer
- * by `events.js` and saved on every change; this only moves between steps and says where the reader is.
+ * by `events.js`; a new offer is saved on every change, a changed step only on «Guardar» (`offers.hold`). This moves
+ * between steps and says where the reader is.
  */
 
 import { $, $$ } from '../dom.js';
@@ -26,6 +27,10 @@ const entry = {
   template: /** @type {string | null} */ (null),
   /** The step was opened because something is missing in it: the fields are marked. */
   asked: false,
+  /** The new offer as it was when its template was picked, to tell whether anything was typed since. */
+  picked: '',
+  /** The template tapped once while something typed would be lost: a second tap confirms. */
+  armed: /** @type {string | null} */ (null),
 };
 
 /** @type {{ paint: () => void, select: (id: string) => void, showSelected: () => void }} */
@@ -42,6 +47,7 @@ export const isAskingMissing = () => entryOpen() && entry.editing && entry.asked
 
 function show(index) {
   entry.step = index;
+  entry.armed = null;
   if (STEPS[index].id === 'offer') preloadPlaces();
   callbacks.paint();
   scrollToTop(0, 'instant');
@@ -50,7 +56,15 @@ function show(index) {
 
 /** A new offer: from the templates. `inPlaceOfFicha`: the ficha's offer was just deleted. */
 export function startEntry(inPlaceOfFicha = false) {
-  Object.assign(entry, { editing: false, snapshot: null, createdId: null, template: null, asked: false });
+  Object.assign(entry, {
+    editing: false,
+    snapshot: null,
+    createdId: null,
+    template: null,
+    asked: false,
+    picked: '',
+    armed: null,
+  });
   openEntry(inPlaceOfFicha);
   show(0);
 }
@@ -58,6 +72,7 @@ export function startEntry(inPlaceOfFicha = false) {
 /** One step of the active offer, to change it. `asked`: because something is missing in it. */
 export function editStep(id, asked = false) {
   Object.assign(entry, { editing: true, snapshot: structuredClone(active()), asked });
+  offers.hold();
   openEntry();
   show(STEPS.findIndex((step) => step.id === id));
 }
@@ -74,6 +89,12 @@ function uniqueName(base, ignoring) {
 export function pickTemplate(id) {
   const template = TEMPLATES.find((t) => t.id === id);
   const old = state.offers.find((o) => o.id === entry.createdId);
+  // Another template replaces what was typed: the first tap only warns
+  if (old && entry.armed !== id && JSON.stringify({ terms: old.terms, mine: old.mine }) !== entry.picked) {
+    entry.armed = id;
+    return callbacks.paint();
+  }
+  entry.armed = null;
   const fresh = makeOffer(template?.terms, {
     ...template?.mine,
     name: uniqueName(template?.title || 'Oferta', old?.id),
@@ -87,6 +108,8 @@ export function pickTemplate(id) {
     offers.chooseTemplate(fresh);
     callbacks.showSelected();
   }
+  const made = state.offers.find((o) => o.id === entry.createdId);
+  entry.picked = JSON.stringify({ terms: made?.terms, mine: made?.mine });
   show(1);
 }
 
@@ -95,7 +118,7 @@ export function dismiss() {
   if (entry.editing) {
     const o = active();
     if (entry.snapshot && o) Object.assign(o, structuredClone(entry.snapshot));
-    offers.save();
+    offers.release(false);
   } else if (state.placeholderId) offers.keepPlaceholder();
   entry.snapshot = null;
 }
@@ -106,8 +129,9 @@ export function close() {
   callbacks.paint();
 }
 
-/** «Guardar»: the step was saved as it was typed; only the entry closes. */
+/** «Guardar»: the step changed is saved now, and the entry closes. */
 export function save() {
+  offers.release(true);
   entry.snapshot = null;
   closeEntry();
   callbacks.paint();
@@ -151,7 +175,14 @@ export function paintEntry(o, r) {
   $('#stripFigure').textContent = missing(o.terms).length
     ? 'sin calcular'
     : fUnit(inUnit(r.earnings.total, r, unit), unit);
+  $('#tplWarn').hidden = !entry.armed;
   const welcome = !!state.placeholderId && index === 0 && !edit;
   $('#welcome').hidden = !welcome;
   document.body.classList.toggle('welcome', welcome);
+}
+
+/** Every offer was replaced (the account's): a step held open is abandoned, nothing of it is saved. */
+export function abandonEntry() {
+  if (entry.editing) offers.release(false);
+  entry.snapshot = null;
 }
