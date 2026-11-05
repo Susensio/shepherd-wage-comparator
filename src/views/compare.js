@@ -32,8 +32,8 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
         : '',
     offerOnlyCount && !showOfferOnly
       ? offerOnlyCount === 1
-        ? 'Se oculta 1 que no se trabajó.'
-        : `Se ocultan ${offerOnlyCount} que no se trabajaron.`
+        ? 'Se oculta 1 de solo oferta.'
+        : `Se ocultan ${offerOnlyCount} de solo oferta.`
       : '',
   ]
     .filter(Boolean)
@@ -44,7 +44,7 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
     <div class="view"><span class="view-l">Ordenar</span><div class="seg" role="radiogroup" aria-label="Ordenar">${sortBy('paro', 'Con el paro')}${sortBy('money', 'Sin el paro')}</div></div>
     ${
       offerOnlyCount
-        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las que no se trabajaron</label>`
+        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
         : nothing
     }
     <label class="check"><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
@@ -532,5 +532,5 @@ export function yearlyView(all) {
     ${row('Cobrado por hora', (c) => fE(c.perHour, 2))}
     ${row('Total', (c) => fE(c.earned))}
     ${row('Días cotizados', (c) => fN(c.contrib))}
-    </tbody></table></div><p class="hint">Sin las que solo eran ofertas. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
+    </tbody></table></div><p class="hint">Sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
 }
