@@ -1084,6 +1084,22 @@ div.welcome {
   flex-direction: column;
   gap: 10px;
 }
+.year-head {
+  margin: 8px 0 -2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.year-head:first-child {
+  margin-top: 0;
+}
+.year-head b {
+  color: var(--ink);
+  font-weight: 750;
+}
+.cards > .hint {
+  margin: 4px 0 0;
+}
 .ocard {
   display: flex;
   flex-direction: column;
