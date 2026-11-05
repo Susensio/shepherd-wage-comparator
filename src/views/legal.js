@@ -273,6 +273,6 @@ export function legalSection(o, r, money) {
       .map(
         item,
       )}</ul>${passed.length ? html`<p class="hint">✔ Cumple: ${joinAnd(passed.map((x) => x.title.toLowerCase()))}.</p>` : nothing}</details>
-    <p class="hint">Dónde reclamar (sindicato, Inspección de Trabajo): <button type="button" class="linkbtn" data-action="tab" data-tab="laws">en «Leyes»</button>.</p>
+    <p class="hint">Dónde reclamar (sindicato, Inspección de Trabajo): <button type="button" class="linkbtn" data-action="openLawsPage">en «Leyes»</button>.</p>
   </section>`;
 }

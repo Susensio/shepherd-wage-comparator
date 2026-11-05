@@ -260,7 +260,7 @@ function carHint(o, r) {
   return `Unos ${fN(r.time.months > 0 ? r.car.km / r.time.months : 0)}\u00a0km al mes en coche propio. Consumo y gasolina, en «Datos comunes».`;
 }
 
-/** Only what the dates leave out; the minimum wage itself is in the Leyes tab. */
+/** Only what the dates leave out; the minimum wage itself is on the Leyes page. */
 function yearHint(o, r) {
   const year = actualYear(o.terms);
   return year !== r.year ? `Aún no está el salario mínimo de ${year}: se usa el de ${r.year}.` : '';

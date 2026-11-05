@@ -43,7 +43,7 @@ test.describe('phone', () => {
   });
 
   test('a pull when the content is not at its top only scrolls', async ({ loaded: page }) => {
-    await page.locator('.tabs [data-tab=laws]').click();
+    await page.locator('.tabs [data-tab=compare]').click();
     await page.evaluate(() => {
       document.querySelector('#scroller').scrollTo(0, 400);
       window.notReloaded = true;

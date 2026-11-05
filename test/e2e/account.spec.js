@@ -160,13 +160,13 @@ test.describe('the account button', () => {
 
   test('it opens the account page, and «Volver» returns to the tab it came from', async ({ openApp }) => {
     const page = await open(openApp);
-    await page.locator('.tabs [data-tab=laws]').click();
+    await page.locator('.tabs [data-tab=compare]').click();
     await button(page).click();
     await expect(page.locator('[data-panel=account]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeHidden();
-    await expect(page.locator('[data-panel=laws]')).toBeHidden();
+    await expect(page.locator('[data-panel=compare]')).toBeHidden();
     await page.getByRole('button', { name: 'Volver' }).click();
-    await expect(page.locator('[data-panel=laws]')).toBeVisible();
+    await expect(page.locator('[data-panel=compare]')).toBeVisible();
     await expect(page.locator('.tabs')).toBeVisible();
     await expect(page.locator('[data-panel=account]')).toBeHidden();
   });
@@ -207,8 +207,9 @@ test.describe('the tooltip', () => {
     await expect(tip(page)).toContainText('Guarda las ofertas en una cuenta. Ahora solo están en este navegador.');
     await page.locator('.tabs [data-tab=compare]').click();
     await expect(tip(page)).toContainText('Compara con otros pastores.');
-    await page.locator('.tabs [data-tab=laws]').click();
+    await page.getByRole('button', { name: 'Leyes', exact: true }).click();
     await expect(tip(page)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Volver' }).click();
     await page.evaluate(() => app.openSettingsPage());
     await expect(tip(page)).toContainText('Guarda los ajustes en una cuenta.');
     await page.locator('#accountButton').click();
@@ -782,9 +783,9 @@ test('the cog opens the settings from the app bar, over the tab shown', async ({
     arg: { localOffers: sample.offers, signedOut: true },
     beforeLoad: withProject,
   });
-  await page.locator('.tabs [data-tab=laws]').click();
+  await page.locator('.tabs [data-tab=compare]').click();
   await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
   await expect(page.locator('[data-panel=settings]')).toBeVisible();
   await page.goBack();
-  await expect(page.locator('[data-panel=laws]')).toBeVisible();
+  await expect(page.locator('[data-panel=compare]')).toBeVisible();
 });

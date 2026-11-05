@@ -1,5 +1,5 @@
 /**
- * The figures inside the static text (the Leyes tab and some form hints) come from law.js: each
+ * The figures inside the static text (the Leyes page and some form hints) come from law.js: each
  * <span data-law="key"> gets LAW_FIGURES[key], and each <a data-source="et" data-art="38"> its link.
  */
 

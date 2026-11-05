@@ -32,26 +32,26 @@ test.describe('phone', () => {
     const bar = await box(page.locator('.tabs'));
     expect(bar.y + bar.height).toBeCloseTo(700, 0);
     expect(bar.width).toBeCloseTo(375, 0);
-    for (const tab of ['offers', 'compare', 'laws']) {
+    for (const tab of ['offers', 'compare']) {
       const button = page.locator(`.tabs [data-tab=${tab}]`);
       await expect(button.locator('svg[aria-hidden=true]')).toBeVisible();
       expect((await box(button)).height).toBeGreaterThanOrEqual(44);
     }
     await expect(page.locator('.tabs [data-tab=offers]')).toHaveAttribute('aria-selected', 'true');
-    await page.locator('.tabs [data-tab=laws]').click();
-    await expect(page.locator('.tabs [data-tab=laws]')).toHaveAttribute('aria-selected', 'true');
+    await page.locator('.tabs [data-tab=compare]').click();
+    await expect(page.locator('.tabs [data-tab=compare]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('.tabs [data-tab=offers]')).toHaveAttribute('aria-selected', 'false');
   });
 
   test('the bar stays at the bottom while the page scrolls, and nothing ends hidden behind it', async ({
     loaded: page,
   }) => {
-    await page.locator('.tabs [data-tab=laws]').click();
+    await page.locator('.tabs [data-tab=compare]').click();
     await page.evaluate(() => document.querySelector('#scroller').scrollTo(0, 1e6));
     const bar = await box(page.locator('.tabs'));
     expect(bar.y + bar.height).toBeCloseTo(700, 0);
     const last = await page.evaluate(() => {
-      const panel = document.querySelector('.panel[data-panel=laws]');
+      const panel = document.querySelector('.panel[data-panel=compare]');
       return panel.getBoundingClientRect().bottom;
     });
     expect(last).toBeLessThanOrEqual(bar.y);
@@ -61,7 +61,7 @@ test.describe('phone', () => {
   test('the content scrolls in its own element, with the bar outside it and the window still', async ({
     loaded: page,
   }) => {
-    await page.locator('.tabs [data-tab=laws]').click();
+    await page.locator('.tabs [data-tab=compare]').click();
     expect(await page.evaluate(() => document.querySelector('#scroller').scrollTop)).toBe(0);
     await page.mouse.move(200, 300);
     await page.mouse.wheel(0, 400);
@@ -90,6 +90,42 @@ test.describe('phone', () => {
     await expect(page.locator('#ficha')).toBeVisible();
     await expect(page.locator('#offersList')).toBeHidden();
     expect(await page.evaluate(() => history.state)).toEqual({ ficha: true });
+  });
+
+  test('Leyes is a page opened from the app bar, with «Volver» and Back returning to the tab and the ficha', async ({
+    loaded: page,
+  }) => {
+    await expect(page.locator('.tabs [role=tab]')).toHaveCount(2);
+    await expect(page.locator('.tabs [data-tab=laws]')).toHaveCount(0);
+    await page.locator('.tabs [data-tab=compare]').click();
+    const button = page.locator('.appbar').getByRole('button', { name: 'Leyes', exact: true });
+    await expect(button).toHaveAttribute('title', 'Leyes');
+    expect((await box(button)).x).toBeLessThan(
+      (await box(page.getByRole('button', { name: 'Ajustes', exact: true }))).x,
+    );
+    await button.click();
+    await expect(page.locator('[data-panel=laws] h2')).toHaveText('Leyes y fuentes');
+    await expect(page.locator('[data-panel=laws]')).toBeVisible();
+    await expect(page.locator('[data-panel=compare]')).toBeHidden();
+    await expect(page.locator('.tabs')).toBeHidden();
+    await page.getByRole('button', { name: 'Volver' }).click();
+    await expect(page.locator('[data-panel=compare]')).toBeVisible();
+    await expect(page.locator('[data-panel=laws]')).toBeHidden();
+    // From a ficha (the «Dónde reclamar» link), the phone's Back returns to the ficha
+    await page.locator('.tabs [data-tab=offers]').click();
+    await page.locator('.ocard').first().click();
+    await page.getByRole('button', { name: 'en «Leyes»' }).first().click();
+    await expect(page.locator('[data-panel=laws]')).toBeVisible();
+    await page.goBack();
+    await expect(page.locator('[data-panel=laws]')).toBeHidden();
+    await expect(page.locator('#ficha')).toBeVisible();
+  });
+
+  test('a stored «laws» tab from before opens Ofertas', async ({ loaded: page }) => {
+    await page.evaluate(() => localStorage.setItem('cj.tab', 'laws'));
+    await page.reload();
+    await page.waitForFunction(() => window.app);
+    await expect(page.locator('.tabs [data-tab=offers]')).toHaveAttribute('aria-selected', 'true');
   });
 
   test('the app bar keeps its subtitle', async ({ loaded: page }) => {

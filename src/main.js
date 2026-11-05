@@ -11,6 +11,7 @@ import { setUpEntry, startEntry } from './ui/entry.js';
 import {
   openAccountPage,
   openFicha,
+  openLawsPage,
   openSettingsPage,
   resetHistory,
   resetViews,
@@ -85,6 +86,7 @@ window.app = {
   closeEntry: resetViews,
   openAccountPage,
   openSettingsPage,
+  openLawsPage,
   openFicha,
   cardText,
   claimText,

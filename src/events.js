@@ -33,6 +33,7 @@ import {
   leaveFicha,
   onPopState,
   openAccountPage,
+  openLawsPage,
   openSettingsPage,
   showTab,
 } from './ui/navigation.js';
@@ -249,6 +250,7 @@ const NAVIGATION_ACTIONS = {
   },
   openAccountPage: () => openAccountPage(),
   openSettingsPage: () => openSettingsPage(),
+  openLawsPage: () => openLawsPage(),
   openAccountFromPrompt: () => openAccountPage(true),
   closePage,
 };

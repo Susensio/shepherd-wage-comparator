@@ -85,7 +85,7 @@ for (const width of [320, 375]) {
     test.use({ viewport: { width, height: 700 } });
 
     test('taps are at least 40 px tall and nothing runs sideways, with the bottom bar', async ({ loaded: page }) => {
-      for (const tab of ['offers', 'compare', 'laws']) {
+      for (const tab of ['offers', 'compare']) {
         await page.click(`.tabs [data-tab=${tab}]`);
         expect(await tooShort(page, `[data-panel=${tab}], .tabs`), tab).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
@@ -93,6 +93,9 @@ for (const width of [320, 375]) {
       const tabs = await page.locator('.tabs').boundingBox();
       expect(tabs.width).toBeCloseTo(width, 0);
       await expect(page.locator('.appbar .kicker')).toBeVisible();
+      await page.getByRole('button', { name: 'Leyes', exact: true }).click();
+      expect(await tooShort(page, '[data-panel=laws], .appbar'), 'laws').toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     });
   });
 }

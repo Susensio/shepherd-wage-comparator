@@ -255,7 +255,7 @@ test.describe('data saving', () => {
 });
 
 test('«Leyes» credits GeoNames for the place list', async ({ page }) => {
-  await page.evaluate(() => app.showTab('laws'));
+  await page.evaluate(() => app.openLawsPage());
   const credit = page.locator('[data-panel=laws] li', { hasText: 'GeoNames' });
   await expect(credit).toContainText('CC BY 4.0');
   await expect(credit.getByRole('link', { name: 'GeoNames' })).toHaveAttribute('href', 'https://www.geonames.org/');

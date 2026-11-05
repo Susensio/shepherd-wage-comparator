@@ -1,5 +1,5 @@
 /**
- * Where the reader is: the tab shown, the page (account, settings) open over it, and the way back from a page. Over
+ * Where the reader is: the tab shown, the page (account, settings, laws) open over it, and the way back from a page. Over
  * the Ofertas tab, the list shows an offer's ficha, and the guided entry covers the whole screen. Each page, ficha
  * and entry pushes a history entry, so the phone's Back goes one level up. On wide screens the list and the ficha
  * are side by side (ADR-0021): the ficha is always open there and pushes nothing.
@@ -9,12 +9,12 @@ import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
 import { scrollPosition, scrollToTop, wide } from './scroller.js';
 
-const TABS = ['offers', 'compare', 'laws'];
+const TABS = ['offers', 'compare'];
 
 /** The pages opened from the bar's buttons, over the tab shown: each is a panel of its own. */
-const PAGES = ['account', 'settings'];
+const PAGES = ['account', 'settings', 'laws'];
 
-/** @typedef {'account' | 'settings'} PageName */
+/** @typedef {'account' | 'settings' | 'laws'} PageName */
 
 const where = {
   /** The tab shown, or the one a page was opened from. */
@@ -116,6 +116,7 @@ function openPage(page, fromPrompt = false) {
 
 export const openAccountPage = (fromPrompt = false) => openPage('account', fromPrompt);
 export const openSettingsPage = () => openPage('settings');
+export const openLawsPage = () => openPage('laws');
 
 /** Back to the tab the page was opened from, where it was scrolled. */
 function leavePage() {

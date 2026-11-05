@@ -2,7 +2,7 @@
 
 import { expect, test } from './fixtures.js';
 
-test('the Leyes tab is filled in', async ({ page }) => {
+test('the Leyes page is filled in', async ({ page }) => {
   const empty = await page.evaluate(() =>
     [...document.querySelectorAll('[data-law]')].filter((e) => !e.textContent.trim()).map((e) => e.dataset.law),
   );
@@ -12,7 +12,7 @@ test('the Leyes tab is filled in', async ({ page }) => {
   );
   expect(unlinked).toBe(0);
   await page.evaluate(() => {
-    app.showTab('laws');
+    app.openLawsPage();
   });
   const year = await page.evaluate(async () => Object.keys((await import('./src/law.js')).MIN_WAGE).at(-1));
   await expect(page.locator('[data-panel=laws]')).toContainText(`en ${year},`);
