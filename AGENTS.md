@@ -38,7 +38,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 
 ## Figures
 
-- The model in `model/` follows Spanish labour law (sources in the Leyes tab). Fix display problems in the display code; do not bend the maths to make a figure look right.
+- The model in `model/` follows Spanish labour law (sources on the Leyes page). Fix display problems in the display code; do not bend the maths to make a figure look right.
 - Every ledger on the page must add up on screen: a row with «=» has to come out of the rows above it, with the same rounding that is shown. `test/e2e/consistency.spec.js` checks this for every sample offer.
 
 ## Checking changes

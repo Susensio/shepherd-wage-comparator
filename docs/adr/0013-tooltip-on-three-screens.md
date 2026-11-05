@@ -23,3 +23,4 @@ Weighed and discarded:
 - Comparar shows the tooltip and, below the ranking, «Otros pastores» with its own «Entrar»: two prompts on one screen for a guest who has not dismissed the tooltip.
 - A new screen gets a tooltip by adding a message to `GUEST_TIPS`.
 
+Amended by [ADR-0030](0030-three-tabs-others-tab-laws-page.md) on 5 November 2026: other shepherds' offers are ranked in the Otros pastores tab, not in Comparar, and the tooltip about them shows there; Comparar has none.

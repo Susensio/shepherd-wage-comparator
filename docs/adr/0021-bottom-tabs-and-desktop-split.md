@@ -25,3 +25,5 @@ Weighed and discarded:
 ## Amended 3 November 2026
 
 On phones the bar is no longer fixed to the screen: the content scrolls in its own element (`#scroller`) and the bar is placed after it, outside (`placeTabs()` in `ui/navigation.js` moves the one `.tabs` element between the app bar on wide screens and the end of the page on phones). Android Chrome's overscroll stretch then moves only the content, as the owner wanted, instead of the whole page with the bar. Accepted cost: Chrome's address bar no longer hides on scroll. Chrome's own pull-to-refresh only works on the whole page, so the page has its own (`ui/pull-refresh.js`): a pull past the top of the content, on phones, reloads. Wide screens still scroll the page.
+
+Amended by [ADR-0030](0030-three-tabs-others-tab-laws-page.md) on 5 November 2026: the three tabs are Ofertas, Comparar and Otros pastores; Leyes is a page opened from the app bar.
