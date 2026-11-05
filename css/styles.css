@@ -583,6 +583,22 @@ summary:focus-visible,
 .seg label:has(input[value="no"]:checked)::before {
   content: "✕\00a0";
 }
+/* A yes/no question: as wide as its two answers, under the question, the mark on the answer's own line */
+.seg:has(> label > input[value="yes"]) {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-self: flex-start;
+  width: fit-content;
+}
+.seg:has(> label > input[value="yes"]) > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 68px;
+  white-space: nowrap;
+}
 .opts {
   display: flex;
   flex-direction: column;
