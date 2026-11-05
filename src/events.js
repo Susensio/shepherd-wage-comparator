@@ -19,7 +19,7 @@ import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { snoozeReminder } from './storage/bundle.js';
-import { cardText, claimText, finiquitoOf, legalLine, leversOf } from './text.js';
+import { cardText, claimText, legalLine, leversOf } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { copyText } from './ui/dom.js';
@@ -319,27 +319,23 @@ const OFFER_ACTIONS = {
     commit({ animate: true });
   },
   offerMenu: (b) => offerMenu.open(b, b.dataset.id),
-  /** «Copiar para confirmarlo»: the finiquito as the offer has it, to confirm with the ganadero. */
-  copyFiniquito(b) {
-    const o = active();
-    const finiquito = finiquitoOf(o, calcOffer(o));
-    if (!finiquito) return;
-    copyText(finiquito.message, /** @type {HTMLElement} */ (b.nextElementSibling), {
-      ok: 'Texto copiado.',
-      failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
-      rows: 4,
-    });
-  },
-  /** «Copiar para hablarlo»: a lever's neutral text, to send to the ganadero. */
-  copyProposal(b) {
+  /** The copy icon of a lever: its neutral text, to send to the ganadero. The icon shows a tick for a moment. */
+  async copyProposal(b) {
     const o = active();
     const lever = leversOf(calcOffer(o)).find((x) => x.id === b.dataset.lever);
     if (!lever) return;
-    copyText(lever.proposal, /** @type {HTMLElement} */ (b.nextElementSibling), {
+    const msg = /** @type {HTMLElement} */ (b.nextElementSibling);
+    const copied = await copyText(lever.proposal, msg, {
       ok: 'Texto copiado.',
       failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
       rows: 4,
     });
+    if (!copied) return;
+    b.classList.add('copied');
+    setTimeout(() => {
+      b.classList.remove('copied');
+      msg.textContent = '';
+    }, 2000);
   },
   payslipMonth(b) {
     stepPayslipMonth(b.dataset.offer, Number(b.dataset.step));

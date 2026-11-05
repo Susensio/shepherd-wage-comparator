@@ -28,7 +28,7 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
 
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(cash.locator('.lever-t')).toHaveText('En negro');
-  await expect(cash).toContainText('El ganadero se ahorra');
+  await expect(cash.locator('.lever-fig')).toContainText(/[\d.]+\s€/); // what the ganadero saves
   await expect(cash).toContainText('No cuenta para la jubilación ni la baja.'); // the paro is already at its maximum
 
   await loadOffers(page, sample, OFFER.campanaB);
@@ -39,35 +39,14 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
   await expect(cash).toContainText(/ni paro \(unos 552\s€\)/);
 });
 
-test('«Copiar para hablarlo» copies the neutral text of a lever, impersonal', async ({ page, context }) => {
+test('The copy icon of a lever copies the neutral text of a lever, impersonal', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await loadOffers(page, sample, OFFER.puertoA);
   const lever = page.locator('#secEmployer .lever[data-lever=cash]');
-  await lever.getByRole('button', { name: 'Copiar para hablarlo' }).click();
+  await lever.getByRole('button', { name: /Copiar texto para hablarlo/ }).click();
   await expect(lever.locator('.copy-msg')).toHaveText('Texto copiado.');
   const text = await page.evaluate(() => navigator.clipboard.readText());
   expect(text).toMatch(/^Van .* en negro .*\. Pasarlos a nómina costaría unos .* de Seguridad Social/);
-});
-
-test('«El finiquito» lists what is paid at the end, and copies a message to confirm it', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  const finiquito = page.locator('#secEmployer .finiquito');
-  await loadOffers(page, sample, OFFER.sinContratoD);
-  await expect(finiquito).toHaveCount(0); // no payslip, no finiquito
-
-  await loadOffers(page, sample, OFFER.puertoA);
-  await expect(finiquito).toContainText(/Los 8 días sin disfrutar, unos [\d.]+\s€ brutos/);
-  await expect(finiquito).toContainText('No hay: es fijo discontinuo');
-  await finiquito.getByRole('button', { name: 'Copiar para confirmarlo' }).click();
-  await expect(finiquito.locator('.copy-msg')).toHaveText('Texto copiado.');
-  const text = await page.evaluate(() => navigator.clipboard.readText());
-  expect(text).toMatch(
-    /^Para el finiquito, al acabar el .*: vacaciones, .*; pagas extra, .*; indemnización, .*\. ¿Es así\?$/,
-  );
-
-  await loadOffers(page, sample, OFFER.invernadaC);
-  await expect(finiquito).toContainText('Se libran: no van en el finiquito');
-  await expect(finiquito).toContainText(/12 días por año trabajado, unos [\d.]+\s€ brutos/);
 });
 
 test('«Condiciones» is the first block, under the name, one row that opens the four and hides its own line', async ({

@@ -1,9 +1,11 @@
 /** «Para negociar»: what the ganadero saves at the shepherd's expense, both sides of each lever, and what the shepherd costs. */
 
+const COPY_ICON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>`;
+
 import { html, nothing } from 'lit-html';
-import { capitalize, fE, fN } from '../format.js';
+import { fE, fN } from '../format.js';
 import { LAW } from '../law.js';
-import { finiquitoOf, leversOf, unitPhrase } from '../text.js';
+import { leversOf, unitPhrase } from '../text.js';
 import { columns, row } from './parts.js';
 
 /** What you cost the employer, per day and per month (or over the whole contract). Every row adds up. */
@@ -63,32 +65,17 @@ function leversView(r, money) {
   return html`<p class="lev-t">El ganadero se ahorra unos <b>${fE(total)}</b> ${over} a costa del pastor${money.unit !== 'total' && !r.time.noDuration ? html` <span>(${money.figure(total)} ${unitPhrase(money.unit, r)})</span>` : nothing}.</p>
     <div class="levers">${levers.map(
       (lever) => html`<div class="lever" data-lever=${lever.id}>
-        <p class="lever-t">${lever.title}</p>
-        <dl class="sides">
-          <dt>El ganadero se ahorra</dt><dd><b>${fE(lever.employer)}</b>${lever.estimate ? html` <small>estimado</small>` : nothing}</dd>
-          <dt>Para el pastor</dt><dd>${lever.shepherd}</dd>
-        </dl>
-        <button type="button" class="linkbtn" data-action="copyProposal" data-lever=${lever.id}>Copiar para hablarlo</button>
+        <div class="lever-main"><p class="lever-t">${lever.title}</p><p class="lever-s">${lever.shepherd}</p></div>
+        <p class="lever-fig"><b>${fE(lever.employer)}</b>${lever.estimate ? html`<small>estimado</small>` : nothing}</p>
+        <button type="button" class="copybtn" data-action="copyProposal" data-lever=${lever.id} aria-label="Copiar texto para hablarlo con el ganadero" title="Copiar texto para hablarlo con el ganadero">${COPY_ICON}</button>
         <p class="hint copy-msg" aria-live="polite"></p>
       </div>`,
     )}</div>`;
-}
-
-/** The finiquito, item by item, and its message to confirm with the ganadero. */
-function finiquitoView(o, r) {
-  const finiquito = finiquitoOf(o, r);
-  if (!finiquito) return nothing;
-  return html`<div class="finiquito">
-    <p class="lever-t">El finiquito</p>
-    <dl class="sides">${finiquito.items.map(([label, text]) => html`<dt>${label}</dt><dd>${capitalize(text)}</dd>`)}</dl>
-    <button type="button" class="linkbtn" data-action="copyFiniquito">Copiar para confirmarlo</button>
-    <p class="hint copy-msg" aria-live="polite"></p>
-  </div>`;
 }
 
 /** «Para negociar». */
 export function negotiationSection(o, r, money) {
   // Its levers are labour law's (minimum, en negro, overtime): none applies to an invoice
   if (r.employer.cost <= 0 || r.selfEmployed) return nothing;
-  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${finiquitoView(o, r)}${leversView(r, money)}${costDetails(o, r)}</section>`;
+  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${leversView(r, money)}${costDetails(o, r)}</section>`;
 }
