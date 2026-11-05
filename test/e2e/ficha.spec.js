@@ -29,14 +29,14 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(cash.locator('.lever-t')).toHaveText('En negro');
   await expect(cash.locator('.lever-fig')).toContainText(/[\d.]+\s€/); // what the ganadero saves
-  await expect(cash).toContainText('No cuenta para la jubilación ni la baja.'); // the paro is already at its maximum
+  await expect(cash).toContainText('no cuenta para la jubilación ni la baja'); // the paro is already at its maximum
 
   await loadOffers(page, sample, OFFER.campanaB);
-  await expect(cash).toContainText(/Unos 30\s€ menos de paro/);
+  await expect(cash).toContainText(/Paro unos 30\s€ menos/);
 
   await loadOffers(page, sample, OFFER.sinContratoD);
   await expect(cash.locator('.lever-t')).toHaveText('Sin contrato');
-  await expect(cash).toContainText(/ni paro \(unos 552\s€\)/);
+  await expect(cash).toContainText(/Paro unos 552\s€ menos/);
 });
 
 test('The copy icon of a lever copies the neutral text of a lever, impersonal', async ({ page, context }) => {

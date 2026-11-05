@@ -3173,9 +3173,9 @@ details > * {
 }
 .lever {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 2px 8px;
+  gap: 0 8px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
@@ -3184,24 +3184,33 @@ details > * {
   font-weight: 650;
   font-size: 15px;
 }
-.lever-s {
+.lever .sides {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 12px;
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.35;
+}
+.lever .sides dt {
   color: var(--muted);
 }
-.lever-fig {
+.lever .sides dd {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+}
+.lever .save b {
   font-family: var(--f-num);
   color: var(--c-cash-t);
 }
-.lever-fig small {
-  font-family: var(--f-body);
-  font-size: 11.5px;
+.lever .sides small {
   color: var(--muted);
+}
+.lever .cost {
+  display: block;
+}
+.lev-t {
+  margin: 10px 0 0;
 }
 .copybtn {
   display: grid;

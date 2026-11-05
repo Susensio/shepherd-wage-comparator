@@ -62,15 +62,18 @@ function leversView(r, money) {
     return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a costa del pastor</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
   const total = levers.reduce((sum, lever) => sum + lever.employer, 0);
   const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
-  return html`<p class="lev-t">El ganadero se ahorra unos <b>${fE(total)}</b> ${over} a costa del pastor${money.unit !== 'total' && !r.time.noDuration ? html` <span>(${money.figure(total)} ${unitPhrase(money.unit, r)})</span>` : nothing}.</p>
-    <div class="levers">${levers.map(
-      (lever) => html`<div class="lever" data-lever=${lever.id}>
-        <div class="lever-main"><p class="lever-t">${lever.title}</p><p class="lever-s">${lever.shepherd}</p></div>
-        <p class="lever-fig"><b>${fE(lever.employer)}</b>${lever.estimate ? html`<small>estimado</small>` : nothing}</p>
+  return html`<div class="levers">${levers.map(
+    (lever) => html`<div class="lever" data-lever=${lever.id}>
+        <p class="lever-t">${lever.title}</p>
         <button type="button" class="copybtn" data-action="copyProposal" data-lever=${lever.id} aria-label="Copiar texto para hablarlo con el ganadero" title="Copiar texto para hablarlo con el ganadero">${COPY_ICON}</button>
         <p class="hint copy-msg" aria-live="polite"></p>
+        <dl class="sides">
+          <dt>El ganadero se ahorra</dt><dd class="save"><b>${fE(lever.employer)}</b>${lever.estimate ? html` <small>estimado</small>` : nothing}</dd>
+          <dt>Para el pastor</dt><dd>${lever.shepherd.map(([label, text]) => html`<span class="cost"><small>${label}</small> ${text}</span>`)}</dd>
+        </dl>
       </div>`,
-    )}</div>`;
+  )}</div>
+    <p class="lev-t">En total, el ganadero se ahorra unos <b>${fE(total)}</b> ${over} a costa del pastor${money.unit !== 'total' && !r.time.noDuration ? html` <span>(${money.figure(total)} ${unitPhrase(money.unit, r)})</span>` : nothing}.</p>`;
 }
 
 /** «Para negociar». */
