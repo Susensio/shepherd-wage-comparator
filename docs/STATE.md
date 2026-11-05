@@ -1,5 +1,28 @@
 # State
 
+## Self-employed (autónomo) as a kind of contract
+
+Decided with the owner on 5 November 2026; started the same day. Figures READ in the BOE (Orden PJC/297/2026 art. 18 and 37; LGSS art. 308.1.c; Orden HAC/1425/2025 módulos; LIVA art. 91; RIRPF art. 95) by the session's research, the tables checked against the Orden's PDF text.
+
+### Decisions (owner, 5 November 2026)
+
+- «Autónomo» is a fourth answer to the contract question, beside Temporal, Fijo discontinuo and Fijo.
+- The pay step asks whether the agreed amount includes IVA; only then IVA is taken off (10 %, LIVA art. 91.Uno.2.3º, «cría, guarda y engorde de animales» for a livestock holder; not confirmed by a ruling for a provider who is not a holder: note in `law.js`).
+- RETA contribution by tramo (general and reduced tables of 2026), at the tramo's minimum base, 31,50 % (28,30 comunes + 1,30 profesionales + 0,90 equidad + 0,90 cese + 0,10 FP). No tarifa plana (its 2026 amount has no legal basis found), no SETA (needs a holding of one's own).
+- IRPF by módulos: «servicios de cría, guarda y engorde de ganado», index 0,37 on what is invoiced (without IVA), then the 5 % reduction of the 2026 Orden. The RETA tramo uses the «rendimiento neto previo minorado» (ingresos × 0,37) minus 7 % gastos genéricos, spread over the months worked (LGSS art. 308.1.c 1ª–3ª).
+- No paro is generated; what was generated as an employee is kept. «Cese de actividad» is said, not calculated.
+- «¿Es legal?»: a warning of possible falso autónomo (ET art. 1.1 and 8.1; LGSS art. 305.1), no minimum-wage or overtime checks (they are labour law). The comparison with the same offer as a contract goes to the backlog.
+- v1 limits, written in `docs/model.md`: no cash en negro beside the invoice; the IRPF of other offers in the same year does not count the autónomo's income; one activity only.
+
+### Plan
+
+1. `law.js`: `RETA_2026` tables and rates, `SELF_EMPLOYED` (módulos index 0,37, 5 % reduction, 7 % gastos genéricos, IVA 10 %), each with source; `SOURCES` for the Orden de módulos, LIVA, LETA if cited.
+2. Saved format: `contract: 'selfEmployed'` and `terms.vatIncluded` (default false). `SCHEMA_VERSION` 4 (`upgrade[3]` identity: the default fills it), `PAGE_VERSION` 3, a migration raising `app_meta.min_page_version` to 3 (no row rewrite): old pages do not know the new contract.
+3. Model: `model/self-employed.js` (invoice → IVA → módulos → RETA quota → IRPF), wired into `calc` where the payroll is; `r.selfEmployed`; no severance, vacation pay, debt or paro; legal stamp `selfEmployed`.
+4. Words and views: the contract radio, the pay step for an autónomo (amount «Lo que se factura», per day/month/total, «¿Lleva el IVA dentro?»), the Desglose rows (Facturado, − Cuota de autónomos, − IRPF), the headline, «¿Es legal?» warning, the share card, Comparar, the shared view, Leyes entries; glossary terms («autónomo», «cuota de autónomos», «factura»).
+5. Tests: unit (figures against hand-worked examples, upgrader, migration in `rls.test.js`), e2e (enter an autónomo offer, the ledgers add up: add a sample offer to `test/fixtures/offers.json`).
+6. ADR-0029.
+
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
 Decided with the owner on 1 November 2026. Started 4 November 2026. Live on `master` the same day: plan steps 1 (manual baseline task; owner step 3 run, green), 2 (every push and daily, drift check, schema snapshot by the bot) and 3 (`schema.js`, `app_meta` migration applied to the live project, version gate; ADR-0023). Steps 4–5 deferred until a second shepherd uses the account (backlog «backups»; owner steps 4–5 not needed until then). Step 6 done (ADR-0023, ADR-0026, `AGENTS.md`). Step 7 done the same day (ADR-0028; the owner exported a backup first): schema version 3, `offerOnly` and the village in `terms`. Nothing left but steps 4–5, deferred; this section can go once they are taken up or dropped. Lesson: `git push` to `master` from a cloud session can fail with «Internal Server Error» while the pre-push hook runs its 3 minutes of tests with the connection open; run `npm run check && npm test` first and push the same commit with `--no-verify`.
