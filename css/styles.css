@@ -1970,6 +1970,30 @@ section.blk {
   flex: none;
   gap: 8px;
 }
+/* Three buttons on a phone (Leyes, Ajustes, Cuenta): the name and its motto stay on one line each */
+@media (max-width: 480px) {
+  .bar-actions {
+    gap: 4px;
+  }
+  .brand h1 {
+    font-size: 17.5px;
+    white-space: nowrap;
+  }
+  .brand .kicker {
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+}
+/* Narrower still: the name may wrap, and the motto gives way */
+@media (max-width: 360px) {
+  .brand h1 {
+    white-space: normal;
+  }
+  .brand .kicker {
+    display: none;
+  }
+}
 .barbtn {
   position: relative;
   display: grid;
