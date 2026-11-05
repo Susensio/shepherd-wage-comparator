@@ -76,3 +76,17 @@ test('head to head compares the paro in the unit Comparar is in', async ({ page 
   await expect(pair.locator('tr', { hasText: 'Paro que genera al mes' })).toContainText(/428\s€/);
   await expect(pair.locator('tr', { hasText: 'Paro que genera al mes' })).toContainText(/405\s€/);
 });
+
+test('the head to head starts from a button at the top of the ranking, and no medals are given', async ({ page }) => {
+  await compareByMonth(page);
+  const start = page.locator('#cmpBlk [data-action=startPair]');
+  await expect(start).toBeVisible();
+  const [button, firstRow] = await Promise.all([
+    start.boundingBox(),
+    page.locator('#cmpBlk .lr').first().boundingBox(),
+  ]);
+  expect(button.y).toBeLessThan(firstRow.y);
+  await expect(page.locator('#cmpBlk .medals')).toHaveCount(0);
+  await start.click();
+  await expect(page.locator('#cmpBlk')).toContainText('Marca dos ofertas.');
+});

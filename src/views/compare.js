@@ -1,4 +1,4 @@
-/** The Comparar tab: the ranking, medals, head to head, weekly hours, and over time (trend and years). */
+/** The Comparar tab: the ranking, head to head, weekly hours, and over time (trend and years). */
 
 import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
@@ -99,34 +99,6 @@ function legalShort(o, r) {
   const others = failures.filter((id) => id !== 'hours');
   if (others.length) return html`<span class="bad">✘ ${joinAnd(others.map((id) => LAW_SHORT[id]))}</span>`;
   return failures.length ? nothing : html`<span class="ok">✔ cumple</span>`;
-}
-
-/**
- * Medals: what each offer is best at, only with figures that compare whatever the duration (no totals). If more
- * than half tie, the medal tells nobody apart and is not given.
- */
-function medals(list, unit) {
-  const out = {};
-  const kinds = [
-    unit !== 'hour' && [(x) => x.r.earnings.perHour, 'max', 'más por hora'],
-    [
-      (x) => (x.r.time.hours > 0 ? (x.r.extra.daysUnpaid + x.r.extra.overtimeUnpaid) / x.r.time.hours : 0),
-      'min',
-      'menos sin pagar',
-    ],
-    [(x) => x.r.time.hoursPerWeek, 'min', 'menos horas'],
-    [(x) => x.r.time.daysOffMonth, 'max', 'más libranzas'],
-    [(x) => x.r.cash.share, 'min', 'menos en negro'],
-  ].filter(Boolean);
-  for (const [value, best, title] of kinds) {
-    const values = list.map(value);
-    const top = best === 'max' ? Math.max(...values) : Math.min(...values);
-    const winners = list.filter((_, i) => Math.abs(values[i] - top) < 0.005);
-    if (winners.length > list.length / 2) continue;
-    if (title === 'menos en negro' && top <= 0.005) continue; // with nothing in cash, «todo en nómina» already says it
-    for (const x of winners) out[x.o.id] = [...(out[x.o.id] || []), title];
-  }
-  return out;
 }
 
 /**
@@ -290,7 +262,7 @@ function hoursView(list) {
 }
 
 /**
- * Comparar: the ranking in the chosen unit (tap a row to see the offer), the best at each thing and the weekly hours.
+ * Comparar: the ranking in the chosen unit (tap a row to see the offer), and the weekly hours.
  * @param {{o: object, r: object, sharer?: object}[]} everything your offers and, with `sharer`, other shepherds' ones, with their figures
  * @param {string} unit
  * @param {boolean} termsOnly show the figures of the terms alone
@@ -355,14 +327,13 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
       : r.unemployment.euros >= 1
         ? html`<small class="paro ok">+ ${fUnit(inUnit(r.unemployment.euros, r, unit), unit)} de paro</small>`
         : html`<small class="paro bad">sin paro</small>`;
-  const medalsOf = medals(list, unit);
   const rows = list.map((x, n) => {
     const { o, r } = x;
     const debt = r.debt.owed * r.netFactor;
     const picked = pairing.ids.includes(o.id);
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
     const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v"><span class="fig">${figure(r)}</span>${moneyOnly ? nothing : paroLine(r)}</span>
-      ${medalsOf[o.id]?.length ? html`<span class="medals">${medalsOf[o.id].map((t) => html`<span>${t}</span>`)}</span>` : nothing}${incomeBar(r, max, per(r))}
+      ${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
           ? html`<span class="bad">Debe el ganadero ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
@@ -374,10 +345,10 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
   });
   const mode = pairing.on
     ? html`<div class="cmp-mode"><span>${pairing.ids.length === 2 ? 'Comparando:' : pairing.ids.length ? 'Marca otra oferta.' : 'Marca dos ofertas.'}</span><button type="button" class="linkbtn" data-action="closePair">Cancelar</button></div>`
-    : html`<div class="cmp-mode"><span>Toca una oferta para verla.</span><button type="button" class="sm" data-action="startPair">Comparar dos</button></div>`;
+    : html`<div class="cmp-mode"><span>Toca una oferta para verla, o compara dos.</span><button type="button" class="sm pri" data-action="startPair">Comparar dos</button></div>`;
   return {
     picker: unitPicker(unit),
-    body: html`${legend(list.map((x) => x.r))}${mode}<div class="lst">${rows}</div>
+    body: html`${mode}${legend(list.map((x) => x.r))}<div class="lst">${rows}</div>
     <p class="hint">${moneyOnly ? `Ordenadas por lo que se gana ${U.short}.` : `Ordenadas por lo que se gana ${U.short} y el paro que genera cada oferta.`}</p>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${controls}`,

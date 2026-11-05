@@ -2871,31 +2871,17 @@ details.paste > summary {
   align-items: center;
   gap: 10px;
   margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
   font-size: 13.5px;
   color: var(--muted);
-  min-height: 32px;
+  min-height: 44px;
 }
 .lr.pickable .n {
   font-size: 16px;
   color: var(--muted);
-}
-.lr .medals {
-  grid-column: 2 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-  font-size: 12px;
-}
-.lr .medals span {
-  color: var(--c-pay);
-  font-weight: 600;
-  padding: 1px 8px;
-  background: color-mix(in srgb, var(--c-pay) 13%, transparent);
-  border-radius: 6px;
-}
-.lr .medals span::before {
-  content: "★ ";
-  font-size: 10.5px;
 }
 /* Figures in monospace inside a sentence: a bit of air on each side, since the regular font's space is too narrow next to them */
 .savings-t b {
