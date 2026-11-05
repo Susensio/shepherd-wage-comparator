@@ -19,7 +19,7 @@ import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { snoozeReminder } from './storage/bundle.js';
-import { cardText, claimText, legalLine, leversOf } from './text.js';
+import { cardText, claimText, finiquitoOf, legalLine, leversOf } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { copyText } from './ui/dom.js';
@@ -315,6 +315,17 @@ const OFFER_ACTIONS = {
     commit({ animate: true });
   },
   offerMenu: (b) => offerMenu.open(b, b.dataset.id),
+  /** «Copiar para confirmarlo»: the finiquito as the offer has it, to confirm with the ganadero. */
+  copyFiniquito(b) {
+    const o = active();
+    const finiquito = finiquitoOf(o, calcOffer(o));
+    if (!finiquito) return;
+    copyText(finiquito.message, /** @type {HTMLElement} */ (b.nextElementSibling), {
+      ok: 'Texto copiado.',
+      failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
+      rows: 4,
+    });
+  },
   /** «Copiar para hablarlo»: a lever's neutral text, to send to the ganadero. */
   copyProposal(b) {
     const o = active();

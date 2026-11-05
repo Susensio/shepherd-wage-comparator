@@ -2,7 +2,7 @@
 
 import { expect, loadOffers, sample, test } from './fixtures.js';
 
-const OFFER = { puertoA: 0, campanaB: 2, sinContratoD: 4, temporadaF: 6 };
+const OFFER = { puertoA: 0, campanaB: 2, invernadaC: 3, sinContratoD: 4, temporadaF: 6 };
 
 test('under the headline: the paro the offer generates, or why it generates none', async ({ page }) => {
   await loadOffers(page, sample, OFFER.puertoA);
@@ -47,6 +47,27 @@ test('«Copiar para hablarlo» copies the neutral text of a lever, impersonal', 
   await expect(lever.locator('.copy-msg')).toHaveText('Texto copiado.');
   const text = await page.evaluate(() => navigator.clipboard.readText());
   expect(text).toMatch(/^Van .* en negro .*\. Pasarlos a nómina costaría unos .* de Seguridad Social/);
+});
+
+test('«El finiquito» lists what is paid at the end, and copies a message to confirm it', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const finiquito = page.locator('#secEmployer .finiquito');
+  await loadOffers(page, sample, OFFER.sinContratoD);
+  await expect(finiquito).toHaveCount(0); // no payslip, no finiquito
+
+  await loadOffers(page, sample, OFFER.puertoA);
+  await expect(finiquito).toContainText(/Los 8 días sin disfrutar, unos [\d.]+\s€ brutos/);
+  await expect(finiquito).toContainText('No hay: es fijo discontinuo');
+  await finiquito.getByRole('button', { name: 'Copiar para confirmarlo' }).click();
+  await expect(finiquito.locator('.copy-msg')).toHaveText('Texto copiado.');
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text).toMatch(
+    /^Para el finiquito, al acabar el .*: vacaciones, .*; pagas extra, .*; indemnización, .*\. ¿Es así\?$/,
+  );
+
+  await loadOffers(page, sample, OFFER.invernadaC);
+  await expect(finiquito).toContainText('Se libran: no van en el finiquito');
+  await expect(finiquito).toContainText(/12 días por año trabajado, unos [\d.]+\s€ brutos/);
 });
 
 test('«Condiciones» is the first block, under the name, one row that opens the four and hides its own line', async ({

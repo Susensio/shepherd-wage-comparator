@@ -4,6 +4,7 @@ import {
   capitalize,
   f1,
   fCount,
+  fDate,
   fDays,
   fDaysSpoken,
   fE,
@@ -17,7 +18,7 @@ import {
 } from './format.js';
 import { citeOf, LAW } from './law.js';
 import { hoursWeek } from './model/time.js';
-import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
+import { contractOf, datesText, endOf, HERD, mealsGiven, mealsList } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
@@ -486,4 +487,38 @@ export function leversOf(r) {
       proposal: `Salen unas ${fN(x.over40PerWeek)} horas a la semana por encima de ${LAW.weeklyHours}. Pagadas, serían unos ${fE(x.overtimeUnpaid)} brutos ${over} (estimado).`,
     });
   return levers;
+}
+
+/**
+ * The finiquito, what is paid when the contract ends, which is what most often goes wrong (owner, 5 November 2026):
+ * each item as the offer has it, and a message to confirm it with the ganadero. Null without a payslip.
+ * @returns {{items: [string, string][], message: string} | null}
+ */
+export function finiquitoOf(o, r) {
+  if (r.noContract || r.selfEmployed || !(r.pay.gross > 0.5)) return null;
+  const t = o.terms;
+  const vacation =
+    t.vacation === 'paidAtEnd'
+      ? `los ${fCount(r.time.vacationDays)} días sin disfrutar, unos ${fE(r.pay.vacationPay)} brutos`
+      : t.vacation === 'taken'
+        ? 'se libran: no van en el finiquito'
+        : 'van dentro del pago: no van en el finiquito';
+  const extraPays =
+    t.extraPays === 'separate' ? 'la parte que quede de las dos pagas' : 'van prorrateadas en el pago: no queda nada';
+  const severance =
+    t.contract === 'temporary'
+      ? `${fN(LAW.severanceDaysPerYear)} días por año trabajado${r.employer.severance > 0.5 ? `, unos ${fE(r.employer.severance)} brutos` : ''}`
+      : t.contract === 'seasonal'
+        ? 'no hay: es fijo discontinuo, y el ganadero tiene que volver a llamar la temporada siguiente'
+        : 'no hay, salvo despido';
+  const items = /** @type {[string, string][]} */ ([
+    ['Vacaciones', vacation],
+    ['Pagas extra', extraPays],
+    ['Indemnización', severance],
+  ]);
+  const end = endOf(t);
+  return {
+    items,
+    message: `Para el finiquito, al acabar${end ? ` el ${fDate(end)}` : ''}: vacaciones, ${vacation}; pagas extra, ${extraPays}; indemnización, ${severance}. ¿Es así?`,
+  };
 }

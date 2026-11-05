@@ -85,3 +85,4 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 |---|---|
 | por hora, por día trabajado, al mes, en total | `UNITS` (`units.js`) |
 | palanca (Para negociar) | one thing the ganadero saves at the shepherd's expense, with both sides («El ganadero se ahorra», «Para el pastor») and a neutral text to send («Copiar para hablarlo») | `leversOf` (`text.js`) | | exigencia, reclamación (a claim is something else) |
+| finiquito | what is paid when the contract ends: vacation not taken, the part of the extra pays still owed, the indemnización; the card «El finiquito» at the top of «Para negociar», with «Copiar para confirmarlo» (owner, 5 November 2026: what most often goes wrong) | `finiquitoOf` (`text.js`) | | liquidación |

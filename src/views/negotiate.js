@@ -1,9 +1,9 @@
 /** «Para negociar»: what the ganadero saves at the shepherd's expense, both sides of each lever, and what the shepherd costs. */
 
 import { html, nothing } from 'lit-html';
-import { fE, fN } from '../format.js';
+import { capitalize, fE, fN } from '../format.js';
 import { LAW } from '../law.js';
-import { leversOf, unitPhrase } from '../text.js';
+import { finiquitoOf, leversOf, unitPhrase } from '../text.js';
 import { columns, row } from './parts.js';
 
 /** What you cost the employer, per day and per month (or over the whole contract). Every row adds up. */
@@ -74,9 +74,21 @@ function leversView(r, money) {
     )}</div>`;
 }
 
+/** The finiquito, item by item, and its message to confirm with the ganadero. */
+function finiquitoView(o, r) {
+  const finiquito = finiquitoOf(o, r);
+  if (!finiquito) return nothing;
+  return html`<div class="finiquito">
+    <p class="lever-t">El finiquito</p>
+    <dl class="sides">${finiquito.items.map(([label, text]) => html`<dt>${label}</dt><dd>${capitalize(text)}</dd>`)}</dl>
+    <button type="button" class="linkbtn" data-action="copyFiniquito">Copiar para confirmarlo</button>
+    <p class="hint copy-msg" aria-live="polite"></p>
+  </div>`;
+}
+
 /** «Para negociar». */
 export function negotiationSection(o, r, money) {
   // Its levers are labour law's (minimum, en negro, overtime): none applies to an invoice
   if (r.employer.cost <= 0 || r.selfEmployed) return nothing;
-  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${leversView(r, money)}${costDetails(o, r)}</section>`;
+  return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${finiquitoView(o, r)}${leversView(r, money)}${costDetails(o, r)}</section>`;
 }
