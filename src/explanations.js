@@ -14,7 +14,7 @@ export function explanations(o, r) {
     permanent: `Contrato indefinido todo el año. Si se despide sin causa justificada corresponden ${LAW.dismissalDaysPerYear} días de salario por año trabajado.`,
     none: 'Trabajar sin contrato ni alta en la Seguridad Social es ilegal. No se cotiza: no se genera paro ni jubilación, y en un accidente no hay cobertura. La responsabilidad es del ganadero, no de quien trabaja.',
     selfEmployed:
-      'Como autónomo se factura al ganadero y se paga la propia cuota de autónomos. No hay vacaciones pagadas, indemnización ni paro, y el IRPF va por módulos. Si se trabaja con el ganado del ganadero, en sus pastos y a sus órdenes, la ley lo trata como trabajo asalariado: puede ser un falso autónomo (Estatuto de los Trabajadores, art. 1.1 y 8.1).',
+      'Como autónomo se factura al ganadero y se paga la propia cuota de autónomos. No hay vacaciones pagadas ni indemnización; en vez del paro, se cotiza para el cese de actividad, y el IRPF va por módulos. Si se trabaja con el ganado del ganadero, en sus pastos y a sus órdenes, la ley lo trata como trabajo asalariado: puede ser un falso autónomo (Estatuto de los Trabajadores, art. 1.1 y 8.1).',
   };
   const housingNote = ` Se cuenta como ${fE(rentPerMonth(o.mine, cfg))} al mes que se ahorran, lo que costaría un alquiler.`;
   const foodNote = ` Se ahorran unos ${fE(foodPerDay(o.terms, cfg))} por día trabajado.`;
