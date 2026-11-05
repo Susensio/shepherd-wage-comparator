@@ -756,25 +756,27 @@ button.danger {
   font-size: inherit;
 }
 /* A text button in a label row: the tap area is the full height, the row is not */
-/* A field with a clear button inside, on its right edge */
+/* A field with a clear button beside it, not inside: inside, it covered the browser's own date picker icon */
 .clearable {
-  position: relative;
+  display: flex;
+  gap: 6px;
 }
 .clearable input {
-  width: 100%;
-  padding-right: 36px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .clear-x {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 36px;
-  border: 0;
-  background: none;
+  flex: 0 0 var(--tap);
+  min-height: var(--tap);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
   color: var(--muted);
   font-size: 15px;
   cursor: pointer;
+}
+.clear-x[hidden] {
+  display: none;
 }
 /* A plain checkbox with its label, not a boxed choice */
 .check {
