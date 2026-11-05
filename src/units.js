@@ -65,6 +65,7 @@ export const offerUnit = (r) => (isUnderAMonth(r) ? 'day' : 'month');
  */
 export const PARTS = [
   { key: 'payroll', color: '--c-pay', label: 'Nómina', value: (p) => p.base + p.extraPays, money: true },
+  { key: 'invoice', color: '--c-pay', label: 'Factura', value: (p) => p.invoice ?? 0, money: true },
   { key: 'b', color: '--c-cash', label: 'Negro', value: (p) => p.b, money: true },
   { key: 'km', color: '--c-km', label: 'Km', value: (p) => p.km, money: true },
   { key: 'vacationPay', color: '--c-vac', label: 'Vacaciones', value: (p) => p.vacationPay, money: true },
@@ -119,7 +120,21 @@ export const sumsInColumns = (r, plus, minus = []) =>
 export function earnedShown(r) {
   const shows = (x) => shownInColumns(x, r).some((shown) => shown !== 0);
   const earned = PARTS.map((part) => part.value(r.earnings.parts)).filter((x) => x > 0.5);
-  const expenses = [r.car.cost, r.expenses.other].filter(shows);
+  const expenses = deductionsOf(r)
+    .map(([, x]) => x)
+    .filter(shows);
   const [day, other] = sumsInColumns(r, earned, expenses);
   return { day, [otherColumn(r)]: other };
 }
+
+/**
+ * What the breakdown takes off what is earned, as [label, amount]: the car, other expenses and, self-employed, the RETA
+ * quota and IRPF. Rows that round to nothing are left out by the callers.
+ * @returns {[string, number][]}
+ */
+export const deductionsOf = (r) => [
+  ['Coche', r.car.cost],
+  ['Otros', r.expenses.other],
+  ['Cuota de autónomos', r.selfEmployed?.quota ?? 0],
+  ['IRPF', r.selfEmployed?.irpf ?? 0],
+];

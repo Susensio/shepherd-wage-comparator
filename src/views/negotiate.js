@@ -74,6 +74,7 @@ function savingsView(r, money) {
 
 /** «Para negociar». */
 export function negotiationSection(o, r, money) {
-  if (r.employer.cost <= 0) return nothing;
+  // Its levers are labour law's (minimum, en negro, overtime): none applies to an invoice
+  if (r.employer.cost <= 0 || r.selfEmployed) return nothing;
   return html`<section class="employer" id="secEmployer" aria-label="Para negociar"><h3 class="q">Para negociar</h3>${savingsView(r, money)}${costDetails(o, r)}</section>`;
 }

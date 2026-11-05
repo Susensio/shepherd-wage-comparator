@@ -163,11 +163,13 @@ export function summaries(o, r, places = null) {
     payroll:
       o.terms.contract === 'none'
         ? 'Sin contrato: todo en negro'
-        : o.terms.payrollMin
-          ? `El mínimo · ${vacation}`
-          : num(o.terms.payAmount) > 0
-            ? `${fTyped(o.terms.payAmount)} ${UNIT_TEXT[o.terms.payUnit]} ${o.terms.payType === 'net' ? 'neto' : 'bruto'}${extraPays} · ${vacation}`
-            : 'Nada en nómina',
+        : o.terms.contract === 'selfEmployed'
+          ? 'Nada: autónomo'
+          : o.terms.payrollMin
+            ? `El mínimo · ${vacation}`
+            : num(o.terms.payAmount) > 0
+              ? `${fTyped(o.terms.payAmount)} ${UNIT_TEXT[o.terms.payUnit]} ${o.terms.payType === 'net' ? 'neto' : 'bruto'}${extraPays} · ${vacation}`
+              : 'Nada en nómina',
     b: split
       ? split.cash > 0.5
         ? `El resto hasta ${fSplit(split.agreed, split.unit)}: ~${fSplit(split.cash, split.unit)}`
@@ -181,7 +183,9 @@ export function summaries(o, r, places = null) {
     irpf:
       o.terms.contract === 'none'
         ? ''
-        : `IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
+        : o.terms.contract === 'selfEmployed'
+          ? `IRPF por módulos ${fE(r.selfEmployed?.irpf ?? 0)}`
+          : `IRPF ${o.mine.irpfMode === 'manual' ? `${fN(num(o.mine.irpfManual), 1)}\u00a0%` : `estimado ${fN(r.pay.irpfPct * 100, 1)}\u00a0%`}`,
   };
   // «Pago» is one section: told as the pay step tells it back, from its answers
   const hasCash = r.cash.total > 0.5;
@@ -206,6 +210,8 @@ function payToldPlain(o, r, vacation) {
   if (!(amount > 0)) return 'Sin poner';
   const per = PAY_PER[a.unit] ?? '';
   if (a.payroll === 'none') return `${fEntered(amount)} ${per} · todo en negro, sin contrato`;
+  if (a.payroll === 'self')
+    return `${fEntered(amount)} ${per} ${o.terms.vatIncluded ? 'con el IVA dentro' : 'más IVA'} · en factura, como autónomo`;
   const parts = [`${fEntered(amount)} ${per}`];
   if (a.payroll === 'all') parts.push('todo en nómina');
   else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
@@ -248,6 +254,7 @@ export function unpaidTime(r) {
 export function legalLine(o, r) {
   const failures = failuresOf(o, r);
   if (!failures) return null;
+  if (r.selfEmployed) return { status: 'warn', text: '! Autónomo: puede ser un falso autónomo' };
   const x = r.extra;
   const status = (unpaid, value) => (isFullyUnpaid(unpaid, value) ? 'sin pagar' : 'mal pagadas');
   const time = [

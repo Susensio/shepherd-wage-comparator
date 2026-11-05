@@ -46,7 +46,8 @@ const SHOW = {
   noCar: (o) => o.mine.car === 'noCar',
   kmRate: (o) => o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0,
   irpfManual: (o) => o.mine.irpfMode === 'manual',
-  withContract: (o) => o.terms.contract !== 'none',
+  withContract: (o) => o.terms.contract !== 'none' && o.terms.contract !== 'selfEmployed',
+  selfEmployed: (o) => o.terms.contract === 'selfEmployed',
 };
 
 /** Under a required question, while it is empty: what cannot be done without it. */
@@ -209,6 +210,12 @@ function paintAnswers(o, r) {
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
   if (o.terms.contract === 'none') return '';
+  const se = r.selfEmployed;
+  if (se) {
+    if (!(se.invoiced > 0)) return '';
+    const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+    return `${o.terms.vatIncluded ? `Sin el IVA (${fN(LAW.selfEmployed.vatPct)}\u00a0%), se facturan ${fE(se.invoiced)} ${over}. ` : ''}Se pagan unos ${fE(se.quota)} de cuota de autónomos y ${fE(se.irpf)} de IRPF por módulos ${over}.`;
+  }
   if (o.terms.payrollMin) {
     return `En nómina, unos ${fE((r.min.salary / r.time.months) * r.netFactor)} netos al mes.`;
   }

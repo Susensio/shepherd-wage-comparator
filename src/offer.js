@@ -97,6 +97,7 @@ const CONTRACTS = {
   seasonal: { stat: 'Fijo discontinuo', phrase: 'fijo discontinuo', pill: 'Fijo discontinuo' },
   permanent: { stat: 'Fijo', phrase: 'fijo', pill: 'Contrato fijo' },
   none: { stat: 'Sin contrato', phrase: 'sin contrato ni alta', pill: 'Sin contrato' },
+  selfEmployed: { stat: 'Autónomo', phrase: 'como autónomo', pill: 'Autónomo' },
 };
 export const contractOf = (terms) => CONTRACTS[terms.contract] || CONTRACTS.temporary;
 
@@ -189,7 +190,7 @@ export const isShortContract = (terms) =>
 
 /** For short contracts with nothing said about vacation, it is set to «paid at the end»; undone if it stops being short. */
 export function defaultVacation(terms) {
-  if (terms.contract === 'none') return false;
+  if (terms.contract === 'none' || terms.contract === 'selfEmployed') return false;
   if (!terms.vacation && isShortContract(terms)) {
     terms.vacation = 'paidAtEnd';
     terms.vacationAuto = true;
@@ -221,7 +222,7 @@ export function missing(terms) {
     !(num(terms.hoursPerDay) > 0) && 'hoursPerDay',
     pay,
     part,
-    !noContract && !terms.vacation && 'vacation',
+    !noContract && terms.contract !== 'selfEmployed' && !terms.vacation && 'vacation',
   ].filter(Boolean);
 }
 

@@ -233,7 +233,9 @@ function runMenuAction(action, id, msg) {
 function menuAvailability(id) {
   const o = offerById(id);
   const copy = missing(o.terms).length === 0;
-  return { copy, claim: copy && !!legalLine(o, calcOffer(o)) };
+  const r = copy ? calcOffer(o) : null;
+  // Self-employed there is no labour claim to copy: the warning is about the kind of contract itself
+  return { copy, claim: !!r && !r.selfEmployed && !!legalLine(o, r) };
 }
 
 /* Everything done with a button: the button says what with data-action, and data-id if it is about an offer. One

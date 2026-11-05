@@ -80,11 +80,13 @@ const detailOf = (x) => (x.detail ? html`<small class="detail">${x.detail}</smal
 
 /** How much of what you receive is cash: all on payroll, part, or all in cash. */
 const cashText = (r) =>
-  r.cash.total <= 0.5
-    ? html`<span class="payroll">todo en nómina</span>`
-    : r.noContract || r.cash.allCash
-      ? html`<span class="cash">todo en negro</span>`
-      : html`<span class="part">${fN(r.cash.share * 100)}\u00a0% en negro</span>`;
+  r.selfEmployed
+    ? html`<span class="part">autónomo</span>`
+    : r.cash.total <= 0.5
+      ? html`<span class="payroll">todo en nómina</span>`
+      : r.noContract || r.cash.allCash
+        ? html`<span class="cash">todo en negro</span>`
+        : html`<span class="part">${fN(r.cash.share * 100)}\u00a0% en negro</span>`;
 
 /**
  * What is legal about an offer, in two words. Not just «no cumple» (almost none complies) but what fails, which is
@@ -93,6 +95,7 @@ const cashText = (r) =>
 function legalShort(o, r) {
   const failures = failuresOf(o, r);
   if (!failures) return nothing;
+  if (r.selfEmployed) return html`<span class="warn">! falso autónomo</span>`;
   const others = failures.filter((id) => id !== 'hours');
   if (others.length) return html`<span class="bad">✘ ${joinAnd(others.map((id) => LAW_SHORT[id]))}</span>`;
   return failures.length ? nothing : html`<span class="ok">✔ cumple</span>`;

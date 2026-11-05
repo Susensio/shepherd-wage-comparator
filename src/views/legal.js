@@ -247,11 +247,13 @@ export function legalSection(o, r, money) {
   const passed = rights.filter((x) => x.status === true);
   const headline = r.noContract
     ? 'Sin contrato no es legal'
-    : failures.length
-      ? 'Esta oferta no cumple la ley'
-      : warnings.length
-        ? `Cumple lo básico, pero ${joinAnd(warnings.map((x) => WARN_TEXT[x.id] || x.title.toLowerCase()))}`
-        : 'Esta oferta cumple lo básico';
+    : r.selfEmployed
+      ? 'Como autónomo, puede ser un falso autónomo'
+      : failures.length
+        ? 'Esta oferta no cumple la ley'
+        : warnings.length
+          ? `Cumple lo básico, pero ${joinAnd(warnings.map((x) => WARN_TEXT[x.id] || x.title.toLowerCase()))}`
+          : 'Esta oferta cumple lo básico';
   const sourceOf = (id) => (id === 'salary' ? { url: r.wage.url, label: r.wage.decree } : LAW_SOURCE[id]);
   const item = ({ id, status, title, text }) => {
     const [cls, icon] = RIGHT_ICON[status];

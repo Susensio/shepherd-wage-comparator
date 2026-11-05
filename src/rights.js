@@ -48,6 +48,9 @@ export const isFullyUnpaid = (unpaid, value) => unpaid >= value - WORTH_COUNTING
  */
 export function rightsOf(o, r, unit = 'month') {
   if (r.min.total <= 0 || r.time.daysWorked <= 0) return null;
+  // Self-employed, labour law's checks do not apply as such: what applies is whether it is really self-employment
+  if (r.selfEmployed)
+    return [{ id: 'contract', status: 'warn', title: 'Falso autónomo', text: explanations(o, r).contract }];
   const money = moneyIn(r, unit);
   const netWithTip = (x) => withTip(money.net(x), `${money.figure(x)} brutos en nómina`);
   const per = UNITS[unit].short;

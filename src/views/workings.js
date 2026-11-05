@@ -4,6 +4,7 @@ import { html, nothing } from 'lit-html';
 import { f1, fCount, fDays, fDaysSpoken, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
+import { retaPct } from '../model/self-employed.js';
 import { hoursWeek } from '../model/time.js';
 import { row } from './parts.js';
 
@@ -23,14 +24,16 @@ function timeSection(o, r) {
   const days = (x) => `${fCount(x)} días`;
   return section('Tiempo', [
     row('Duración', t.noDuration ? '1 mes' : days(t.natDays)),
-    row('Vacaciones que corresponden', days(t.vacationDays), {
-      sub: r.noContract
-        ? 'sin contrato no se pagan'
-        : {
-            taken: 'se libran',
-            paidAtEnd: 'se pagan al acabar',
-          }[o.terms.vacation] || 'ni se libran ni se pagan aparte',
-    }),
+    // Self-employed has no paid vacation: nothing «corresponds»
+    !r.selfEmployed &&
+      row('Vacaciones que corresponden', days(t.vacationDays), {
+        sub: r.noContract
+          ? 'sin contrato no se pagan'
+          : {
+              taken: 'se libran',
+              paidAtEnd: 'se pagan al acabar',
+            }[o.terms.vacation] || 'ni se libran ni se pagan aparte',
+      }),
     row('Libranzas', days(t.daysOffTotal), { sub: o.terms.holidays === 'yes' ? 'y además los festivos' : '' }),
     row('Días trabajados', fN(t.daysWorked), { cls: 'tot' }),
     row('Horas trabajadas', `${fN(t.hours)}\u00a0h`, {
@@ -235,6 +238,28 @@ function overtimeSection(r, net) {
 }
 
 /** Every section of the workings. */
+/** Self-employed: from the invoice to what is left of it (ADR-0029). */
+function selfEmployedSection(o, r) {
+  const se = r.selfEmployed;
+  const law = LAW.selfEmployed;
+  const months = r.time.noDuration ? 1 : r.time.months;
+  const pct = (x, digits = 0) => `${fN(x, digits)}\u00a0%`;
+  return section('Autónomo', [
+    row('Facturado, sin IVA', fE(se.invoiced), {
+      sub: o.terms.vatIncluded
+        ? `de ${fE(se.agreed)} con el IVA dentro (${pct(law.vatPct)})`
+        : `el IVA (${pct(law.vatPct)}) va aparte y se ingresa a Hacienda`,
+    }),
+    row('− Cuota de autónomos', fE(se.quota), {
+      sub: `rendimiento ${fE(se.netPrevious)} (lo facturado × ${fN(law.moduleIndex, 2)}) − ${pct(law.genericExpensesPct)} de gastos genéricos, entre ${fN(months, 1)} meses: ${fE(se.netForTramo)} al mes; base mínima del tramo ${fE(se.base, 2)} × ${pct(retaPct(), 2)} × ${fN(months, 1)} meses`,
+    }),
+    row('− IRPF por módulos', fE(se.irpf), {
+      sub: `sobre ${fE(se.activityNet)} (el rendimiento, − ${pct(law.moduleReductionPct)}); se retiene el ${pct(law.withholdingPct)} en cada factura`,
+    }),
+    row('= Queda de la factura', fSumE(shownDiff(se.invoiced, se.quota, se.irpf)), { cls: 'tot' }),
+  ]);
+}
+
 export function workings(o, r) {
   const net = (x) => fE(x * r.netFactor);
   const over = r.time.noDuration
@@ -243,8 +268,7 @@ export function workings(o, r) {
   return html`<p class="hint">Todo ${over}, en euros brutos salvo que diga «neto». Es lo que hay detrás de cada cifra de arriba.</p>
     ${timeSection(o, r)}
     ${r.pay.gross > 0.5 ? payrollSection(r) : nothing}
+    ${r.selfEmployed ? selfEmployedSection(o, r) : nothing}
     ${earningsSection(r)}
-    ${minimumSection(o, r, net)}
-    ${extraDaysSection(o, r, net)}
-    ${overtimeSection(r, net)}`;
+    ${r.selfEmployed ? nothing : html`${minimumSection(o, r, net)}${extraDaysSection(o, r, net)}${overtimeSection(r, net)}`}`;
 }

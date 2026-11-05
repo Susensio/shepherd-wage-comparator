@@ -73,6 +73,15 @@ const LAW_FIGURES = {
   benefitDays70: fN(LAW.unemployment.days70),
   benefitMin: fN(LAW.unemployment.minMonth),
   benefitMax: fN(LAW.unemployment.maxMonth),
+  retaPct: fPct(LAW.selfEmployed.rates.reduce((sum, [, pct]) => sum + pct, 0)),
+  retaMinQuota: eur((LAW.selfEmployed.tramos[0][1] * LAW.selfEmployed.rates.reduce((s, [, p]) => s + p, 0)) / 100),
+  retaMinBase: eur(LAW.selfEmployed.tramos[0][1], 2),
+  retaMaxBase: eur(LAW.selfEmployed.tramos.at(-1)[2], 2),
+  moduleIndex: fN(LAW.selfEmployed.moduleIndex, 2),
+  moduleReductionPct: fN(LAW.selfEmployed.moduleReductionPct),
+  genericExpensesPct: fN(LAW.selfEmployed.genericExpensesPct),
+  selfEmployedVatPct: fN(LAW.selfEmployed.vatPct),
+  selfEmployedWithholdingPct: fN(LAW.selfEmployed.withholdingPct),
 };
 
 /** Fills every legal figure and source link under `root`. An unknown key is a bug: it throws. */

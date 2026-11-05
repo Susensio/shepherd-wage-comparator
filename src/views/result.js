@@ -4,10 +4,12 @@ import { html, nothing } from 'lit-html';
 import { explanations } from '../explanations.js';
 import { euroDecimals, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
+import { retaPct } from '../model/self-employed.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
 import { MISSING_TEXT } from '../text.js';
 import {
+  deductionsOf,
   earnedShown,
   fUnit,
   incomeOf,
@@ -39,6 +41,7 @@ const otherUnits = (r, unit) =>
 /** Under the headline: the paro the offer generates, apart from «Se gana» (ADR-0022), or why there is none. */
 function paroLine(r) {
   const days = Math.round(r.unemployment.days);
+  if (r.selfEmployed) return 'Como autónomo no genera paro. Lo ya generado como asalariado no se pierde.';
   if (days < 1)
     return r.noContract
       ? 'Sin contrato no genera paro.'
@@ -50,6 +53,7 @@ function paroLine(r) {
 
 const STAMPS = {
   noContract: { text: 'Sin contrato' },
+  selfEmployed: { text: 'Autónomo', warn: true },
   allCash: { text: 'Todo en negro' },
   belowMinimum: { text: 'Bajo el mínimo' },
   noOvernight: { text: 'Sin plus', warn: true },
@@ -87,10 +91,10 @@ function pills(o, r) {
     list.push({
       icon: 'doc',
       text: contractOf(o.terms).pill,
-      status: r.noContract ? 'bad' : 'ok',
+      status: r.noContract ? 'bad' : r.selfEmployed ? 'warn' : 'ok',
       tip: explain.contract,
     });
-  if (!r.noContract)
+  if (!r.noContract && !r.selfEmployed)
     list.push(
       r.cash.total <= 0.5
         ? { icon: 'cash', text: 'Todo en nómina', status: 'ok', tip: explain.allPayroll }
@@ -101,7 +105,7 @@ function pills(o, r) {
   list.push({
     icon: 'clock',
     text: `${fTyped(o.terms.hoursPerDay)}\u00a0h/día · ${fN(hoursPerWeek)}\u00a0h/semana`,
-    status: color('hours', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
+    status: r.selfEmployed ? '' : color('hours', hoursPerWeek <= H_ORDINARY ? 'ok' : 'warn'),
     tip: `Se trabajan unas ${fN(hoursPerWeek)}\u00a0h a la semana. La jornada ordinaria son ${LAW.weeklyHours} h. En ganadería puede alargarse hasta ${LAW.maxWeekHours} h a la semana y ${LAW.maxDayHours} h al día, pero lo que pasa de ${LAW.weeklyHours} son horas extra: se pagan o se devuelven en descanso.${extra ? ` Salen ${extra}.` : ''}${hoursPerWeek > H_MAX || num(o.terms.hoursPerDay) > LAW.maxDayHours ? ` Se pasa del límite legal.` : ''}`,
   });
   list.push({
@@ -110,7 +114,7 @@ function pills(o, r) {
       r.time.daysOffMonth < 0.05
         ? 'Sin libranzas'
         : `Se libran ${fTyped(o.terms.daysOff)} ${daysOff === 1 ? 'día' : 'días'} ${{ week: 'a la semana', total: 'en total' }[o.terms.daysOffUnit] || 'al mes'}`,
-    status: color('rest', r.rest.short < 1 ? 'ok' : 'warn'),
+    status: r.selfEmployed ? '' : color('rest', r.rest.short < 1 ? 'ok' : 'warn'),
     tip: `Por ley corresponden al menos ${fN(LAW.weeklyRest, 1)} días de descanso por semana (unos ${fN((LAW.weeklyRest * DAYS_PER_MONTH) / 7, 1)} al mes), sin contar vacaciones. Se pueden juntar en periodos de hasta ${LAW.restPeriodWeeks} semanas.${r.rest.short >= 1 ? ` Con esta oferta se trabajan unos ${fN(r.rest.short)} días ${overTxt} que deberían ser de descanso.` : ' Esta oferta lo cumple.'}`,
   });
   // Stable sort: within each colour, contract and money first
@@ -174,8 +178,19 @@ function breakdown(o, r, unit) {
   const others = present.filter((part) => !part.money);
   const received = moneyParts.map((part) => part.value(p));
   const earned = present.map((part) => part.value(p));
-  const [showCar, showOther] = [shows(r.car.cost), shows(r.expenses.other)];
-  const expenses = [showCar && r.car.cost, showOther && r.expenses.other].filter(Boolean);
+  const se = r.selfEmployed;
+  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const deductionTips = {
+    Coche: carTip,
+    'Cuota de autónomos': se
+      ? `Con unos ${fE(se.netForTramo)} de rendimiento al mes (lo facturado × ${fN(LAW.selfEmployed.moduleIndex, 2)}, menos el ${fN(LAW.selfEmployed.genericExpensesPct)}\u00a0%), la base mínima del tramo es de ${fE(se.base, 2)}; la cuota es el ${fN(retaPct(), 2)}\u00a0% de esa base, ${over}.`
+      : '',
+    IRPF: se
+      ? `Por módulos: lo facturado × ${fN(LAW.selfEmployed.moduleIndex, 2)}, menos el ${fN(LAW.selfEmployed.moduleReductionPct)}\u00a0%, son ${fE(se.activityNet)} de rendimiento ${over}; el IRPF que eso suma en el año. En cada factura se retiene el ${fN(LAW.selfEmployed.withholdingPct)}\u00a0%, a cuenta.`
+      : '',
+  };
+  const deductions = deductionsOf(r).filter(([, x]) => shows(x));
+  const expenses = deductions.map(([, x]) => x);
   return {
     earnTip,
     html: html`
@@ -190,8 +205,7 @@ function breakdown(o, r, unit) {
           : []),
         ...others.map(partRow),
       ]}
-      ${showCar ? row(withTip('Coche', carTip), cols.minus(r.car.cost), { swatch: 'expense', valueCls: 'minus' }) : nothing}
-      ${showOther ? row('Otros', cols.minus(r.expenses.other), { swatch: 'expense', valueCls: 'minus' }) : nothing}
+      ${deductions.map(([label, x]) => row(withTip(label, deductionTips[label]), cols.minus(x), { swatch: 'expense', valueCls: 'minus' }))}
       ${row('Total', cols.sum(earned, expenses), { swatch: '', cls: 'tot' })}
     </div>
     </details>`,

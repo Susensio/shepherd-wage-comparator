@@ -13,7 +13,7 @@ import { DEF_TERMS, isShortContract } from './offer.js';
 
 /**
  * @typedef {object} Answers
- * @property {'all' | 'min' | 'part' | 'none'} payroll how much goes on the payslip
+ * @property {'all' | 'min' | 'part' | 'none' | 'self'} payroll how much goes on the payslip; `self`: none, invoiced as autónomo
  * @property {number | string} amount everything together, in `unit` (what reaches the shepherd)
  * @property {'day' | 'month' | 'total'} unit
  * @property {number | string} part with «part»: what goes on the payslip, in `unit`
@@ -24,6 +24,7 @@ import { DEF_TERMS, isShortContract } from './offer.js';
 export function answersOf(t) {
   const none = { part: '', partType: 'net' };
   if (t.contract === 'none') return { ...none, payroll: 'none', amount: t.cashAmount, unit: t.cashUnit };
+  if (t.contract === 'selfEmployed') return { ...none, payroll: 'self', amount: t.payAmount, unit: t.payUnit };
   if (t.payrollMin) return { ...none, payroll: 'min', amount: t.totalAmount, unit: t.totalUnit };
   if (t.cashMode === 'total')
     return { payroll: 'part', amount: t.totalAmount, unit: t.totalUnit, part: t.payAmount, partType: t.payType };
@@ -36,7 +37,19 @@ export function writeAnswers(t, { payroll, amount, unit, part, partType }) {
     Object.assign(t, { contract: 'none', payrollMin: false, cashMode: 'amount', cashAmount: amount, cashUnit: unit });
     return;
   }
-  if (t.contract === 'none') t.contract = DEF_TERMS.contract;
+  if (payroll === 'self') {
+    Object.assign(t, {
+      contract: 'selfEmployed',
+      payrollMin: false,
+      cashMode: 'amount',
+      cashAmount: '',
+      payType: 'gross',
+      payAmount: amount,
+      payUnit: unit,
+    });
+    return;
+  }
+  if (t.contract === 'none' || t.contract === 'selfEmployed') t.contract = DEF_TERMS.contract;
   if (payroll === 'min')
     Object.assign(t, { payrollMin: true, cashMode: 'total', totalAmount: amount, totalUnit: unit });
   else if (payroll === 'part')
@@ -67,6 +80,7 @@ const unitFits = (unit, terms) =>
 /** Whether the terms are one of the shapes `writeAnswers` makes (fields the shape does not use may hold anything). */
 export function isAnswerable(t) {
   if (t.contract === 'none') return unitFits(t.cashUnit, t);
+  if (t.contract === 'selfEmployed') return t.cashMode !== 'total' && unitFits(t.payUnit, t);
   if (t.payrollMin) return t.cashMode === 'total' && unitFits(t.totalUnit, t);
   if (t.cashMode === 'total') return t.payUnit === t.totalUnit && unitFits(t.payUnit, t);
   return t.payType === 'net' && !(num(t.cashAmount) > 0) && unitFits(t.payUnit, t);
