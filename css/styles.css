@@ -2137,7 +2137,7 @@ body.on-entry .tabs {
 .panel[hidden] {
   display: none;
 }
-.panel[data-panel="compare"] {
+.panel:is([data-panel="compare"], [data-panel="others"]) {
   gap: 14px;
 }
 /* Each offer's questions */

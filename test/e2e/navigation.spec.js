@@ -95,7 +95,7 @@ test.describe('phone', () => {
   test('Leyes is a page opened from the app bar, with «Volver» and Back returning to the tab and the ficha', async ({
     loaded: page,
   }) => {
-    await expect(page.locator('.tabs [role=tab]')).toHaveCount(2);
+    await expect(page.locator('.tabs [role=tab]')).toHaveCount(3);
     await expect(page.locator('.tabs [data-tab=laws]')).toHaveCount(0);
     await page.locator('.tabs [data-tab=compare]').click();
     const button = page.locator('.appbar').getByRole('button', { name: 'Leyes', exact: true });

@@ -44,7 +44,7 @@ function setUp({
   };
   const memory = new Map(synced ? [['cj.accountUser', synced]] : []);
   const store = { get: (key, fallback) => memory.get(key) ?? fallback, set: (key, value) => memory.set(key, value) };
-  const others = { available: false, include: false, status: 'idle', items: [], viewId: null };
+  const others = { available: false, status: 'idle', items: [], viewId: null };
   let opened = null;
   const open = (hooks) => {
     opened ??= createAccount({
@@ -298,11 +298,9 @@ describe('sharing availability', () => {
     assert.equal(others.available, false);
     await account.confirmShare();
     assert.equal(others.available, true);
-    assert.equal(others.include, true);
     assert.equal(data.profiles.find((p) => p.user_id === ME).sharing, true);
-    others.include = false;
     await account.stopSharing();
-    assert.deepEqual(others, { available: false, include: false, status: 'idle', items: [], viewId: null });
+    assert.deepEqual(others, { available: false, status: 'idle', items: [], viewId: null });
   });
 
   test('turning sharing on only asks first; the switch off acts at once', async () => {

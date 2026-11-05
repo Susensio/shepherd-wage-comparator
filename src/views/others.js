@@ -1,8 +1,8 @@
-/** Comparar's «Otros pastores» section: the pitch for guests, the sharing consent, and the sharing state. */
+/** The Otros pastores tab's section: the pitch for guests, the sharing consent, and the sharing state. */
 
 import { html, nothing } from 'lit-html';
 
-/** What sharing shows and to whom, in full: the account page's confirmation and the fold under Comparar's consent. */
+/** What sharing shows and to whom, in full: the account page's confirmation and the one-line version in the tab's consent. */
 export const shareTermsView = () => html`
   <p>Se ven las condiciones de las ofertas, el pueblo y si son solo oferta, con el nombre, el correo y el teléfono. Las ven los pastores que han entrado y comparten al menos una oferta.</p>
   <p>No se ven los km, los gastos, los nombres de las ofertas ni los ajustes.</p>
@@ -16,7 +16,7 @@ export const shareTermsView = () => html`
  * }} OthersSection
  */
 
-/** Comparar's consent in one line: what is seen and by whom (ADR-0006); the full text is in the account page. */
+/** The tab's consent in one line: what is seen and by whom (ADR-0006); the full text is in the account page. */
 const shareShortView = () => html`<p>
     A cambio, se comparten las propias: sus condiciones, el nombre, el correo y el teléfono, solo con quien también
     comparte.
@@ -36,7 +36,7 @@ export function othersView({ stage, message, noPhone }) {
         <p id="othersConsentTitle"><strong>¿Pagan mejor en otros sitios?</strong> Mira las ofertas de otros pastores.</p>
         ${shareShortView()}
         <div class="actions">
-          <button type="button" class="sm pri" data-action="shareFromCompare">Compartir y comparar</button>
+          <button type="button" class="sm pri" data-action="shareFromOthers">Compartir y comparar</button>
           <button type="button" class="sm" data-action="declineShare">Ahora no</button>
         </div>
       </div>`,

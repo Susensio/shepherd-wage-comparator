@@ -40,6 +40,7 @@ import {
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
 import { paintBackup } from './ui/settings-page.js';
+import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
 import { stepPayslipMonth } from './views/season-end.js';
 import { fillSettings } from './views/settings.js';
@@ -255,7 +256,7 @@ const NAVIGATION_ACTIONS = {
   closePage,
 };
 
-/** Comparar: the head to head, other shepherds' offers, the sheep. */
+/** Comparar and Otros pastores: the head to head, other shepherds' offers, the sheep. */
 const COMPARE_ACTIONS = {
   // Tapping an offer picks it for the head to head; with a third, the first one picked drops out
   pickPair(b) {
@@ -265,8 +266,9 @@ const COMPARE_ACTIONS = {
     paintAll();
     if (state.pairing.ids.length === 2) scrollToElement($('#pairBlk'), 'center');
   },
-  startPair() {
+  startPair(b) {
     state.pairing.on = true;
+    state.pairing.scope = b.dataset.scope;
     state.pairing.ids = [];
     paintAll();
   },
@@ -425,25 +427,22 @@ export function setUpEvents() {
   });
   document.addEventListener('change', (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
-    if (el.name === 'showOfferOnly') {
+    // The Otros pastores tab's controls set the same preferences as Comparar's
+    const name = el.name.startsWith(OTHERS_PREFIX) ? el.name.slice(OTHERS_PREFIX.length) : el.name;
+    if (name === 'showOfferOnly') {
       state.showOfferOnly = el.checked;
       paintAll();
     }
-    if (el.name === 'sortBy') {
+    if (name === 'sortBy') {
       state.moneyOnly = el.value === 'money';
       paintAll();
     }
-    if (el.name === 'termsOnly') {
+    if (name === 'termsOnly') {
       state.termsOnly = el.checked;
       paintAll();
     }
-    if (el.name === 'includeOthers') {
-      state.others.include = el.checked;
-      paintAll();
-      if (el.checked) loadOthers();
-    }
     if (el.id === 'profSharing') onSharingToggled(el.checked);
-    if (el.name !== 'cmpUnit') return;
+    if (name !== 'cmpUnit') return;
     state.cmpUnit = el.value;
     saveCmpUnit();
     paintAll();

@@ -53,13 +53,9 @@ function markMissing() {
       );
 }
 
-/** Other shepherds' offers are ranked (and your own with them) on terms alone, so like is compared with like. */
-const includesOthers = () => state.others.available && state.others.include;
-const termsOnlyNow = () => state.termsOnly || includesOthers();
-
 /** Your offers with their figures: full, or from their terms alone when that is on. */
 const compared = () =>
-  myOffers().map((o) => ({ o, r: termsOnlyNow() ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
+  myOffers().map((o) => ({ o, r: state.termsOnly ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
 
 /**
  * Other shepherds' offers with their terms-only figures and the label that tells same-named ones apart. One that
@@ -88,34 +84,62 @@ const needPlacesFor = (o) => {
   if (o.terms.municipality && !placesIfLoaded()) preloadPlaces();
 };
 
+/** Comparar: your offers only. */
 export function paintCompare() {
   const own = compared();
-  if (includesOthers()) for (const { o } of state.others.items) needPlacesFor(o);
-  const others = includesOthers() ? comparedOthers() : null;
-  const all = others ? [...own, ...others] : own;
-  const { picker, body, more } = compareView(
-    all,
-    state.cmpUnit,
-    termsOnlyNow(),
-    state.others,
-    state.pairing,
-    state.showOfferOnly,
-    state.moneyOnly,
-  );
+  const { picker, body, more } = compareView({
+    scope: 'compare',
+    everything: own,
+    unit: state.cmpUnit,
+    termsOnly: state.termsOnly,
+    others: state.others,
+    pairing: state.pairing,
+    showOfferOnly: state.showOfferOnly,
+    moneyOnly: state.moneyOnly,
+  });
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
   render(more, $('#cmpMore'));
   restoreFolds($('#cmpBlk'));
   restoreFolds($('#cmpMore'));
   paintTimeline(own);
+}
+
+/**
+ * Otros pastores: your offers and other shepherds' ranked together on terms alone, so like is compared with like
+ * (ADR-0013). Only while sharing makes them readable.
+ */
+export function paintOthers() {
+  const { available } = state.others;
+  for (const id of ['#othersView', '#othersRank', '#othersMore']) $(id).hidden = !available;
+  const others = available ? comparedOthers() : [];
+  if (available) {
+    for (const { o } of state.others.items) needPlacesFor(o);
+    const own = myOffers().map((o) => ({ o, r: calcTermsOnly(o, { cfg: state.config }) }));
+    const { picker, body, more } = compareView({
+      scope: 'others',
+      everything: [...own, ...others],
+      unit: state.cmpUnit,
+      termsOnly: true,
+      others: state.others,
+      pairing: state.pairing,
+      showOfferOnly: state.showOfferOnly,
+      moneyOnly: state.moneyOnly,
+    });
+    render(picker, $('#othersView'));
+    render(body, $('#othersRank'));
+    render(more, $('#othersMore'));
+  } else for (const id of ['#othersView', '#othersRank', '#othersMore']) render('', $(id)); // nothing of theirs is left in the page
+  restoreFolds($('#othersRank'));
+  restoreFolds($('#othersMore'));
   paintShared(others);
 }
 
-/** The read-only view of the shared offer opened, in place of the Comparar tab's content. `others`: `comparedOthers()` if the caller has it. */
-function paintShared(others = null) {
+/** The read-only view of the shared offer opened, in place of the Otros pastores tab's content. `others`: `comparedOthers()`. */
+function paintShared(others) {
   const open = state.others.available && state.others.viewId !== null;
-  const shown = open ? (others ?? comparedOthers()).find((x) => x.o.id === state.others.viewId) : undefined;
-  $('#cmpMain').hidden = !!shown;
+  const shown = open ? others.find((x) => x.o.id === state.others.viewId) : undefined;
+  $('#othersMain').hidden = !!shown;
   $('#sharedBlk').hidden = !shown;
   if (shown) needPlacesFor(shown.o);
   render(shown ? sharedView(shown, placesIfLoaded()) : '', $('#sharedBlk'));
@@ -125,7 +149,7 @@ function paintShared(others = null) {
 /** Opens (or closes, with null) another shepherd's offer. */
 export function viewShared(id) {
   state.others.viewId = id;
-  paintShared();
+  paintShared(comparedOthers());
   scrollToTop(0);
 }
 
@@ -169,6 +193,7 @@ export function paintAll({ animate = false } = {}) {
   if (entryOpen()) paintEntry(o, r);
   markMissing();
   paintCompare();
+  paintOthers();
   paintBackup();
   paintAccountStatus();
 }
@@ -212,10 +237,8 @@ export function openOffer(id) {
 onNavigate({
   tabShown(tab) {
     paintAccountStatus();
-    if (tab === 'compare') {
-      paintTimeline(); // the trend fits the width, which is only known once shown
-      if (includesOthers()) loadOthers(); // refetched on each visit, not on every repaint
-    }
+    if (tab === 'compare') paintTimeline(); // the trend fits the width, which is only known once shown
+    if (tab === 'others') loadOthers(); // refetched on each visit, not on every repaint
   },
   pageOpened(fromPrompt) {
     paintBackup();

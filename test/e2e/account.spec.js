@@ -200,12 +200,14 @@ test.describe('the tooltip', () => {
     });
   const tip = (page) => page.locator('#accountTip .tip');
 
-  test('shows on Ofertas, Comparar and Ajustes, each with its own message; not on Leyes or the account page', async ({
+  test('shows on Ofertas, Otros pastores and Ajustes, each with its own message; not on Comparar, Leyes or the account page', async ({
     openApp,
   }) => {
     const page = await openGuest(openApp);
     await expect(tip(page)).toContainText('Guarda las ofertas en una cuenta. Ahora solo están en este navegador.');
     await page.locator('.tabs [data-tab=compare]').click();
+    await expect(tip(page)).toHaveCount(0);
+    await page.locator('.tabs [data-tab=others]').click();
     await expect(tip(page)).toContainText('Compara con otros pastores.');
     await page.getByRole('button', { name: 'Leyes', exact: true }).click();
     await expect(tip(page)).toHaveCount(0);
@@ -227,7 +229,7 @@ test.describe('the tooltip', () => {
     openApp,
   }) => {
     const page = await openGuest(openApp);
-    await page.locator('.tabs [data-tab=compare]').click();
+    await page.locator('.tabs [data-tab=others]').click();
     await tip(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(tip(page)).toHaveCount(0);
     await page.locator('.tabs [data-tab=offers]').click();
@@ -524,7 +526,7 @@ test.describe('while the saved session is being connected', () => {
       await expect(page.getByRole('button', { name: 'Entrar' })).toHaveCount(0);
     };
     await nothingForGuests();
-    await page.locator('.tabs [data-tab=compare]').click();
+    await page.locator('.tabs [data-tab=others]').click();
     await nothingForGuests();
     await expect(page.locator('#othersBlk')).toBeHidden();
     await page.evaluate(() => app.openSettingsPage());

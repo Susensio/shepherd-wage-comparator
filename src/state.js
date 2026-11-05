@@ -52,17 +52,16 @@ export const state = {
   moneyOnly: false,
   /**
    * Other shepherds' shared offers (ADR-0006). Never saved and never mixed into `offers`. `available`: signed in with
-   * sharing on; `include`: ranked in Comparar; `viewId`: the one open read-only.
+   * sharing on; `viewId`: the one open read-only.
    */
   others: {
     available: false,
-    include: false,
     status: /** @type {'idle' | 'loading' | 'ready' | 'error'} */ ('idle'),
     items: /** @type {{ o: any, sharer: any }[]} */ ([]),
     viewId: /** @type {string | null} */ (null),
   },
-  /** «Comparar dos»: whether it is on and which offers are picked (not saved: every visit starts without it). */
-  pairing: { on: false, ids: /** @type {string[]} */ ([]) },
+  /** «Comparar dos»: whether it is on, in which ranking (`scope`) and which offers are picked (not saved: every visit starts without it). */
+  pairing: { on: false, scope: /** @type {'compare' | 'others'} */ ('compare'), ids: /** @type {string[]} */ ([]) },
   /** Named collapsibles (data-fold) and whether they are open. */
   folds: /** @type {Record<string, boolean>} */ ({}),
 };

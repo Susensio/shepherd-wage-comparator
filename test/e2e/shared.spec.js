@@ -1,4 +1,4 @@
-// Other shepherds' shared offers in Comparar and their read-only view (ADR-0006), against the fake client.
+// Other shepherds' shared offers in the Otros pastores tab and their read-only view (ADR-0006, ADR-0030), against the fake client.
 
 import { installFake, withoutProject, withProject } from './fake-account.js';
 import { expect, loadOffers, sample, test } from './fixtures.js';
@@ -29,55 +29,77 @@ const tables = ({ sharing = true, others } = {}) => ({
   offer_mine: [{ offer_id: MINE, mine: { name: 'Mi oferta', expenses: 400 }, cmp: true }],
 });
 
-async function openCompare(openApp, options = {}) {
+async function openOthers(openApp, options = {}) {
   const page = await openApp({ init: installFake, arg: { tables: tables(options) }, beforeLoad: withProject });
-  await page.evaluate(() => app.showTab('compare'));
+  await page.evaluate(() => app.showTab('others'));
   return page;
 }
 
-const include = async (page) => {
-  await page.getByLabel('Incluir ofertas de otros pastores').check();
-  await expect(page.locator('.lr.other')).not.toHaveCount(0);
-};
+/** The ranking has other shepherds' rows. */
+const include = (page) => expect(page.locator('.lr.other')).not.toHaveCount(0);
 
 test('with no project configured nothing about other shepherds shows', async ({ openApp }) => {
   const page = await openApp({ beforeLoad: withoutProject });
   await loadOffers(page, sample);
-  await page.evaluate(() => app.showTab('compare'));
-  await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+  await page.evaluate(() => app.showTab('others'));
+  await expect(page.locator('#othersOff')).toBeVisible();
+  await expect(page.locator('#othersRank')).toBeHidden();
 });
 
 test('hidden while sharing is off', async ({ openApp }) => {
-  const page = await openCompare(openApp, { sharing: false });
-  await expect(page.locator('#cmpBlk')).toBeVisible();
-  await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+  const page = await openOthers(openApp, { sharing: false });
+  await expect(page.locator('#othersRank')).toBeHidden();
+  await expect(page.locator('#othersOff')).toBeHidden();
   expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
 });
 
+test("Comparar has only your own offers, with the other shepherds' ones loaded", async ({ openApp }) => {
+  const page = await openOthers(openApp);
+  await include(page);
+  await page.evaluate(() => app.showTab('compare'));
+  await expect(page.locator('#cmpBlk .lr')).toHaveCount(0); // one own offer: nothing to rank yet
+  await expect(page.locator('[data-panel=compare] .lr.other')).toHaveCount(0);
+  await expect(page.locator('[data-panel=compare]')).not.toContainText('Luis');
+  await expect(page.locator('#cmpBlk input[name=termsOnly]')).toBeEnabled();
+  await expect(page.locator('#othersBlk')).toBeHidden();
+  await expect(page.locator('#cmpBlk')).toContainText('Para compararlas, añade otra oferta');
+});
+
+test('the head to head started in Otros pastores does not turn on in Comparar', async ({ openApp }) => {
+  const page = await openOthers(openApp);
+  await include(page);
+  await page.locator('#othersRank [data-action=startPair]').click();
+  await expect(page.locator('#othersRank .cmp-mode')).toContainText('Marca dos ofertas.');
+  await page.evaluate(() => app.showTab('compare'));
+  await expect(page.locator('#cmpBlk .cmp-mode')).toHaveCount(0); // one own offer: no ranking there
+  expect(await page.evaluate(() => app.state.pairing.scope)).toBe('others');
+});
+
 test('their offers appear with the sharer, and terms-only is forced on', async ({ openApp }) => {
-  const page = await openCompare(openApp);
-  await expect(page.locator('.lr.other')).toHaveCount(2); // included by default once sharing
+  const page = await openOthers(openApp);
+  await expect(page.locator('.lr.other')).toHaveCount(2); // ranked as soon as sharing is on
+  await expect(page.locator('#othersRank .lr:not(.other) .nm')).toContainText('Mi oferta');
   await expect(page.locator('.lr.other').first()).toContainText('Luis Rebaño');
   await expect(page.locator('.lr.other').first()).toContainText('otro pastor');
-  await expect(page.locator('input[name=termsOnly]')).toBeChecked();
-  await expect(page.locator('input[name=termsOnly]')).toBeDisabled();
-  await expect(page.locator('#cmpBlk .cmp-opts + .hint')).toContainText(
+  await expect(page.locator('input[name=others-termsOnly]')).toBeChecked();
+  await expect(page.locator('input[name=others-termsOnly]')).toBeDisabled();
+  await expect(page.locator('#othersRank .cmp-opts + .hint')).toContainText(
     'se comparan sin desplazamientos ni gastos de nadie',
   );
-  await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
-  await expect(page.locator('.lr.other')).toHaveCount(0);
 });
 
 test('every row uses the terms-only figures', async ({ openApp }) => {
-  const page = await openCompare(openApp);
+  const page = await openOthers(openApp);
   await include(page);
-  await page.click("#cmpView label:has-text('hora')");
+  await page.click("#othersView label:has-text('hora')");
   const rows = await page.evaluate(async () => {
     const { calcTermsOnly } = await import('./src/model/calc.js');
     const { fUnit, UNITS } = await import('./src/units.js');
     const shown = (r) => `${fUnit(r.earnings.perHour, 'hour')}${UNITS.hour.suffix}`;
     const figureOf = (name) =>
-      [...document.querySelectorAll('#cmpBlk .lr')].find((row) => row.querySelector('b').textContent.includes(name));
+      [...document.querySelectorAll('#othersRank .lr')].find((row) =>
+        row.querySelector('b').textContent.includes(name),
+      );
     const mine = app.state.offers[0];
     const full = app.calcOffer(mine);
     const termsOnly = calcTermsOnly(mine, { cfg: app.state.config });
@@ -85,7 +107,7 @@ test('every row uses the terms-only figures', async ({ openApp }) => {
       mine: figureOf('Mi oferta').querySelector('.v .fig').textContent.trim(),
       expectedMine: shown(termsOnly).trim(),
       fullMine: shown(full).trim(),
-      others: [...document.querySelectorAll('#cmpBlk .lr.other')].map((row) =>
+      others: [...document.querySelectorAll('#othersRank .lr.other')].map((row) =>
         row.querySelector('.v .fig').textContent.trim(),
       ),
       expectedOthers: app.state.others.items.map(({ o }) => shown(calcTermsOnly(o, { cfg: app.state.config })).trim()),
@@ -97,28 +119,27 @@ test('every row uses the terms-only figures', async ({ openApp }) => {
 });
 
 test('a line says when nobody else has shared', async ({ openApp }) => {
-  const page = await openCompare(openApp, { others: [] });
-  await page.getByLabel('Incluir ofertas de otros pastores').check();
+  const page = await openOthers(openApp, { others: [] });
   await expect(page.locator('.others-ctl')).toContainText('Todavía no hay ofertas compartidas por otros pastores.');
   await expect(page.locator('.lr.other')).toHaveCount(0);
 });
 
-test('refetched on entering Comparar and on demand, not on repaints', async ({ openApp }) => {
-  const page = await openCompare(openApp);
+test('refetched on entering Otros pastores and on demand, not on repaints', async ({ openApp }) => {
+  const page = await openOthers(openApp);
   const reads = () => page.evaluate(() => window.fake.sharedReads);
   await include(page);
   expect(await reads()).toBe(1);
-  await page.getByText('mes', { exact: true }).click();
+  await page.click("#othersView label:has-text('mes')");
   expect(await reads()).toBe(1);
   await page.evaluate(() => app.showTab('offers'));
-  await page.evaluate(() => app.showTab('compare'));
+  await page.evaluate(() => app.showTab('others'));
   await expect.poll(reads).toBe(2);
   await page.getByRole('button', { name: 'Actualizar' }).click();
   await expect.poll(reads).toBe(3);
 });
 
 test('a failed fetch shows a line and can be retried', async ({ openApp }) => {
-  const page = await openCompare(openApp);
+  const page = await openOthers(openApp);
   await page.evaluate(() => {
     const original = window.fake.data.offers;
     window.fake.data.offers = new Proxy(original, {
@@ -133,8 +154,7 @@ test('a failed fetch shows a line and can be retried', async ({ openApp }) => {
   });
   const logged = [];
   page.on('console', (m) => m.type() === 'error' && logged.push(m.text()));
-  await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
-  await page.getByLabel('Incluir ofertas de otros pastores').check();
+  await page.getByRole('button', { name: 'Actualizar' }).click();
   await expect(page.locator('.others-ctl')).toContainText('No se pudieron cargar las ofertas de otros pastores.');
   await page.evaluate(() => {
     window.fake.failing = false;
@@ -149,19 +169,19 @@ test('offers of another schema load without crashing', async ({ openApp }) => {
     { id: sharedId(2), user_id: OTHER, terms: { contract: 'temporary' } }, // older: most fields missing
     { id: sharedId(3), user_id: OTHER, terms: null },
   ];
-  const page = await openCompare(openApp, { others: odd });
+  const page = await openOthers(openApp, { others: odd });
   await include(page);
   await expect(page.locator('.lr.other')).toHaveCount(1);
 });
 
 test.describe('the read-only view', () => {
   test('conditions, figures and contact links, with nothing to edit', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await include(page);
     await page.locator(`.lr.other[data-id="${sharedId(1)}"]`).click();
     const view = page.locator('#sharedBlk');
     await expect(view).toBeVisible();
-    await expect(page.locator('#cmpMain')).toBeHidden();
+    await expect(page.locator('#othersMain')).toBeHidden();
     await expect(view).toContainText('Oferta de Luis Rebaño');
     await expect(view.getByRole('link', { name: 'luis@example.com' })).toHaveAttribute(
       'href',
@@ -177,13 +197,13 @@ test.describe('the read-only view', () => {
     for (const action of ['edit', 'complete', 'copyCard', 'copyClaim', 'done', 'payslipMonth'])
       await expect(view.locator(`[data-action="${action}"]`)).toHaveCount(0);
     await expect(view).not.toContainText('Para negociar');
-    await view.getByRole('button', { name: 'Volver a Comparar' }).click();
-    await expect(page.locator('#cmpMain')).toBeVisible();
+    await view.getByRole('button', { name: 'Volver a Otros pastores' }).click();
+    await expect(page.locator('#othersMain')).toBeVisible();
     await expect(view).toBeHidden();
   });
 
   test('the blocks of the result are spaced as in your own', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await include(page);
     await page.locator(`.lr.other[data-id="${sharedId(1)}"]`).click();
     const gaps = await page.evaluate(() => {
@@ -207,7 +227,7 @@ test.describe('the read-only view', () => {
       sheep: 800,
       cattle: 1,
     };
-    const page = await openCompare(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });
+    const page = await openOthers(openApp, { others: [{ id: sharedId(1), user_id: OTHER, terms }] });
     await include(page);
     await page.locator('.lr.other').first().click();
     const conditions = page.locator('#sharedBlk .shared-conditions');
@@ -219,7 +239,7 @@ test.describe('the read-only view', () => {
     openApp,
   }) => {
     const terms = { ...byName('Puerto A').terms, offerOnly: true };
-    const page = await openCompare(openApp, {
+    const page = await openOthers(openApp, {
       others: [
         { id: sharedId(1), user_id: OTHER, terms },
         { id: sharedId(2), user_id: OTHER, terms: byName('Invernada C').terms },
@@ -230,13 +250,13 @@ test.describe('the read-only view', () => {
     await expect(row).toHaveClass(/offer-only/);
     await expect(row).toContainText('solo oferta');
     await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).not.toHaveClass(/offer-only/);
-    await page.locator('[name=showOfferOnly]').uncheck();
+    await page.locator('[name=others-showOfferOnly]').uncheck();
     await expect(row).toHaveCount(0);
     await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).toBeVisible();
   });
 
   test('without contact data it says so', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await page.evaluate(() => {
       const row = window.fake.data.profiles.find((p) => p.user_id === '00000000-0000-0000-0000-00000000000b');
       Object.assign(row, { email: null, phone: null });
@@ -247,10 +267,10 @@ test.describe('the read-only view', () => {
   });
 
   test('others offers are never saved in the browser', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await include(page);
     await page.locator('.lr.other').first().click();
-    await page.getByRole('button', { name: 'Volver a Comparar' }).click();
+    await page.getByRole('button', { name: 'Volver a Otros pastores' }).click();
     const saved = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(localStorage))));
     for (const secret of [sharedId(1), sharedId(2), SHARER.email, SHARER.phone, 'Luis Rebaño'])
       expect(saved).not.toContain(secret);
@@ -258,12 +278,12 @@ test.describe('the read-only view', () => {
   });
 
   test('signing out forgets them', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await include(page);
     await page.evaluate(() => app.openAccountPage());
     await page.getByRole('button', { name: 'Salir' }).click();
-    await page.evaluate(() => app.showTab('compare'));
-    await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+    await page.evaluate(() => app.showTab('others'));
+    await expect(page.locator('#othersRank')).toBeHidden();
     expect(await page.evaluate(() => app.state.others.items.length)).toBe(0);
   });
 });
@@ -308,7 +328,7 @@ test.describe('whose voice an offer speaks in', () => {
 
   test("another shepherd's ranking rows say «Debe el ganadero», like own rows", async ({ openApp }) => {
     const others = sample.offers.map((o, i) => ({ id: sharedId(i + 1), user_id: OTHER, terms: o.terms }));
-    const page = await openCompare(openApp, { others });
+    const page = await openOthers(openApp, { others });
     await include(page);
     const theirs = (await page.locator('.lr.other').allTextContents()).join('\n');
     expect(theirs).toContain('Debe el ganadero');
@@ -321,7 +341,7 @@ test.describe('two sharers with the same name', () => {
 
   test('are told apart by where the job is, in the ranking, the head to head and the title', async ({ openApp }) => {
     const base = byName('Puerto A').terms;
-    const page = await openCompare(openApp, {
+    const page = await openOthers(openApp, {
       others: [
         twin(1, { ...base, municipality: '22252', province: 'HU' }),
         twin(2, { ...base, municipality: '', province: 'TE' }),
@@ -346,7 +366,7 @@ test.describe('two sharers with the same name', () => {
 
   test('fall back to the dates, then to an ordinal', async ({ openApp }) => {
     const base = byName('Puerto A').terms;
-    const dated = await openCompare(openApp, {
+    const dated = await openOthers(openApp, {
       others: [twin(1, { ...base, start: '2026-06-01' }), twin(2, { ...base, start: '2026-07-01' })],
     });
     await include(dated);
@@ -354,7 +374,7 @@ test.describe('two sharers with the same name', () => {
     expect(new Set(labels).size).toBe(2);
     expect(labels.join(' ')).toMatch(/jun|jul/);
 
-    const alike = await openCompare(openApp, { others: [twin(1, base), twin(2, base)] });
+    const alike = await openOthers(openApp, { others: [twin(1, base), twin(2, base)] });
     await include(alike);
     await expect(alike.locator('.lr.other b').nth(0)).toHaveText('Luis Rebaño');
     await expect(alike.locator('.lr.other .detail').nth(0)).toHaveText('n.º 1');
@@ -362,7 +382,7 @@ test.describe('two sharers with the same name', () => {
   });
 
   test('a lone sharer keeps the plain name', async ({ openApp }) => {
-    const page = await openCompare(openApp, { others: [twin(1, byName('Puerto A').terms)] });
+    const page = await openOthers(openApp, { others: [twin(1, byName('Puerto A').terms)] });
     await include(page);
     await expect(page.locator('.lr.other b')).toContainText('Luis Rebaño');
     await expect(page.locator('.lr.other b')).not.toContainText('·');
@@ -376,7 +396,7 @@ test.describe('the «Otros pastores» section', () => {
   test('no project: no section', async ({ openApp }) => {
     const page = await openApp({ beforeLoad: withoutProject });
     await loadOffers(page, sample);
-    await page.evaluate(() => app.showTab('compare'));
+    await page.evaluate(() => app.showTab('others'));
     await expect(section(page)).toBeHidden();
   });
 
@@ -386,7 +406,7 @@ test.describe('the «Otros pastores» section', () => {
       arg: { signedOut: true, tables: tables() },
       beforeLoad: withProject,
     });
-    await page.evaluate(() => app.showTab('compare'));
+    await page.evaluate(() => app.showTab('others'));
     await expect(section(page)).toContainText('¿Pagan mejor en otros sitios? Entra y compara las ofertas');
     await expect(section(page).locator('.skel-row')).toHaveCount(3);
     await expect(section(page)).not.toContainText('Luis');
@@ -394,25 +414,25 @@ test.describe('the «Otros pastores» section', () => {
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     await section(page).getByRole('button', { name: 'Entrar' }).click();
     await expect(page.locator('[data-panel=account]')).toBeVisible();
-    await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+    await expect(page.locator('#othersRank')).toBeHidden();
   });
 
-  test('guest: signing in from it returns to Comparar', async ({ openApp }) => {
+  test('guest: signing in from it returns to Otros pastores', async ({ openApp }) => {
     const page = await openApp({
       init: installFake,
       arg: { signedOut: true, tables: tables(), google: true },
       beforeLoad: withProject,
     });
-    await page.evaluate(() => app.showTab('compare'));
+    await page.evaluate(() => app.showTab('others'));
     await section(page).getByRole('button', { name: 'Entrar' }).click();
     await page.getByRole('button', { name: 'Google (falso)' }).first().click();
-    await expect(page.locator('[data-panel=compare]')).toBeVisible();
+    await expect(page.locator('[data-panel=others]')).toBeVisible();
     await expect(section(page).getByRole('button', { name: 'Dejar de compartir' })).toBeVisible();
     await expect(page.locator('.lr.other')).toHaveCount(2);
   });
 
   test('not sharing: the consent says what is seen; accepting shares and ranks the others', async ({ openApp }) => {
-    const page = await openCompare(openApp, { sharing: false });
+    const page = await openOthers(openApp, { sharing: false });
     await expect(page.locator('.lr.other')).toHaveCount(0);
     expect(await page.evaluate(() => window.fake.sharedReads)).toBe(0);
     for (const phrase of [
@@ -424,11 +444,12 @@ test.describe('the «Otros pastores» section', () => {
     await section(page).getByRole('button', { name: 'Compartir y comparar' }).click();
     await expect(page.locator('.lr.other')).toHaveCount(2);
     expect(await page.evaluate((id) => window.fake.data.profiles.find((p) => p.user_id === id).sharing, ME)).toBe(true);
-    await expect(page.getByLabel('Incluir ofertas de otros pastores')).toBeChecked();
   });
 
-  test('Comparar states what is seen and by whom in one line; the account page has it in full', async ({ openApp }) => {
-    const page = await openCompare(openApp, { sharing: false });
+  test('Otros pastores states what is seen and by whom in one line; the account page has it in full', async ({
+    openApp,
+  }) => {
+    const page = await openOthers(openApp, { sharing: false });
     const visible = section(page).locator('.account-confirm > p').nth(1);
     await expect(visible).toBeVisible();
     await expect(visible).toContainText('el nombre, el correo y el teléfono');
@@ -440,8 +461,8 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.locator('#shareConfirm')).toContainText('No se ven los km');
   });
 
-  test("accepting in Comparar closes the account page's own confirmation", async ({ openApp }) => {
-    const page = await openCompare(openApp, { sharing: false });
+  test("accepting in Otros pastores closes the account page's own confirmation", async ({ openApp }) => {
+    const page = await openOthers(openApp, { sharing: false });
     await page.evaluate(() => app.openAccountPage());
     await page.getByLabel('Compartir las ofertas').click();
     await expect(page.locator('#shareConfirm')).toBeVisible();
@@ -456,17 +477,17 @@ test.describe('the «Otros pastores» section', () => {
     await expect(page.getByLabel('Compartir las ofertas')).toBeChecked();
   });
 
-  test('the section sits right under the ranking, before the weekly hours', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+  test('the section sits right under the ranking', async ({ openApp }) => {
+    const page = await openOthers(openApp);
     const order = await page.evaluate(() => {
       const y = (s) => document.querySelector(s).getBoundingClientRect().top;
-      return [y('#cmpBlk .lst'), y('#othersBlk'), y('#cmpMore .hours')];
+      return [y('#othersRank .lst'), y('#othersBlk')];
     });
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   test('«Ahora no» leaves one button that reopens the consent', async ({ openApp }) => {
-    const page = await openCompare(openApp, { sharing: false });
+    const page = await openOthers(openApp, { sharing: false });
     await section(page).getByRole('button', { name: 'Ahora no' }).click();
     await expect(section(page).getByRole('button', ask)).toHaveCount(1);
     await expect(section(page).getByRole('button', { name: 'Compartir y comparar' })).toBeVisible();
@@ -483,34 +504,32 @@ test.describe('the «Otros pastores» section', () => {
       arg: { tables: tables({ sharing: false }), failProfile: true },
       beforeLoad: withProject,
     });
-    await page.evaluate(() => app.showTab('compare'));
+    await page.evaluate(() => app.showTab('others'));
     await section(page).getByRole('button', ask).click();
     await expect(section(page)).toContainText('No se pudieron compartir las ofertas. Inténtalo de nuevo.');
     await expect(page.locator('.lr.other')).toHaveCount(0);
   });
 
-  test('sharing: others are included after a reload too', async ({ openApp }) => {
-    const page = await openCompare(openApp);
-    await expect(page.getByLabel('Incluir ofertas de otros pastores')).toBeChecked();
-    await page.getByLabel('Incluir ofertas de otros pastores').uncheck();
-    await expect(page.locator('.lr.other')).toHaveCount(0);
-    const again = await openCompare(openApp);
+  test('sharing: others are ranked after a reload too', async ({ openApp }) => {
+    const page = await openOthers(openApp);
+    await expect(page.locator('.lr.other')).toHaveCount(2);
+    const again = await openOthers(openApp);
     await expect(again.locator('.lr.other')).toHaveCount(2);
   });
 
   test('«Dejar de compartir» turns it off and the consent comes back', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await section(page).getByRole('button', { name: 'Dejar de compartir' }).click();
     await expect(section(page).getByRole('button', ask)).toBeVisible();
     await expect(page.locator('.lr.other')).toHaveCount(0);
-    await expect(page.locator('input[name=includeOthers]')).toHaveCount(0);
+    await expect(page.locator('#othersRank')).toBeHidden();
     expect(await page.evaluate((id) => window.fake.data.profiles.find((p) => p.user_id === id).sharing, ME)).toBe(
       false,
     );
   });
 
   test('without a phone a hint links to the account page; with one, no hint', async ({ openApp }) => {
-    const page = await openCompare(openApp);
+    const page = await openOthers(openApp);
     await expect(section(page)).toContainText('Añade un teléfono al perfil para que puedan contactar.');
     await section(page).getByRole('button', { name: 'Ir al perfil' }).click();
     await expect(page.locator('[data-panel=account]')).toBeVisible();
@@ -534,9 +553,8 @@ for (const offer of sample.offers) {
       arg: { tables: { ...tables({ others }), offers: [own, ...others] } },
       beforeLoad: withProject,
     });
-    await page.evaluate(() => app.showTab('compare'));
-    await page.getByLabel('Incluir ofertas de otros pastores').check();
-    await expect(page.locator('#cmpBlk')).not.toContainText('Cargando');
+    await page.evaluate(() => app.showTab('others'));
+    await expect(page.locator('#othersRank')).not.toContainText('Cargando');
     const row = page.locator('.lr.other');
     test.skip((await row.count()) === 0, 'offer with missing data');
     await row.click();

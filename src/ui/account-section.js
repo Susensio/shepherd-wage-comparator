@@ -1,4 +1,4 @@
-/** The account (ADR-0006, ADR-0009, ADR-0011): paints `account-state.js` as the account page's section, the button's status, the tooltip and Comparar's section. */
+/** The account (ADR-0006, ADR-0009, ADR-0011): paints `account-state.js` as the account page's section, the button's status, the tooltip and the Otros pastores tab's section. */
 
 import { render } from 'lit-html';
 import { createAccountState } from '../account-state.js';
@@ -21,7 +21,7 @@ export const accountState = createAccountState({
   others: state.others,
   ingestShared,
   isOnline: () => navigator.onLine !== false,
-  wantsOthers: () => tabInView('compare'),
+  wantsOthers: () => tabInView('others'),
   forgetGoogleChoice,
 });
 const { view } = accountState;
@@ -30,7 +30,7 @@ const { view } = accountState;
 export const loadOthers = () => accountState.loadOthers();
 
 /**
- * Comparar's section, from the account: nothing until the saved session has been looked at, or while uploads wait.
+ * The Otros pastores tab's section, from the account: nothing until the saved session has been looked at, or while uploads wait.
  * @returns {import('../views/others.js').OthersSection | null}
  */
 function othersSection() {
@@ -96,6 +96,7 @@ export async function setUpAccountSection() {
   });
   if (!ACCOUNT_CONFIG.url || !ACCOUNT_CONFIG.anonKey) return;
   $('#account').hidden = false;
+  $('#othersOff').hidden = true;
   addEventListener('offline', () => accountState.setOnline(false));
   addEventListener('online', () => accountState.setOnline(true));
   render(shareTermsView(), $('#shareTerms'));
@@ -130,7 +131,7 @@ export const accountActions = {
   },
 
   confirmShare: () => accountState.confirmShare(),
-  shareFromCompare: () => accountState.shareFromCompare(),
+  shareFromOthers: () => accountState.shareFromOthers(),
   declineShare: () => accountState.declineShare(),
   reopenShare: () => accountState.reopenShare(),
   stopSharing: () => accountState.stopSharing(),

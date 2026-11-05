@@ -1,6 +1,6 @@
 /** Startup. */
 
-import { commit, paintAll, paintCompare, restoreStaticFolds, select, setLoadingAccount, showSelected } from './app.js';
+import { commit, paintAll, paintOthers, restoreStaticFolds, select, setLoadingAccount, showSelected } from './app.js';
 import { setUpEvents } from './events.js';
 import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
@@ -59,7 +59,7 @@ accountState.subscribe((event, detail) => {
       if (state.placeholderId) startEntry();
     }
   }
-  if (event === 'others') paintCompare();
+  if (event === 'others') paintOthers();
   if (event === 'signedIn') returnAfterSignIn();
   if (event !== 'replaced') return;
   // The offers were replaced: what was open may be gone. An empty account starts like a first visit, with the templates.

@@ -20,8 +20,8 @@
  * @property {boolean} messageOk `message` is a success, not a failure
  * @property {boolean} messageIsSignedOutNotice the account page's line shows the sign-out notice (a static text)
  * @property {boolean} signedOutNotice the notice «Tus ofertas siguen guardadas…» is shown
- * @property {string} othersMessage the line in Comparar's section: a failure there is not the account page's business
- * @property {boolean} othersDeclined «Ahora no» in Comparar's section: it shrinks to a button for this visit
+ * @property {string} othersMessage the line in the Otros pastores tab: a failure there is not the account page's business
+ * @property {boolean} othersDeclined «Ahora no» in the Otros pastores tab: it shrinks to a button for this visit
  * @property {'share' | 'delete' | null} confirm
  * @property {boolean} enabled accounts are configured: without a project nothing of this shows
  * @property {boolean} started the saved session has been looked at: until then the tooltip would only flash
@@ -35,7 +35,7 @@
 /** @typedef {'connecting' | 'guest' | 'pending' | 'offline' | 'outdated' | 'error' | 'saving' | 'online'} AccountStatus */
 
 /**
- * What a listener is told: `account` the view changed, `status` only the background saving, `others` what Comparar
+ * What a listener is told: `account` the view changed, `status` only the background saving, `others` what the Otros pastores tab
  * shows of other shepherds' offers (availability, loading, result), `replaced` the account's copy has replaced the
  * browser's, `signedIn` a sign-in is complete.
  * @typedef {'account' | 'status' | 'others' | 'replaced' | 'signedIn'} AccountEvent
@@ -52,11 +52,11 @@ const freshSignIn = (googleFailed = false) =>
  *   open(hooks: import('./storage/account.js').AccountHooks): Promise<any>,
  *   savedUser?(): any,
  * }} deps.loader the account behind the page (`createAccountLoader`)
- * @param {{ available: boolean, include: boolean, status: string, items: any[], viewId: string | null }} deps.others
- *   `state.others`: written here, read by Comparar
+ * @param {{ available: boolean, status: string, items: any[], viewId: string | null }} deps.others
+ *   `state.others`: written here, read by the Otros pastores tab
  * @param {(shared: any) => any} deps.ingestShared
  * @param {() => boolean} [deps.isOnline]
- * @param {() => boolean} [deps.wantsOthers] Comparar is in view: availability then fetches at once
+ * @param {() => boolean} [deps.wantsOthers] the Otros pastores tab is in view: availability then fetches at once
  * @param {() => void} [deps.forgetGoogleChoice] a sign-out or a deletion
  * @param {number} [deps.retryMs] how long after a failed first connection it is tried again
  */
@@ -146,9 +146,7 @@ export function createAccountState({
     const available = sharingAvailable();
     if (available !== others.available) {
       others.available = available;
-      if (available)
-        others.include = true; // sharing means seeing the others, until hidden with the checkbox
-      else Object.assign(others, { include: false, status: 'idle', items: [], viewId: null });
+      if (!available) Object.assign(others, { status: 'idle', items: [], viewId: null });
       emit('others');
       if (available && wantsOthers()) loadOthers(); // else showTab loads on arrival
     }
@@ -166,7 +164,7 @@ export function createAccountState({
 
   /**
    * Runs an account call; its failure becomes `failure`, a short line, never an alert. `line`: «message» (the account
-   * page), «othersMessage» (Comparar's section) or «signIn» (under the sign-in choices, busy while it runs).
+   * page), «othersMessage» (the Otros pastores tab) or «signIn» (under the sign-in choices, busy while it runs).
    * @param {string} failure
    * @param {() => Promise<void>} call
    * @param {'message' | 'othersMessage' | 'signIn'} [line]
@@ -394,7 +392,7 @@ export function createAccountState({
       }),
 
     confirmShare: () => setSharing(true, 'message'),
-    shareFromCompare: () => setSharing(true, 'othersMessage'),
+    shareFromOthers: () => setSharing(true, 'othersMessage'),
     stopSharing: () => setSharing(false, 'othersMessage'),
 
     /** The sharing switch: turning it on asks first; turning it off acts at once. */

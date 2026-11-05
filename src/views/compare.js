@@ -13,17 +13,25 @@ import { incomeBar, legend, swatch } from './parts.js';
 /** Days in a normal working week: the week minus the legal weekly rest. */
 const WEEK_WORK_DAYS = 7 - LAW.weeklyRest;
 
-/** «Comparar por»: the unit that sorts and measures the Comparar rows. */
-const unitPicker = (unit) =>
+/**
+ * A field's name in a ranking. The Otros pastores tab has the same controls as Comparar; radios with one name would be
+ * one group across both tabs, so its names carry a prefix, which `events.js` strips.
+ */
+export const OTHERS_PREFIX = 'others-';
+const fieldName = (scope, name) => (scope === 'others' ? `${OTHERS_PREFIX}${name}` : name);
+
+/** «Comparar por»: the unit that sorts and measures the ranking's rows. */
+const unitPicker = (unit, scope) =>
   html`<div class="view"><span class="view-l">Comparar por</span><div class="seg" role="radiogroup" aria-label="Comparar por">${UNIT_ORDER.map(
-    (u) => html`<label><input type="radio" name="cmpUnit" value=${u} .checked=${u === unit}>${UNITS[u].pick}</label>`,
+    (u) =>
+      html`<label><input type="radio" name=${fieldName(scope, 'cmpUnit')} value=${u} .checked=${u === unit}>${UNITS[u].pick}</label>`,
   )}</div></div>`;
 
 /**
  * The view switches, as chips under the ranking: the offers that were only offers (shown apart), and the figures of
  * the terms alone (forced on by other shepherds' offers). One hint line, only when something needs saying.
  */
-function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
+function viewSwitches({ scope, termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
   const hint = [
     forced
       ? 'Con ofertas de otros pastores se comparan sin desplazamientos ni gastos de nadie.'
@@ -39,35 +47,29 @@ function viewSwitches({ termsOnly, forced, showOfferOnly, offerOnlyCount, moneyO
     .filter(Boolean)
     .join(' ');
   const sortBy = (value, text) =>
-    html`<label><input type="radio" name="sortBy" value=${value} .checked=${moneyOnly === (value === 'money')}>${text}</label>`;
+    html`<label><input type="radio" name=${fieldName(scope, 'sortBy')} value=${value} .checked=${moneyOnly === (value === 'money')}>${text}</label>`;
   return html`<div class="cmp-opts">
     <div class="view"><span class="view-l">Ordenar</span><div class="seg" role="radiogroup" aria-label="Ordenar">${sortBy('paro', 'Con el paro')}${sortBy('money', 'Sin el paro')}</div></div>
     ${
       offerOnlyCount
-        ? html`<label class="check"><input type="checkbox" name="showOfferOnly" .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
+        ? html`<label class="check"><input type="checkbox" name=${fieldName(scope, 'showOfferOnly')} .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
         : nothing
     }
-    <label class="check"><input type="checkbox" name="termsOnly" .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
+    <label class="check"><input type="checkbox" name=${fieldName(scope, 'termsOnly')} .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
   </div>${hint ? html`<p class="hint">${hint}</p>` : nothing}`;
 }
 
-/** Whether to rank the offers other shepherds share, and how loading them went. Only offered when they can be read. */
-const othersControl = ({ available, include, status, items }) =>
-  available
-    ? html`<div class="terms-only others-ctl"><label><input type="checkbox" name="includeOthers" .checked=${include}>Incluir ofertas de otros pastores</label>${
-        include
-          ? html`<p class="hint">${
-              status === 'loading'
-                ? 'Cargando las ofertas de otros pastores…'
-                : status === 'error'
-                  ? 'No se pudieron cargar las ofertas de otros pastores.'
-                  : items.length
-                    ? 'Aparecen con el nombre de quien las comparte.'
-                    : 'Todavía no hay ofertas compartidas por otros pastores.'
-            } <button type="button" class="linkbtn" data-action="refreshOthers">${status === 'error' ? 'Reintentar' : 'Actualizar'}</button></p>`
-          : html`<p class="hint">Se comparan solo las condiciones, sin desplazamientos ni gastos propios.</p>`
-      }</div>`
-    : nothing;
+/** How loading the offers other shepherds share went, with a way to fetch them again. */
+const othersControl = ({ status, items }) =>
+  html`<p class="hint others-ctl">${
+    status === 'loading'
+      ? 'Cargando las ofertas de otros pastores…'
+      : status === 'error'
+        ? 'No se pudieron cargar las ofertas de otros pastores.'
+        : items.length
+          ? 'Aparecen con el nombre de quien las comparte.'
+          : 'Todavía no hay ofertas compartidas por otros pastores.'
+  } <button type="button" class="linkbtn" data-action="refreshOthers">${status === 'error' ? 'Reintentar' : 'Actualizar'}</button></p>`;
 
 /** The button action that opens a row: your offer in the offers tab, another shepherd's read-only. */
 const openAction = (x) => (x.sharer ? 'viewShared' : 'openOffer');
@@ -262,17 +264,31 @@ function hoursView(list) {
 }
 
 /**
- * Comparar: the ranking in the chosen unit (tap a row to see the offer), and the weekly hours.
- * @param {{o: object, r: object, sharer?: object}[]} everything your offers and, with `sharer`, other shepherds' ones, with their figures
- * @param {string} unit
- * @param {boolean} termsOnly show the figures of the terms alone
- * @param {{available: boolean, include: boolean, status: string, items: object[]}} others other shepherds' offers
- * @param {{on: boolean, ids: string[]}} pairing «Comparar dos»: whether it is on and which offers are picked
- * @param {boolean} [showOfferOnly] rank the offers that were only offers (not worked), yours or others', shown apart
- * @param {boolean} [moneyOnly] rank by what you earn alone: by default the paro each offer generates is added (ADR-0022)
+ * A ranking in the chosen unit (tap a row to see the offer) and the head to head. `scope` 'compare': Comparar, with the
+ * weekly hours; 'others': the Otros pastores tab, where your offers and other shepherds' are ranked together on terms
+ * alone (ADR-0013, ADR-0030).
+ * @param {object} args
+ * @param {'compare' | 'others'} args.scope
+ * @param {{o: object, r: object, sharer?: object}[]} args.everything your offers and, with `sharer`, other shepherds' ones, with their figures
+ * @param {string} args.unit
+ * @param {boolean} args.termsOnly show the figures of the terms alone (always, in 'others')
+ * @param {{status: string, items: object[]}} args.others how loading other shepherds' offers went; used by 'others'
+ * @param {{on: boolean, ids: string[], scope: string}} args.pairing «Comparar dos»: whether it is on, which offers are picked and in which ranking
+ * @param {boolean} args.showOfferOnly rank the offers of solo oferta, yours or others', shown apart
+ * @param {boolean} args.moneyOnly rank by what you earn alone: by default the paro each offer generates is added (ADR-0022)
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
-export function compareView(everything, unit, termsOnly, others, pairing, showOfferOnly = true, moneyOnly = false) {
+export function compareView({
+  scope,
+  everything,
+  unit,
+  termsOnly,
+  others,
+  pairing: allPairing,
+  showOfferOnly,
+  moneyOnly,
+}) {
+  const pairing = allPairing.scope === scope ? allPairing : { on: false, ids: [], scope };
   const U = UNITS[unit];
   // Offers that were not worked (no start date, or marked «solo oferta»), yours or other shepherds' (ADR-0028)
   const worked = new Set(workedOffers(everything.map((x) => x.o)));
@@ -288,21 +304,24 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
   const rankValue = (r) =>
     sortValue(r) + (moneyOnly || sortValue(r) <= -1e11 ? 0 : inUnit(r.unemployment.euros, r, unit));
   const list = all.filter(({ o }) => isComplete(o.terms)).sort((a, b) => rankValue(b.r) - rankValue(a.r));
-  // Under the ranking: how it is looked at, then other shepherds' offers
+  // Under the ranking: how it is looked at, then how loading other shepherds' offers went
   const controls = html`${viewSwitches({
+    scope,
     termsOnly,
-    forced: others.available && others.include,
+    forced: scope === 'others',
     showOfferOnly,
     offerOnlyCount,
     moneyOnly,
-  })}${othersControl(others)}`;
+  })}${scope === 'others' ? othersControl(others) : nothing}`;
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
     return {
       picker: nothing,
       body: html`<p class="empty">${
         all.length < 2
-          ? 'Para compararlas, añade otra oferta con «+ Nueva oferta», en Ofertas.'
+          ? scope === 'others'
+            ? 'Para compararlas hacen falta al menos dos ofertas completas.'
+            : 'Para compararlas, añade otra oferta con «+ Nueva oferta», en Ofertas.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>${controls}`,
       more: nothing,
@@ -345,15 +364,14 @@ export function compareView(everything, unit, termsOnly, others, pairing, showOf
   });
   const mode = pairing.on
     ? html`<div class="cmp-mode"><span>${pairing.ids.length === 2 ? 'Comparando:' : pairing.ids.length ? 'Marca otra oferta.' : 'Marca dos ofertas.'}</span><button type="button" class="linkbtn" data-action="closePair">Cancelar</button></div>`
-    : html`<div class="cmp-mode"><span>Toca una oferta para verla, o compara dos.</span><button type="button" class="sm pri" data-action="startPair">Comparar dos</button></div>`;
+    : html`<div class="cmp-mode"><span>Toca una oferta para verla, o compara dos.</span><button type="button" class="sm pri" data-action="startPair" data-scope=${scope}>Comparar dos</button></div>`;
   return {
-    picker: unitPicker(unit),
+    picker: unitPicker(unit, scope),
     body: html`${mode}${legend(list.map((x) => x.r))}<div class="lst">${rows}</div>
     <p class="hint">${moneyOnly ? `Ordenadas por lo que se gana ${U.short}.` : `Ordenadas por lo que se gana ${U.short} y el paro que genera cada oferta.`}</p>
     ${list.some((x) => atRate(x.r)) ? html`<p class="hint">* Menos de un mes: lo que ganarías a ese ritmo en un mes entero.</p>` : nothing}
     ${controls}`,
-    // After the «Otros pastores» section, which sits right under the ranking
-    more: html`${headToHead(list, pairing, unit)}${hoursView(list)}`,
+    more: html`${headToHead(list, pairing, unit)}${scope === 'compare' ? hoursView(list) : nothing}`,
   };
 }
 

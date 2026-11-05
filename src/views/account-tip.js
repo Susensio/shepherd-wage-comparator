@@ -7,7 +7,7 @@ import { html, nothing } from 'lit-html';
 /** @type {Record<string, Tip>} what each tab or page says to a guest; one without an entry has no tooltip */
 export const GUEST_TIPS = {
   offers: { title: 'Guarda las ofertas en una cuenta.', text: 'Ahora solo están en este navegador.' },
-  compare: { title: 'Compara con otros pastores.', text: 'Entra y, si se comparten las ofertas, se ven las suyas.' },
+  others: { title: 'Compara con otros pastores.', text: 'Entra y comparte las ofertas para ver las suyas.' },
   settings: { title: 'Guarda los ajustes en una cuenta.', text: 'Así están en cualquier dispositivo.' },
 };
 

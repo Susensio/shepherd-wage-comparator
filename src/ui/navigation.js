@@ -9,7 +9,7 @@ import { $ } from '../dom.js';
 import { saveTab } from '../state.js';
 import { scrollPosition, scrollToTop, wide } from './scroller.js';
 
-const TABS = ['offers', 'compare'];
+const TABS = ['offers', 'compare', 'others'];
 
 /** The pages opened from the bar's buttons, over the tab shown: each is a panel of its own. */
 const PAGES = ['account', 'settings', 'laws'];
