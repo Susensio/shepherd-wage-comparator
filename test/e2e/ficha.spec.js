@@ -28,7 +28,7 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
 
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(cash.locator('.lever-t')).toHaveText('En negro');
-  await expect(cash.locator('.lever-fig')).toContainText(/[\d.]+\s€/); // what the ganadero saves
+  await expect(cash.locator('.save')).toContainText(/[\d.]+\s€/); // what the ganadero saves
   await expect(cash).toContainText('no cuenta para la jubilación ni la baja'); // the paro is already at its maximum
 
   await loadOffers(page, sample, OFFER.campanaB);
