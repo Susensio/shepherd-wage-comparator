@@ -92,7 +92,9 @@ for (const width of [320, 375]) {
       }
       const tabs = await page.locator('.tabs').boundingBox();
       expect(tabs.width).toBeCloseTo(width, 0);
-      await expect(page.locator('.appbar .kicker')).toBeVisible();
+      // Three buttons in the bar: under 360 px the motto gives way so the name fits
+      if (width > 360) await expect(page.locator('.appbar .kicker')).toBeVisible();
+      else await expect(page.locator('.appbar .kicker')).toBeHidden();
       await page.getByRole('button', { name: 'Leyes', exact: true }).click();
       expect(await tooShort(page, '[data-panel=laws], .appbar'), 'laws').toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
