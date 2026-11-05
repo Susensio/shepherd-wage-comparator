@@ -1,10 +1,10 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "offers": [
     {
       "id": "next-1",
       "cmp": true,
-      "schema_version": 4,
+      "schema_version": 5,
       "terms": {
         "payAmount": 1785,
         "payType": "net",

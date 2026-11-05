@@ -77,9 +77,9 @@ before(async () => {
   await db.exec(`
     update profiles set sharing = true, phone = '600' where user_id in ('${ID.ana}', '${ID.ben}', '${ID.cai}');
     insert into offers (id, user_id, terms, schema_version) values
-      ('${OFFER.ana}', '${ID.ana}', '{}', 3),
-      ('${OFFER.ben}', '${ID.ben}', '{}', 3),
-      ('${OFFER.dan}', '${ID.dan}', '{}', 3);
+      ('${OFFER.ana}', '${ID.ana}', '{}', 4),
+      ('${OFFER.ben}', '${ID.ben}', '{}', 4),
+      ('${OFFER.dan}', '${ID.dan}', '{}', 4);
     insert into offer_mine values ('${OFFER.ana}', '{"kmHome": 1}'), ('${OFFER.ben}', '{"kmHome": 2}');
     insert into settings (user_id, cfg) values ('${ID.ana}', '{}'), ('${ID.ben}', '{}');
   `);
@@ -155,7 +155,7 @@ describe('readers', () => {
     await as('ana', `update offers set schema_version = 9 where id = '${OFFER.ben}'`);
     await as('ana', `delete from offers where id = '${OFFER.ben}'`);
     await as('ana', `update profiles set phone = 'x' where user_id = '${ID.ben}'`);
-    assert.deepEqual(await column(null, `select schema_version from offers where id = '${OFFER.ben}'`), [3]);
+    assert.deepEqual(await column(null, `select schema_version from offers where id = '${OFFER.ben}'`), [4]);
     assert.deepEqual(await column(null, `select phone from profiles where user_id = '${ID.ben}'`), ['600']);
   });
 });
@@ -176,7 +176,7 @@ describe('anon', () => {
 describe('min_page_version', () => {
   test('anon and every signed-in user read the one row', async () => {
     for (const who of ['anon', 'ana', 'dan']) {
-      assert.deepEqual(await column(who, 'select min_page_version from app_meta'), [2], who);
+      assert.deepEqual(await column(who, 'select min_page_version from app_meta'), [3], who);
     }
   });
 
@@ -190,7 +190,7 @@ describe('min_page_version', () => {
       );
       await assert.rejects(as(who, 'delete from app_meta'), /permission denied/, who);
     }
-    assert.deepEqual(await column(null, 'select min_page_version from app_meta'), [2]);
+    assert.deepEqual(await column(null, 'select min_page_version from app_meta'), [3]);
   });
 
   test('it holds a single row, and loading the migrations again keeps its value', async () => {
@@ -198,7 +198,7 @@ describe('min_page_version', () => {
     await as(null, 'update app_meta set min_page_version = 5');
     await migrate();
     assert.deepEqual(await column('anon', 'select min_page_version from app_meta'), [5]);
-    await as(null, 'update app_meta set min_page_version = 2');
+    await as(null, 'update app_meta set min_page_version = 3');
   });
 });
 
@@ -289,6 +289,35 @@ describe('schema version 3: offerOnly and the village move to the shared terms (
     );
     const { rows: meta } = await fresh.query('select min_page_version from app_meta');
     assert.deepEqual(meta, [{ min_page_version: 2 }]);
+    await fresh.close();
+  });
+});
+
+describe('schema version 4: the self-employed contract (ADR-0029)', () => {
+  test('rows get vatIncluded at its default and version 4, a value already there is kept, old pages stop writing', async () => {
+    const fresh = new PGlite();
+    await fresh.exec(STUB);
+    const { before: earlier, it } = upTo('self_employed');
+    for (const sql of earlier) await fresh.exec(sql);
+    await fresh.query('insert into auth.users values ($1, $2, $3)', [ID.ana, 'ana@example.com', '{}']);
+    const offer = (n) => `30000000-0000-0000-0000-00000000000${n}`;
+    await fresh.exec(`
+      insert into offers (id, user_id, terms, schema_version) values
+        ('${offer(1)}', '${ID.ana}', '{"payAmount": 1785}', 3),
+        ('${offer(2)}', '${ID.ana}', '{"contract": "selfEmployed", "vatIncluded": true}', 4);
+    `);
+    await fresh.exec(it);
+    await fresh.exec(it); // twice is harmless
+    const { rows } = await fresh.query('select terms, schema_version from offers order by id');
+    assert.deepEqual(
+      rows.map((row) => [row.terms, row.schema_version]),
+      [
+        [{ payAmount: 1785, vatIncluded: false }, 4],
+        [{ contract: 'selfEmployed', vatIncluded: true }, 4],
+      ],
+    );
+    const { rows: meta } = await fresh.query('select min_page_version from app_meta');
+    assert.deepEqual(meta, [{ min_page_version: 3 }]);
     await fresh.close();
   });
 });

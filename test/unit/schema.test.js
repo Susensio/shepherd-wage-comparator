@@ -126,8 +126,8 @@ test('the village, its codes, the head counts and whether it was worked are term
   }
 });
 
-test('the account schema is at version 3', () => {
-  assert.equal(SCHEMA_VERSION, 3);
+test('the account schema is at version 4', () => {
+  assert.equal(SCHEMA_VERSION, 4);
 });
 
 describe('upgrade chain', () => {
@@ -171,6 +171,13 @@ describe('upgrade chain', () => {
   test('upgrade[2] leaves an offer already in version 3 as it is (browser copies are not stamped)', () => {
     const v3 = { id: 'a', terms: { payAmount: 5, offerOnly: true, place: 'X' }, mine: { name: 'Y' } };
     assert.deepEqual(upgrade[2].offer(v3), v3);
+  });
+
+  test('upgrade[3] changes nothing; the default fills vatIncluded', () => {
+    const v3 = { id: 'a', terms: { payAmount: 5 }, mine: {} };
+    assert.equal(upgrade[3].offer(v3), v3);
+    const { offers } = ingestSaved({ schema_version: 3, offers: [v3] }, { fallbackCfg });
+    assert.equal(offers[0].terms.vatIncluded, false);
   });
 
   test('upgrade[1] on settings drops the former law figures', () => {
@@ -217,9 +224,9 @@ describe('fields the page does not know', () => {
   });
 
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v4-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v5-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 4);
+    assert.equal(offer.schema_version, 5);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
@@ -229,14 +236,14 @@ describe('fields the page does not know', () => {
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v4-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v5-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 4);
+    assert.equal(again.offers[0].schema_version, 5);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 4, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 5, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -246,7 +253,7 @@ describe('fields the page does not know', () => {
 
   test('a shared row of the current version keeps them, and its sharer names it', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 3, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 4, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.newTerm, 'x');

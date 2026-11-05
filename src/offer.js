@@ -18,10 +18,11 @@ export const DEF_TERMS = {
   daysOff: '',
   daysOffUnit: 'month', // week · month · total
   holidays: 'no', // yes: public holidays are taken off too
-  contract: 'temporary', // temporary · seasonal · permanent · none
+  contract: 'temporary', // temporary · seasonal · permanent · none · selfEmployed (autónomo, ADR-0029)
   payrollMin: false, // the payroll is the minimum wage
   payType: 'net', // net · gross
   payAmount: '',
+  vatIncluded: false, // self-employed: the agreed amount has the IVA inside
   payUnit: 'month', // day · month · year · total
   extraPays: 'included', // included · separate
   vacation: 'included', // included · taken · paidAtEnd

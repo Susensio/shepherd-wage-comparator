@@ -10,14 +10,14 @@ import { toAnswerable } from './pay-answers.js';
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 2;
+export const PAGE_VERSION = 3;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -58,10 +58,13 @@ const withoutLawFigures = (cfg) =>
  *    `mine`; `offerOnly` moved there from `terms` on 30 October 2026 (ADR-0017) without a version bump, so it may be
  *    in either, and `mine`'s wins.
  * 3: `offerOnly` and `place` in `terms`, shared (ADR-0028). The migration of 4 November 2026 rewrote every account row.
+ * 4: `contract: 'selfEmployed'` and `terms.vatIncluded` (ADR-0029). Nothing saved changes shape: the default fills
+ *    `vatIncluded`, so the upgrader is the identity; the version keeps pages that do not know the contract from writing.
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
   2: { offer: ownToTerms },
+  3: { offer: (offer) => offer },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
