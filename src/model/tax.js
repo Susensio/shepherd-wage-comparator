@@ -26,17 +26,36 @@ function workReduction(netIncome) {
 
 /**
  * IRPF for a year on an annual gross: general scale, no children, with the deduction for wages near the minimum wage.
+ * `activity`: net income from a self-employed activity the same year, added to the base; above 6.500 € it takes the
+ * earned-income reduction away (LIRPF art. 20: only without other income over that).
  * @param {number} gross
  * @param {number} ssPct worker's Social Security, %
  * @param {{max: number, from: number, taper: number} | null} deduction that year's minimum-wage deduction
+ * @param {number} [activity]
  */
-export function irpfTax(gross, ssPct, deduction) {
-  if (gross <= 0) return 0;
-  const netIncome = Math.max(0, gross - (gross * ssPct) / 100 - LAW.irpf.expenses);
-  const base = Math.max(0, netIncome - workReduction(netIncome));
-  const credit = deduction ? Math.max(0, deduction.max - Math.max(0, gross - deduction.from) * deduction.taper) : 0;
+export function irpfTax(gross, ssPct, deduction, activity = 0) {
+  if (gross <= 0 && activity <= 0) return 0;
+  const netIncome = gross > 0 ? Math.max(0, gross - (gross * ssPct) / 100 - LAW.irpf.expenses) : 0;
+  const reduction = activity > LAW.irpf.otherIncomeForReduction ? 0 : workReduction(netIncome);
+  const base = Math.max(0, netIncome - reduction) + activity;
+  const credit =
+    deduction && gross > 0 ? Math.max(0, deduction.max - Math.max(0, gross - deduction.from) * deduction.taper) : 0;
   return Math.max(0, scaleTax(base) - scaleTax(LAW.irpf.personalAllowance) - credit);
 }
+
+/**
+ * IRPF that a self-employed activity's net income adds to the year, on top of the payslips of other offers (split by
+ * years as in `irpfAdded`).
+ * @param {number} activity net income of the activity
+ * @param {{others: number}} cfg
+ * @param {{share: number, others: number, deduction: object | null}[]} shares
+ * @param {number} ssPct the other offers' workers' Social Security, %
+ */
+export const irpfWithActivity = (activity, cfg, shares, ssPct) =>
+  shares.reduce((sum, { share, others, deduction }) => {
+    const base = num(cfg.others) + others;
+    return sum + irpfTax(base, ssPct, deduction, share * activity) - irpfTax(base, ssPct, deduction);
+  }, 0);
 
 /**
  * IRPF that a gross adds to what you already earn in the year. If the offer spans two years, the gross is split

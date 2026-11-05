@@ -244,13 +244,13 @@ const SELF_EMPLOYED = {
     [Infinity, 1928.1, 5101.2],
   ],
   // RETA rates, % of the base: Orden PJC/297/2026 art. 18.2 (comunes, profesionales, equidad) and 37.5.a, 37.6
-  rates: [
+  rates: /** @type {[string, number][]} */ ([
     ['Contingencias comunes', 28.3],
     ['Contingencias profesionales', 1.3],
     ['MEI', 0.9],
     ['Cese de actividad', 0.9],
     ['Formación profesional', 0.1],
-  ],
+  ]),
   // The tramo's income: the módulos «rendimiento neto previo minorado» less 7 % generic expenses, spread over the
   // months registered (LGSS art. 308.1.c, rules 1ª to 3ª)
   genericExpensesPct: 7,
@@ -268,6 +268,7 @@ const SELF_EMPLOYED = {
 /** IRPF (Ley 35/2006): general scale (state and regional together), no children. */
 export const IRPF = {
   expenses: 2000, // art. 19.2.f
+  otherIncomeForReduction: 6500, // art. 20: the earned-income reduction only without other income over this
   personalAllowance: 5550, // art. 57
   withholding: 2, // minimum withholding for casual farm workers, % (RIRPF art. 86.2)
   scale: [

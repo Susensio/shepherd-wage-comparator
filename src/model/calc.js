@@ -20,6 +20,7 @@ import {
   workedOffers,
 } from '../offer.js';
 import { effectiveOffer, legalMinimum, payroll, travel } from './pay.js';
+import { selfEmployed } from './self-employed.js';
 import { bisect, unemploymentBenefit } from './tax.js';
 import { extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
 
@@ -78,14 +79,25 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     : othersInYear(offer, { cfg, offers });
   const ctx = { cfg, wage, irpfShares: others.shares };
 
-  // Without a contract there is no payroll and no paid vacation: everything is cash, against a temporary contract's minimum
+  // Without a contract there is no payroll and no paid vacation: everything is cash, against a temporary contract's minimum.
+  // Self-employed, neither: the invoice is apart (`selfEmployed`), and labour law's debts do not apply (ADR-0029).
   const { terms: effective, split } = effectiveOffer(offer.terms, mine, ctx, schedule);
   const noContract = effective.contract === 'none';
-  const t = noContract
-    ? { ...effective, payAmount: 0, vacation: 'included', extraPays: 'included', contract: 'temporary' }
-    : effective;
+  const isSelfEmployed = effective.contract === 'selfEmployed';
+  const t =
+    noContract || isSelfEmployed
+      ? {
+          ...effective,
+          payAmount: 0,
+          ...(isSelfEmployed ? { cashAmount: 0 } : {}),
+          vacation: 'included',
+          extraPays: 'included',
+          contract: 'temporary',
+        }
+      : effective;
 
   const time = schedule(t);
+  const se = isSelfEmployed ? selfEmployed(effective, time, ctx) : null;
   const pay = payroll(t, mine, ctx, time);
   const car = travel(t, mine, time, cfg);
   const min = legalMinimum(t, ctx, time);
@@ -128,13 +140,15 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     food,
     km: car.kmPaid,
     severance,
+    invoice: se ? se.invoiced : 0,
   };
-  const total = Object.values(parts).reduce((sum, x) => sum + x, 0) - (car.cost + otherExpenses);
+  const deductions = se ? se.quota + se.irpf : 0;
+  const total = Object.values(parts).reduce((sum, x) => sum + x, 0) - (car.cost + otherExpenses + deductions);
   const perMonth = (x) => (months > 0 ? x / months : 0);
 
   // What you are owed, counted by months: what is missing in each item separately (a surplus in one does not cover another)
-  let debtSalary = Math.max(0, min.salary + min.overnight - pay.salary);
-  let debtVacation = t.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
+  let debtSalary = se ? 0 : Math.max(0, min.salary + min.overnight - pay.salary);
+  let debtVacation = se || t.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
   let minNetNoContract = 0;
   if (noContract) {
     // What you are paid in cash against the minimum wage with bonus, through the same net↔gross factor as the rest
@@ -146,7 +160,11 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   }
   const debtTotal = debtSalary + debtVacation;
   const coveredByCash = cash > 0 ? cashGrossEq : 0;
-  const salaryPart = noContract ? Math.max(0, debtSalary - min.overnight) : Math.max(0, min.salary - pay.salary);
+  const salaryPart = se
+    ? 0
+    : noContract
+      ? Math.max(0, debtSalary - min.overnight)
+      : Math.max(0, min.salary - pay.salary);
 
   // Extra days and overtime: what you are paid above the legal minimum (payroll and cash) covers the extra days first
   // (each a workday at the minimum wage) and whatever is left, the overtime (each an hour at the minimum wage).
@@ -158,8 +176,9 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const paidAbove = pay.gross > 0 || noContract ? Math.max(0, pay.gross - normalPay + coveredByCash) : 0;
   const daysValue = extra.days >= 0.5 ? extra.days * dayValue : 0;
   const overtimeValue = extra.overtime * min.hourly;
-  const daysUnpaid = Math.max(0, daysValue - paidAbove);
-  const overtimeUnpaid = Math.max(0, overtimeValue - Math.max(0, paidAbove - daysValue));
+  // Self-employed: no workdays or overtime are owed; labour law does not apply as such (the warning says why)
+  const daysUnpaid = se ? 0 : Math.max(0, daysValue - paidAbove);
+  const overtimeUnpaid = se ? 0 : Math.max(0, overtimeValue - Math.max(0, paidAbove - daysValue));
 
   // What the employer saves at your expense, with their Social Security: their margin to negotiate
   const owed = noContract ? debtTotal : Math.max(0, debtTotal - coveredByCash);
@@ -201,8 +220,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
       perHour: hours > 0 ? total / hours : 0,
       perDay: daysWorked > 0 ? total / daysWorked : 0,
       perMonth: perMonth(total),
-      /** money that reaches you: payroll, vacation, cash and km */
-      received: parts.base + parts.extraPays + parts.vacationPay + parts.b + parts.km,
+      /** money that reaches you: payroll, vacation, cash, km and what is invoiced */
+      received: parts.base + parts.extraPays + parts.vacationPay + parts.b + parts.km + parts.invoice,
     },
     unemployment: {
       contribDays,
@@ -214,8 +233,10 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     employer: {
       ss: (pay.gross * pay.rates.employerPct) / 100,
       severance,
-      cost: pay.gross * employerRate + cash + housing + food + car.kmPaid + severance,
+      cost: pay.gross * employerRate + cash + housing + food + car.kmPaid + severance + (se ? se.invoiced : 0),
     },
+    /** self-employed (autónomo): the invoice, IVA, the RETA quota and IRPF; null on a payroll or without contract */
+    selfEmployed: se,
     min,
     debt: { salary: debtSalary, vacation: debtVacation, total: debtTotal, parts: debtParts, owed, minNetNoContract },
     rest: { legal: restLegal, short: Math.max(0, restLegal - time.daysOffTotal) },
@@ -235,15 +256,17 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     /** days worked, due and extra, rounded so the subtraction adds up on screen */
     extraDays: extraDaysRounded(time, extra),
     savings,
-    stamp: noContract
-      ? { code: 'noContract' }
-      : allCash
-        ? { code: 'allCash' }
-        : isWorthCounting(debtParts.salary)
-          ? { code: 'belowMinimum' }
-          : isWorthCounting(debtParts.overnight)
-            ? { code: 'noOvernight' }
-            : null,
+    stamp: se
+      ? { code: 'selfEmployed' }
+      : noContract
+        ? { code: 'noContract' }
+        : allCash
+          ? { code: 'allCash' }
+          : isWorthCounting(debtParts.salary)
+            ? { code: 'belowMinimum' }
+            : isWorthCounting(debtParts.overnight)
+              ? { code: 'noOvernight' }
+              : null,
   };
 }
 
