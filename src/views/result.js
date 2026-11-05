@@ -41,8 +41,8 @@ const otherUnits = (r, unit) =>
 /** Under the headline: the paro the offer generates, apart from «Se gana» (ADR-0022), or why there is none. */
 function paroLine(r) {
   const days = Math.round(r.unemployment.days);
-  if (r.selfEmployed)
-    return 'No genera paro de asalariado: cotiza para el cese de actividad, el paro de autónomos, que pide al menos 12 meses cotizados y un cese justificado. Lo ya generado como asalariado no se pierde.';
+  // The autónomos' own «cese de actividad» is rarely within reach (several clients): explained in Leyes, not here
+  if (r.selfEmployed) return 'No genera paro de asalariado.';
   if (days < 1)
     return r.noContract
       ? 'Sin contrato no genera paro.'

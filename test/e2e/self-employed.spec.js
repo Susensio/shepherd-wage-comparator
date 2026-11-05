@@ -42,7 +42,7 @@ test('the ficha: «Autónomo» stamp, no paro, the quota and IRPF taken off, the
   await expect(page.locator('#ficha')).toBeVisible();
   const result = page.locator('#result');
   await expect(result.locator('.stamp')).toContainText('Autónomo');
-  await expect(result).toContainText('cotiza para el cese de actividad');
+  await expect(result).toContainText('No genera paro de asalariado.');
   await result.locator('[data-fold=breakdown2] > summary').click();
   const rows = result.locator('[data-fold=breakdown2] .rows');
   for (const label of ['Factura', 'Cuota de autónomos', 'Total']) await expect(rows).toContainText(label);
