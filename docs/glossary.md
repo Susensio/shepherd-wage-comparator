@@ -34,6 +34,11 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | pagas extra | | `terms.extraPays` | | |
 | indemnización | what is owed when a temporary contract ends | `r.severance` | ET art. 49.1.c | finiquito (that is the final settlement, which includes it) |
 | paro | unemployment benefit earned by contributing. Not part of «se gana»: said under the headline («Y genera N días de paro: unos X €, que se cobran más adelante»), beside the money in Comparar («+ 428 € de paro», «sin paro») and, for money en negro, in «Dinero en negro» | `r.unemployment.*` | LGSS | prestación por desempleo (only in citations) |
+| autónomo | a shepherd who invoices the ganadero instead of being on a payslip: the answer «Nada: se factura como autónomo» to «¿Cuánto va en nómina?», the stamp and pill «Autónomo» (ADR-0029) | `terms.contract: 'selfEmployed'`, `r.selfEmployed` | LGSS art. 305 | por cuenta propia (only in citations), freelance |
+| factura | what the ganadero pays an autónomo, without IVA: the breakdown's row «Factura» | `r.selfEmployed.invoiced` | | |
+| cuota de autónomos | the self-employed Social Security contribution, by tramo of income | `r.selfEmployed.quota` | Orden PJC/297/2026 art. 18 | RETA (only in citations), cuota del RETA |
+| falso autónomo | work invoiced as self-employed that the law treats as employment (another's livestock, pasture and orders): the warning in «¿Es legal?» | `rightsOf` (`contract`, warn) | ET art. 1.1 and 8.1 | |
+| IVA | the value-added tax on the invoice; taken off only when the agreed amount has it inside («La cantidad lleva el IVA dentro») | `terms.vatIncluded`, `LAW.selfEmployed.vatPct` | Ley del IVA art. 91 | |
 | Seguridad Social | contributions, worker and employer | `ssOf(contract)`, `r.pay.rates` | Orden PJC/297/2026 | cotización (in explanations only) |
 | retención de IRPF | | `r.pay.irpf`, `irpfPct` | | |
 | lo que se paga / Pago | everything the offer pays together, payslip and en negro: the first answer of the step «Pago», what reaches the shepherd. «Pago» is the step and the label; «lo que se paga» in a sentence | `terms.payAmount`, `totalAmount` or `cashAmount`, by the answer (`pay-answers.js`) | | te pagan, lo que te pagan, cobras (that is the Desglose figure) |
