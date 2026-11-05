@@ -17,7 +17,7 @@ const active = (page) => page.evaluate(() => app.active());
 const counter = (page) => page.locator('#entryCounter');
 
 test('a new offer goes through the steps in order, from the templates to the ficha', async ({ page }) => {
-  await expect(page.locator('#welcomeTitle')).toHaveText('Apunta la oferta y mira cuánto se gana'); // a first visit opens with the pitch
+  await expect(page.locator('#welcomeTitle')).toHaveText('Cuentas claras de cada oferta'); // a first visit opens with the pitch
   await expect(page.locator('#entryTitle')).toBeHidden();
   await page.locator('#welcomeStart').click();
   await expect(page.locator('#entryTitle')).toHaveText('¿Se parece a alguna de estas?');
