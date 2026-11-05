@@ -1233,14 +1233,6 @@ div.welcome {
   color: var(--c-cash-t);
   font-weight: 650;
 }
-.cmore {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
-}
-.conditions[open] > summary .cmore {
-  display: none;
-}
 /* The rows below say it in full: the line goes, and with the title anchored at the top nothing moves but the card's edge */
 .conditions[open] > summary .cs {
   display: none;

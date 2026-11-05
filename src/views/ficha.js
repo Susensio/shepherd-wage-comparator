@@ -35,7 +35,7 @@ export function fichaView(o, r, places) {
   const lacking = missingBySteps(o.terms);
   const keys = Object.keys(lacking);
   return html`<details class="conditions" data-fold="conditions">
-      <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span><span class="cmore">Ver</span></summary>
+      <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span></summary>
       <div class="crows">${CONDITION_STEPS.map(
         (step) =>
           html`<button type="button" class=${lacking[step.id] ? 'crow missing' : 'crow'} data-action="editStep" data-step=${step.id}>
