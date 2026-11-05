@@ -6,7 +6,7 @@ const active = (page) => page.evaluate(() => app.active());
 const counter = (page) => page.locator('#entryCounter');
 
 test('a new offer goes through the steps in order, from the templates to the ficha', async ({ page }) => {
-  await expect(page.locator('#entryTitle')).toHaveText('¿Se parece a alguna de estas?');
+  await expect(page.locator('#entryTitle')).toHaveText('Apunta la oferta y mira cuánto se gana'); // a first visit opens with the pitch
   await expect(page.locator('#entryNext')).toBeHidden(); // until a template is picked
   await page.locator('.tcard').first().click();
   const titles = ['La oferta', 'Pago', 'El día a día', 'Coche y gastos'];

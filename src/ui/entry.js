@@ -15,6 +15,9 @@ import { fUnit, inUnit, offerUnit } from '../units.js';
 import { closeEntry, entryOpen, entryToFicha, openEntry } from './navigation.js';
 import { scrollToTop } from './scroller.js';
 
+/** The headline of a first visit, in place of the first step's question. */
+const WELCOME_TITLE = 'Apunta la oferta y mira cuánto se gana';
+
 const entry = {
   /** Index in `STEPS` of the step shown. */
   step: 0,
@@ -161,7 +164,9 @@ export function paintEntry(o, r) {
   const edit = entry.editing;
   const pending = index === 0 && !entry.createdId && !edit;
   for (const section of $$('#entry .step')) section.hidden = section.dataset.step !== step.id;
-  $('#entryTitle').textContent = step.title;
+  const welcome = !!state.placeholderId && index === 0 && !edit;
+  // The first visit opens with what the page does, not with the templates' question
+  $('#entryTitle').textContent = welcome ? WELCOME_TITLE : step.title;
   $('#entryCounter').textContent = edit ? 'Cambiar' : `Paso ${index + 1} de ${STEPS.length}`;
   $('#entryClose').textContent = edit ? 'Cancelar' : 'Cerrar';
   $('#entryBack').setAttribute('aria-label', edit ? 'Cancelar' : index === 0 ? 'Cerrar' : 'Paso anterior');
@@ -176,7 +181,6 @@ export function paintEntry(o, r) {
     ? 'sin calcular'
     : fUnit(inUnit(r.earnings.total, r, unit), unit);
   $('#tplWarn').hidden = !entry.armed;
-  const welcome = !!state.placeholderId && index === 0 && !edit;
   $('#welcome').hidden = !welcome;
   document.body.classList.toggle('welcome', welcome);
 }
