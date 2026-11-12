@@ -46,7 +46,7 @@ const offerWith = (changes = {}) => offerOf({ ...BASE, ...changes });
 const settleOf = (offer, record, today = '2026-04-15') => settle(offer, record, today, ctx);
 // Payments are net: `amount` is the gross the payment is worth, taken off by this contract's withholdings
 const NET = calc(offerOf(BASE), ctx).netFactor;
-const payment = (id, date, gross, via = 'transfer') => ({ id, date, amount: gross * NET, via });
+const payment = (id, date, gross, via = 'payroll') => ({ id, date, amount: gross * NET, via });
 // A wage «al día» high enough that the monthly minimum never takes over, and vacation paid at the end
 const perDay = (changes = {}) =>
   offerWith({ payUnit: 'day', payAmount: 100, vacation: 'paidAtEnd', daysOff: 0, ...changes });
@@ -202,7 +202,7 @@ test('days worked above the due workdays are extra days, valued at the minimum w
 test('payments go to the oldest unpaid month first, whatever the order they are listed in', () => {
   const offer = offerWith({ payAmount: 1000 }); // owed 1424.50 a month (the minimum)
   const x = settleOf(offer, {
-    payments: [payment('b', '2026-02-10', 1000, 'payroll'), payment('a', '2026-01-10', 1424.5)],
+    payments: [payment('b', '2026-02-10', 1000, 'payroll'), payment('a', '2026-01-10', 1424.5, 'transfer')],
   });
   assert.deepEqual(
     x.rows.map((row) => [row.received, row.owed]),
@@ -241,10 +241,26 @@ test('payments are net: they are grossed up like the cash `calc` credits', () =>
   near(cash.totals.received, cents(net / r.netFactor), 'cash grossed up the same', 0.01);
 });
 
+test('a transfer without a payslip is received but not declared, like cash', () => {
+  const offer = offerWith({ payAmount: 1424.5 });
+  const x = settleOf(offer, {
+    payments: [payment('a', '2026-01-31', 1000, 'payroll'), payment('b', '2026-01-31', 424.5, 'transfer')],
+  });
+  assert.equal(x.rows[0].owed, 0);
+  assert.equal(x.rows[0].items.salary.belowMinimumOnPayroll, 424.5);
+  assert.equal(x.totals.cash, 0);
+  near(x.totals.undeclared, 424.5 * NET, 'undeclared', 0.01);
+  const both = settleOf(offer, {
+    payments: [payment('a', '2026-01-31', 100, 'cash'), payment('b', '2026-02-01', 200, 'transfer')],
+  });
+  near(both.totals.cash, 100 * NET, 'cash', 0.01);
+  near(both.totals.undeclared, 300 * NET, 'cash plus transfer', 0.01);
+});
+
 test('the legality flag compares the gross equivalent of the declared money with the minimum', () => {
   const offer = offerWith({ payAmount: 1424.5 });
   const r = calc(offer, ctx);
-  const paid = (net) => settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: net, via: 'transfer' }] });
+  const paid = (net) => settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: net, via: 'payroll' }] });
   // Net of exactly the minimum: not below. A cent of gross less: below
   assert.equal(paid(1424.5 * r.netFactor).rows[0].belowMinimumOnPayroll, 0);
   near(paid((1424.5 - 100) * r.netFactor).rows[0].belowMinimumOnPayroll, 100, 'below by', 0.01);
@@ -298,7 +314,7 @@ test('cash covers what is owed but the pay on payroll alone can still be below t
   assert.equal(declared.rows[0].owed, 0);
   assert.equal(declared.rows[0].belowMinimumOnPayroll, 0);
   const mixed = settleOf(offer, {
-    payments: [payment('a', '2026-01-31', 1000, 'transfer'), payment('b', '2026-01-31', 424.5, 'cash')],
+    payments: [payment('a', '2026-01-31', 1000, 'payroll'), payment('b', '2026-01-31', 424.5, 'cash')],
   });
   assert.equal(mixed.rows[0].owed, 0);
   assert.equal(mixed.rows[0].items.salary.belowMinimumOnPayroll, 424.5);
