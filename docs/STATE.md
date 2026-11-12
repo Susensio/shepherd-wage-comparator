@@ -4,9 +4,11 @@
 
 Decided with the owner on 12 November 2026 (ADR-0032). Core first, interface after: no screen is built until `settle` and the saved format are done and tested.
 
+Progress, 12 November 2026: steps 1 and 2 are done on branch `ccr-32fbee75-oc1p8v` and not on `master` (`settle`, `phaseOf`, saved format 5 with its migration `20261112120000_record_in_mine.sql`, `PAGE_VERSION` and `min_page_version` 4). Pushing `master` applies that migration to the live account rows: the owner exports a backup first. Step 3: mock-ups at https://claude.ai/artifact/Qvpa7UQPeiQ4mDrNUSzbN6 (version 3); decided by the owner: payments net, a day is jornada, libre or baja (vacation is not a mark), months from the start date, a month closes only after its calendar was shown, differences judged by counts, «+ Apuntar cobro» as a block of its own, a «Varios días» mode instead of dragging. A payment's `via`: only `payroll` is declared; `transfer` (without a payslip) and `cash` are en negro. Step 4 (interface) is next; the owner finds the post-work part overloaded, to iterate once built.
+
 ### Plan
 
-1. Core, no DOM.
+1. Core, no DOM. (Done.)
    - `src/model/settle.js`: `settle(offer, record, today)` as in ADR-0032: per month and item, due (real days for a closed month, the model's averages for an open one), received (payments, oldest unpaid month first), owed (the greater of agreed and minimum, per ADR-0004), cash apart, claim deadline per unpaid month.
    - `src/model/phase.js`: `phaseOf(offer, today)`: undecided, under way, finished; «solo oferta» never worked.
    - Unit tests with a fixture per case. The invariant: an empty record gives the ficha's figures for every sample offer.
