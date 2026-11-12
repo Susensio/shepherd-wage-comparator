@@ -1,5 +1,25 @@
 # State
 
+## What happened: a record of days and payments, settled against the offer (phases)
+
+Decided with the owner on 12 November 2026 (ADR-0032). Core first, interface after: no screen is built until `settle` and the saved format are done and tested.
+
+### Plan
+
+1. Core, no DOM.
+   - `src/model/settle.js`: `settle(offer, record, today)` as in ADR-0032: per month and item, due (real days for a closed month, the model's averages for an open one), received (payments, oldest unpaid month first), owed (the greater of agreed and minimum, per ADR-0004), cash apart, claim deadline per unpaid month.
+   - `src/model/phase.js`: `phaseOf(offer, today)`: undecided, under way, finished; «solo oferta» never worked.
+   - Unit tests with a fixture per case. The invariant: an empty record gives the ficha's figures for every sample offer.
+2. Saved format 5 (ADR-0023): `mine.record = { months: {}, payments: [] }`; migration in `supabase/migrations/` and `upgrade[5]` in `schema.js` with a fixture; extend `test/unit/rls.test.js`; raise `PAGE_VERSION` only if old pages could write the old shape. Export a backup first.
+3. Mock-ups before code (artifacts, as in the redesign): the ficha in its three phases, the month calendar (pre-marked, one tap toggles, a second gesture for sick or vacation, range by dragging, «Cerrar mes»), the quick «+ Cobro».
+4. Interface, after the mock-ups are chosen: the phase's top block in the ficha, the calendar, the payments list, the cards' phase tag, `docs/model.md` and `docs/glossary.md` (new terms: registro, mes cerrado, cobro, fase), voice per ADR-0024.
+
+### Open
+
+- Hours (overtime) in the record: left out of the first version.
+- Whether the tab and the cards stop saying «Ofertas» for jobs that were worked: decide with the mock-ups.
+- A reminder to record as the work goes: nothing in the page can nudge today.
+
 ## Account data built for 100 users: migrations, versioned JSON, page versions, backups
 
 Decided with the owner on 1 November 2026. Started 4 November 2026. Live on `master` the same day: plan steps 1 (manual baseline task; owner step 3 run, green), 2 (every push and daily, drift check, schema snapshot by the bot) and 3 (`schema.js`, `app_meta` migration applied to the live project, version gate; ADR-0023). Steps 4–5 deferred until a second shepherd uses the account (backlog «backups»; owner steps 4–5 not needed until then). Step 6 done (ADR-0023, ADR-0026, `AGENTS.md`). Step 7 done the same day (ADR-0028; the owner exported a backup first): schema version 3, `offerOnly` and the village in `terms`. Nothing left but steps 4–5, deferred; this section can go once they are taken up or dropped. Lesson: `git push` to `master` from a cloud session can fail with «Internal Server Error» while the pre-push hook runs its 3 minutes of tests with the connection open; run `npm run check && npm test` first and push the same commit with `--no-verify`.
