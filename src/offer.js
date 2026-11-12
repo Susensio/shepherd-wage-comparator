@@ -270,6 +270,9 @@ export const isoOf = (date) =>
     ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     : '';
 
+/** Today as an ISO date, in the local calendar (not UTC): the one place the page asks what day it is, so tests can set it with a fake clock. */
+export const todayISO = () => isoOf(new Date());
+
 /** The year an offer starts: that of its start date; without a date, the one it had set or the current one. */
 export const actualYear = (terms) =>
   Number(terms.start ? terms.start.slice(0, 4) : terms.year || new Date().getFullYear());

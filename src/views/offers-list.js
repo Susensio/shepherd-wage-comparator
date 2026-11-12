@@ -3,7 +3,7 @@
 import { html, nothing } from 'lit-html';
 import { fCount, fE } from '../format.js';
 import { yearShares } from '../model/calc.js';
-import { datesText, isComplete, isoOf, TEMPLATES, workedOffers } from '../offer.js';
+import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
 import { herdText } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
@@ -14,7 +14,7 @@ const DOTS = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true
 const UNDECIDED = 'undecided';
 
 /** Whether an offer starts after today (ISO dates compare as text). */
-const startsLater = (o) => !!o.terms.start && o.terms.start > isoOf(new Date());
+const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 
 /** The year an offer starts in, or `UNDECIDED`. */
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));

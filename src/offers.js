@@ -1,5 +1,6 @@
 /** The list of offers: the active one, the first-visit placeholder, and saving them. Callers ask for transitions; none sets these fields itself. */
 
+import * as record from './model/record.js';
 import { makeOffer } from './offer.js';
 import { ingestSaved } from './schema.js';
 import { KEY, notifySaved, offersOf, state, store } from './state.js';
@@ -38,6 +39,22 @@ export function createOffers({ state, store, notify = () => {} }) {
     held = false;
     if (keep) save();
   }
+
+  /** Runs a transition of the offer's record and saves if it changed something. Returns what the transition returned. */
+  function edit(offer, transition) {
+    const result = transition(offer.mine.record);
+    if (result) save();
+    return result;
+  }
+
+  /** The record's edits (`model/record.js`), saved. */
+  const recording = {
+    toggleDay: (offer, span, day) => edit(offer, (r) => record.toggleDay(offer, r, span, day)),
+    closeMonth: (offer, span) => edit(offer, (r) => record.closeMonth(offer, r, span)),
+    reopenMonth: (offer, key) => edit(offer, (r) => record.reopenMonth(r, key)),
+    addPayment: (offer, payment) => edit(offer, (r) => record.addPayment(r, payment)),
+    removePayment: (offer, id) => edit(offer, (r) => record.removePayment(r, id)),
+  };
 
   /** Reads the saved offers (after `state.config`). Nothing saved is a first visit: a placeholder, replaced by the template picked. */
   function start() {
@@ -149,6 +166,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     replaceFromAccount,
     clearForSignOut,
     remapId,
+    ...recording,
     mine: myOffers,
   };
 }

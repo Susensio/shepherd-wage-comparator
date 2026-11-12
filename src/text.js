@@ -4,6 +4,7 @@ import {
   capitalize,
   f1,
   fCount,
+  fDate,
   fDays,
   fDaysSpoken,
   fE,
@@ -16,8 +17,9 @@ import {
   num,
 } from './format.js';
 import { citeOf, LAW } from './law.js';
+import { cents } from './ledger.js';
 import { hoursWeek } from './model/time.js';
-import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
+import { contractOf, datesText, HERD, mealsGiven, mealsList, parseDate } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
@@ -495,4 +497,86 @@ export function leversOf(r) {
       proposal: `Salen unas ${fN(x.over40PerWeek)} horas a la semana por encima de ${LAW.weeklyHours}. Pagadas, serían unos ${fE(x.overtimeUnpaid)} brutos ${over} (estimado).`,
     });
   return levers;
+}
+
+/** What an item of a settled month is called in the claim and on the screens. */
+export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones' };
+
+const MONTH_NAMES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+/** «junio» from «2026-06». */
+export const monthName = (key) => MONTH_NAMES[Number(key.slice(5, 7)) - 1];
+/** «junio de 2026». */
+export const monthYear = (key) => `${monthName(key)} de ${key.slice(0, 4)}`;
+
+/** An amount with cents only when it has them, so a column of them adds up as written. */
+const fMoney = (x) => fE(x, Number.isInteger(cents(x)) ? 0 : 2);
+
+/** «5 jun 2026» from an ISO date. */
+const fIso = (iso) => fDate(parseDate(iso));
+
+/**
+ * The claim of what a job still owes, from the figures `settle` gives for what the record holds. It says what the
+ * record shows and no more: months not closed are said to be as the offer has them, and with no cobros nothing is
+ * claimed. Impersonal, like `claimText`.
+ * @param {object} o
+ * @param {ReturnType<typeof import('./model/settle.js').settle>} settled
+ * @param {import('./model/settle.js').OfferRecord} record
+ */
+export function recordClaimText(o, settled, record) {
+  const { rows, totals } = settled;
+  const payments = [...(record.payments ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const lines = [`Reclamación de cantidades: ${o.mine.name || 'sin nombre'}`];
+  const when = datesText(o.terms);
+  lines.push(`Trabajo de pastor ${when ? `${when}` : ''}.`.replace(' .', '.'));
+  lines.push(`Devengado: ${fMoney(totals.due)} brutos.`);
+  if (!payments.length) {
+    lines.push('No consta ningún cobro.');
+  } else {
+    const net = payments.reduce((total, p) => total + p.amount, 0);
+    lines.push(
+      `Cobrado: ${fMoney(net)} netos en ${payments.length} ${payments.length === 1 ? 'cobro' : 'cobros'}${totals.cash > 0 ? `, de ellos ${fMoney(totals.cash)} en mano, sin declarar` : ''}.`,
+    );
+    for (const p of payments)
+      lines.push(
+        `· ${fIso(p.date)}: ${fMoney(p.amount)} ${p.via === 'cash' ? 'en mano' : 'en nómina'}${p.note ? ` (${p.note})` : ''}`,
+      );
+  }
+  const owing = rows.filter((row) => row.owed > 0);
+  if (payments.length && owing.length) {
+    lines.push('', `Queda por pagar, bruto: ${fMoney(totals.owed)}.`);
+    for (const row of owing) {
+      const parts = Object.entries(row.items)
+        .filter(([, x]) => x.owed > 0)
+        .map(([item, x]) => `${ITEM_TEXT[item].toLowerCase()} ${fMoney(x.owed)}`);
+      lines.push(`· ${monthYear(row.month)}: ${parts.join(', ')}`);
+    }
+    const first = owing
+      .map((row) => row.deadline)
+      .filter(Boolean)
+      .sort()[0];
+    if (first)
+      lines.push(
+        `Plazo para reclamar: ${LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`} desde que cada pago era debido (${citeOf('et', '59.2').label}); el primero acaba el ${fIso(first)}.`,
+      );
+  } else if (payments.length) lines.push('', 'No queda nada por pagar.');
+  const open = rows.filter((row) => !row.closed).map((row) => monthName(row.month));
+  if (open.length) lines.push(`Meses sin cerrar, calculados según la oferta: ${joinAnd(open)}.`);
+  lines.push(
+    '',
+    'Cálculo aproximado hecho con Zurrón sindical. Conviene revisarlo con el convenio vigente y un sindicato.',
+  );
+  return lines.join('\n');
 }
