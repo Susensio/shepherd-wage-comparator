@@ -2,6 +2,8 @@
 
 import { expect, leaveWelcome, loadOffers, sample, test } from './fixtures.js';
 
+test.use({ today: '2025-01-01' });
+
 const OFFER = { puertoA: 0, campanaB: 2, invernadaC: 3, sinContratoD: 4, temporadaF: 6 };
 
 test('under the headline: the paro the offer generates, or why it generates none', async ({ page }) => {
@@ -81,6 +83,7 @@ test('the ficha has no buttons at its foot: Duplicar, Borrar and the copies are 
 });
 
 test.describe('the «⋯» menu on each card', () => {
+  test.use({ today: null }); // the cards are listed by their real dates
   const names = (page) => page.evaluate(() => app.state.offers.map((o) => o.mine.name));
 
   test('a button of at least 44 px opens the menu of that offer; the rest of the card opens the ficha', async ({

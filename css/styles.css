@@ -24,6 +24,8 @@
   --c-housing: #4f7cac;
   --c-food: #b3a06a;
   --c-km: #7a6fa8;
+  --d-work: color-mix(in srgb, var(--c-pay) 22%, var(--surface));
+  --d-sick: color-mix(in srgb, var(--neg) 20%, var(--surface));
   --neg: #b0432d;
   --accent: #2e5e45;
   --accent-ink: #f8faf5;
@@ -3853,4 +3855,510 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   #pullRefresh {
     display: none;
   }
+}
+
+/* --- What happened (ADR-0032): «Hasta hoy», «Cuentas», «Cobros», the calendar and the cards' extra line --- */
+.phase {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.phase[data-phase="underway"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.phase[data-phase="finished"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.fichatitle .phase {
+  margin-right: auto;
+}
+.oc-name .phase {
+  margin-left: 8px;
+  vertical-align: 2px;
+}
+.oc-rec {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px dashed var(--line);
+}
+.oc-rec b {
+  font-family: var(--f-num);
+  font-weight: 600;
+  color: var(--neg);
+}
+.oc-rec span:last-child {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+}
+.bh h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  font-stretch: 80%;
+}
+.bh h3 {
+  margin: 0;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.block .hint,
+.cal .hint {
+  margin: 0;
+}
+.block .rows + .rows {
+  margin-top: 6px;
+}
+.row.sub {
+  padding-left: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.row .why b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.addbtn {
+  width: 100%;
+  min-height: 52px;
+  font-size: 15.5px;
+  border-radius: 12px;
+}
+.cobros .bh .n {
+  font-family: var(--f-num);
+  font-size: 15px;
+  font-weight: 600;
+}
+.lk {
+  align-self: flex-start;
+  min-height: var(--tap);
+}
+.pay {
+  display: flex;
+  flex-direction: column;
+}
+.pay .ph {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pay .ph span:last-child {
+  font-family: var(--f-num);
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.pay .pr {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 0 10px;
+  align-items: baseline;
+  min-height: var(--tap);
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 14px;
+}
+.pay .pr:has(.rm) {
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+.pay .pr .d {
+  font-family: var(--f-num);
+  font-size: 12px;
+  color: var(--muted);
+}
+.pay .pr small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.pay .pr .a {
+  font-family: var(--f-num);
+  font-size: 13.5px;
+}
+.pay .pr .rm {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding-inline: 4px;
+}
+.via {
+  font-weight: 600;
+}
+.via.cash {
+  color: var(--c-cash-t);
+}
+.pr.fresh {
+  animation: fresh 1.6s var(--ease);
+}
+@keyframes fresh {
+  from {
+    background: color-mix(in srgb, var(--tag) 45%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+.tocl {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+.tocl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 10px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+.tocl b {
+  font-size: 14.5px;
+}
+.tocl small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.tocl .n {
+  font-family: var(--f-num);
+  font-size: 13.5px;
+}
+.due-by {
+  font-size: 12px;
+  color: var(--muted);
+}
+.due-by.near {
+  color: var(--neg);
+}
+.review-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.review-progress .bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.review-progress .bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--t) var(--ease);
+}
+.appbar-review .linkbtn {
+  min-height: var(--tap);
+}
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13.5px;
+}
+.btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btns button {
+  flex: 1 1 auto;
+}
+.calact {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.calact .pri {
+  flex: 1 1 auto;
+}
+.calact .hint {
+  flex: 1;
+}
+
+/* The month's calendar */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+}
+.calh {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px;
+}
+.calh.solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.calh .nav {
+  width: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 20px;
+  color: var(--ink);
+}
+.calh .nav:disabled {
+  opacity: 0.2;
+}
+.calh .t {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.calh h3 {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  font-stretch: 85%;
+}
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--muted);
+  color: var(--muted);
+}
+.state.closed {
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+.state svg {
+  width: 12px;
+  height: 12px;
+}
+.wd {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+.cal .grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.day {
+  position: relative;
+  min-height: 44px;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  padding: 0;
+  border-radius: 9px;
+  border: 1.5px dashed var(--line);
+  background: transparent;
+  font-family: var(--f-num);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  gap: 2px;
+  transition: background var(--t) var(--ease);
+}
+.day small {
+  font-family: var(--f-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.day.work {
+  background: var(--d-work);
+  border-color: color-mix(in srgb, var(--c-pay) 45%, transparent);
+}
+.day.off {
+  background: transparent;
+}
+.day.sick {
+  background: var(--d-sick);
+  border-color: color-mix(in srgb, var(--neg) 50%, transparent);
+}
+.day.sick small {
+  color: var(--neg);
+}
+.cal.closed .day {
+  border-style: solid;
+  cursor: default;
+}
+.cal.closed .day.work {
+  background: color-mix(in srgb, var(--c-pay) 40%, var(--surface));
+}
+.cal.closed .day.off {
+  background: var(--surface);
+}
+.day.pad {
+  visibility: hidden;
+}
+.day.out {
+  opacity: 0.25;
+  border-style: dotted;
+  pointer-events: none;
+}
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+.counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.counts i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid var(--line);
+}
+.counts i.work {
+  background: var(--d-work);
+}
+.counts i.sick {
+  background: var(--d-sick);
+}
+
+/* The cobro sheet, a native dialog sitting at the bottom */
+.bsheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 18px 18px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.bsheet::backdrop {
+  background: color-mix(in srgb, #000 50%, transparent);
+}
+.bsheet form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bsheet h3 {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  font-stretch: 85%;
+}
+.bsheet .fld {
+  gap: 4px;
+}
+.bsheet .fld input {
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  width: 100%;
+}
+.bsheet .amount {
+  position: relative;
+  display: block;
+}
+.bsheet .amount input {
+  font-family: var(--f-num);
+  font-size: 22px;
+  padding-right: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  padding-left: 10px;
+}
+.bsheet .amount span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--f-num);
+  color: var(--muted);
+}
+.bsheet .seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+.bsheet .seg button {
+  border: 0;
+  border-radius: 0;
+  background: var(--bg);
+  padding: 6px 4px;
+  font-size: 13.5px;
+}
+.bsheet .seg button + button {
+  border-left: 1px solid var(--line);
+}
+.bsheet .seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
 }

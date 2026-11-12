@@ -17,7 +17,7 @@ import {
   num,
 } from './format.js';
 import { citeOf, LAW } from './law.js';
-import { cents } from './ledger.js';
+import { fSumE } from './ledger.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, HERD, mealsGiven, mealsList, parseDate } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
@@ -499,6 +499,9 @@ export function leversOf(r) {
   return levers;
 }
 
+/** The phases of a worked offer, as the pill says them. */
+export const PHASE_TEXT = { undecided: 'Por decidir', underway: 'En curso', finished: 'Acabada' };
+
 /** What an item of a settled month is called in the claim and on the screens. */
 export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones' };
 
@@ -521,9 +524,6 @@ export const monthName = (key) => MONTH_NAMES[Number(key.slice(5, 7)) - 1];
 /** «junio de 2026». */
 export const monthYear = (key) => `${monthName(key)} de ${key.slice(0, 4)}`;
 
-/** An amount with cents only when it has them, so a column of them adds up as written. */
-const fMoney = (x) => fE(x, Number.isInteger(cents(x)) ? 0 : 2);
-
 /** «5 jun 2026» from an ISO date. */
 const fIso = (iso) => fDate(parseDate(iso));
 
@@ -541,26 +541,26 @@ export function recordClaimText(o, settled, record) {
   const lines = [`Reclamación de cantidades: ${o.mine.name || 'sin nombre'}`];
   const when = datesText(o.terms);
   lines.push(`Trabajo de pastor ${when ? `${when}` : ''}.`.replace(' .', '.'));
-  lines.push(`Devengado: ${fMoney(totals.due)} brutos.`);
+  lines.push(`Devengado: ${fSumE(totals.due)} brutos.`);
   if (!payments.length) {
     lines.push('No consta ningún cobro.');
   } else {
     const net = payments.reduce((total, p) => total + p.amount, 0);
     lines.push(
-      `Cobrado: ${fMoney(net)} netos en ${payments.length} ${payments.length === 1 ? 'cobro' : 'cobros'}${totals.cash > 0 ? `, de ellos ${fMoney(totals.cash)} en mano, sin declarar` : ''}.`,
+      `Cobrado: ${fSumE(net)} netos en ${payments.length} ${payments.length === 1 ? 'cobro' : 'cobros'}${totals.cash > 0 ? `, de ellos ${fSumE(totals.cash)} en mano, sin declarar` : ''}.`,
     );
     for (const p of payments)
       lines.push(
-        `· ${fIso(p.date)}: ${fMoney(p.amount)} ${p.via === 'cash' ? 'en mano' : 'en nómina'}${p.note ? ` (${p.note})` : ''}`,
+        `· ${fIso(p.date)}: ${fSumE(p.amount)} ${p.via === 'cash' ? 'en mano' : 'en nómina'}${p.note ? ` (${p.note})` : ''}`,
       );
   }
   const owing = rows.filter((row) => row.owed > 0);
   if (payments.length && owing.length) {
-    lines.push('', `Queda por pagar, bruto: ${fMoney(totals.owed)}.`);
+    lines.push('', `Queda por pagar, bruto: ${fSumE(totals.owed)}.`);
     for (const row of owing) {
       const parts = Object.entries(row.items)
         .filter(([, x]) => x.owed > 0)
-        .map(([item, x]) => `${ITEM_TEXT[item].toLowerCase()} ${fMoney(x.owed)}`);
+        .map(([item, x]) => `${ITEM_TEXT[item].toLowerCase()} ${fSumE(x.owed)}`);
       lines.push(`· ${monthYear(row.month)}: ${parts.join(', ')}`);
     }
     const first = owing

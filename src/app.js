@@ -6,17 +6,19 @@
 import { render } from 'lit-html';
 import { $ } from './dom.js';
 import { calcTermsOnly } from './model/calc.js';
-import { defaultVacation, missing, workedOffers } from './offer.js';
+import { phaseOf } from './model/phase.js';
+import { defaultVacation, missing, todayISO, workedOffers } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
 import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
-import { sharedLabels } from './text.js';
+import { PHASE_TEXT, sharedLabels } from './text.js';
 import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } from './ui/entry.js';
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
 import { entryOpen, onNavigate, openFicha } from './ui/navigation.js';
+import { forgetRecordUi, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
@@ -185,7 +187,11 @@ export function paintAll({ animate = false } = {}) {
   document.body.classList.toggle('loading-account', loading);
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
   $('#fichaMenu').dataset.id = o.id;
-  render(fichaView(o, r, placesIfLoaded()), $('#result'));
+  const phase = phaseOf(o, todayISO());
+  $('#fichaPhase').hidden = !(phase in PHASE_TEXT);
+  $('#fichaPhase').textContent = PHASE_TEXT[phase] ?? '';
+  $('#fichaPhase').dataset.phase = phase;
+  render(fichaView(o, r, placesIfLoaded(), recordContext(o)), $('#result'));
   restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
   if (animate) for (const el of appeared) fadeIn(el);
@@ -206,6 +212,7 @@ export function commit({ animate = false } = {}) {
 
 /** Makes an offer the active one, in the form and in the ficha. */
 export function select(id) {
+  forgetRecordUi(id);
   defaultVacation(state.offers.find((o) => o.id === id).terms);
   offers.select(id);
   show();

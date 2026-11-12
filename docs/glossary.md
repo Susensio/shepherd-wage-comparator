@@ -12,7 +12,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | horas extra | hours beyond the normal workday on days worked anyway | `r.extra.overtime` | ET art. 35 (horas extraordinarias) | horas de exceso |
 | horas de más | all the time beyond the legal limits, in hours: the jornadas de más plus the horas extra; used only where both are added (the weekly-hours chart), always with that explanation at hand | `r.extra.hours` | | horas extra (for the total) |
 | sin pagar | the part of the jornadas de más or horas extra that the pay above the minimum does not cover | `unpaidTime(r)` | | |
-| libranzas | days off, not counting vacation | `terms.daysOff`, `r.time.daysOffMonth` | ET art. 37.1 (descanso semanal) | días libres (may stay as an explanation: «días libres, sin contar vacaciones») |
+| libranzas | days off, not counting the weekly rest owed: a libranza and a vacation day are the same mark, «libre», on the calendar (the vacation owed comes from the offer's terms, not from day marks) | `terms.daysOff`, `r.time.daysOffMonth`, day kind `off` | ET art. 37.1 (descanso semanal) | días libres (may stay as an explanation: «días libres, sin contar vacaciones») |
 | descanso semanal | the legal weekly rest (day and a half) | `LAW.weeklyRest` | ET art. 37.1 | |
 | vacaciones | | `terms.vacation`, `p.vacationPay` | ET art. 38 | |
 | vacaciones aparte, al acabar | worked and paid on top at the end | `vacation: 'paidAtEnd'` | | pagadas aparte |
@@ -83,7 +83,18 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | registro | what happened in a job: the days of each month and the cobros, kept in `mine.record`, never shared (ADR-0032) | `mine.record`, `OfferRecord` (`model/settle.js`) | | diario, historial |
 | mes cerrado | a month whose days the shepherd froze as they were; the offer no longer changes it. Any other month is «según la oferta», an estimate | `record.months[key].closed`, `row.closed`, `row.estimate` | | mes pasado, mes confirmado |
 | cobro | a payment received: date, amount and how (Nómina, En mano) | `record.payments`, `Payment` (`model/settle.js`) | | pago (a payment the employer makes is a «pago» in the pay answers) |
-| fase | where a job is in time, from its dates: por decidir, en curso, terminada; «solo oferta» is never worked | `phaseOf` (`model/phase.js`) | | estado, modo |
+| fase | where a job is in time, from its dates, shown as a pill: «Por decidir», «En curso», «Acabada»; «solo oferta» has none, it is never worked. An offer with no end date stays «En curso» | `phaseOf` (`model/phase.js`), `PHASE_TEXT` (`text.js`) | | estado, modo, terminada |
+| devengado | what the job has earned the shepherd by the dates (gross), before what was received: «Devengado» in the ledgers. «Hasta hoy»: the months that have ended | `standingOf().accrued`, `row.due` | | ganado (that is «se gana»), cobrable |
+| Hasta hoy | the block of a job En curso: Devengado − Cobrado = Debe el ganadero; the current month and the vacation go apart, not yet payable | `views/record.js` | | |
+| Cuentas | the block of a job Acabada: what the ganadero owes, by item and reason, the cash apart and the deadline of each month | `views/record.js` | | liquidación |
+| lo pactado / el mínimo legal | why an owed amount is what it is: the offer agreed it («Lo pactado»), or the offer fell short and the law's minimum applies («El mínimo legal») | `standingOf().items[].byMinimum` | | |
+| Cobros | the block that totals what was received (net, as it arrived) and opens «+ Apuntar cobro»; the sheet is «Cobro»: Cantidad, Fecha, Cómo se pagó (Nómina or En mano), Nota. «Nómina» is paid by bank transfer and declared; «En mano» is en negro. «En mano» is allowed as the label of the way; «en negro» stays the term for undeclared pay everywhere else | `record.payments`, `via: 'payroll' \| 'cash'` | | pago, transferencia |
+| Cerrar mes / Reabrir | the buttons that freeze a month's days as they are shown («Cerrar junio») or let them change again (it asks to confirm). A month is closed only from its calendar or from «Repasar los meses», never in bulk | `closeMonth`, `reopenMonth` (`model/record.js`) | | confirmar mes |
+| según la oferta | the state of a month not closed: its days follow the offer and its figures are an estimate | `row.estimate` | | previsto |
+| Repasar los meses | the flow of an offer Acabada that goes month by month through those not closed: its calendar, «Cerrar <mes>» or «Saltar», «Agosto, 1 de 3» | `ui/record.js` | | |
+| plazo para reclamar | the year after each month's pay was due in which it can be claimed (ET art. 59.2), per month with something owed | `row.deadline`, `LAW.claimYears` | ET art. 59.2 | caducidad, prescripción |
+| Registro (fold) | the fold of the ficha with the cobros list and the months closed; the data behind it is «registro» above | `data-fold=record` | | |
+| jornada, libre, baja | what a calendar day is: a day worked, a day off (libranza or vacation), a day sick (kept in the record, no control for it yet) | day kinds `work`, `off`, `sick` | | |
 
 ## Units
 

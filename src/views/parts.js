@@ -69,6 +69,9 @@ export function row(label, value, { swatch: color, sub, cls, valueCls } = {}) {
     ><span class=${valueCls || nothing}>${op ? html`<span class="op">${op[1]}</span><span class="nm">${value}</span>` : value}</span></div>`;
 }
 
+/** The icon of the buttons that copy a text. */
+export const COPY_ICON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>`;
+
 /** The rows of a calculation inside a card, under an optional header. */
 export const ledger = (header, rows) =>
   html`<div class="rows sv-rows">${header ? row(header[0], header[1], { cls: 'hd' }) : nothing}${rows.filter(Boolean)}</div>`;

@@ -3,6 +3,9 @@
 import { expect, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
+// The headline of every sample offer is on the ficha only while it is not under way or finished
+test.use({ today: '2025-01-01' });
+
 /** Model invariants, and the same figure where it appears twice. */
 async function invariantProblems() {
   const { monthlyPayslips } = await import('./src/model/payslips.js');
@@ -156,3 +159,46 @@ test('Comparar and the share card give each offer the ficha headline figure, in 
     expect(amount(ranked), `${id} in ${unit}`).toBe(figure);
   }
 });
+
+// The ledgers of what happened (ADR-0032): «Hasta hoy», «Cuentas» and each month's calendar add up on screen
+for (const offer of sample.offers) {
+  for (const phase of ['underway', 'finished']) {
+    test(`${offer.mine.name}: the record's ledgers add up while ${phase}`, async ({ loaded: page }) => {
+      const { start } = offer.terms;
+      test.skip(!start || offer.terms.offerOnly, 'not worked');
+      await page.evaluate(() => app.select(app.state.offers[0].id));
+      const found = await page.evaluate(
+        async ([id, phase]) => {
+          const { endOf, isoOf, parseDate } = await import('./src/offer.js');
+          const o = app.state.offers.find((x) => x.id === id);
+          const end = endOf(o.terms);
+          const day = new Date(parseDate(o.terms.start));
+          day.setDate(day.getDate() + (phase === 'finished' ? 400 : 20));
+          const when = phase === 'finished' && end ? new Date(end.getTime() + 864e5 * 30) : day;
+          return {
+            today: isoOf(when),
+            has: !!(phase === 'underway' ? !end || when <= end : end),
+          };
+        },
+        [offer.id, phase],
+      );
+      test.skip(!found.has, 'no such phase');
+      await page.clock.setFixedTime(new Date(`${found.today}T12:00:00`));
+      await page.evaluate(async (id) => {
+        const { offers } = await import('./src/offers.js');
+        const { settleOffer } = await import('./src/state.js');
+        const o = app.state.offers.find((x) => x.id === id);
+        offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 333.33, via: 'payroll' });
+        offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 100.1, via: 'cash' });
+        const first = settleOffer(o).rows[0];
+        offers.closeMonth(o, { key: first.month, from: first.from, to: first.to });
+        app.select(id);
+      }, offer.id);
+      test.skip((await page.locator('#result .empty').count()) > 0, 'offer with missing data');
+      await page.evaluate(() => {
+        for (const d of document.querySelectorAll('#result details')) d.open = true;
+      });
+      expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    });
+  }
+}

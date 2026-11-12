@@ -42,7 +42,7 @@ export function monthAccounts(offer, record, key, today, ctx) {
       },
     };
     const base = settle(offer, asOffer, today, ctx).rows.find((x) => x.month === key);
-    delta = cents(row.due - base.due);
+    delta = cents(row.due - base.due) + 0; // + 0: no -0
   }
   return { row, span, marks, counts, jornadas, delta };
 }

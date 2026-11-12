@@ -1,12 +1,10 @@
 /** «Para negociar»: what the ganadero saves at the shepherd's expense, both sides of each lever, and what the shepherd costs. */
 
-const COPY_ICON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>`;
-
 import { html, nothing } from 'lit-html';
 import { fE, fN } from '../format.js';
 import { LAW } from '../law.js';
 import { leversOf, unitPhrase } from '../text.js';
-import { columns, row } from './parts.js';
+import { COPY_ICON, columns, row } from './parts.js';
 
 /** What you cost the employer, per day and per month (or over the whole contract). Every row adds up. */
 function costDetails(o, r) {

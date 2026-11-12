@@ -1,7 +1,8 @@
 /** The app's state: settings and preferences, saving them in the browser, and the fields `offers.js` owns. */
 
 import { calc } from './model/calc.js';
-import { DEF_CFG } from './offer.js';
+import { settle } from './model/settle.js';
+import { DEF_CFG, todayISO } from './offer.js';
 import { ingestSaved } from './schema.js';
 import { UNITS } from './units.js';
 
@@ -72,7 +73,12 @@ export const active = () => state.offers.find((o) => o.id === state.activeId);
 export const offersOf = (s) => s.offers.filter((o) => o.id !== s.placeholderId);
 export const myOffers = () => offersOf(state);
 /** Every figure of an offer, with your settings and your other offers. */
-export const calcOffer = (o) => calc(o, { cfg: state.config, offers: myOffers() });
+export const calcOffer = (o) => calc(o, calcContext());
+
+/** What the model needs besides an offer: your settings and your other offers. */
+export const calcContext = () => ({ cfg: state.config, offers: myOffers() });
+/** What an offer's record settles to today (`model/settle.js`). */
+export const settleOffer = (o) => settle(o, o.mine.record, todayISO(), calcContext());
 
 /** Called after every save of offers or settings (the account sync listens). */
 const listeners = new Set();

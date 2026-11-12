@@ -20,6 +20,7 @@ import {
 } from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
 import { setUpPullRefresh } from './ui/pull-refresh.js';
+import { setUpRecord } from './ui/record.js';
 import { setUpTooltips } from './ui/tooltips.js';
 import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
@@ -35,6 +36,7 @@ restoreStaticFolds();
 resetHistory();
 setUpEntry({ paint: paintAll, select, showSelected });
 setUpEvents();
+setUpRecord({ paint: paintAll });
 setUpTooltips();
 setUpPullRefresh();
 setUpPlaceField({ commit, paint: paintAll });

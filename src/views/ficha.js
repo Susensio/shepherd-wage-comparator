@@ -5,6 +5,7 @@ import { joinAnd } from '../format.js';
 import { missing } from '../offer.js';
 import { CONDITION_STEPS, STEP_OF_MISSING } from '../steps.js';
 import { MISSING_TEXT, summaries } from '../text.js';
+import { recordView } from './record.js';
 import { resultParts } from './result.js';
 
 const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
@@ -28,12 +29,14 @@ const oneLine = (lines) => [lines.when, lines.pay, lines.workday].filter(Boolean
  * @param {object} o
  * @param {object} r its figures
  * @param {import('../places.js').PlacesIndex | null} places to name the municipality and province
+ * @param {import('../ui/record.js').RecordContext | null} record what happened, for a job under way or finished; its block takes the place of the headline
  */
-export function fichaView(o, r, places) {
+export function fichaView(o, r, places, record = null) {
   const { head, analysis } = resultParts(o, r);
   const lines = summaries(o, r, places);
   const lacking = missingBySteps(o.terms);
   const keys = Object.keys(lacking);
+  if (record?.review) return recordView(record);
   return html`<details class="conditions" data-fold="conditions">
       <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span></summary>
       <div class="crows">${CONDITION_STEPS.map(
@@ -49,6 +52,6 @@ export function fichaView(o, r, places) {
           </button>`,
       )}</div>
     </details>
-    ${head}
+    ${record ? recordView(record) : head}
     ${analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }

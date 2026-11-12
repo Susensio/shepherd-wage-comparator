@@ -39,6 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
+import { recordActions } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -364,7 +365,14 @@ const BACKUP_ACTIONS = {
   },
 };
 
-const ACTIONS = { ...NAVIGATION_ACTIONS, ...COMPARE_ACTIONS, ...OFFER_ACTIONS, ...accountActions, ...BACKUP_ACTIONS };
+const ACTIONS = {
+  ...NAVIGATION_ACTIONS,
+  ...COMPARE_ACTIONS,
+  ...OFFER_ACTIONS,
+  ...recordActions,
+  ...accountActions,
+  ...BACKUP_ACTIONS,
+};
 
 /** Collapsibles open and close animating their height. */
 function onSummaryClick(e) {

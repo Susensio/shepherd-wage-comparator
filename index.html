@@ -64,6 +64,7 @@
     <header class="fichahead">
       <div class="fichatitle">
         <h1 id="fichaName"></h1>
+        <span class="phase" id="fichaPhase" hidden></span>
         <button type="button" class="omenu" id="fichaMenu" data-action="offerMenu" aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
       </div>
     </header>
@@ -558,6 +559,17 @@
   </footer>
 </div>
 </div>
+<dialog class="bsheet" id="paySheet" aria-labelledby="payTitle">
+  <form id="payForm" novalidate>
+    <h3 id="payTitle">Cobro</h3>
+    <label class="fld">Cantidad<span class="amount"><input id="payAmount" type="text" class="n" inputmode="decimal" autocomplete="off" placeholder="0" aria-describedby="payAmountHint"><span>€</span></span><small class="hint" id="payAmountHint">Neta: lo que llegó, sin retenciones.</small></label>
+    <label class="fld">Fecha<input id="payDate" type="date"></label>
+    <div class="fld"><span id="payViaLabel">Cómo se pagó</span><div class="seg" role="group" aria-labelledby="payViaLabel"><button type="button" data-action="payVia" data-via="payroll" aria-pressed="true">Nómina</button><button type="button" data-action="payVia" data-via="cash" aria-pressed="false">En mano</button></div></div>
+    <label class="fld"><span>Nota <span class="hint">(opcional)</span></span><input id="payNote" type="text" autocomplete="off" placeholder="Por ejemplo: adelanto"></label>
+    <p class="hint bad" id="payError" role="alert"></p>
+    <div class="btns"><button type="submit" class="pri">Guardar</button><button type="button" data-action="payCancel">Cancelar</button></div>
+  </form>
+</dialog>
 <div class="offer-menu" id="offerMenu" role="menu" aria-label="Acciones de la oferta" hidden>
   <button type="button" role="menuitem" tabindex="-1" data-menu="duplicate">Duplicar</button>
   <button type="button" role="menuitem" tabindex="-1" data-menu="copyCard" title="Para mandarla por WhatsApp o guardarla en notas">Copiar ficha</button>
