@@ -31,3 +31,7 @@ Weighed and discarded:
 - Assigning payments to the oldest month first can differ from what the employer meant by a payment; a field saying which month a payment covers can be added later without changing the format's shape.
 - The account sync writes the whole offer on each change, so a long job grows its row: a few hundred days and payments at most, which is small.
 - The ficha, the cards in Ofertas and the name of the Ofertas tab will have to say which phase an offer is in; «oferta» stays the name of the thing for now.
+
+## Corrections
+
+12 November 2026: the Decision said cash is reported apart «as pay that contributed nothing». That read as if cash did not count against what is owed. It does: cash is money received and reduces what is owed, as ADR-0004 and `docs/model.md` («What is owed») already say. What it does not do is contribute to Social Security, so a payroll below the minimum stays flagged on its own. The decision is as ADR-0004 had it; only the wording here was wrong.
