@@ -40,7 +40,12 @@ const hooks = {
   viewChanged: /** @type {() => void} */ (() => {}),
   /** Back closed the entry: it is dismissed, not saved. */
   entryDismissed: /** @type {() => void} */ (() => {}),
+  /** Back left «Repasar los meses». */
+  reviewDismissed: /** @type {() => void} */ (() => {}),
 };
+
+/** «Repasar los meses» is open over the ficha: it has a history entry of its own, so Back leaves it for the ficha. */
+const review = { open: false };
 
 /** @param {Partial<typeof hooks>} given */
 export function onNavigate(given) {
@@ -53,6 +58,7 @@ export const openPageName = () => where.page;
 /** Whether the tab is what the reader sees: shown and no page over it. */
 export const fichaOpen = () => view.ficha;
 export const entryOpen = () => view.entry;
+export const reviewOpen = () => review.open;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
@@ -133,11 +139,27 @@ export function closePage() {
 /** Back (or forward) closes what is open on top: the entry, else the page, else the ficha. */
 export function onPopState() {
   const kept = history.state ?? {};
-  if (view.entry && !kept.entry) {
+  if (review.open && !kept.review) {
+    review.open = false;
+    hooks.reviewDismissed();
+  } else if (view.entry && !kept.entry) {
     hooks.entryDismissed();
     go({ ficha: !!kept.ficha, entry: false }, 'none');
   } else if (where.page && !kept.page) leavePage();
   else if (view.ficha && !view.entry && !kept.ficha && !wide.matches) go({ ficha: false, entry: false }, 'none');
+}
+
+/** The review of the months: an entry over the ficha's. */
+export function openReview() {
+  if (review.open) return;
+  review.open = true;
+  history.pushState({ ...history.state, review: true }, '');
+}
+/** Out of the review by its own button: drops its entry, so Back does not stop on a ficha that is already shown. */
+export function closeReview() {
+  if (!review.open) return;
+  review.open = false;
+  if (history.state?.review) history.back();
 }
 
 /** Forgets history entries left from before a reload, whose views are gone. */

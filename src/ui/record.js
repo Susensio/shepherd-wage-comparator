@@ -15,6 +15,7 @@ import { active, calcContext, saveFolds, settleOffer, state } from '../state.js'
 import { recordClaimText } from '../text.js';
 import { copyText } from './dom.js';
 import { scrollToElement } from './motion.js';
+import { closeReview, openReview } from './navigation.js';
 
 /**
  * @typedef {object} CalendarContext
@@ -285,6 +286,7 @@ export const recordActions = {
     const rows = settleOffer(o).rows.filter((row) => !row.closed);
     ui.review = { offerId: o.id, keys: rows.map((row) => row.month), index: 0, closed: 0 };
     ui.ask = null;
+    openReview();
     callbacks.paint();
   },
   reviewClose(b) {
@@ -299,6 +301,7 @@ export const recordActions = {
   },
   reviewEnd() {
     endReview();
+    closeReview();
     callbacks.paint();
   },
   /** The copy icon of the accounts: the claim, from what the record shows. */
@@ -319,9 +322,15 @@ export const recordActions = {
   },
 };
 
+/** Back left the review: its history entry is already gone. */
+export const dismissReview = endReview;
+
 /** Switching to another offer, or to another phase, ends what was open for the one before. */
 export function forgetRecordUi(offerId) {
-  if (ui.review && ui.review.offerId !== offerId) endReview();
+  if (ui.review && ui.review.offerId !== offerId) {
+    endReview();
+    closeReview();
+  }
   ui.ask = null;
 }
 

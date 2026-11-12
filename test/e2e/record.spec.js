@@ -137,6 +137,31 @@ test.describe('finished', () => {
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
   });
 
+  test('Back leaves «Repasar los meses» for the ficha, and finishing it leaves no stale entry', async ({ page }) => {
+    const index = () => page.evaluate(() => navigation.currentEntry?.index);
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const ficha = await index();
+    await page.locator('[data-action=reviewStart]').click();
+    await expect(page.locator('.review-progress')).toBeVisible();
+    expect(await index()).toBe(ficha + 1);
+    await page.goBack();
+    await expect(page.locator('.review-progress')).toHaveCount(0);
+    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('[data-action=reviewStart]')).toBeVisible();
+    expect(await index()).toBe(ficha);
+    // Through to the end and out by its own button: the entry is dropped
+    await page.locator('[data-action=reviewStart]').click();
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Saltar' }).click();
+    await expect(page.locator('#result')).toContainText('Repaso hecho');
+    await page.getByRole('button', { name: 'Volver a las cuentas' }).click();
+    await expect(page.locator('[data-action=reviewStart]')).toBeVisible();
+    await expect.poll(index).toBe(ficha);
+    // The calendar is a fold: opening it pushes nothing
+    await page.locator('details[data-fold=days] > summary').click();
+    expect(await index()).toBe(ficha);
+  });
+
   test('the claim is copied from what the record shows', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await loadOffers(page, sample, PUERTO_A_OTRA);

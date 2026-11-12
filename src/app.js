@@ -18,7 +18,7 @@ import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } fro
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
 import { entryOpen, onNavigate, openFicha } from './ui/navigation.js';
-import { cardRecord, forgetRecordUi, recordContext } from './ui/record.js';
+import { cardRecord, dismissReview, forgetRecordUi, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
@@ -253,6 +253,10 @@ onNavigate({
   },
   viewChanged: () => paintAll(),
   entryDismissed: dismiss,
+  reviewDismissed: () => {
+    dismissReview();
+    paintAll();
+  },
 });
 
 /** Opens the named collapsibles of the static page as you left them. */
