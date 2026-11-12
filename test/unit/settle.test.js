@@ -53,15 +53,17 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     const { terms } = offer;
     const r = calc(offer, { cfg, offers });
     const x = settle(offer, {}, '2030-01-01', { cfg, offers });
-    // Not satisfiable, by design: without a contract `calc` credits the cash against the debt while settle never does
-    // (cash contributes nothing, ADR-0032): «Sin contrato D» and «G». Self-employed has no debts (ADR-0029).
-    if (terms.contract === 'none' || terms.contract === 'selfEmployed' || !x.rows.length) {
-      assert.ok(terms.contract === 'none' || terms.contract === 'selfEmployed', `${offer.mine.name} has no rows`);
+    // Self-employed has no debts (ADR-0029). Without a contract everything paid is cash: the agreed pay is the cash as
+    // the gross that brings it net, and the vacation is owed whatever the cash.
+    if (terms.contract === 'selfEmployed') {
+      assert.equal(x.totals.due, 0);
       continue;
     }
+    assert.ok(x.rows.length, `${offer.mine.name} has no rows`);
     const name = offer.mine.name;
     const T = x.totals.items;
-    near(T.salary.agreed + T.overnight.agreed, cents(r.pay.salary), `${name}: agreed salary`);
+    const agreedSalary = r.noContract ? r.cash.total / r.netFactor : r.pay.salary;
+    near(T.salary.agreed + T.overnight.agreed, cents(agreedSalary), `${name}: agreed salary`);
     near(T.vacation.agreed, cents(r.pay.vacationPay), `${name}: agreed vacation`);
     near(T.salary.minimum, cents(r.min.salary), `${name}: minimum salary`);
     near(T.overnight.minimum, cents(r.min.overnight), `${name}: minimum overnight`);
@@ -73,7 +75,11 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     near(x.totals.owed, x.totals.due, `${name}: owed`);
     checked++;
   }
-  assert.ok(checked >= 5, `only ${checked} sample offers were checked`);
+  assert.ok(
+    offers.some((o) => o.terms.contract === 'none'),
+    'the samples include offers without a contract',
+  );
+  assert.equal(checked, offers.length);
 });
 
 test('the invariant also holds when the offer pays below the minimum', () => {
@@ -213,15 +219,32 @@ test('one payment can cover several months, and what is left over is unassigned'
   assert.equal(more.totals.unassigned, 5000 - 1424.5 * 3);
 });
 
-test('cash is reported apart and covers nothing', () => {
+test('cash is reported apart and counts as received like any other payment', () => {
   const offer = offerWith({ payAmount: 1000 });
   const without = settleOf(offer, {});
   const x = settleOf(offer, {
     payments: [payment('a', '2026-01-31', 600, 'cash'), payment('b', '2026-02-05', 400, 'cash')],
   });
   assert.equal(x.totals.cash, 1000);
-  assert.equal(x.totals.received, 0);
-  assert.equal(x.totals.owed, without.totals.owed);
+  assert.equal(x.totals.received, 1000);
+  assert.equal(x.totals.owed, cents(without.totals.owed - 1000));
+  assert.equal(x.rows[0].received, 1000); // oldest month first, with the cash too
+});
+
+test('cash covers what is owed but the pay on payroll alone can still be below the minimum', () => {
+  const offer = offerWith({ payAmount: 1424.5 }); // minimum 1424.50 a month
+  const cashOnly = settleOf(offer, { payments: [payment('a', '2026-01-31', 1424.5, 'cash')] });
+  assert.equal(cashOnly.rows[0].owed, 0);
+  assert.equal(cashOnly.rows[0].belowMinimumOnPayroll, 1424.5);
+  const declared = settleOf(offer, { payments: [payment('a', '2026-01-31', 1424.5, 'payroll')] });
+  assert.equal(declared.rows[0].owed, 0);
+  assert.equal(declared.rows[0].belowMinimumOnPayroll, 0);
+  const mixed = settleOf(offer, {
+    payments: [payment('a', '2026-01-31', 1000, 'transfer'), payment('b', '2026-01-31', 424.5, 'cash')],
+  });
+  assert.equal(mixed.rows[0].owed, 0);
+  assert.equal(mixed.rows[0].items.salary.belowMinimumOnPayroll, 424.5);
+  assert.equal(mixed.totals.belowMinimumOnPayroll, 424.5 + 1424.5 * 2);
 });
 
 test('a surplus in one item does not cover a shortfall in another', () => {

@@ -15,14 +15,25 @@ import { claimDeadline } from './time.js';
  * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash' | 'transfer', note?: string }} Payment
  * @typedef {{ closed?: boolean, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»
  * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[] }} OfferRecord months keyed «2026-06»
- * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number }} ItemRow
+ * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number, declared: number, belowMinimumOnPayroll: number }} ItemRow
+ * `received` is every payment, cash included; `declared` is the part of it that is not cash, and `belowMinimumOnPayroll`
+ * what the minimum exceeds it by: cash covers `owed` but is still illegal as the only pay, it carries no Social Security.
  */
 
-/** The items of a month, in the order a payment covers them (TODO: a payment names no item; ask the owner whether the order matters). */
+/** The items of a month, in the order a payment covers them (TODO: a payment names no item; unblocked by the owner's answer on whether the order matters). */
 export const ITEMS = /** @type {const} */ (['salary', 'overnight', 'vacation']);
 
 const KINDS = ['work', 'off', 'sick', 'vacation'];
-const zeroItem = () => ({ agreed: 0, minimum: 0, due: 0, shortfall: 0, received: 0, owed: 0 });
+const zeroItem = () => ({
+  agreed: 0,
+  minimum: 0,
+  due: 0,
+  shortfall: 0,
+  received: 0,
+  owed: 0,
+  declared: 0,
+  belowMinimumOnPayroll: 0,
+});
 
 /** The days of the record that lie inside the offer's span of the month, counted by kind. */
 function factsOf(entry, from, to) {
@@ -54,7 +65,7 @@ export function settle(offer, record, today, ctx) {
   const dayRate = perDay ? pay.base / time.paidDays : 0;
   // TODO: vacation days marked in a closed month do not change the vacation owed; unblocked by the owner's rule on how
   // vacation taken in kind settles against the vacation paid at the end.
-  const vacationMinimum = terms.vacation === 'taken' ? 0 : min.vacation; // as the ficha's debt
+  const vacationMinimum = terms.vacation === 'taken' && !r.noContract ? 0 : min.vacation; // as the ficha's debt
   const holidaysOff = terms.holidays === 'yes' ? (LAW.holidaysPerYear * time.months) / 12 : 0;
 
   const plans = shares.map((share) => {
@@ -73,7 +84,12 @@ export function settle(offer, record, today, ctx) {
       terms.vacation === 'taken' ? counts.vacation + open * time.vacationTaken * time.workFrac * w : 0;
     const paid = worked + vacationDays + holidaysOff * time.workFrac * w;
 
-    const wage = perDay ? dayRate * paid + pay.extraPays * w : pay.salary * w;
+    // Without a contract the agreed pay is the cash, as the gross that would bring it net (what `calc` credits)
+    const wage = r.noContract
+      ? (r.cash.total / r.netFactor) * w
+      : perDay
+        ? dayRate * paid + pay.extraPays * w
+        : pay.salary * w;
     const casual = min.casual && time.daysWorked > 0;
     const minimumSalary = casual ? (min.salary * worked) / time.daysWorked : min.salary * w;
     return { share, key, closed, counts, open, worked, wage, minimumSalary };
@@ -143,6 +159,8 @@ export function settle(offer, record, today, ctx) {
       shortfall: sum(ITEMS.map((item) => items[item].shortfall)),
       received: 0,
       owed: 0,
+      /** What the minimum exceeds the money that is not cash by, summed over the items. */
+      belowMinimumOnPayroll: 0,
       dueDate: isoOf(dueDate),
       /** Last day the owed amount can be claimed; null when nothing is owed. */
       deadline: /** @type {string | null} */ (null),
@@ -151,20 +169,25 @@ export function settle(offer, record, today, ctx) {
     };
   });
 
-  // Payments, oldest unpaid month first. Cash pays no Social Security and covers nothing: it is reported apart.
+  // Payments, oldest first, fill the oldest unpaid month first, cash included: it arrived. Cash is also reported apart.
+  // TODO: payroll amounts are net in practice and the dues are gross; compared as they are until the owner decides.
   const payments = [...(record?.payments || [])].sort((a, b) => a.date.localeCompare(b.date));
   const cash = sum(payments.filter((p) => p.via === 'cash').map((p) => p.amount));
-  let pool = sum(payments.filter((p) => p.via !== 'cash').map((p) => p.amount));
-  // TODO: payroll amounts are net in practice and the dues are gross; compared as they are until the owner decides.
+  let pool = sum(payments.map((p) => p.amount));
+  let declaredPool = sum(payments.filter((p) => p.via !== 'cash').map((p) => p.amount));
   for (const row of rows) {
     for (const item of ITEMS) {
       const x = row.items[item];
       x.received = Math.min(pool, x.due);
       pool = cents(pool - x.received);
       x.owed = cents(x.due - x.received);
+      x.declared = Math.min(declaredPool, x.due);
+      declaredPool = cents(declaredPool - x.declared);
+      x.belowMinimumOnPayroll = cents(Math.max(0, x.minimum - x.declared));
     }
     row.received = sum(ITEMS.map((item) => row.items[item].received));
     row.owed = sum(ITEMS.map((item) => row.items[item].owed));
+    row.belowMinimumOnPayroll = sum(ITEMS.map((item) => row.items[item].belowMinimumOnPayroll));
     if (row.owed > 0) {
       row.deadline = isoOf(row.claimDeadlineDate);
       row.lapsed = row.deadline < today;
@@ -185,10 +208,11 @@ export function settle(offer, record, today, ctx) {
     shortfall: column('shortfall'),
     received: column('received'),
     owed: column('owed'),
+    belowMinimumOnPayroll: column('belowMinimumOnPayroll'),
     /** Owed in months whose claim has not lapsed. */
     claimable: sum(rows.filter((row) => !row.lapsed).map((row) => row.owed)),
     cash,
-    /** Non-cash money beyond what every month was due. */
+    /** Money beyond what every month was due. */
     unassigned: pool,
     items: itemTotals,
   };
