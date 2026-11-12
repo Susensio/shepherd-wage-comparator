@@ -23,6 +23,13 @@ export function payrollMonths(start, days) {
   return n + Math.min(30, Math.round((+after - +monthsLater(n)) / DAY_MS)) / 30;
 }
 
+/** The day a payment due on `due` stops being claimable: `LAW.claimYears` later. */
+export function claimDeadline(due) {
+  const deadline = new Date(due);
+  deadline.setFullYear(deadline.getFullYear() + LAW.claimYears);
+  return deadline;
+}
+
 /**
  * When each payment stops being claimable: `{ from, until }`, the first payment's and the last's, or null without dates.
  * Each payment is claimable `LAW.claimYears` after it was due; the first falls at the end of the first month.
@@ -35,12 +42,7 @@ export function claimDeadlines(terms) {
   const last = new Date(end);
   const firstPay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
   if (firstPay > last) firstPay.setTime(last.getTime());
-  const yearsLater = (d) => {
-    const x = new Date(d);
-    x.setFullYear(x.getFullYear() + LAW.claimYears);
-    return x;
-  };
-  return { from: yearsLater(firstPay), until: yearsLater(last) };
+  return { from: claimDeadline(firstPay), until: claimDeadline(last) };
 }
 
 /**
