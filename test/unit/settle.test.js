@@ -39,10 +39,14 @@ const BASE = {
   car: 'noCar',
   kmHome: 0,
   overnight: 'no',
+  irpfMode: 'manual',
+  irpfManual: 10,
 };
 const offerWith = (changes = {}) => offerOf({ ...BASE, ...changes });
 const settleOf = (offer, record, today = '2026-04-15') => settle(offer, record, today, ctx);
-const payment = (id, date, amount, via = 'transfer') => ({ id, date, amount, via });
+// Payments are net: `amount` is the gross the payment is worth, taken off by this contract's withholdings
+const NET = calc(offerOf(BASE), ctx).netFactor;
+const payment = (id, date, gross, via = 'transfer') => ({ id, date, amount: gross * NET, via });
 // A wage «al día» high enough that the monthly minimum never takes over, and vacation paid at the end
 const perDay = (changes = {}) =>
   offerWith({ payUnit: 'day', payAmount: 100, vacation: 'paidAtEnd', daysOff: 0, ...changes });
@@ -113,9 +117,8 @@ test('the rows of every column add up to the totals as shown', () => {
   for (const row of x.rows) near(row.due - row.received, row.owed, `${row.month} due - received`, 0.0001);
 });
 
-test('an offer without a start date or a known end has no months', () => {
+test('an offer without a start date has no months', () => {
   assert.deepEqual(settleOf(offerWith({ start: '' })).rows, []);
-  assert.deepEqual(settleOf(offerWith({ durationUnit: 'unknown' })).rows, []);
   assert.equal(settleOf(offerWith({ start: '' })).totals.owed, 0);
 });
 
@@ -170,13 +173,19 @@ test('days outside the offer’s span and unknown kinds are not facts', () => {
   assert.equal(x.rows[0].facts.followingOffer, 1);
 });
 
-test('vacation days count as paid days only when the offer has the vacation taken', () => {
-  const days = { '01': 'vacation', '02': 'work' };
-  const month = { '2026-01': { closed: true, days } };
-  const taken = settleOf(perDay({ vacation: 'taken' }), { months: month }).rows[0];
-  const atEnd = settleOf(perDay(), { months: month }).rows[0];
-  assert.equal(taken.items.salary.agreed, 200);
-  assert.equal(atEnd.items.salary.agreed, 100); // paid at the end, not as a day
+test('vacation is not a day mark: «vacation» is not a kind, and vacation taken follows the offer', () => {
+  const month = { '2026-01': { closed: true, days: { '01': 'vacation', '02': 'work' } } };
+  const taken = perDay({ vacation: 'taken' });
+  const r = calc(taken, ctx);
+  const x = settleOf(taken, { months: month }).rows[0];
+  assert.equal(x.facts.work, 1);
+  assert.equal(x.facts.off, 0);
+  assert.equal(Object.hasOwn(x.facts, 'vacation'), false);
+  // one day worked at 100, plus the month's share of the vacation taken, paid even in a closed month
+  near(x.items.salary.agreed, 100 + (100 * r.time.vacationTaken * r.time.workFrac) / 3, 'agreed', 0.01);
+  // paid at the end: the vacation is owed from the terms, whatever the days say
+  const atEnd = settleOf(perDay(), { months: month });
+  near(atEnd.totals.items.vacation.minimum, cents(calc(perDay(), ctx).min.vacation), 'vacation owed');
 });
 
 test('days worked above the due workdays are extra days, valued at the minimum wage, apart from what is owed', () => {
@@ -219,13 +228,62 @@ test('one payment can cover several months, and what is left over is unassigned'
   assert.equal(more.totals.unassigned, 5000 - 1424.5 * 3);
 });
 
+test('payments are net: they are grossed up like the cash `calc` credits', () => {
+  const offer = offerWith({ payAmount: 1000 });
+  const r = calc(offer, ctx);
+  assert.ok(r.netFactor > 0.8 && r.netFactor < 0.9);
+  const net = 1000;
+  const x = settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: net, via: 'payroll' }] });
+  near(x.rows[0].received, cents(net / r.netFactor), 'gross equivalent', 0.01);
+  near(x.rows[0].items.salary.declared, cents(net / r.netFactor), 'declared', 0.01);
+  const cash = settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: net, via: 'cash' }] });
+  assert.equal(cash.totals.cash, net); // cash is reported as handed
+  near(cash.totals.received, cents(net / r.netFactor), 'cash grossed up the same', 0.01);
+});
+
+test('the legality flag compares the gross equivalent of the declared money with the minimum', () => {
+  const offer = offerWith({ payAmount: 1424.5 });
+  const r = calc(offer, ctx);
+  const paid = (net) => settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: net, via: 'transfer' }] });
+  // Net of exactly the minimum: not below. A cent of gross less: below
+  assert.equal(paid(1424.5 * r.netFactor).rows[0].belowMinimumOnPayroll, 0);
+  near(paid((1424.5 - 100) * r.netFactor).rows[0].belowMinimumOnPayroll, 100, 'below by', 0.01);
+});
+
+test('an underway offer with no known end has a row per month from its start to the month of today', () => {
+  const offer = offerWith({ start: '2026-01-20', durationUnit: 'unknown' });
+  const r = calc(offer, ctx);
+  const x = settleOf(offer, {}, '2026-03-10');
+  assert.deepEqual(
+    x.rows.map((row) => [row.month, row.from, row.to, row.estimate]),
+    [
+      ['2026-01', '2026-01-20', '2026-01-31', true],
+      ['2026-02', '2026-02-01', '2026-02-28', true],
+      ['2026-03', '2026-03-01', '2026-03-31', true], // the month in progress, due at its end
+    ],
+  );
+  // The first month is partial at 1/30 a day: 12 days; the others are whole months of the monthly pay
+  near(
+    x.rows[0].items.salary.agreed + x.rows[0].items.overnight.agreed,
+    cents((r.pay.salary * 12) / 30),
+    'first month',
+    0.01,
+  );
+  near(x.rows[1].items.salary.agreed, cents(r.pay.salary), 'a whole month', 0.01);
+  assert.equal(settleOf(offer, {}, '2026-01-19').rows.length, 0);
+  assert.equal(settleOf(offerWith({ start: '', durationUnit: 'unknown' }), {}, '2026-03-10').rows.length, 0);
+  // Closing a month works as for any other
+  const closed = settleOf(offer, { months: { '2026-02': { closed: true, days: {} } } }, '2026-03-10');
+  assert.equal(closed.rows[1].closed, true);
+});
+
 test('cash is reported apart and counts as received like any other payment', () => {
   const offer = offerWith({ payAmount: 1000 });
   const without = settleOf(offer, {});
   const x = settleOf(offer, {
     payments: [payment('a', '2026-01-31', 600, 'cash'), payment('b', '2026-02-05', 400, 'cash')],
   });
-  assert.equal(x.totals.cash, 1000);
+  near(x.totals.cash, 1000 * NET, 'cash as handed', 0.01);
   assert.equal(x.totals.received, 1000);
   assert.equal(x.totals.owed, cents(without.totals.owed - 1000));
   assert.equal(x.rows[0].received, 1000); // oldest month first, with the cash too
