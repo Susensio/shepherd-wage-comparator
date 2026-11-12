@@ -213,3 +213,36 @@ test.describe('finished', () => {
     });
   }
 });
+
+test.describe('the cards', () => {
+  test.use({ today: '2026-11-12' });
+
+  const card = (page, name) => page.locator('#cards .ocard', { hasText: name }).first();
+
+  test('a pill for the phase, none for an offer only offered; a line for a job worked', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Acabada');
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText('Sin cobros apuntados');
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText('4 meses sin cerrar');
+    await expect(card(page, 'Campaña B').locator('.phase')).toHaveText('Acabada');
+    await expect(card(page, 'Temporada F').locator('.phase')).toHaveCount(0);
+    await expect(card(page, 'Puerto A').first().locator('.oc-name .phase')).toHaveCount(0); // solo oferta
+    await expect(card(page, 'Puerto A').first().locator('.oc-rec')).toHaveCount(0);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText(/Debe el ganadero [\d.,]+\s€/);
+  });
+
+  test('a job under way, and one not decided yet', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await at(page, '2026-08-12');
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('En curso');
+    await at(page, '2026-05-01');
+    await reselect(page);
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Por decidir');
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toHaveCount(0);
+  });
+});

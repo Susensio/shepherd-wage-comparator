@@ -3895,6 +3895,9 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   margin-top: 2px;
   border-top: 1px dashed var(--line);
 }
+.oc-rec > span:first-child {
+  white-space: nowrap;
+}
 .oc-rec b {
   font-family: var(--f-num);
   font-weight: 600;

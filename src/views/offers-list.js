@@ -2,9 +2,10 @@
 
 import { html, nothing } from 'lit-html';
 import { fCount, fE } from '../format.js';
+import { fSumE } from '../ledger.js';
 import { yearShares } from '../model/calc.js';
 import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
-import { herdText } from '../text.js';
+import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
 /** The «⋯» of a card (the ficha's is in index.html). */
@@ -62,7 +63,7 @@ function yearHeading(year, totals) {
  * without a start date) is muted with a dashed edge, as in Comparar; one with data missing says so instead of a figure.
  * Cards go by start date, the latest first, under a header per year with that year's figures; those without a start
  * date, or starting later than today, go first, under «Por decidir» (ADR-0030), the soonest first and the undated last.
- * @param {{ o: any, r: any }[]} items your offers with their figures
+ * @param {{ o: any, r: any, record?: ReturnType<typeof import('../ui/record.js').cardRecord> }[]} items your offers with their figures and, for a job worked, its phase and what is owed
  * @param {string} activeId the offer shown on the ficha, marked on wide screens where the list stays beside it
  */
 export function offersListView(items, activeId) {
@@ -84,21 +85,34 @@ export function offersListView(items, activeId) {
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
 
+/** The extra line of a job under way or finished: what the ganadero owes, and the months still to close. */
+function recordLine(line) {
+  if (!line) return nothing;
+  const months = line.unclosed === 1 ? '1 mes sin cerrar' : `${line.unclosed} meses sin cerrar`;
+  return html`<span class="oc-rec"><span>${
+    !line.hasPayments
+      ? 'Sin cobros apuntados'
+      : line.owed > 0
+        ? html`Debe el ganadero <b>${fSumE(line.owed)}</b>`
+        : 'Sin deuda'
+  }</span>${line.unclosed ? html`<span>${months}</span>` : nothing}</span>`;
+}
+
 /** One offer's card with its «⋯» menu. */
-function card({ o, r }, activeId) {
+function card({ o, r, record }, activeId) {
   const unit = offerUnit(r);
   const complete = isComplete(o.terms);
   const worked = !!o.terms.start && !o.terms.offerOnly;
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
   return html`<div class="ocwrap"><button type="button" class=${worked ? 'ocard' : 'ocard offer-only'} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
-    <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${
+    <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}${record?.phase ? html` <span class="phase" data-phase=${record.phase}>${PHASE_TEXT[record.phase]}</span>` : nothing}</b>${
       complete
         ? html`<span class="oc-fig">${fUnit(inUnit(r.earnings.total, r, unit), unit)}${UNITS[unit].suffix}</span>`
         : ''
     }</span>
     <span class="oc-detail">${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
       complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
-    }</span>
+    }</span>${recordLine(record?.line)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
 }
 

@@ -324,3 +324,26 @@ export function forgetRecordUi(offerId) {
   if (ui.review && ui.review.offerId !== offerId) endReview();
   ui.ask = null;
 }
+
+/**
+ * What a card says of a job under way or finished: its phase and, with a record to show, what is owed and how many
+ * months are still not closed. Null phase for an offer only offered.
+ * @param {any} o
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, line: { hasPayments: boolean, owed: number, unclosed: number } | null }}
+ */
+export function cardRecord(o) {
+  const today = todayISO();
+  const phase = phaseOf(o, today);
+  if (phase === 'offerOnly') return { phase: null, line: null };
+  if (!recordPhase(o, today)) return { phase, line: null };
+  const settled = settleOffer(o);
+  const s = standingOf(settled, today, /** @type {'underway' | 'finished'} */ (phase), o.mine.record.payments.length);
+  return {
+    phase,
+    line: {
+      hasPayments: s.hasPayments,
+      owed: phase === 'finished' ? s.owed : Math.max(0, s.balance),
+      unclosed: s.unclosed.length,
+    },
+  };
+}

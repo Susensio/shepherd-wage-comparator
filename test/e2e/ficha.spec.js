@@ -155,8 +155,16 @@ test.describe('the «⋯» menu on each card', () => {
       app.closeEntry();
     });
     const menu = page.locator('#offerMenu');
-    const open = (name) =>
-      page.locator('#cards .ocwrap', { hasText: name }).first().getByRole('button', { name: 'Más acciones' }).click();
+    const open = async (name) => {
+      const more = page
+        .locator('#cards .ocwrap', { hasText: name })
+        .first()
+        .getByRole('button', { name: 'Más acciones' });
+      // Scrolled into view first: a scroll after the menu opens would close it
+      await more.scrollIntoViewIfNeeded();
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+      await more.click();
+    };
     await open('Temporada F');
     await expect(menu.locator('[data-menu=duplicate]')).toBeVisible();
     await expect(menu.locator('[data-menu=copyCard]')).toBeHidden();
