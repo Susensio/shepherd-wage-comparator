@@ -35,3 +35,12 @@ Weighed and discarded:
 ## Corrections
 
 12 November 2026: the Decision said cash is reported apart «as pay that contributed nothing». That read as if cash did not count against what is owed. It does: cash is money received and reduces what is owed, as ADR-0004 and `docs/model.md` («What is owed») already say. What it does not do is contribute to Social Security, so a payroll below the minimum stays flagged on its own. The decision is as ADR-0004 had it; only the wording here was wrong.
+
+## Amendments
+
+12 November 2026, after the first mock-ups, before any interface existed. The owner decided:
+- A day in the record is `work`, `off` or `sick`. A libranza and a vacation day are the same mark, `off`; the vacation owed comes from the offer's terms, not from day marks. This replaces «worked, off, sick, vacation» in the Decision.
+- A payment is recorded net: what actually arrived. It is grossed up for the comparison with what is due, as the model already does for cash.
+- A month cannot be closed without its calendar having been shown: closing happens from the calendar or from a month-by-month review, never in bulk and blind.
+- An offer with no known end gets its months from the start date up to today.
+- What differs from the offer in a month is judged by counts (worked days, days off), not day by day: moving a libranza from one day to another is not a difference.
