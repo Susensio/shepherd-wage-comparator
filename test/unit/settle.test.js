@@ -202,7 +202,7 @@ test('days worked above the due workdays are extra days, valued at the minimum w
 test('payments go to the oldest unpaid month first, whatever the order they are listed in', () => {
   const offer = offerWith({ payAmount: 1000 }); // owed 1424.50 a month (the minimum)
   const x = settleOf(offer, {
-    payments: [payment('b', '2026-02-10', 1000, 'payroll'), payment('a', '2026-01-10', 1424.5, 'transfer')],
+    payments: [payment('b', '2026-02-10', 1000, 'payroll'), payment('a', '2026-01-10', 1424.5, 'cash')],
   });
   assert.deepEqual(
     x.rows.map((row) => [row.received, row.owed]),
@@ -241,20 +241,18 @@ test('payments are net: they are grossed up like the cash `calc` credits', () =>
   near(cash.totals.received, cents(net / r.netFactor), 'cash grossed up the same', 0.01);
 });
 
-test('a transfer without a payslip is received but not declared, like cash', () => {
+test('cash is received but not declared', () => {
   const offer = offerWith({ payAmount: 1424.5 });
   const x = settleOf(offer, {
-    payments: [payment('a', '2026-01-31', 1000, 'payroll'), payment('b', '2026-01-31', 424.5, 'transfer')],
+    payments: [payment('a', '2026-01-31', 1000, 'payroll'), payment('b', '2026-01-31', 424.5, 'cash')],
   });
   assert.equal(x.rows[0].owed, 0);
   assert.equal(x.rows[0].items.salary.belowMinimumOnPayroll, 424.5);
-  assert.equal(x.totals.cash, 0);
-  near(x.totals.undeclared, 424.5 * NET, 'undeclared', 0.01);
+  near(x.totals.cash, 424.5 * NET, 'cash as handed', 0.01);
   const both = settleOf(offer, {
-    payments: [payment('a', '2026-01-31', 100, 'cash'), payment('b', '2026-02-01', 200, 'transfer')],
+    payments: [payment('a', '2026-01-31', 100, 'cash'), payment('b', '2026-02-01', 200, 'cash')],
   });
-  near(both.totals.cash, 100 * NET, 'cash', 0.01);
-  near(both.totals.undeclared, 300 * NET, 'cash plus transfer', 0.01);
+  near(both.totals.cash, 300 * NET, 'cash', 0.01);
 });
 
 test('the legality flag compares the gross equivalent of the declared money with the minimum', () => {

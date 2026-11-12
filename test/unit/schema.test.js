@@ -284,6 +284,7 @@ describe('version 5: mine.record (ADR-0032)', () => {
                   { id: 'p3', date: '2026-07-06', amount: Number.NaN, via: 'cash' },
                   { id: 'p4', date: '2026-07-06', amount: '100', via: 'cash' },
                   { id: 'p5', date: '2026-07-06', amount: 100, via: 'bizum' },
+                  { id: 'p5b', date: '2026-07-06', amount: 100, via: 'transfer' },
                   { id: 'p6', date: 'ayer', amount: 100, via: 'cash' },
                   'x',
                 ],

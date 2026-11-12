@@ -86,7 +86,7 @@ function withRecord(offer) {
 }
 
 const DAY_KINDS = new Set(['work', 'off', 'sick']);
-const PAYMENT_WAYS = new Set(['payroll', 'transfer', 'cash']);
+const PAYMENT_WAYS = new Set(['payroll', 'cash']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 /**

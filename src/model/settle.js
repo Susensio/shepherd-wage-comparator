@@ -12,12 +12,12 @@ import { claimDeadline } from './time.js';
 
 /**
  * @typedef {'work' | 'off' | 'sick'} DayKind a libranza and a vacation day are the same mark, «off»
- * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash' | 'transfer', note?: string }} Payment `amount` is net: what arrived, after withholdings on payroll, as handed in cash or transferred. Only `payroll` is declared, on a payslip
+ * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash', note?: string }} Payment `amount` is net: what arrived, after withholdings on payroll, or as handed in cash. Only `payroll` is declared, on a payslip
  * @typedef {{ closed?: boolean, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»
  * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[] }} OfferRecord months keyed «2026-06»
  * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number, declared: number, belowMinimumOnPayroll: number }} ItemRow
  * `received` is every payment; `declared` is the part of it on payroll, and `belowMinimumOnPayroll` what the minimum
- * exceeds it by: cash and a transfer without a payslip cover `owed` but carry no Social Security.
+ * exceeds it by: cash covers `owed` but carry no Social Security.
  */
 
 /** The items of a month, in the order a payment covers them: by convention, a payment names no item. */
@@ -194,7 +194,6 @@ export function settle(offer, record, today, ctx) {
   const payments = [...(record?.payments || [])].sort((a, b) => a.date.localeCompare(b.date));
   const grossOf = (list) => sum(list.map((p) => cents(p.amount / r.netFactor)));
   const cash = sum(payments.filter((p) => p.via === 'cash').map((p) => p.amount));
-  const undeclared = sum(payments.filter((p) => p.via !== 'payroll').map((p) => p.amount));
   let pool = grossOf(payments);
   let declaredPool = grossOf(payments.filter((p) => p.via === 'payroll'));
   for (const row of rows) {
@@ -233,10 +232,8 @@ export function settle(offer, record, today, ctx) {
     belowMinimumOnPayroll: column('belowMinimumOnPayroll'),
     /** Owed in months whose claim has not lapsed. */
     claimable: sum(rows.filter((row) => !row.lapsed).map((row) => row.owed)),
-    /** Cash handed over, net as recorded. */
+    /** Cash handed over, net as recorded: the «en negro» money. */
     cash,
-    /** Cash plus transfers without a payslip, net as recorded: the «en negro» money. */
-    undeclared,
     /** Gross equivalent of the money beyond what every month was due. */
     unassigned: pool,
     items: itemTotals,

@@ -82,7 +82,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | rebaño: ovejas, cabras, vacas | the herd, as head counts per species | `terms.sheep`, `terms.goats`, `terms.cattle` | ganado |
 | registro | what happened in a job: the days of each month and the cobros, kept in `mine.record`, never shared (ADR-0032) | `mine.record`, `OfferRecord` (`model/settle.js`) | | diario, historial |
 | mes cerrado | a month whose days the shepherd froze as they were; the offer no longer changes it. Any other month is «según la oferta», an estimate | `record.months[key].closed`, `row.closed`, `row.estimate` | | mes pasado, mes confirmado |
-| cobro | a payment received: date, amount and how (nómina, en mano, transferencia) | `record.payments`, `Payment` (`model/settle.js`) | | pago (a payment the employer makes is a «pago» in the pay answers) |
+| cobro | a payment received: date, amount and how (Nómina, En mano) | `record.payments`, `Payment` (`model/settle.js`) | | pago (a payment the employer makes is a «pago» in the pay answers) |
 | fase | where a job is in time, from its dates: por decidir, en curso, terminada; «solo oferta» is never worked | `phaseOf` (`model/phase.js`) | | estado, modo |
 
 ## Units
