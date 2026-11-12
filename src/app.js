@@ -176,7 +176,10 @@ export function paintAll({ animate = false } = {}) {
     loading
       ? skeletonCardsView()
       : offersListView(
-          myOffers().map((x) => ({ o: x, r: calcOffer(x), record: cardRecord(x) })),
+          myOffers().map((x) => {
+            const r = calcOffer(x);
+            return { o: x, r, record: cardRecord(x, r) };
+          }),
           o.id,
         ),
     $('#cards'),
@@ -191,7 +194,7 @@ export function paintAll({ animate = false } = {}) {
   $('#fichaPhase').hidden = !(phase in PHASE_TEXT);
   $('#fichaPhase').textContent = PHASE_TEXT[phase] ?? '';
   $('#fichaPhase').dataset.phase = phase;
-  render(fichaView(o, r, placesIfLoaded(), recordContext(o)), $('#result'));
+  render(fichaView(o, r, placesIfLoaded(), recordContext(o, r)), $('#result'));
   restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
   if (animate) for (const el of appeared) fadeIn(el);

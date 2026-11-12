@@ -9,12 +9,11 @@ import { num } from '../format.js';
 import { monthAccounts, spanOf, standingOf } from '../model/accounts.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
-import { datesText, missing, todayISO } from '../offer.js';
+import { missing, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
-import { active, calcContext, saveFolds, settleOffer, state } from '../state.js';
+import { active, calcContext, settleOffer } from '../state.js';
 import { recordClaimText } from '../text.js';
 import { copyText } from './dom.js';
-import { scrollToElement } from './motion.js';
 import { closeReview, openReview } from './navigation.js';
 
 /**
@@ -23,6 +22,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof monthAccounts>} acc
  * @property {number} index where this month is among `count`
  * @property {number} count
+ * @property {number} netFactor the figures of the month are shown net
  * @property {boolean} asking whether «Reabrir» is waiting for its confirmation
  * @property {boolean} canClose only a month that has ended can be closed
  *
@@ -40,8 +40,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {import('../model/settle.js').Payment[]} payments newest first
  * @property {string | null} fresh the cobro just added
  * @property {{ type: string, id?: string } | null} ask
- * @property {number} closedMonths
- * @property {string} datesLabel
+ * @property {boolean} showAll the whole list of cobros, each removable, instead of the last two
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -55,6 +54,8 @@ const ui = {
   /** «Repasar los meses»: the months to go through and where it is. */
   review: /** @type {{ offerId: string, keys: string[], index: number, closed: number } | null} */ (null),
   fresh: /** @type {string | null} */ (null),
+  /** «Cobros» lists every cobro. */
+  showAll: false,
 };
 
 /** What `ui/record.js` asks of the page. */
@@ -88,9 +89,10 @@ function monthOnCalendar(o, rows, today, phase) {
 /**
  * Everything the record's views need for an offer, or null where it has none.
  * @param {any} o
+ * @param {{ netFactor: number }} r its figures: what reaches the shepherd is shown, not the gross
  * @returns {RecordContext | null}
  */
-export function recordContext(o) {
+export function recordContext(o, r) {
   const today = todayISO();
   const phase = recordPhase(o, today);
   if (!phase) return null;
@@ -98,13 +100,14 @@ export function recordContext(o) {
   const settled = settleOffer(o);
   if (!settled.rows.length) return null;
   const ctx = calcContext();
-  const standing = standingOf(settled, today, phase, record.payments.length);
+  const standing = standingOf(settled, today, phase, record.payments, r.netFactor);
   const shown = settled.rows.filter((row) => row.from <= today);
   const calendarOf = (key, mode, index, count) => ({
     mode,
     acc: monthAccounts(o, record, key, today, ctx),
     index,
     count,
+    netFactor: r.netFactor,
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
     canClose: settled.rows.find((row) => row.month === key).to < today,
   });
@@ -135,8 +138,7 @@ export function recordContext(o) {
       .map((x) => x.p),
     fresh: ui.fresh,
     ask: ui.ask,
-    closedMonths: Object.values(record.months).filter((m) => m.closed).length,
-    datesLabel: datesText(o.terms),
+    showAll: ui.showAll,
     calendar: calendarOf(key, 'ficha', index, shown.length),
     review,
   };
@@ -274,12 +276,11 @@ export const recordActions = {
     offers.removePayment(active(), b.dataset.id);
     callbacks.paint();
   },
-  /** «Ver los N cobros»: opens the «Registro» fold and goes to it. */
-  openRecord() {
-    state.folds.record = true;
-    saveFolds();
+  /** «Ver todos los cobros»: the whole list in place, each cobro removable. */
+  toggleCobros() {
+    ui.showAll = !ui.showAll;
+    ui.ask = null;
     callbacks.paint();
-    scrollToElement($('[data-fold=record]'), 'center');
   },
   reviewStart() {
     const o = active();
@@ -340,18 +341,24 @@ export function forgetRecordUi(offerId) {
  * @param {any} o
  * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, line: { hasPayments: boolean, owed: number, unclosed: number } | null }}
  */
-export function cardRecord(o) {
+export function cardRecord(o, r) {
   const today = todayISO();
   const phase = phaseOf(o, today);
   if (phase === 'offerOnly') return { phase: null, line: null };
   if (!recordPhase(o, today)) return { phase, line: null };
   const settled = settleOffer(o);
-  const s = standingOf(settled, today, /** @type {'underway' | 'finished'} */ (phase), o.mine.record.payments.length);
+  const s = standingOf(
+    settled,
+    today,
+    /** @type {'underway' | 'finished'} */ (phase),
+    o.mine.record.payments,
+    r.netFactor,
+  );
   return {
     phase,
     line: {
       hasPayments: s.hasPayments,
-      owed: phase === 'finished' ? s.owed : Math.max(0, s.balance),
+      owed: Math.max(0, s.balance),
       unclosed: s.unclosed.length,
     },
   };

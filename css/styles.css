@@ -3414,6 +3414,15 @@ details.plg > summary .stat.dt {
   font-weight: 500;
   color: var(--muted);
 }
+details.plg > summary .stat.dt.bad {
+  color: var(--neg);
+}
+details.plg > summary .stat.dt.warn {
+  color: var(--c-cash-t);
+}
+details.plg > summary .stat.dt.ok {
+  color: var(--c-pay);
+}
 details.plg > summary .stat.dt b {
   font-family: var(--f-num);
   font-weight: 600;
@@ -4053,13 +4062,16 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   font-size: 14.5px;
 }
 .tocl small {
-  display: block;
+  display: inline;
   color: var(--muted);
   font-size: 12px;
 }
 .tocl .n {
   font-family: var(--f-num);
   font-size: 13.5px;
+}
+.tocl small.due-by {
+  display: block;
 }
 .due-by {
   font-size: 12px;

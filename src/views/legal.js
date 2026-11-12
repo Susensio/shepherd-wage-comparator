@@ -238,6 +238,30 @@ function extraTimeCards(r) {
 const RIGHT_ICON = { true: ['ok', '✔'], false: ['bad', '✘'], warn: ['warn', '!'], null: ['off', 'i'] };
 const WARN_TEXT = { hours: 'las horas extra se tienen que pagar', vacation: 'las vacaciones se tienen que librar' };
 
+/**
+ * The verdict of «¿Es legal?» in one line, for the row that opens it: `tone` is bad, warn or ok.
+ * @returns {{ tone: 'bad' | 'warn' | 'ok', text: string } | null}
+ */
+export function legalVerdict(o, r, money) {
+  const rights = rightsOf(o, r, money.unit);
+  if (!rights) return null;
+  const failures = rights.filter((x) => x.status === false);
+  const warnings = rights.filter((x) => x.status === 'warn');
+  if (r.noContract) return { tone: 'bad', text: 'Sin contrato: no es legal' };
+  if (r.selfEmployed) return { tone: 'warn', text: 'Puede ser un falso autónomo' };
+  if (failures.length)
+    return {
+      tone: 'bad',
+      text: `No cumple: ${joinAnd(failures.map((x) => (LAW_SHORT[x.id] || x.title).toLowerCase()))}`,
+    };
+  if (warnings.length)
+    return {
+      tone: 'warn',
+      text: `Cumple lo básico, con avisos: ${joinAnd(warnings.map((x) => (LAW_SHORT[x.id] || x.title).toLowerCase()))}`,
+    };
+  return { tone: 'ok', text: 'Cumple lo básico' };
+}
+
 /** «¿Es legal?» */
 export function legalSection(o, r, money) {
   const rights = rightsOf(o, r, money.unit);

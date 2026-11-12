@@ -22,7 +22,7 @@ import {
   UNIT_TEXT,
   UNITS,
 } from '../units.js';
-import { legalSection } from './legal.js';
+import { legalSection, legalVerdict } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
@@ -215,7 +215,8 @@ function breakdown(o, r, unit) {
 /**
  * The result of an offer in two parts: `head` (the headline, its stamp and the pills, or what is still missing) and
  * `analysis` (the breakdown, the law and the workings; null while something is missing). `readOnly` (another
- * shepherd's offer): nothing to complete, negotiate or copy.
+ * shepherd's offer): nothing to complete, negotiate or copy. `sections` are the parts of `analysis` one by one, for a
+ * ficha that arranges them itself (a job finished).
  */
 export function resultParts(o, r, { readOnly = false } = {}) {
   const shortfall = missing(o.terms);
@@ -223,6 +224,7 @@ export function resultParts(o, r, { readOnly = false } = {}) {
     return {
       head: html`<p class="empty">Para ver cuánto se gana falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`,
       analysis: null,
+      sections: null,
     };
   const unit = offerUnit(r);
   const money = moneyIn(r, unit);
@@ -245,12 +247,20 @@ export function resultParts(o, r, { readOnly = false } = {}) {
       ${r.time.noDuration ? html`<span class="sub">Sin duración, se cuenta un mes</span>` : ''}
       <span class="sub paro">${paroLine(r)}</span></div>
     ${pills(o, r)}`;
-  const analysis = html`${breakdownView}
-    ${legalSection(o, r, money)}
-    ${readOnly ? nothing : negotiationSection(o, r, money)}
-    ${readOnly ? nothing : seasonEndSection(o, r)}
-    <details class="plg" data-fold="workings"><summary>Cómo se calcula</summary><div class="doc">${workings(o, r)}</div></details>`;
-  return { head, analysis };
+  const sections = {
+    breakdown: breakdownView,
+    legal: legalSection(o, r, money),
+    verdict: legalVerdict(o, r, money),
+    negotiation: readOnly ? nothing : negotiationSection(o, r, money),
+    seasonEnd: readOnly ? nothing : seasonEndSection(o, r),
+    workings: html`<details class="plg" data-fold="workings"><summary>Cómo se calcula</summary><div class="doc">${workings(o, r)}</div></details>`,
+  };
+  const analysis = html`${sections.breakdown}
+    ${sections.legal}
+    ${sections.negotiation}
+    ${sections.seasonEnd}
+    ${sections.workings}`;
+  return { head, analysis, sections };
 }
 
 /** The whole result of an offer, or what is still missing to show it. */

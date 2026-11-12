@@ -1,7 +1,7 @@
 /** The calendar of a month (ADR-0032): its days as shown, the counts, the money of the month and the button that closes it. */
 
 import { html, nothing } from 'lit-html';
-import { fSumE } from '../ledger.js';
+import { cents, fSumE, sum } from '../ledger.js';
 import { monthName } from '../text.js';
 import { row } from './parts.js';
 
@@ -44,14 +44,19 @@ function grid(cal) {
 }
 
 /** The money of the month, from what is on the calendar; one line more when the jornadas differ from the offer. */
-function money(acc) {
+function money(cal) {
+  const { acc } = cal;
   const { items } = acc.row;
-  const { jornadas, delta } = acc;
+  const { jornadas } = acc;
+  // In net, like every figure of the ficha; the total is the sum of the rows as shown
+  const net = (gross) => cents(gross * cal.netFactor) + 0;
+  const [salary, overnight, vacation] = [items.salary.due, items.overnight.due, items.vacation.due].map(net);
+  const delta = acc.delta === null ? null : net(acc.delta);
   return html`<div class="rows">
-    ${row('Salario', fSumE(items.salary.due))}
-    ${items.overnight.due > 0 ? row('+ Plus de pernocta', fSumE(items.overnight.due)) : nothing}
-    ${items.vacation.due > 0 ? row('+ Vacaciones', fSumE(items.vacation.due), { sub: 'según la oferta: se pagan al acabar' }) : nothing}
-    ${row('= Devengado', fSumE(acc.row.due), { sub: acc.row.closed ? nothing : 'estimado' })}
+    ${row('Salario', fSumE(salary))}
+    ${overnight > 0 ? row('+ Plus de pernocta', fSumE(overnight)) : nothing}
+    ${vacation > 0 ? row('+ Vacaciones', fSumE(vacation), { sub: 'según la oferta: se pagan al acabar' }) : nothing}
+    ${row('= Devengado', fSumE(sum([salary, overnight, vacation])), { sub: acc.row.closed ? nothing : 'estimado' })}
     ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
   </div>`;
 }
@@ -83,7 +88,7 @@ function month(cal) {
     ${head}
     ${grid(cal)}
     <div class="counts"><span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
-    ${money(acc)}
+    ${money(cal)}
     ${actions(cal)}
   </div>`;
 }

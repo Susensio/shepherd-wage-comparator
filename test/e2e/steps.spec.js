@@ -148,7 +148,8 @@ test('the list shows each offer as a card, and a card opens its ficha', async ({
   await card.click();
   await expect(page.locator('#fichaName')).toHaveText('Puerto A, otra cuenta');
   await expect(page.locator('.crow')).toHaveCount(4);
-  await expect(page.locator('#result .analysis-title')).toHaveText('Análisis');
+  // The job is over by now: its analysis is one closed fold (the phases are tested in record.spec.js)
+  await expect(page.locator('details[data-fold=analysis] > summary')).toHaveText('Análisis de la oferta');
 });
 
 test('a row of the ficha opens only its step, and «Guardar» keeps the change', async ({ loaded: page }) => {

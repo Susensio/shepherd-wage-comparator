@@ -51,53 +51,54 @@ export function monthAccounts(offer, record, key, today, ctx) {
 const monthlyDue = (row) => sum([row.items.salary.due, row.items.overnight.due]);
 
 /**
- * Where an offer stands, from `settle`'s result.
- * - `accrued` and `received` (the payments' gross equivalent) and `balance` between them, over the months that have ended
- *   (`through`: the whole offer once it is over).
- * - `running`: the current month so far, and `vacation`: what the vacation comes to; both aside, not yet payable.
- * - `unclosed`: the months a shepherd has not closed, among those that have ended.
- * - `deadlines`: each month with something owed and when its claim lapses.
+ * Where an offer stands, in net: the owner thinks in what reaches the shepherd, so what `settle` has gross is taken
+ * times `netFactor`, the factor it uses to gross the cobros up, and the cobros are as they arrived.
+ * - `accrued`, `received` and `balance` between them, over the months that have ended (the whole offer once over).
+ * - `running`: the current month so far, and `vacation`: what it comes to; both aside, not yet payable.
+ * - `items`: the accrued split by item, with whether the minimum is why an item is what it is.
+ * - `months`: each month with its state, what it is owed and when its claim lapses.
+ * - `unclosed`: the months not closed, among those that have ended.
  * @param {ReturnType<typeof settle>} settled
  * @param {string} today ISO date
  * @param {'underway' | 'finished'} phase
- * @param {number} paymentCount payments in the record: with none, nothing is owed that the shepherd has not said
+ * @param {import('./settle.js').Payment[]} payments with none, nothing is owed that the shepherd has not said
+ * @param {number} netFactor `r.netFactor`
  */
-export function standingOf(settled, today, phase, paymentCount) {
+export function standingOf(settled, today, phase, payments, netFactor) {
   const { rows, totals } = settled;
+  const net = (gross) => cents(gross * netFactor) + 0; // + 0: no -0
   const finished = phase === 'finished';
   const ended = finished ? rows : rows.filter((row) => row.to < today);
   const current = finished ? undefined : rows.find((row) => row.from <= today && today <= row.to);
-  const received = cents(totals.received + totals.unassigned);
-  const accrued = finished ? totals.due : sum(ended.map(monthlyDue));
+  const items = ITEMS.map((item) => ({
+    item,
+    due: net(totals.items[item].due),
+    byMinimum: totals.items[item].shortfall > 0,
+  }));
+  const accrued = finished ? sum(items.map((x) => x.due)) : net(sum(ended.map(monthlyDue)));
+  const received = sum(payments.map((p) => p.amount));
   const elapsed = current ? (daysBetween(current.from, today) + 1) / (daysBetween(current.from, current.to) + 1) : 0;
   return {
-    hasPayments: paymentCount > 0,
+    hasPayments: payments.length > 0,
     ended,
     accrued,
     received,
     /** Accrued minus received: negative when more was paid than is due so far. */
     balance: cents(accrued - received),
     cash: totals.cash,
-    running: current ? { month: current.month, amount: cents(monthlyDue(current) * elapsed) } : null,
-    vacation: finished ? 0 : sum(rows.map((row) => row.items.vacation.due)),
+    running: current ? { month: current.month, amount: net(monthlyDue(current) * elapsed) } : null,
+    vacation: finished ? 0 : net(sum(rows.map((row) => row.items.vacation.due))),
+    items,
     unclosed: ended.filter((row) => !row.closed),
-    /** What is owed per item at the end, with whether the minimum is why the amount is what it is. */
-    items: ITEMS.map((item) => ({
-      item,
-      owed: totals.items[item].owed,
-      due: totals.items[item].due,
-      byMinimum: totals.items[item].shortfall > 0,
+    belowMinimumOnPayroll: net(totals.belowMinimumOnPayroll),
+    months: ended.map((row) => ({
+      month: row.month,
+      closed: row.closed,
+      due: net(row.due),
+      owed: net(row.owed),
+      deadline: row.deadline,
+      lapsed: row.lapsed,
+      daysLeft: row.deadline ? daysBetween(today, row.deadline) : null,
     })),
-    owed: totals.owed,
-    belowMinimumOnPayroll: totals.belowMinimumOnPayroll,
-    deadlines: rows
-      .filter((row) => row.owed > 0 && row.deadline)
-      .map((row) => ({
-        month: row.month,
-        owed: row.owed,
-        deadline: row.deadline,
-        lapsed: row.lapsed,
-        daysLeft: daysBetween(today, row.deadline),
-      })),
   };
 }

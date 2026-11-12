@@ -1,4 +1,4 @@
-/** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas», «Cobros» and the «Registro» fold. */
+/** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
 import { fDate, joinAnd } from '../format.js';
@@ -30,43 +30,34 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
   }</div>`;
 }
 
-/** «Cobros»: what was received, the last two and the button for a new one. */
-function cobrosView({ today, payments, fresh }) {
-  const latest = payments.slice(0, 2);
+/** «Cobros»: what was received, the last two (or every one, each removable) and the button for a new one. */
+function cobrosView({ today, payments, fresh, showAll, ask }) {
+  const asking = ask?.type === 'payment' ? ask.id : null;
+  /** @type {Map<string, typeof payments>} */
+  const byMonth = new Map();
+  for (const p of payments) byMonth.set(p.date.slice(0, 7), [...(byMonth.get(p.date.slice(0, 7)) ?? []), p]);
   return html`<div class="block cobros">
     <div class="bh"><h2>Cobros</h2><span class="n">${money(netTotal(payments))}</span></div>
     ${
-      latest.length
-        ? html`<div class="pay">${latest.map((p) => paymentRow(p, today, { fresh: p.id === fresh }))}</div>
-          <p class="hint">Cantidades netas: lo que llegó, sin retenciones.</p>`
-        : html`<p class="hint">Todavía no hay ningún cobro apuntado.</p>`
+      !payments.length
+        ? html`<p class="hint">Todavía no hay ningún cobro apuntado.</p>`
+        : showAll
+          ? html`<div class="pay">${[...byMonth].map(
+              ([month, list]) =>
+                html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${money(netTotal(list))}</span></div>${list.map((p) => paymentRow(p, today, { fresh: p.id === fresh, remove: { asking: p.id === asking } }))}`,
+            )}</div>`
+          : html`<div class="pay">${payments.slice(0, 2).map((p) => paymentRow(p, today, { fresh: p.id === fresh }))}</div>`
     }
-    ${payments.length > 2 ? html`<button type="button" class="linkbtn lk" data-action="openRecord">Ver los ${payments.length} cobros</button>` : nothing}
+    ${payments.length ? html`<button type="button" class="linkbtn lk" data-action="toggleCobros" aria-expanded=${String(showAll)}>${showAll ? 'Ver solo los últimos' : 'Ver todos los cobros'}</button>` : nothing}
     <button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>
   </div>`;
 }
 
-/** The «Registro» fold: every cobro by month, newest first, and how many months are closed. */
-function recordFold({ today, payments, ask, closedMonths }) {
-  /** @type {Map<string, typeof payments>} */
-  const byMonth = new Map();
-  for (const p of payments) byMonth.set(p.date.slice(0, 7), [...(byMonth.get(p.date.slice(0, 7)) ?? []), p]);
-  const asking = ask?.type === 'payment' ? ask.id : null;
-  return html`<details class="plg" data-fold="record"><summary>Registro<span class="stat dt">${closedMonths === 1 ? '1 mes cerrado' : `${closedMonths} meses cerrados`} · ${payments.length === 1 ? '1 cobro' : `${payments.length} cobros`}</span></summary>
-    ${
-      payments.length
-        ? html`<div class="pay">${[...byMonth].map(
-            ([month, list]) =>
-              html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${money(netTotal(list))}</span></div>${list.map((p) => paymentRow(p, today, { remove: { asking: p.id === asking } }))}`,
-          )}</div>`
-        : html`<p class="hint">Sin cobros apuntados.</p>`
-    }
-  </details>`;
-}
+const NET_HINT = html`<p class="hint">Cantidades netas: lo que llega, sin retenciones.</p>`;
 
 /** «Hasta hoy»: accrued minus received is what the ganadero owes, the current month and the vacation aside. */
 function hastaHoy(c) {
-  const { standing: s, today, payments } = c;
+  const { standing: s, today } = c;
   const months = joinAnd(s.ended.map((r) => monthName(r.month)));
   const owing = s.balance >= 0;
   const label = !s.hasPayments
@@ -82,22 +73,13 @@ function hastaHoy(c) {
         : 'Se ha cobrado más de lo devengado hasta ahora.'
       : 'Todavía no ha acabado ningún mes.';
   const unclosed = s.unclosed.length ? joinAnd(s.unclosed.map((r) => monthName(r.month))) : '';
+  const accruedSub = s.ended.length ? `${months}: salario y plus de pernocta` : 'ningún mes acabado';
   return html`<div class="tag"><span class="lbl">${label}</span><span class="big">${money(s.hasPayments ? Math.abs(s.balance) : s.accrued)}</span><span class="sub">${sub}</span></div>
     <div class="block">
       <div class="rows">
-        ${
-          s.hasPayments
-            ? balanceRows(s, {
-                owing: 'Debe el ganadero',
-                ahead: 'Cobrado por adelantado',
-                accruedSub: s.ended.length ? `${months}: salario y plus de pernocta` : 'ningún mes acabado',
-              })
-            : row('Devengado', money(s.accrued), {
-                sub: s.ended.length ? `${months}: salario y plus de pernocta` : 'ningún mes acabado',
-              })
-        }
+        ${s.hasPayments ? balanceRows(s, { owing: 'Debe el ganadero', ahead: 'Cobrado por adelantado', accruedSub }) : row('Devengado', money(s.accrued), { sub: accruedSub })}
       </div>
-      ${s.hasPayments ? html`<p class="hint">Cantidades brutas. Lo cobrado llegó neto (${money(netTotal(payments))}): aquí se cuenta lo que equivale en bruto.</p>` : nothing}
+      ${NET_HINT}
       ${unclosed ? html`<p class="hint">Según la oferta, sin cerrar: ${unclosed}. Ciérralos en el calendario cuando estén revisados.</p>` : nothing}
       ${
         s.running || s.vacation > 0
@@ -114,71 +96,72 @@ function hastaHoy(c) {
 /** Accrued minus received as a ledger that adds up whichever is greater: the greater first, the other taken off. */
 function balanceRows(s, { owing, ahead, accruedSub }) {
   const accrued = row(s.balance >= 0 ? 'Devengado' : '− Devengado', money(s.accrued), { sub: accruedSub });
-  const received = row(s.balance >= 0 ? '− Cobrado' : 'Cobrado', money(s.received), { sub: 'lo cobrado, en bruto' });
+  const received = row(s.balance >= 0 ? '− Cobrado' : 'Cobrado', money(s.received), {});
   return s.balance >= 0
     ? [accrued, received, row(`= ${owing}`, money(s.balance))]
     : [received, accrued, row(`= ${ahead}`, money(-s.balance))];
 }
 
-/** The reason an owed item is what it is. */
-const why = (byMinimum) => (byMinimum ? html`<b>El mínimo legal</b>: lo pactado no llegaba` : html`<b>Lo pactado</b>`);
+/** One line per month: its state, what is owed of it and when its claim lapses. */
+function monthRow(m, today, hasPayments) {
+  const state = m.closed ? 'cerrado' : 'según la oferta';
+  const owing = hasPayments && m.owed > 0;
+  const by = !owing
+    ? ''
+    : m.lapsed
+      ? `plazo vencido el ${fWhen(m.deadline, today)}`
+      : `hasta el ${fWhen(m.deadline, today)} · quedan ${m.daysLeft} ${m.daysLeft === 1 ? 'día' : 'días'}`;
+  const near = owing && (m.lapsed || m.daysLeft < 120);
+  return html`<div><span><b>${capital(monthName(m.month))}</b> <small>${state}</small>${owing ? html`<small class=${near ? 'due-by near' : 'due-by'}>${by}</small>` : nothing}</span><span class="n">${money(hasPayments ? m.owed : m.due)}</span></div>`;
+}
 
-/** «Cuentas»: what the ganadero owes once the job is over, by item and reason, with the cash apart and the deadlines. */
+/** «Cuentas»: what the ganadero owes once the job is over, by month with its deadline, and by item. */
 function cuentas(c) {
-  const { standing: s, today, payments, datesLabel } = c;
-  const unclosed = s.unclosed;
-  const tag = html`<div class="tag"><span class="lbl">${s.hasPayments ? 'Cuentas · debe el ganadero' : 'Cuentas · devengado'}</span><span class="big">${money(s.hasPayments ? s.owed : s.accrued)}</span><span class="sub">${
+  const { standing: s, today } = c;
+  const open = s.unclosed.length;
+  const tag = html`<div class="tag"><span class="lbl">${s.hasPayments ? 'Cuentas · debe el ganadero' : 'Cuentas · devengado'}</span><span class="big">${money(s.hasPayments ? Math.max(0, s.balance) : s.accrued)}</span><span class="sub">${
     !s.hasPayments
       ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
-      : unclosed.length
-        ? `Con ${unclosed.length} ${unclosed.length === 1 ? 'mes según la oferta' : 'meses según la oferta'}: ${unclosed.length === 1 ? 'repásalo y ciérralo' : 'repásalos y ciérralos'} para que la cifra quede firme.`
+      : open
+        ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: repasa y cierra para fijar la cifra.`
         : 'Todos los meses están cerrados.'
   }</span></div>`;
-  const toClose = unclosed.length
-    ? html`<div class="block"><div class="bh"><h3>Meses por cerrar</h3><span class="hint">${unclosed.length}</span></div>
-        <div class="tocl">${unclosed.map((r) => html`<div><span><b>${capital(monthName(r.month))}</b><small>según la oferta</small></span><span class="n">${money(r.due)}</span></div>`)}</div>
-        <button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button></div>`
-    : nothing;
-  if (!s.hasPayments)
-    return html`${tag}${toClose}<div class="block"><div class="rows">${row('Devengado', money(s.accrued), { sub: datesLabel })}</div></div>`;
+  const months = html`<div class="block"><div class="bh"><h3>Meses</h3><span class="hint">${s.hasPayments ? 'lo que se debe de cada uno' : 'devengado'}</span></div>
+    <div class="tocl">${s.months.map((m) => monthRow(m, today, s.hasPayments))}</div>
+    ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
+    ${s.hasPayments ? html`<p class="hint">El plazo cuenta desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2).</p>` : nothing}
+  </div>`;
   const shown = s.items.filter((x) => x.due > 0);
-  return html`${tag}${toClose}
-    <div class="block">
-      <div class="bh"><h3>Lo que debe el ganadero</h3><button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button></div>
-      <p class="hint copy-msg" role="status"></p>
-      <div class="rows">
-        ${shown.map((x, i) => row(`${i ? '+ ' : ''}${ITEM_TEXT[x.item]}`, money(x.owed), { sub: why(x.byMinimum), valueCls: 'bad' }))}
-        ${row('= Total', money(s.owed), { valueCls: 'bad' })}
-      </div>
-      <div class="rows">
-        ${balanceRows(s, { owing: 'Debe el ganadero', ahead: 'Cobrado de más', accruedSub: datesLabel })}
-        ${s.cash > 0 ? row('De lo cobrado, en mano', money(s.cash), { cls: 'sub', sub: 'neto, tal cual se entregó: en negro, no cotiza' }) : nothing}
-      </div>
-      <p class="hint">Cantidades brutas. Lo cobrado llegó neto (${money(netTotal(payments))}): aquí se cuenta lo que equivale en bruto.</p>
-      ${s.cash > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">Lo declarado en nómina queda ${money(s.belowMinimumOnPayroll)} por debajo del mínimo legal: lo cobrado en mano cubre lo debido, pero no cotiza.</p>` : nothing}
+  const items = shown.map((x, i) =>
+    row(`${i ? '+ ' : ''}${ITEM_TEXT[x.item]}`, money(x.due), {
+      sub: x.byMinimum ? html`<b>El mínimo legal</b>: lo pactado no llegaba` : nothing,
+    }),
+  );
+  const balance = s.balance >= 0;
+  const ledger = html`<div class="block">
+    <div class="bh"><h3>Por conceptos</h3>${s.hasPayments ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
+    <p class="hint copy-msg" role="status"></p>
+    <div class="rows">
+      ${items}
+      ${row('= Devengado', money(s.accrued))}
+      ${s.hasPayments && balance ? [row('− Cobrado', money(s.received), {}), row('= Debe el ganadero', money(s.balance), { valueCls: 'bad' })] : nothing}
     </div>
-    ${
-      s.deadlines.length
-        ? html`<div class="block"><div class="bh"><h3>Plazo para reclamar</h3><span class="hint">un año por pago</span></div>
-        <div class="rows">${s.deadlines.map((d, i) =>
-          row(`${i ? '+ ' : ''}${capital(monthName(d.month))}`, money(d.owed), {
-            sub: html`<span class=${d.lapsed || d.daysLeft < 120 ? 'due-by near' : 'due-by'}>${d.lapsed ? `plazo vencido el ${fWhen(d.deadline, today)}` : `hasta el ${fWhen(d.deadline, today)} · quedan ${d.daysLeft} ${d.daysLeft === 1 ? 'día' : 'días'}`}</span>`,
-          }),
-        )}${s.deadlines.length > 1 ? row('= Total', money(s.deadlines.reduce((t, d) => t + d.owed, 0))) : nothing}</div>
-        <p class="hint">Se cuenta desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2).</p></div>`
-        : nothing
-    }`;
+    ${s.hasPayments && !balance ? html`<div class="rows">${row('Cobrado', money(s.received), {})}${row('− Devengado', money(s.accrued))}${row('= Cobrado de más', money(-s.balance))}</div>` : nothing}
+    ${s.cash > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cash), { cls: 'sub', sub: nothing })}</div>` : nothing}
+    ${NET_HINT}
+    ${s.cash > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+  </div>`;
+  return html`${tag}${months}${ledger}`;
 }
 
 /**
- * The top of the ficha of a job under way or finished: the block of its phase, then «Cobros», the calendar and the
- * «Registro» fold. During «Repasar los meses» it is the review alone.
+ * The top of the ficha of a job under way or finished: the block of its phase, then «Cobros» and the calendar.
+ * During «Repasar los meses» it is the review alone.
  * @param {RecordContext} c
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
   return html`${c.phase === 'finished' ? cuentas(c) : hastaHoy(c)}
     ${cobrosView(c)}
-    ${calendarView(c.calendar)}
-    ${recordFold(c)}`;
+    ${calendarView(c.calendar)}`;
 }

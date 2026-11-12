@@ -236,9 +236,10 @@ describe('a month on its calendar', () => {
   });
 });
 
-describe('where an offer stands', () => {
+describe('where an offer stands, in net', () => {
   const stand = (record, today, phase) =>
-    standingOf(settle(OFFER, record, today, ctx), today, phase, record.payments.length);
+    standingOf(settle(OFFER, record, today, ctx), today, phase, record.payments, NET);
+  const net = (gross) => Math.round(gross * NET * 100) / 100;
 
   test('under way: months that have ended are accrued, the current one and the vacation are aside', () => {
     const s = stand(emptyRecord(), '2026-07-15', 'underway');
@@ -247,41 +248,50 @@ describe('where an offer stands', () => {
       s.ended.map((r) => r.month),
       ['2026-06'],
     );
-    assert.equal(s.accrued, rows[0].items.salary.due + rows[0].items.overnight.due);
+    assert.equal(s.accrued, net(rows[0].items.salary.due + rows[0].items.overnight.due));
     assert.equal(s.hasPayments, false);
     assert.equal(s.running?.month, '2026-07');
-    assert.ok(s.running.amount > 0 && s.running.amount < rows[1].items.salary.due);
-    assert.equal(s.vacation, rows[2].items.vacation.due);
+    assert.ok(s.running.amount > 0 && s.running.amount < net(rows[1].items.salary.due));
+    assert.equal(s.vacation, net(rows[2].items.vacation.due));
     assert.deepEqual(
       s.unclosed.map((r) => r.month),
       ['2026-06'],
     );
   });
 
-  test('cobros are compared in gross: net as they arrived over the withholdings', () => {
+  test('cobros are what arrived, and the balance is accrued minus them', () => {
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 1000, via: 'payroll' });
     const s = stand(record, '2026-07-15', 'underway');
-    assert.ok(Math.abs(s.received - 1000 / NET) < 0.01);
-    assert.equal(s.balance, Math.round((s.accrued - s.received) * 100) / 100);
+    assert.equal(s.received, 1000);
+    assert.equal(s.balance, Math.round((s.accrued - 1000) * 100) / 100);
     assert.equal(s.hasPayments, true);
   });
 
-  test('finished: everything is accrued, items and deadlines say what is owed', () => {
+  test('finished: the items add up to the accrued, and each month has its state, owed amount and deadline', () => {
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 1000, via: 'cash' });
+    closeMonth(OFFER, record, JUNE);
     const settled = settle(OFFER, record, '2026-11-12', ctx);
-    const s = standingOf(settled, '2026-11-12', 'finished', 1);
-    assert.equal(s.accrued, settled.totals.due);
-    assert.equal(s.owed, settled.totals.owed);
+    const s = standingOf(settled, '2026-11-12', 'finished', record.payments, NET);
+    assert.equal(
+      s.items.reduce((t, x) => t + x.due, 0),
+      s.accrued,
+    );
     assert.equal(s.running, null);
     assert.equal(s.vacation, 0);
-    assert.equal(s.unclosed.length, 3);
-    assert.equal(
-      s.items.reduce((t, x) => t + x.owed, 0),
-      s.owed,
+    assert.deepEqual(
+      s.months.map((m) => [m.month, m.closed]),
+      [
+        ['2026-06', true],
+        ['2026-07', false],
+        ['2026-08', false],
+      ],
     );
-    assert.ok(s.deadlines.length > 0 && s.deadlines.every((d) => d.owed > 0));
+    assert.equal(s.unclosed.length, 2);
+    const owing = s.months.filter((m) => m.owed > 0);
+    assert.ok(owing.length > 0 && owing.every((m) => m.deadline && m.daysLeft !== null));
+    assert.equal(s.months[0].due, net(settled.rows[0].due));
     assert.equal(s.cash, settled.totals.cash);
   });
 });
