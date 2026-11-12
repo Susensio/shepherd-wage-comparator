@@ -3,21 +3,21 @@
  * browser, a backup, the account or another shepherd (docs/model.md, «Saved format»).
  */
 
-import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation } from './offer.js';
+import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation, emptyRecord, newId } from './offer.js';
 import { toAnswerable } from './pay-answers.js';
 
 /**
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 3;
+export const PAGE_VERSION = 4;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -60,11 +60,14 @@ const withoutLawFigures = (cfg) =>
  * 3: `offerOnly` and `place` in `terms`, shared (ADR-0028). The migration of 4 November 2026 rewrote every account row.
  * 4: `contract: 'selfEmployed'` and `terms.vatIncluded` (ADR-0029). Nothing saved changes shape: the default fills
  *    `vatIncluded`, so the upgrader is the identity; the version keeps pages that do not know the contract from writing.
+ * 5: `mine.record`, what happened (days by month, payments received; ADR-0032). The migration of 12 November 2026 gave
+ *    every account row an empty one.
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
   2: { offer: ownToTerms },
   3: { offer: (offer) => offer },
+  4: { offer: withRecord },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
@@ -76,6 +79,49 @@ function ownToTerms(offer) {
   return { ...offer, terms, mine };
 }
 
+/** Version 4 to 5: an empty `record` in `mine` where there is none; nothing else is touched. */
+function withRecord(offer) {
+  const mine = offer.mine ?? {};
+  return { ...offer, mine: { ...mine, record: mine.record ?? emptyRecord() } };
+}
+
+const DAY_KINDS = new Set(['work', 'off', 'sick']);
+const PAYMENT_WAYS = new Set(['payroll', 'transfer', 'cash']);
+const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
+
+/**
+ * A saved record, clean: a day whose kind is unknown, a payment with a non-finite amount or an unknown way, and months
+ * that are not `YYYY-MM` are dropped; a payment without an id gets one. Anything else is not the page's to judge.
+ * Always a new object, never the input's or the default.
+ */
+export function normalizeRecord(saved) {
+  const record = emptyRecord();
+  if (!isObject(saved)) return record;
+  for (const [key, month] of Object.entries(isObject(saved.months) ? saved.months : {})) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(key) || !isObject(month)) continue;
+    const days = Object.fromEntries(
+      Object.entries(isObject(month.days) ? month.days : {}).filter(
+        ([day, kind]) => /^(0[1-9]|[12]\d|3[01])$/.test(day) && DAY_KINDS.has(kind),
+      ),
+    );
+    record.months[key] = { closed: month.closed === true, days };
+  }
+  for (const p of Array.isArray(saved.payments) ? saved.payments : []) {
+    if (!isObject(p) || !PAYMENT_WAYS.has(p.via) || typeof p.amount !== 'number' || !Number.isFinite(p.amount))
+      continue;
+    if (typeof p.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) continue;
+    const payment = {
+      id: typeof p.id === 'string' && p.id ? p.id : newId(),
+      date: p.date,
+      amount: p.amount,
+      via: p.via,
+    };
+    if (typeof p.note === 'string' && p.note) payment.note = p.note;
+    record.payments.push(payment);
+  }
+  return record;
+}
+
 const pick = (object, keys) => Object.fromEntries(Object.entries(object ?? {}).filter(([key]) => keys.has(key)));
 
 /**
@@ -85,7 +131,7 @@ const pick = (object, keys) => Object.fromEntries(Object.entries(object ?? {}).f
 export const normalizeOffer = (saved) => ({
   ...saved,
   terms: { ...DEF_TERMS, ...saved.terms },
-  mine: { ...DEF_MINE, ...saved.mine },
+  mine: { ...DEF_MINE, ...saved.mine, record: normalizeRecord(saved.mine?.record) },
 });
 
 /**
@@ -151,7 +197,7 @@ export function ingestShared({ offer, sharer }) {
   const upgraded = upgradeOffer({ id: offer.id, schema_version: offer.schema_version, terms: offer.terms, mine: {} });
   if (!upgraded) return null;
   const { schema_version: _newer, ...o } = upgraded;
-  o.mine = { ...DEF_MINE, name: sharer?.name || 'Otro pastor' };
+  o.mine = { ...DEF_MINE, name: sharer?.name || 'Otro pastor', record: emptyRecord() };
   defaultVacation(o.terms);
   return { o, sharer: sharer ?? {} };
 }

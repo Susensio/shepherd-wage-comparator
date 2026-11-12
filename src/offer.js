@@ -47,6 +47,9 @@ export const DEF_TERMS = {
   cattle: '',
 };
 
+/** A fresh record of what happened (ADR-0032): days by month, and the payments received. Shape: `OfferRecord` in `model/settle.js`. */
+export const emptyRecord = () => ({ months: {}, payments: [] });
+
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',
@@ -59,6 +62,8 @@ export const DEF_MINE = {
   expenses: '',
   irpfMode: 'auto', // auto · manual
   irpfManual: 2,
+  /** Frozen: spreading `DEF_MINE` shares it, so an offer takes `emptyRecord()` and never mutates this one. */
+  record: Object.freeze({ months: Object.freeze({}), payments: Object.freeze([]) }),
 };
 
 /** Own figures that cost nothing: no car (so no trips, km or fuel), no expenses, automatic IRPF. */
@@ -142,7 +147,7 @@ export const newId = () => crypto.randomUUID();
 export const makeOffer = (terms = {}, mine = {}) => ({
   id: newId(),
   terms: { ...DEF_TERMS, ...terms },
-  mine: { ...DEF_MINE, name: 'Oferta 1', ...mine },
+  mine: { ...DEF_MINE, name: 'Oferta 1', record: emptyRecord(), ...mine },
   cmp: true,
 });
 

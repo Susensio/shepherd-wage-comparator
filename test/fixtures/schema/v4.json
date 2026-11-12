@@ -1,0 +1,28 @@
+{
+  "schema_version": 4,
+  "offers": [
+    {
+      "id": "v4-1",
+      "cmp": true,
+      "schema_version": 4,
+      "terms": {
+        "payAmount": 1785,
+        "payType": "net",
+        "payUnit": "month",
+        "contract": "selfEmployed",
+        "vatIncluded": true,
+        "start": "2026-06-21",
+        "duration": 102,
+        "offerOnly": false,
+        "futureTermsField": "kept"
+      },
+      "mine": { "name": "Puerto A", "kmHome": 108, "car": "own", "futureMineField": 7 }
+    },
+    {
+      "id": "v4-2",
+      "terms": { "payAmount": 1200 },
+      "mine": { "name": "Puerto B" }
+    }
+  ],
+  "cfg": { "rentValue": 350 }
+}

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
-import { DEF_CFG, DEF_MINE, DEF_TERMS } from '../../src/offer.js';
+import { DEF_CFG, DEF_MINE, DEF_TERMS, emptyRecord } from '../../src/offer.js';
 import { ingestSaved, ingestShared, SCHEMA_VERSION, upgrade } from '../../src/schema.js';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`../fixtures/schema/${name}.json`, import.meta.url), 'utf8'));
@@ -126,8 +126,8 @@ test('the village, its codes, the head counts and whether it was worked are term
   }
 });
 
-test('the account schema is at version 4', () => {
-  assert.equal(SCHEMA_VERSION, 4);
+test('the account schema is at version 5', () => {
+  assert.equal(SCHEMA_VERSION, 5);
 });
 
 describe('upgrade chain', () => {
@@ -214,6 +214,119 @@ describe('upgrade chain', () => {
   });
 });
 
+describe('version 5: mine.record (ADR-0032)', () => {
+  const EMPTY = { months: {}, payments: [] };
+
+  test('upgrade[4] adds an empty record where there is none and touches nothing else', () => {
+    const [own, bare] = fixture('v4').offers;
+    assert.deepEqual(upgrade[4].offer(own), { ...own, mine: { ...own.mine, record: EMPTY } });
+    assert.deepEqual(upgrade[4].offer(bare), { ...bare, mine: { ...bare.mine, record: EMPTY } });
+    const recorded = {
+      id: 'a',
+      terms: {},
+      mine: { record: { months: { '2026-06': { closed: true, days: {} } }, payments: [] } },
+    };
+    assert.deepEqual(upgrade[4].offer(recorded), recorded);
+    assert.deepEqual(upgrade[4].offer({ id: 'a', terms: {} }).mine, { record: EMPTY });
+  });
+
+  test('a version 4 bundle comes out with a record and every unknown field kept', () => {
+    const { offers } = ingestSaved(fixture('v4'), { fallbackCfg });
+    assert.deepEqual(offers[0].mine.record, EMPTY);
+    assert.equal(offers[0].mine.futureMineField, 7);
+    assert.equal(offers[0].terms.futureTermsField, 'kept');
+    assert.equal(offers[0].mine.kmHome, 108);
+    assert.deepEqual(offers[1].mine.record, EMPTY);
+    assert.equal('schema_version' in offers[0], false);
+  });
+
+  test('a record is not shared between offers, nor with the default', () => {
+    const { offers } = ingestSaved(fixture('v4'), { fallbackCfg });
+    offers[0].mine.record.payments.push({ id: 'p' });
+    assert.equal(offers[1].mine.record.payments.length, 0);
+    assert.equal(DEF_MINE.record.payments.length, 0);
+    assert.notEqual(emptyRecord().months, emptyRecord().months);
+    assert.ok(Object.isFrozen(DEF_MINE.record));
+  });
+
+  test('a shared offer carries a neutral empty record, not the sharer’s', () => {
+    const shared = ingestShared({
+      offer: { id: 'a', schema_version: 5, terms: { payAmount: 5 } },
+      sharer: { name: 'Ana' },
+    });
+    assert.deepEqual(shared?.o.mine.record, EMPTY);
+    assert.notEqual(shared?.o.mine.record, DEF_MINE.record);
+  });
+
+  test('normalising drops unknown day kinds, non-finite amounts, unknown ways and bad months, and keeps the rest', () => {
+    const { offers } = ingestSaved(
+      {
+        schema_version: 5,
+        offers: [
+          {
+            id: 'a',
+            terms: {},
+            mine: {
+              record: {
+                months: {
+                  '2026-06': {
+                    closed: true,
+                    days: { '01': 'work', '02': 'vacation', '03': 'sick', 32: 'off', x: 'off', '04': 'off' },
+                  },
+                  '2026-13': { closed: true, days: {} },
+                  junk: {},
+                  '2026-07': { days: { '05': 'off' } },
+                  '2026-08': 'no',
+                },
+                payments: [
+                  { id: 'p1', date: '2026-06-30', amount: 500.5, via: 'payroll', note: 'junio' },
+                  { date: '2026-07-05', amount: 100, via: 'cash' },
+                  { id: 'p3', date: '2026-07-06', amount: Number.NaN, via: 'cash' },
+                  { id: 'p4', date: '2026-07-06', amount: '100', via: 'cash' },
+                  { id: 'p5', date: '2026-07-06', amount: 100, via: 'bizum' },
+                  { id: 'p6', date: 'ayer', amount: 100, via: 'cash' },
+                  'x',
+                ],
+              },
+            },
+          },
+        ],
+      },
+      { fallbackCfg },
+    );
+    const { record } = offers[0].mine;
+    assert.deepEqual(record.months, {
+      '2026-06': { closed: true, days: { '01': 'work', '03': 'sick', '04': 'off' } },
+      '2026-07': { closed: false, days: { '05': 'off' } },
+    });
+    assert.equal(record.payments.length, 2);
+    assert.deepEqual(record.payments[0], {
+      id: 'p1',
+      date: '2026-06-30',
+      amount: 500.5,
+      via: 'payroll',
+      note: 'junio',
+    });
+    assert.equal(typeof record.payments[1].id, 'string');
+    assert.ok(record.payments[1].id.length > 0);
+    // Normalising what is already clean changes nothing
+    assert.deepEqual(
+      ingestSaved({ schema_version: 5, offers: [offers[0]] }, { fallbackCfg }).offers[0].mine.record.months,
+      record.months,
+    );
+  });
+
+  test('a record that is not an object becomes an empty one', () => {
+    for (const bad of [null, 'x', 5, [], { months: [], payments: 'no' }]) {
+      const { offers } = ingestSaved(
+        { schema_version: 5, offers: [{ id: 'a', terms: {}, mine: { record: bad } }] },
+        { fallbackCfg },
+      );
+      assert.deepEqual(offers[0].mine.record, EMPTY);
+    }
+  });
+});
+
 describe('fields the page does not know', () => {
   test('a current-version bundle keeps them through ingestion, so a write does not lose them', () => {
     const { offers, cfg } = ingestSaved(fixture('v2'), { fallbackCfg });
@@ -224,9 +337,9 @@ describe('fields the page does not know', () => {
   });
 
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v5-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v6-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 5);
+    assert.equal(offer.schema_version, 6);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
@@ -236,14 +349,14 @@ describe('fields the page does not know', () => {
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v5-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v6-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 5);
+    assert.equal(again.offers[0].schema_version, 6);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 5, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 6, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -253,7 +366,7 @@ describe('fields the page does not know', () => {
 
   test('a shared row of the current version keeps them, and its sharer names it', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 4, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 5, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.newTerm, 'x');
