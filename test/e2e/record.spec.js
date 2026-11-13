@@ -287,22 +287,50 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
   });
 
-  test('«¿Se cumplió la ley?» from the record: rest, days worked, overnight bonus, and one line of what cannot be checked', async ({
+  /** Closes months of the active offer from the page, as the review would. */
+  const closeMonths = (page, months) =>
+    page.evaluate(async (months) => {
+      const { offers } = await import('./src/offers.js');
+      const { settleOffer } = await import('./src/state.js');
+      const o = app.active();
+      for (const row of settleOffer(o).rows)
+        if (months === 'all' || months.includes(row.month))
+          offers.closeMonth(o, { key: row.month, from: row.calendarFrom, to: row.calendarTo });
+      app.select(o.id);
+    }, months);
+
+  test('«¿Se cumplió la ley?» judges facts only: nothing to say with no month closed', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
+    await expect(block).toContainText('Cierra los meses para comprobarlo');
+    await expect(block.locator('.lawcheck')).toHaveCount(0);
+    await expect(block).not.toContainText('✘');
+  });
+
+  test('with some months closed, the rest and the days are judged on those; the bonus and the minimum wait for all of them', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    const law = page.locator('.lawcheck');
-    await expect(law.locator('> div').first()).toContainText('Descanso semanal');
-    await expect(law.locator('> div').first().locator('.m')).toHaveText('✘');
-    await expect(law).toContainText('periodos de 4 semanas');
-    await expect(law).toContainText('Jornadas de más');
-    await expect(law).toContainText('Plus de pernocta');
-    await expect(law).toContainText('No se puede comprobar: no hay cobros apuntados');
-    await expect(page.locator('#result')).toContainText('No se puede comprobar con lo apuntado: festivos trabajados');
-    await expect(page.locator('#result')).toContainText('salario mínimo');
-    // Marking every day of June a day off clears the rest of its first period; marking them worked makes it worse
-    await addPayments(page, [{ date: '2026-07-05', amount: 99999, via: 'payroll' }]);
-    await expect(law).toContainText('Cubierto con lo cobrado');
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await closeMonths(page, ['2026-06', '2026-07']);
+    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
+    await expect(block).toContainText('sobre 2 de 4 meses cerrados');
+    const rows = block.locator('.lawcheck > div');
+    await expect(rows.filter({ hasText: 'Descanso semanal' })).toContainText('periodos de 4 semanas');
+    await expect(rows.filter({ hasText: 'Jornadas de más' })).toBeVisible();
+    await expect(rows.filter({ hasText: 'Plus de pernocta' })).toContainText('Se comprobará al cerrar todos los meses');
+    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toContainText(
+      'Se comprobará al cerrar todos los meses',
+    );
+    await expect(block).toContainText('No se puede comprobar con lo apuntado: festivos trabajados');
+    await expect(page.locator('#result')).not.toContainText('La nómina declarada queda');
+    // Every month closed and a payroll cobro: the bonus and the minimum get their verdict
+    await closeMonths(page, 'all');
+    await expect(block).toContainText('sobre 4 de 4 meses cerrados');
+    await expect(rows.filter({ hasText: 'Plus de pernocta' })).not.toContainText('Se comprobará');
+    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' }).locator('.m')).toHaveText(/[✔✘]/);
+    await addPayments(page, [{ date: '2026-07-06', amount: 99999, via: 'payroll' }]);
+    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' }).locator('.m')).toHaveText('✔');
   });
 
   test('«Repasar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({

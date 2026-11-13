@@ -212,7 +212,6 @@ export function standingOf(settled, today, phase, payments, netFactor) {
     vacation: finished ? 0 : net(sum(rows.map((row) => row.items.vacation.due))),
     lines,
     unclosed: ended.filter((row) => !row.closed),
-    belowMinimumOnPayroll: net(totals.belowMinimumOnPayroll),
     /** Every month counted, with its state and, for dating a claim, what the oldest-first assignment leaves open of it. */
     months: ended.map((row) => ({
       month: row.month,

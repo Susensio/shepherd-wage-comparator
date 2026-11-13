@@ -349,58 +349,116 @@ describe('a net total agreed is what corresponds, scaled by the days worked', ()
   });
 });
 
-describe('the law, from the record', () => {
+describe('the law, from the record: facts only', () => {
   // Two days off a week, over the legal day and a half
   const restful = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'r', daysOff: 2, daysOffUnit: 'week' });
-  const law = (record, offer = OFFER) => {
-    const r = calc(offer, ctx);
-    return lawFromRecord(offer, record, settle(offer, record, '2026-11-12', ctx), r, record.payments.length);
+  const settledOf = (offer, record) => settle(offer, record, '2026-11-12', ctx);
+  const law = (record, offer = OFFER) =>
+    lawFromRecord(offer, record, settledOf(offer, record), calc(offer, ctx), record.payments);
+  const closeMonths = (offer, record, months) => {
+    for (const row of settledOf(offer, record).rows)
+      if (months.includes(row.month)) closeMonth(offer, record, spanOf(row));
   };
 
-  test('the weekly rest is counted from the days marked off, per period of weeks', () => {
+  test('with no month closed nothing is judged', () => {
+    const x = law(emptyRecord());
+    assert.deepEqual(x.months, { closed: 0, total: 3 });
+    assert.equal(x.allClosed, false);
+    assert.equal(x.rest.periods, 0);
+    assert.equal(x.days.worked, 0);
+  });
+
+  test('the weekly rest looks at the periods wholly inside closed months', () => {
     const record = emptyRecord();
+    closeMonths(restful, record, ['2026-06']);
     const ok = law(record, restful);
+    assert.deepEqual(ok.months, { closed: 1, total: 3 });
+    assert.equal(ok.rest.periods, 1); // 1 to 28 June; the next one reaches into July, not closed
     assert.deepEqual(ok.rest.fails, []);
-    assert.ok(law(emptyRecord()).rest.fails.length > 0, 'four days off a month do not reach a day and a half a week');
-    assert.ok(ok.rest.periods >= 3);
-    // Every day of June worked: the first periods fall short
+    const few = emptyRecord();
+    closeMonths(OFFER, few, ['2026-06']);
+    assert.equal(law(few).rest.fails.length, 1, 'four days off a month do not reach a day and a half a week');
+    // Every day of June worked: the period falls short
+    const worked = emptyRecord();
+    record.months = {};
     const days = {};
     for (let d = 1; d <= 30; d++) days[String(d).padStart(2, '0')] = 'work';
-    record.months['2026-06'] = { closed: true, days };
-    const bad = law(record, restful);
-    assert.ok(bad.rest.fails.length >= 1);
+    worked.months['2026-06'] = { closed: true, days };
+    const bad = law(worked, restful);
     assert.equal(bad.rest.fails[0].off, 0);
     assert.ok(bad.rest.fails[0].due >= 5);
   });
 
-  test('days worked against those due: the extra ones are counted, not invented', () => {
-    const base = law(emptyRecord());
-    assert.ok(base.days.worked > 0 && base.days.due > 0);
-    assert.equal(base.days.extra, Math.max(0, base.days.worked - base.days.due));
+  test('days worked against those due count closed months alone, in their share of the job', () => {
+    const record = emptyRecord();
+    closeMonths(OFFER, record, ['2026-06', '2026-07']);
+    const two = law(record);
+    const all = emptyRecord();
+    closeMonths(OFFER, all, ['2026-06', '2026-07', '2026-08']);
+    const three = law(all);
+    assert.ok(two.days.worked > 0 && two.days.worked < three.days.worked);
+    assert.ok(two.days.due < three.days.due);
+    assert.equal(three.days.extra, Math.max(0, three.days.worked - three.days.due));
   });
 
-  test('the overnight bonus: unknown without cobros, and missing when what arrived does not reach it', () => {
-    const withBonus = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'o', overnight: 'yes' });
-    const r = calc(withBonus, ctx);
+  test('the overnight bonus and the minimum on payroll wait for every month closed and a payroll cobro', () => {
+    const offer = offerOf({
+      ...OFFER.terms,
+      ...OFFER.mine,
+      id: 'o',
+      overnight: 'yes',
+      payUnit: 'month',
+      payAmount: 1500,
+    });
+    const r = calc(offer, ctx);
     assert.ok(r.min.overnight > 0);
-    const none = lawFromRecord(withBonus, emptyRecord(), settle(withBonus, emptyRecord(), '2026-11-12', ctx), r, 0);
-    assert.equal(none.overnight.applicable, true);
-    assert.equal(none.overnight.known, false);
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
-    const some = lawFromRecord(withBonus, record, settle(withBonus, record, '2026-11-12', ctx), r, 1);
-    assert.ok(some.overnight.missing > 0);
+    closeMonths(offer, record, ['2026-06', '2026-07']);
+    const some = law(record, offer);
+    assert.equal(some.overnight.known, false);
+    assert.equal(some.minimum.known, false);
+    closeMonths(offer, record, ['2026-08']);
+    const all = law(record, offer);
+    assert.equal(all.overnight.known, true);
+    assert.ok(all.overnight.missing > 0);
+    assert.ok(all.minimum.known && all.minimum.short > 0);
+    // All closed but no payroll cobro (cash only): still nothing to judge
+    const cash = emptyRecord();
+    addPayment(cash, { date: '2026-07-05', amount: 100, via: 'cash' });
+    closeMonths(offer, cash, ['2026-06', '2026-07', '2026-08']);
+    assert.equal(law(cash, offer).overnight.known, false);
+    // Plenty on payroll: nothing missing and the minimum met
     const rich = emptyRecord();
     addPayment(rich, { date: '2026-07-05', amount: 99999, via: 'payroll' });
-    const full = lawFromRecord(withBonus, rich, settle(withBonus, rich, '2026-11-12', ctx), r, 1);
+    closeMonths(offer, rich, ['2026-06', '2026-07', '2026-08']);
+    const full = law(rich, offer);
     assert.equal(full.overnight.missing, 0);
+    assert.equal(full.minimum.short, 0);
+  });
+
+  test('the minimum fails only beyond a margin for withholding differences', () => {
+    const record = emptyRecord();
+    closeMonths(OFFER, record, ['2026-06', '2026-07', '2026-08']);
+    const base = law(record, OFFER);
+    const { minimumNet } = base.minimum;
+    const r = calc(OFFER, ctx);
+    const floor = minimumNet - (minimumNet / r.netFactor) * r.pay.irpfPct;
+    const pay = (amount) => {
+      const rec = emptyRecord();
+      addPayment(rec, { date: '2026-07-05', amount, via: 'payroll' });
+      closeMonths(OFFER, rec, ['2026-06', '2026-07', '2026-08']);
+      return law(rec, OFFER).minimum;
+    };
+    assert.equal(pay(minimumNet).short, 0);
+    assert.equal(pay(Math.ceil(floor)).short, 0);
+    assert.ok(Math.abs(pay(Math.floor(floor) - 10).short - (floor - (Math.floor(floor) - 10))) < 1);
   });
 
   test('an offer without an overnight bonus has no such row', () => {
     const none = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'p', overnight: 'no' });
-    const r = calc(none, ctx);
-    const res = lawFromRecord(none, emptyRecord(), settle(none, emptyRecord(), '2026-11-12', ctx), r, 0);
-    assert.equal(res.overnight.applicable, r.min.overnight > 0);
+    const x = lawFromRecord(none, emptyRecord(), settledOf(none, emptyRecord()), calc(none, ctx), []);
+    assert.equal(x.overnight.applicable, calc(none, ctx).min.overnight > 0);
   });
 });
 

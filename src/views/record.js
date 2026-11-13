@@ -137,7 +137,7 @@ function howMuch(c) {
     ${tiles(s)}
     ${NET_HINT}
     ${notes(s, { over: '' })}
-    ${s.cobradoEnMano > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+    ${c.law.minimum.known && c.law.minimum.short >= 1 ? html`<p class="hint">La nómina declarada queda ${money(c.law.minimum.short)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
     ${howItAdds(s)}
   </div></div>`;
 }
@@ -167,24 +167,28 @@ function claim(c) {
   </div></div>`;
 }
 
-/** «¿Se cumplió la ley?»: rows built from the record, and one line for what it cannot support. */
+/** «¿Se cumplió la ley?»: facts only, from the record; what is not settled yet says when it will be. */
 function lawBlock(c) {
   const { law } = c;
   const weeks = LAW.restPeriodWeeks;
   const mark = (kind, title, text) =>
     html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
+  if (law.months.closed === 0)
+    return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div><p class="hint">Cierra los meses para comprobarlo.</p></div>`;
   const range = (f) => `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${f.off} de ${f.due}`;
-  const rest = law.rest.fails.length
-    ? mark(
-        'bad',
-        'Descanso semanal',
-        `Faltan días libres en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
-      )
-    : mark(
-        'ok',
-        'Descanso semanal',
-        `Se libra al menos ${fDaysSpoken(LAW.weeklyRest)} por semana en todos los periodos de ${weeks} semanas.`,
-      );
+  const rest = !law.rest.periods
+    ? mark('warn', 'Descanso semanal', `Aún no hay un periodo de ${weeks} semanas entero en meses cerrados.`)
+    : law.rest.fails.length
+      ? mark(
+          'bad',
+          'Descanso semanal',
+          `Faltan días libres en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
+        )
+      : mark(
+          'ok',
+          'Descanso semanal',
+          `Se libra al menos ${fDaysSpoken(LAW.weeklyRest)} por semana en todos los periodos de ${weeks} semanas.`,
+        );
   const extra = Math.round(law.days.extra);
   const days =
     extra >= 1
@@ -198,11 +202,14 @@ function lawBlock(c) {
           'Jornadas de más',
           `${law.days.worked} jornadas, dentro de las unas ${Math.round(law.days.due)} que corresponden (estimado).`,
         );
+  const later = law.allClosed
+    ? 'Apunta la nómina cobrada para comprobarlo.'
+    : 'Se comprobará al cerrar todos los meses.';
   const o = law.overnight;
   const overnight = !o.applicable
     ? nothing
     : !o.known
-      ? mark('warn', 'Plus de pernocta', 'No se puede comprobar: no hay cobros apuntados.')
+      ? mark('warn', 'Plus de pernocta', later)
       : o.missing >= 1
         ? mark(
             'bad',
@@ -210,10 +217,24 @@ function lawBlock(c) {
             `Lo cobrado no llega a cubrirlo: faltan ${money(o.missing)} de ${money(o.due)} (el ${LAW.overnightPct} % del salario, netos).`,
           )
         : mark('ok', 'Plus de pernocta', 'Cubierto con lo cobrado.');
+  const m = law.minimum;
+  const minimum = !m.known
+    ? mark('warn', 'Salario mínimo en nómina', later)
+    : m.short >= 1
+      ? mark(
+          'bad',
+          'Salario mínimo en nómina',
+          `En nómina llegaron ${money(m.payroll)} netos; el mínimo equivale a unos ${money(m.minimumNet)} netos, y falta más de lo que explican las retenciones.`,
+        )
+      : mark(
+          'ok',
+          'Salario mínimo en nómina',
+          'Lo cobrado en nómina cubre el mínimo, en neto y con margen para las retenciones.',
+        );
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
-    <p class="hint">Con lo que pasó: los días del registro y lo cobrado.</p>
-    <div class="lawcheck">${rest}${days}${overnight}</div>
-    <p class="hint">No se puede comprobar con lo apuntado: festivos trabajados (falta la lista de festivos del lugar) y salario mínimo (falta el bruto de la nómina).</p>
+    <p class="hint">Con lo que pasó, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>
+    <div class="lawcheck">${rest}${days}${overnight}${minimum}</div>
+    <p class="hint">No se puede comprobar con lo apuntado: festivos trabajados ni el mínimo contra la nómina real.</p>
   </div>`;
 }
 

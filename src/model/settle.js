@@ -306,6 +306,8 @@ export function settle(offer, record, today, ctx) {
       estimate: !closed,
       from: isoOf(share.from),
       to: isoOf(share.days > 0 ? share.to : share.calendarTo),
+      /** Days of the month inside the job: 0 for a closed month outside it. */
+      days: share.days,
       /** The days the calendar shows, whatever the job's own span: the offer's month, or the whole month after it. */
       calendarFrom: isoOf(share.calendarFrom),
       calendarTo: isoOf(share.calendarTo),

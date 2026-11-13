@@ -157,7 +157,7 @@ export function recordContext(o, r) {
       .map((x) => x.p),
     fresh: ui.fresh,
     ask: ui.ask,
-    law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments.length) : null,
+    law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
     addable,
     job: settled.job,
     strip,
