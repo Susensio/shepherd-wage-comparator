@@ -92,14 +92,13 @@ function hastaHoy(c) {
 
 /**
  * What corresponds, less what was received, is what is owed: the lines that add up to what corresponds, then the
- * subtraction. When more arrived than corresponds, what arrived goes first so the subtraction still comes out whole.
+ * subtraction. What arrived beyond what corresponds is one row more, outside the sum, and only when there is any.
  */
 function ledger(s, { owing, ahead }) {
   const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.accrued))];
   if (!s.hasPayments) return html`<div class="rows">${lines}</div>`;
-  if (s.balance >= 0)
-    return html`<div class="rows">${lines}${row('− Cobrado', money(s.received))}${row(`= ${owing}`, money(s.balance), { valueCls: 'bad' })}</div>`;
-  return html`<div class="rows">${lines}</div><div class="rows">${row('Cobrado', money(s.received))}${row('− Corresponde', money(s.accrued))}${row(`= ${ahead}`, money(-s.balance))}</div>`;
+  const over = s.balance < 0;
+  return html`<div class="rows">${lines}${row('− Cobrado', money(over ? s.accrued : s.received))}${row(`= ${owing}`, money(over ? 0 : s.balance), { valueCls: over ? undefined : 'bad' })}${over ? row(ahead, money(-s.balance), { cls: 'sub' }) : nothing}</div>`;
 }
 
 /** One line per month: its state, what is owed of it and when its claim lapses. */

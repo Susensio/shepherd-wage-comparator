@@ -225,6 +225,24 @@ test.describe('finished', () => {
     await expect(page.locator('#result')).not.toContainText('En negro');
   });
 
+  test('more arrived than corresponds: the ledger reads once, with one row more and nothing extra at zero', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const ledger = page.locator('#result .block', { hasText: 'Por conceptos' });
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await expect(ledger).not.toContainText('Cobrado de más');
+    await addPayments(page, [{ date: '2026-07-06', amount: 20000, via: 'payroll' }]);
+    await expect(ledger.locator('.row', { hasText: 'Corresponde' })).toHaveCount(1);
+    await expect(ledger.locator('.row', { hasText: /^Cobrado de más/ })).toHaveCount(1);
+    await expect(
+      ledger
+        .locator('.row', { hasText: /^= Debe el ganadero/ })
+        .or(ledger.locator('.row', { hasText: /^Debe el ganadero/ })),
+    ).toContainText('0 €');
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+  });
+
   test('«¿Es legal?» is a row with its verdict after «Días»; the rest of the analysis is one closed fold', async ({
     page,
   }) => {

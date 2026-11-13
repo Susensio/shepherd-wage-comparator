@@ -296,6 +296,29 @@ describe('where an offer stands, in net', () => {
   });
 });
 
+describe('«El mínimo legal» only where the minimum is what applies', () => {
+  const linesOfOffer = (offer, today = '2026-11-12') => {
+    const record = emptyRecord();
+    return standingOf(settle(offer, record, today, ctx), today, 'finished', [], calc(offer, ctx).netFactor).lines;
+  };
+  const minimum = (lines) => lines.filter((x) => x.byMinimum).map((x) => x.key);
+
+  test('a pay that covers it says nothing', () => {
+    assert.deepEqual(minimum(linesOfOffer(OFFER)), []);
+  });
+
+  test('a pay below the minimum says it on the salary', () => {
+    const low = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'l', payUnit: 'month', payAmount: 900 });
+    assert.ok(minimum(linesOfOffer(low)).includes('salary'));
+  });
+
+  test('cash that brings the pay over the minimum takes it away again', () => {
+    const base = { ...OFFER.terms, ...OFFER.mine, id: 'l', payUnit: 'month', payAmount: 900 };
+    const covered = offerOf({ ...base, cashMode: 'amount', cashAmount: 700, cashUnit: 'month' });
+    assert.ok(!minimum(linesOfOffer(covered)).includes('salary'));
+  });
+});
+
 describe('the agreed cash is a line of its own, inside what corresponds', () => {
   const CASH = offerOf({
     ...OFFER.terms,

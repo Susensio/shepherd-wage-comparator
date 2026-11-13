@@ -115,7 +115,8 @@ export function standingOf(settled, today, phase, payments, netFactor) {
   const dueItems = (finished ? ITEMS : ITEMS.filter((item) => item !== 'vacation')).map((item) => ({
     item,
     due: sum(ended.map((row) => row.items[item].due)),
-    byMinimum: totals.items[item].shortfall > 0,
+    // The minimum is why a line is what it is only where it fell short in the months it covers
+    byMinimum: sum(ended.map((row) => row.items[item].shortfall)) > 0,
   }));
   const lines = linesOf(
     dueItems,
