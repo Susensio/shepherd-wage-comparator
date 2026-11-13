@@ -16,6 +16,8 @@ import { claimDeadline } from './time.js';
  * @typedef {{ closed?: boolean, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»
  * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[] }} OfferRecord months keyed «2026-06»
  * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number, declared: number, belowMinimumOnPayroll: number }} ItemRow
+ * `agreed` is the pay of the offer, payroll and the agreed cash together (as the gross that would bring the cash net): the
+ * minimum is compared with total pay, as `calc` does with `coveredByCash`; `row.agreedCash` says how much of it is cash.
  * `received` is every payment; `declared` is the part of it on payroll, and `belowMinimumOnPayroll` what the minimum
  * exceeds it by: cash covers `owed` but carry no Social Security.
  */
@@ -89,6 +91,8 @@ export function settle(offer, record, today, ctx) {
   const vacationTaken = time.vacationTaken;
   const holidaysOff = terms.holidays === 'yes' ? (LAW.holidaysPerYear * time.months) / 12 : 0;
 
+  // TODO: the agreed cash covers the minimum salary and the overnight bonus of its month, not the vacation: `calc` also
+  // lets it cover a vacation shortfall, so the two differ only for a contract with cash and a vacation below the minimum.
   const plans = shares.map((share) => {
     const key = isoOf(share.month).slice(0, 7);
     const entry = record?.months?.[key];
@@ -103,15 +107,17 @@ export function settle(offer, record, today, ctx) {
     // how a real month pays them.
     const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * w;
 
-    // Without a contract the agreed pay is the cash, as the gross that would bring it net (what `calc` credits)
-    const wage = r.noContract
-      ? (r.cash.total / r.netFactor) * w
-      : perDay
-        ? dayRate * paid + pay.extraPays * w
-        : pay.salary * w;
+    // The agreed cash of the month, net as handed: per day worked it follows the days (the facts of a closed month
+    // included), else it is the month's share like the pay
+    const cash =
+      r.cash.unit === 'day' && time.daysWorked > 0 ? (r.cash.total / time.daysWorked) * worked : r.cash.total * w;
+    // The payroll pay, plus the cash as the gross that would bring it net (what `calc` credits): without a contract the
+    // pay is only that. Both go to the one pool that covers the minimum salary first, then the overnight bonus.
+    const payroll = r.noContract ? 0 : perDay ? dayRate * paid + pay.extraPays * w : pay.salary * w;
+    const wage = payroll + cash / r.netFactor;
     const casual = min.casual && time.daysWorked > 0;
     const minimumSalary = casual ? (min.salary * worked) / time.daysWorked : min.salary * w;
-    return { share, key, closed, counts, open, worked, wage, minimumSalary };
+    return { share, key, closed, counts, open, worked, wage, cash, minimumSalary };
   });
 
   // Rounded by running total, so a column of rows adds up to its total rounded (a share of 6867.586 over 4 months
@@ -127,6 +133,7 @@ export function settle(offer, record, today, ctx) {
     });
   };
   const wageRows = spread(plans.map((x) => (labour ? x.wage : 0)));
+  const cashRows = spread(plans.map((x) => (labour ? x.cash : 0)));
   const salaryMinRows = spread(plans.map((x) => (labour ? x.minimumSalary : 0)));
   const overnightMinRows = spread(plans.map((x) => (labour ? min.overnightRate * x.minimumSalary : 0)));
 
@@ -173,6 +180,8 @@ export function settle(offer, record, today, ctx) {
       to: isoOf(share.to),
       /** Days of the record, by kind, and the share of the month still following the offer. */
       facts: { ...counts, followingOffer: open },
+      /** The cash agreed for the month, net as handed: part of the pay in `items`, shown apart. */
+      agreedCash: cashRows[index],
       items,
       extraDays: { days: extraDays, value: cents(extraDays * r.extra.dayValue) },
       due: sum(ITEMS.map((item) => items[item].due)),
@@ -230,6 +239,8 @@ export function settle(offer, record, today, ctx) {
     received: column('received'),
     owed: column('owed'),
     belowMinimumOnPayroll: column('belowMinimumOnPayroll'),
+    /** Cash agreed over the whole job, net as handed (inside the agreed pay of the items). */
+    agreedCash: column('agreedCash'),
     /** Owed in months whose claim has not lapsed. */
     claimable: sum(rows.filter((row) => !row.lapsed).map((row) => row.owed)),
     /** Cash handed over, net as recorded: the «en negro» money. */

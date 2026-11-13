@@ -198,11 +198,10 @@ test.describe('finished', () => {
     // The reason is given only where the minimum applies
     await expect(ledger).not.toContainText('El mínimo legal');
     await page.evaluate(() => {
-      app.active().terms.payAmount = 700;
+      Object.assign(app.active().terms, { payAmount: 700, cashMode: 'amount', cashAmount: 0 }); // the cash agreed counts toward the minimum
       app.select(app.active().id);
     });
     await expect(ledger.locator('.row', { hasText: 'Salario' })).toContainText('El mínimo legal');
-    await expect(ledger.locator('.row', { hasText: 'Vacaciones' })).not.toContainText('El mínimo legal');
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
   });
 

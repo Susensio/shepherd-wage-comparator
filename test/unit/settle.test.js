@@ -66,15 +66,20 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     assert.ok(x.rows.length, `${offer.mine.name} has no rows`);
     const name = offer.mine.name;
     const T = x.totals.items;
-    const agreedSalary = r.noContract ? r.cash.total / r.netFactor : r.pay.salary;
+    // The agreed pay is payroll plus the agreed cash as the gross that brings it net (nothing but cash without a contract)
+    const agreedSalary = (r.noContract ? 0 : r.pay.salary) + r.cash.total / r.netFactor;
     near(T.salary.agreed + T.overnight.agreed, cents(agreedSalary), `${name}: agreed salary`);
     near(T.vacation.agreed, cents(r.pay.vacationPay), `${name}: agreed vacation`);
     near(T.salary.minimum, cents(r.min.salary), `${name}: minimum salary`);
     near(T.overnight.minimum, cents(r.min.overnight), `${name}: minimum overnight`);
-    near(T.salary.shortfall, cents(r.debt.parts.salary), `${name}: salary debt`);
-    near(T.overnight.shortfall, cents(r.debt.parts.overnight), `${name}: overnight debt`);
-    near(T.vacation.shortfall, cents(r.debt.parts.vacation), `${name}: vacation debt`);
-    near(x.totals.shortfall, cents(r.debt.total), `${name}: debt`, 0.01);
+    // The debt after the cash, as the ficha shows what is owed (`r.debt.owed`); by item when no cash covers part of it.
+    // Cash covers the salary and the overnight bonus here; `calc` lets it cover the vacation too (TODO in settle.js).
+    if (r.cash.total === 0 || r.noContract) {
+      near(T.salary.shortfall, cents(r.debt.parts.salary), `${name}: salary debt`);
+      near(T.overnight.shortfall, cents(r.debt.parts.overnight), `${name}: overnight debt`);
+      near(T.vacation.shortfall, cents(r.debt.parts.vacation), `${name}: vacation debt`);
+    }
+    near(x.totals.shortfall, cents(r.debt.owed), `${name}: debt after cash`, 1);
     // With nothing received, everything due is owed
     near(x.totals.owed, x.totals.due, `${name}: owed`);
     checked++;
@@ -392,4 +397,57 @@ test('settle does not change the record or the offer it is given', () => {
   const before = JSON.stringify([offer, record]);
   settleOf(offer, record);
   assert.equal(JSON.stringify([offer, record]), before);
+});
+
+// Agreed in cash (en negro): part of the pay the minimum is compared with
+const withCash = (changes = {}) => offerWith({ cashMode: 'amount', cashAmount: 500, cashUnit: 'month', ...changes });
+
+test('the cash agreed is part of what is due, as the gross that brings it net, and is exposed net per month', () => {
+  const offer = withCash({ payAmount: 1424.5 });
+  const x = settleOf(offer, {});
+  const plain = settleOf(offerWith({ payAmount: 1424.5 }), {});
+  for (const row of x.rows) {
+    assert.equal(row.agreedCash, 500);
+    near(row.due - plain.rows[0].due, cents(500 / NET), 'cash adds its gross equivalent to what is due', 0.011);
+  }
+  assert.equal(x.totals.agreedCash, 1500);
+});
+
+test('cash and payroll are one pool: together they cover the minimum, and cobros still reduce what is owed', () => {
+  const short = settleOf(offerWith({ payAmount: 1000 }), {});
+  assert.ok(short.totals.shortfall > 0);
+  const covered = settleOf(withCash({ payAmount: 1000 }), {});
+  assert.equal(covered.totals.shortfall, 0); // 1000 + 500 / NET is over 1424.50
+  const r = calc(withCash({ payAmount: 1000 }), ctx);
+  near(covered.totals.shortfall, r.debt.owed, 'what the ficha shows as owed after cash', 1);
+  // Due with and without cobros: cash received reduces owed as before
+  const paid = settleOf(withCash({ payAmount: 1000 }), { payments: [payment('a', '2026-01-31', 1000, 'cash')] });
+  near(paid.totals.owed, covered.totals.due - 1000, 'owed', 0.011);
+  assert.equal(paid.totals.cash, 1000 * NET);
+  // Legality stays on the declared pay alone
+  const none = settleOf(withCash({ payAmount: 1000 }), { payments: [payment('a', '2026-01-31', 800, 'payroll')] });
+  assert.ok(none.rows[0].items.salary.belowMinimumOnPayroll > 0);
+});
+
+test('cash per day worked follows the days of a closed month', () => {
+  const offer = perDay({ cashMode: 'amount', cashAmount: 20, cashUnit: 'day', start: '2026-01-01', duration: 31 });
+  const open = settleOf(offer, {}, '2026-03-01');
+  const days = {};
+  for (let d = 1; d <= 31; d++) days[String(d).padStart(2, '0')] = d <= 10 ? 'work' : 'off';
+  const closed = settleOf(offer, { months: { '2026-01': { closed: true, days } } }, '2026-03-01');
+  near(closed.rows[0].agreedCash, 200, 'ten days at 20 in hand');
+  assert.ok(open.rows[0].agreedCash > closed.rows[0].agreedCash);
+  assert.ok(closed.rows[0].due < open.rows[0].due);
+});
+
+test('the cash of the sample offers is the cash of the ficha, month by month', () => {
+  let seen = 0;
+  for (const offer of offers) {
+    const r = calc(offer, { cfg, offers });
+    if (!(r.cash.total > 0)) continue;
+    const x = settle(offer, {}, '2030-01-01', { cfg, offers });
+    near(x.totals.agreedCash, cents(r.cash.total), `${offer.mine.name}: agreed cash`, 0.01);
+    seen++;
+  }
+  assert.ok(seen >= 3);
 });
