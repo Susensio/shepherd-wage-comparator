@@ -4608,3 +4608,18 @@ h2.mode small {
   font-size: 12.5px;
   letter-spacing: -0.04em;
 }
+
+.real {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.strip button.add {
+  border-style: dashed;
+  background: none;
+  font-weight: 500;
+}
+.addmonth {
+  align-self: flex-start;
+  min-height: var(--tap);
+}

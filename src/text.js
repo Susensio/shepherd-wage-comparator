@@ -543,6 +543,21 @@ export function recordClaimText(o, settled, record) {
   const lines = [`Reclamación de cantidades: ${o.mine.name || 'sin nombre'}`];
   const when = datesText(o.terms);
   lines.push(`Trabajo de pastor ${when ? `${when}` : ''}.`.replace(' .', '.'));
+  // Days worked outside the offer's dates are said, and claimed like the others
+  const { job } = settled;
+  const after = job.offerTo
+    ? Object.entries(record.months ?? {}).reduce(
+        (total, [key, month]) =>
+          total +
+          Object.entries(month.days ?? {}).filter(([day, kind]) => kind === 'work' && `${key}-${day}` > job.offerTo)
+            .length,
+        0,
+      )
+    : 0;
+  if (after > 0)
+    lines.push(
+      `Se trabajó hasta el ${fIso(job.to)}: ${after} ${after === 1 ? 'día' : 'días'} después del fin de la oferta (${fIso(job.offerTo)}), que se reclaman como el resto.`,
+    );
   lines.push(
     `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llegó neto y aquí se compara en bruto.`,
   );

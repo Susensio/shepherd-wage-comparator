@@ -65,6 +65,7 @@ function actions(cal) {
     return cal.asking
       ? html`<div class="confirm"><span>¿Reabrir ${name}? Los días se podrán cambiar otra vez; los cambios de la oferta siguen sin tocarlos.</span><div class="btns"><button type="button" data-action="reopenYes" data-key=${key}>Reabrir</button><button type="button" data-action="reopenNo">Cancelar</button></div></div>`
       : html`<div class="calact"><span class="hint">Cerrado: no cambia aunque cambie la oferta.</span><button type="button" class="linkbtn" data-action="reopenAsk" data-key=${key}>Reabrir</button></div>`;
+  if (!cal.inJob) return html`<p class="hint">Se suma al trabajo al marcar un día como jornada.</p>`;
   if (!cal.canClose) return html`<p class="hint">Se podrá cerrar cuando acabe el mes.</p>`;
   if (cal.mode === 'review')
     return html`<div class="calact"><button type="button" class="pri" data-action="reviewClose" data-key=${key}>Cerrar ${name}</button><button type="button" data-action="reviewSkip">Saltar</button></div><p class="hint">Saltar lo deja según la oferta.</p>`;

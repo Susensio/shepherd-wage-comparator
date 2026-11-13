@@ -34,6 +34,56 @@ export function linesOf(grossItems, cash, cashGross, netFactor) {
 
 const daysBetween = (from, to) => Math.round((+parseDate(to) - +parseDate(from)) / DAY_MS);
 
+const pad2 = (n) => String(n).padStart(2, '0');
+/** The span of a whole calendar month «2026-10», as the record's helpers take it. */
+export function monthSpan(key) {
+  const [y, m] = key.split('-').map(Number);
+  return { key, from: `${key}-01`, to: `${key}-${pad2(new Date(y, m, 0).getDate())}` };
+}
+
+/**
+ * The month after the job's last, when it has started and can be added: «+ Añadir <mes>». It is not part of the job
+ * until a day is marked worked in it. Null for a job with no known end, or when that month is still to come.
+ * @param {ReturnType<typeof settle>} settled
+ * @param {string} today ISO date
+ */
+export function addableMonth(settled, today) {
+  const last = settled.rows.at(-1);
+  if (!last || !settled.job.to) return null;
+  const [y, m] = last.month.split('-').map(Number);
+  const next = `${m === 12 ? y + 1 : y}-${pad2(m === 12 ? 1 : m + 1)}`;
+  return `${next}-01` <= today ? next : null;
+}
+
+/** A month that is not in the job (yet), as a row with nothing due, so its calendar can be shown. */
+const stubRow = (key) => {
+  const span = monthSpan(key);
+  const zero = {
+    agreed: 0,
+    minimum: 0,
+    due: 0,
+    shortfall: 0,
+    received: 0,
+    owed: 0,
+    declared: 0,
+    belowMinimumOnPayroll: 0,
+  };
+  return {
+    month: key,
+    closed: false,
+    estimate: true,
+    from: span.from,
+    to: span.to,
+    calendarFrom: span.from,
+    calendarTo: span.to,
+    extension: true,
+    items: { salary: { ...zero }, overnight: { ...zero }, vacation: { ...zero } },
+    agreedCash: 0,
+    agreedCashGross: 0,
+    due: 0,
+  };
+};
+
 /** The span of a settled month, as the record's helpers take it. */
 export const spanOf = (row) => ({ key: row.month, from: row.calendarFrom ?? row.from, to: row.calendarTo ?? row.to });
 
@@ -48,7 +98,9 @@ export const spanOf = (row) => ({ key: row.month, from: row.calendarFrom ?? row.
  * @param {number} netFactor `r.netFactor`: `lines`, `due` and `delta` are in net
  */
 export function monthAccounts(offer, record, key, today, ctx, netFactor) {
-  const row = settle(offer, record, today, ctx).rows.find((x) => x.month === key);
+  const settled = settle(offer, record, today, ctx);
+  const row =
+    settled.rows.find((x) => x.month === key) ?? (addableMonth(settled, today) === key ? stubRow(key) : undefined);
   if (!row) return null;
   const span = spanOf(row);
   const marks = marksOf(offer, record, span);

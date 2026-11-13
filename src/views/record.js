@@ -72,13 +72,13 @@ function notes(s, { over }) {
     ${s.sobra >= 1 ? html`<p class="hint">Se cobró ${money(s.sobra)} más de lo calculado${over}: las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
 
-const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir' };
+const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir', add: 'añadir' };
 
 /** The months of the job in a strip; the one tapped opens below. */
 function strip(c) {
   return html`<div class="strip" role="group" aria-label="Meses del trabajo">${c.strip.map(
     (m) =>
-      html`<button type="button" class=${`${m.state === 'closed' ? 'closed' : ''} ${m.state === 'due' ? 'due' : ''} ${m.state === 'later' ? 'later' : ''}`} data-action="selectMonth" data-key=${m.month} aria-current=${String(m.selected)} ?disabled=${m.state === 'later'}>${capital(monthShort(m.month))}<small>${MONTH_STATE[m.state]}</small></button>`,
+      html`<button type="button" class=${`${m.state === 'closed' ? 'closed' : ''} ${m.state === 'due' ? 'due' : ''} ${m.state === 'later' ? 'later' : ''} ${m.state === 'add' ? 'add' : ''}`} data-action="selectMonth" data-key=${m.month} aria-current=${String(m.selected)} ?disabled=${m.state === 'later'}>${m.state === 'add' ? '+ ' : ''}${capital(monthShort(m.month))}<small>${MONTH_STATE[m.state]}</small></button>`,
   )}</div>`;
 }
 
@@ -109,11 +109,13 @@ const howItAdds = (s) =>
 
 /** The months of a job that is over, each one opening its calendar; the ones not closed first in the flow. */
 function monthsToRecord(c) {
-  const open = c.strip.filter((m) => m.state !== 'closed');
+  const months = c.strip.filter((m) => m.state !== 'add');
+  const open = months.filter((m) => m.state !== 'closed');
   return html`<div class=${open.length ? 'step' : 'step done'}><span class="num">${open.length ? '1' : '✔'}</span><div class="sb">
     <h3>Registrar lo que falta</h3>
     <p class="hint">${open.length ? `${open.length === 1 ? 'Queda 1 mes sin cerrar' : `Quedan ${open.length} meses sin cerrar`}. Cada uno se abre con su calendario.` : 'Todos los meses cerrados: días confirmados.'}</p>
-    <div class="tocl">${c.strip.map((m) => html`<div><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><button type="button" class="linkbtn" data-action="reviewStart" data-key=${m.month}>${m.state === 'closed' ? 'Ver' : 'Abrir'}</button></div>`)}</div>
+    <div class="tocl">${months.map((m) => html`<div><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><button type="button" class="linkbtn" data-action="reviewStart" data-key=${m.month}>${m.state === 'closed' ? 'Ver' : 'Abrir'}</button></div>`)}</div>
+    ${c.addable ? html`<button type="button" class="linkbtn addmonth" data-action="reviewStart" data-key=${c.addable}>+ Añadir ${monthName(c.addable)}</button>` : nothing}
     ${open.length ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
     ${cobrosView(c)}
   </div></div>`;
@@ -222,6 +224,15 @@ function cuentas(c) {
     ${lawBlock(c)}`;
 }
 
+/** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */
+function realPeriod(c) {
+  const { job } = c;
+  if (!job.differs) return nothing;
+  const date = (iso) => fDate(parseDate(iso));
+  const said = job.from === job.offerFrom ? date(job.offerTo) : `del ${date(job.offerFrom)} al ${date(job.offerTo)}`;
+  return html`<p class="real">Trabajo real: del ${date(job.from)} al ${date(job.to)} (la oferta decía ${said}).</p>`;
+}
+
 /**
  * The top of the ficha of a job under way or finished: the block of its phase, then «Cobros» and the calendar.
  * During «Repasar los meses» it is the review alone.
@@ -229,5 +240,5 @@ function cuentas(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return c.phase === 'finished' ? cuentas(c) : registro(c);
+  return html`${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
 }

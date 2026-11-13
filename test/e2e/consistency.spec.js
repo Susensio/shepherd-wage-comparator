@@ -162,8 +162,14 @@ test('Comparar and the share card give each offer the ficha headline figure, in 
 
 // The ledgers of what happened (ADR-0032): «Hasta hoy», «Cuentas» and each month's calendar add up on screen
 for (const offer of sample.offers) {
-  for (const phase of ['underway', 'finished']) {
-    test(`${offer.mine.name}: the record's ledgers add up while ${phase}`, async ({ loaded: page }) => {
+  for (const [phase, extended] of [
+    ['underway', false],
+    ['finished', false],
+    ['finished', true],
+  ]) {
+    test(`${offer.mine.name}: the record's ledgers add up while ${phase}${extended ? ', with a month added after the offer' : ''}`, async ({
+      loaded: page,
+    }) => {
       const { start } = offer.terms;
       test.skip(!start || offer.terms.offerOnly, 'not worked');
       await page.evaluate(() => app.select(app.state.offers[0].id));
@@ -184,16 +190,27 @@ for (const offer of sample.offers) {
       );
       test.skip(!found.has, 'no such phase');
       await page.clock.setFixedTime(new Date(`${found.today}T12:00:00`));
-      await page.evaluate(async (id) => {
-        const { offers } = await import('./src/offers.js');
-        const { settleOffer } = await import('./src/state.js');
-        const o = app.state.offers.find((x) => x.id === id);
-        offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 333.33, via: 'payroll' });
-        offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 100.1, via: 'cash' });
-        const first = settleOffer(o).rows[0];
-        offers.closeMonth(o, { key: first.month, from: first.from, to: first.to });
-        app.select(id);
-      }, offer.id);
+      await page.evaluate(
+        async ([id, extended]) => {
+          const { offers } = await import('./src/offers.js');
+          const { settleOffer } = await import('./src/state.js');
+          const o = app.state.offers.find((x) => x.id === id);
+          offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 333.33, via: 'payroll' });
+          offers.addPayment(o, { date: `${new Date().toISOString().slice(0, 10)}`, amount: 100.1, via: 'cash' });
+          const first = settleOffer(o).rows[0];
+          offers.closeMonth(o, { key: first.month, from: first.from, to: first.to });
+          if (extended) {
+            // A day worked in the month after the offer's end
+            const { endOf } = await import('./src/offer.js');
+            const end = endOf(o.terms);
+            const key = new Date(end.getFullYear(), end.getMonth() + 1, 1);
+            const month = `${key.getFullYear()}-${String(key.getMonth() + 1).padStart(2, '0')}`;
+            o.mine.record.months[month] = { closed: false, days: { '01': 'work', '02': 'work' } };
+          }
+          app.select(id);
+        },
+        [offer.id, extended],
+      );
       test.skip((await page.locator('#result .empty').count()) > 0, 'offer with missing data');
       await page.evaluate(() => {
         for (const d of document.querySelectorAll('#result details')) d.open = true;

@@ -396,6 +396,93 @@ test.describe('finished: Cuentas', () => {
   }
 });
 
+test.describe('the real period of the work', () => {
+  test.use({ today: '2026-11-12' });
+
+  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+
+  test('a month added after the offer’s end joins the job with a day worked: Corresponde rises, the line says so, the phase follows it', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA); // the offer ends on 30 September
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const before = amount(await tile(page, 'Corresponde').textContent());
+    await expect(page.locator('.real')).toHaveCount(0);
+    await page.getByRole('button', { name: '+ Añadir octubre' }).click();
+    await expect(page.locator('.review-progress')).toContainText('Octubre, 1 de 1');
+    await expect(page.locator('.cal')).toContainText('Se suma al trabajo al marcar un día');
+    await expect(page.locator('.cal .day.work')).toHaveCount(0); // every day libre
+    await expect(page.locator('[data-action=closeMonth], [data-action=reviewClose]')).toHaveCount(0);
+    await page.locator('.cal .day[data-day="01"]').click();
+    await page.locator('.cal .day[data-day="02"]').click();
+    await page.locator('[data-action=reviewEnd]').first().click();
+    await expect(page.locator('.real')).toHaveText(
+      /^Trabajo real: del 21 jun 2026 al 2 oct 2026 \(la oferta decía 30 sept 2026\)\.$/,
+    );
+    expect(amount(await tile(page, 'Corresponde').textContent())).toBeGreaterThan(before);
+    await expect(page.locator('.tocl')).toContainText('Octubre');
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    // The phase ends on the last day worked, not on the offer's end
+    await at(page, '2026-10-02');
+    await reselect(page);
+    await expect(page.locator('#fichaPhase')).toHaveText('En curso');
+    await expect(page.locator('#result h2.mode')).toHaveText(/Registro/);
+    await expect(page.locator('.strip button[data-key="2026-10"]')).toContainText('en curso');
+    await at(page, '2026-10-03');
+    await reselect(page);
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+  });
+
+  test('a month added and left with nothing marked is not part of the job', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.getByRole('button', { name: '+ Añadir octubre' }).click();
+    await page.locator('.cal .day[data-day="01"]').click();
+    await page.locator('.cal .day[data-day="01"]').click(); // marked and unmarked again
+    await page.locator('[data-action=reviewEnd]').first().click();
+    await expect(page.locator('.real')).toHaveCount(0);
+    await expect(page.locator('.tocl')).not.toContainText('Octubre');
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+  });
+
+  test('a job that ended early: the closed month trims its libre days after the last day worked', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const before = amount(await tile(page, 'Corresponde').textContent());
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      const o = app.active();
+      const days = Object.fromEntries(
+        Array.from({ length: 30 }, (_, i) => [String(i + 1).padStart(2, '0'), i < 10 ? 'work' : 'off']),
+      );
+      o.mine.record.months['2026-09'] = { closed: false, days };
+      offers.closeMonth(o, { key: '2026-09', from: '2026-09-01', to: '2026-09-30' });
+      app.select(o.id);
+    });
+    await expect(page.locator('.real')).toHaveText(/al 10 sept 2026 \(la oferta decía 30 sept 2026\)/);
+    expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(before);
+  });
+
+  test('worked past the end while the offer is under way: the month strip includes the extension and the phase stays En curso', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await at(page, '2026-10-03');
+    await page.evaluate(() => {
+      app.active().mine.record.months['2026-10'] = {
+        closed: false,
+        days: Object.fromEntries(
+          Array.from({ length: 31 }, (_, i) => [String(i + 1).padStart(2, '0'), i < 5 ? 'work' : 'off']),
+        ),
+      };
+      app.select(app.active().id);
+    });
+    await expect(page.locator('#fichaPhase')).toHaveText('En curso');
+    await expect(page.locator('.strip button')).toHaveCount(5);
+    await expect(page.locator('.strip button[data-key="2026-10"]')).toContainText('en curso');
+    await expect(page.locator('.real')).toContainText('al 5 oct 2026');
+  });
+});
+
 test.describe('the cards', () => {
   test.use({ today: '2026-11-12' });
 

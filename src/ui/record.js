@@ -6,7 +6,7 @@
 
 import { $ } from '../dom.js';
 import { num } from '../format.js';
-import { monthAccounts, spanOf, standingOf } from '../model/accounts.js';
+import { addableMonth, monthAccounts, monthSpan, spanOf, standingOf } from '../model/accounts.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
@@ -23,6 +23,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof monthAccounts>} acc
  * @property {number} index where this month is among `count`
  * @property {number} count
+ * @property {boolean} inJob the month is part of the job: a month that can be added is not until a day is worked in it
  * @property {boolean} current the month is the one in progress
  * @property {boolean} asking whether «Reabrir» is waiting for its confirmation
  * @property {boolean} canClose only a month that has ended can be closed
@@ -42,7 +43,9 @@ import { closeReview, openReview } from './navigation.js';
  * @property {string | null} fresh the cobro just added
  * @property {{ type: string, id?: string } | null} ask
  * @property {boolean} showAll the whole list of cobros, each removable, instead of the last two
- * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later', selected: boolean }[]} strip the months of the job, the one on the calendar marked
+ * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later' | 'add', selected: boolean }[]} strip the months of the job, the one on the calendar marked, and the one that can be added
+ * @property {string | null} addable the month after the job's last that can be added, «+ Añadir <mes>»
+ * @property {ReturnType<typeof settleOffer>['job']} job the period the work really had, and the offer's
  * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
  * @property {{ month: string } | null} nudge a month that has ended and waits to be closed, other than the one shown
  * @property {CalendarContext | null} calendar
@@ -85,9 +88,11 @@ function defaultMonth(rows, today, phase) {
 }
 
 /** The month the calendar shows: the one picked if it has started, else the default. */
-function monthOnCalendar(o, rows, today, phase) {
+function monthOnCalendar(o, rows, today, phase, addable) {
   const picked = ui.months[o.id];
-  return rows.some((row) => row.month === picked && row.from <= today) ? picked : defaultMonth(rows, today, phase);
+  return rows.some((row) => row.month === picked && row.from <= today) || picked === addable
+    ? picked
+    : defaultMonth(rows, today, phase);
 }
 
 /**
@@ -106,17 +111,20 @@ export function recordContext(o, r) {
   const ctx = calcContext();
   const standing = standingOf(settled, today, phase, record.payments, r.netFactor);
   const shown = settled.rows.filter((row) => row.from <= today);
-  const spanOfKey = (month) => settled.rows.find((row) => row.month === month);
+  const addable = addableMonth(settled, today);
+  const rowOf = (month) => settled.rows.find((row) => row.month === month);
   const calendarOf = (key, mode, index, count) => ({
     mode,
     acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
     index,
     count,
-    current: spanOfKey(key).from <= today && today <= spanOfKey(key).calendarTo,
+    // A month not in the job (the one that can be added) has nothing to close, and says how it joins
+    inJob: Boolean(rowOf(key)),
+    current: Boolean(rowOf(key)) && rowOf(key).from <= today && today <= rowOf(key).calendarTo,
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
-    canClose: spanOfKey(key).calendarTo < today,
+    canClose: Boolean(rowOf(key)) && rowOf(key).calendarTo < today,
   });
-  const key = monthOnCalendar(o, settled.rows, today, phase);
+  const key = monthOnCalendar(o, settled.rows, today, phase, addable);
   const index = shown.findIndex((row) => row.month === key);
   /** @type {RecordContext['strip']} */
   const strip = settled.rows.map((row) => ({
@@ -124,6 +132,7 @@ export function recordContext(o, r) {
     state: row.closed ? 'closed' : row.from > today ? 'later' : row.calendarTo < today ? 'due' : 'now',
     selected: row.month === key,
   }));
+  if (addable) strip.push({ month: addable, state: 'add', selected: addable === key });
   const waiting = standing.unclosed.find((row) => row.month !== key);
   /** @type {CalendarContext | ReviewDone | null} */
   let review = null;
@@ -135,7 +144,7 @@ export function recordContext(o, r) {
             mode: 'review',
             done: true,
             closed,
-            left: keys.filter((k) => !settled.rows.find((row) => row.month === k).closed),
+            left: keys.filter((k) => rowOf(k) && !rowOf(k).closed),
           }
         : calendarOf(keys[at], 'review', at, keys.length);
   }
@@ -152,6 +161,8 @@ export function recordContext(o, r) {
     ask: ui.ask,
     showAll: ui.showAll,
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments.length) : null,
+    addable,
+    job: settled.job,
     strip,
     nudge: waiting && phase === 'underway' ? { month: waiting.month } : null,
     calendar: calendarOf(key, 'ficha', index, shown.length),
@@ -225,7 +236,10 @@ function savePayment(event) {
 
 /* --- Buttons --- */
 
-const spanOfMonth = (key) => spanOf(settleOffer(active()).rows.find((row) => row.month === key));
+const spanOfMonth = (key) => {
+  const row = settleOffer(active()).rows.find((x) => x.month === key);
+  return row ? spanOf(row) : monthSpan(key);
+};
 
 /** The calendar stays on a month it was used on, though the month stops being the first still open. */
 const stayOn = (key) => {
