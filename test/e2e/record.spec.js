@@ -152,16 +152,15 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#result .analysis-title')).toHaveCount(0);
   });
 
-  test('every cobro is listed in place and removable with two taps; the last two stay in Cobros', async ({ page }) => {
+  test('every cobro is listed in Cobros and removable with two taps, with no «ver todos» to open', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [
       { date: '2026-07-05', amount: 400, via: 'payroll' },
       { date: '2026-07-06', amount: 100, via: 'cash' },
       { date: '2026-07-07', amount: 50, via: 'cash' },
     ]);
-    await expect(page.locator('.cobros .pr')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Ver todos los cobros' }).click();
     await expect(page.locator('.cobros .pr')).toHaveCount(3);
+    await expect(page.getByRole('button', { name: /Ver todos/ })).toHaveCount(0);
     const rm = page.locator('.cobros .rm').first();
     await rm.click();
     await expect(rm).toHaveText('¿Quitar?');
@@ -384,7 +383,6 @@ test.describe('finished: Cuentas', () => {
       await addPayments(page, [
         { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
       ]);
-      await page.getByRole('button', { name: 'Ver todos los cobros' }).click();
       await page.locator('details[data-fold=how] > summary').click();
       await page.locator('details[data-fold=deadlines] > summary').click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);

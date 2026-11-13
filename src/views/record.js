@@ -31,25 +31,25 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
   }</div>`;
 }
 
-/** «Cobros»: what was received, the last two (or every one, each removable) and the button for a new one. */
-function cobrosView({ today, payments, fresh, showAll, ask }) {
+/** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
+function cobrosView({ today, payments, fresh, ask }) {
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
   for (const p of payments) byMonth.set(p.date.slice(0, 7), [...(byMonth.get(p.date.slice(0, 7)) ?? []), p]);
+  const row = (p) => paymentRow(p, today, { fresh: p.id === fresh, remove: { asking: p.id === asking } });
   return html`<div class="block cobros">
     <div class="bh"><h2>Cobros</h2><span class="n">${money(netTotal(payments))}</span></div>
     ${
       !payments.length
         ? html`<p class="hint">Todavía no hay ningún cobro apuntado.</p>`
-        : showAll
+        : byMonth.size > 1
           ? html`<div class="pay">${[...byMonth].map(
               ([month, list]) =>
-                html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${money(netTotal(list))}</span></div>${list.map((p) => paymentRow(p, today, { fresh: p.id === fresh, remove: { asking: p.id === asking } }))}`,
+                html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${money(netTotal(list))}</span></div>${list.map(row)}`,
             )}</div>`
-          : html`<div class="pay">${payments.slice(0, 2).map((p) => paymentRow(p, today, { fresh: p.id === fresh }))}</div>`
+          : html`<div class="pay">${payments.map(row)}</div>`
     }
-    ${payments.length ? html`<button type="button" class="linkbtn lk" data-action="toggleCobros" aria-expanded=${String(showAll)}>${showAll ? 'Ver solo los últimos' : 'Ver todos los cobros'}</button>` : nothing}
     <button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>
   </div>`;
 }

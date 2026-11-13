@@ -42,7 +42,6 @@ import { closeReview, openReview } from './navigation.js';
  * @property {import('../model/settle.js').Payment[]} payments newest first
  * @property {string | null} fresh the cobro just added
  * @property {{ type: string, id?: string } | null} ask
- * @property {boolean} showAll the whole list of cobros, each removable, instead of the last two
  * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later' | 'add', selected: boolean }[]} strip the months of the job, the one on the calendar marked, and the one that can be added
  * @property {string | null} addable the month after the job's last that can be added, «+ Añadir <mes>»
  * @property {ReturnType<typeof settleOffer>['job']} job the period the work really had, and the offer's
@@ -62,7 +61,6 @@ const ui = {
   review: /** @type {{ offerId: string, keys: string[], index: number, closed: number } | null} */ (null),
   fresh: /** @type {string | null} */ (null),
   /** «Cobros» lists every cobro. */
-  showAll: false,
 };
 
 /** What `ui/record.js` asks of the page. */
@@ -159,7 +157,6 @@ export function recordContext(o, r) {
       .map((x) => x.p),
     fresh: ui.fresh,
     ask: ui.ask,
-    showAll: ui.showAll,
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments.length) : null,
     addable,
     job: settled.job,
@@ -293,12 +290,6 @@ export const recordActions = {
   removePayment(b) {
     ui.ask = null;
     offers.removePayment(active(), b.dataset.id);
-    callbacks.paint();
-  },
-  /** «Ver todos los cobros»: the whole list in place, each cobro removable. */
-  toggleCobros() {
-    ui.showAll = !ui.showAll;
-    ui.ask = null;
     callbacks.paint();
   },
   /** From the first month not closed, or from the month tapped: one that is closed is looked at alone, to reopen it. */
