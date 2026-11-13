@@ -189,7 +189,7 @@ export function paintEntry(o, r) {
   $('#entryNext').hidden = pending;
   $('#entryNext').textContent = edit ? 'Guardar' : index === STEPS.length - 1 ? 'Ver la ficha' : 'Siguiente';
   $('.strip').hidden = pending;
-  const unit = offerUnit(r);
+  const unit = offerUnit(r, o.terms);
   $('#stripLabel').textContent = `Se gana ${unit === 'day' ? 'al día' : 'al mes'}, por ahora`;
   $('#stripFigure').textContent = missing(o.terms).length
     ? 'sin calcular'

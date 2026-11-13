@@ -281,7 +281,7 @@ export function cardText(o, r) {
   const s = summaries(o, r);
   const x = r.extra;
   const savings = r.savings;
-  const unit = offerUnit(r);
+  const unit = offerUnit(r, o.terms);
   const money = moneyIn(r, unit);
   const levers = [
     [savings.cash, r.noContract ? 'por no hacer contrato' : 'por pagar en negro'],

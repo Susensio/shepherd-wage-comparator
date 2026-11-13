@@ -226,7 +226,7 @@ export function resultParts(o, r, { readOnly = false } = {}) {
       analysis: null,
       sections: null,
     };
-  const unit = offerUnit(r);
+  const unit = offerUnit(r, o.terms);
   const money = moneyIn(r, unit);
   const { earnTip, html: breakdownView } = breakdown(o, r, unit);
   const shown = earnedShown(r);

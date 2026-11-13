@@ -2,6 +2,7 @@
 
 import { euroDecimals, fE, fN, num } from './format.js';
 import { sum } from './ledger.js';
+import { fromTotal } from './offer.js';
 
 /** The Comparar units: how a contract figure is divided and with how many decimals it is shown. */
 export const UNITS = {
@@ -56,8 +57,16 @@ export const fUnit = (x, unit) => fE(x, UNITS[unit].decimals || undefined);
 
 /** For contracts shorter than a month, «per month» is an extrapolation. */
 export const isUnderAMonth = (r) => !r.time.noDuration && r.time.months < 0.97;
-/** Each offer is shown in one unit: per month, or per day for contracts shorter than a month. */
-export const offerUnit = (r) => (isUnderAMonth(r) ? 'day' : 'month');
+/**
+ * Each offer is shown in one unit: per month, or per day for contracts shorter than a month, and for one with no known
+ * duration whose pay was written per day (a month of it would be an invention).
+ * @param {object} r the offer's figures
+ * @param {object} [terms] the offer's terms, to know the unit the pay was written in
+ */
+export const offerUnit = (r, terms) => {
+  const writtenPerDay = terms && (fromTotal(terms) ? terms.totalUnit === 'day' : terms.payUnit === 'day');
+  return isUnderAMonth(r) || (r.time.noDuration && writtenPerDay && !terms.payrollMin) ? 'day' : 'month';
+};
 
 /**
  * Parts of what you earn, in the order of the bar, the legend and the breakdown. `money`: money that reaches you.

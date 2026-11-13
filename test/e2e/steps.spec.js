@@ -50,7 +50,7 @@ test('the entry has no tab bar, and a strip with what is earned so far', async (
   const expected = await page.evaluate(async () => {
     const { fUnit, inUnit, offerUnit } = await import('./src/units.js');
     const r = app.calcOffer(app.active());
-    const unit = offerUnit(r);
+    const unit = offerUnit(r, app.active().terms);
     return fUnit(inUnit(r.earnings.total, r, unit), unit);
   });
   await expect(page.locator('#stripFigure')).toHaveText(expected);

@@ -100,7 +100,7 @@ function recordLine(line) {
 
 /** One offer's card with its «⋯» menu. */
 function card({ o, r, record }, activeId) {
-  const unit = offerUnit(r);
+  const unit = offerUnit(r, o.terms);
   const complete = isComplete(o.terms);
   const worked = !!o.terms.start && !o.terms.offerOnly;
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
