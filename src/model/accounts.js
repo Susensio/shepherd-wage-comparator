@@ -92,12 +92,15 @@ const monthlyDue = (row) => sum([row.items.salary.due, row.items.overnight.due])
 
 /**
  * Where an offer stands, in net: the owner thinks in what reaches the shepherd, so what `settle` has gross is taken
- * times `netFactor`, the factor it uses to gross the cobros up, and the cobros are as they arrived.
- * - `accrued`, `received` and `balance` between them, over the months that have ended (the whole offer once over).
+ * times `netFactor` (the factor it uses to gross the payroll cobros up) and the cobros are as they arrived. The job is
+ * worked with its totals, not month by month: months matter only for the days that make `corresponde`.
+ * - `corresponde`, `cobrado` and `falta` = corresponde − cobrado, never below 0, over the months that have ended (the
+ *   whole job once over). `sobra`: what was cobrado beyond it, a note and not a debt (real payslips differ from the
+ *   simulated ones).
  * - `running`: the current month so far, and `vacation`: what it comes to; both aside, not yet payable.
- * - `lines`: the accrued as ledger lines (salary, overnight bonus, vacation once over, «En negro»), with whether the
- *   minimum is why a line is what it is.
- * - `months`: each month with its state, what it is owed and when its claim lapses.
+ * - `lines`: `corresponde` as ledger lines (salary, overnight bonus, vacation once over, «En negro»).
+ * - `nearest` and `deadlines`: when the claim of what is missing lapses. The payments are assigned oldest first, to date
+ *   it and for nothing else; nothing when nothing is missing.
  * - `unclosed`: the months not closed, among those that have ended.
  * @param {ReturnType<typeof settle>} settled
  * @param {string} today ISO date
@@ -124,30 +127,50 @@ export function standingOf(settled, today, phase, payments, netFactor) {
     sum(ended.map((row) => row.agreedCashGross)),
     netFactor,
   );
-  const accrued = sum(lines.map((x) => x.due));
-  const received = sum(payments.map((p) => p.amount));
+  const corresponde = sum(lines.map((x) => x.due));
+  const cobrado = sum(payments.map((p) => p.amount));
+  const falta = Math.max(0, cents(corresponde - cobrado));
   const elapsed = current ? (daysBetween(current.from, today) + 1) / (daysBetween(current.from, current.to) + 1) : 0;
+  const deadlines =
+    falta > 0
+      ? rows
+          .filter((row) => row.owed > 0 && row.deadline)
+          .map((row) => ({
+            month: row.month,
+            owed: net(row.owed),
+            deadline: /** @type {string} */ (row.deadline),
+            lapsed: row.lapsed,
+            daysLeft: daysBetween(today, /** @type {string} */ (row.deadline)),
+          }))
+      : [];
   return {
     hasPayments: payments.length > 0,
     ended,
-    accrued,
-    received,
-    /** Accrued minus received: negative when more was paid than is due so far. */
-    balance: cents(accrued - received),
-    cash: totals.cash,
+    corresponde,
+    cobrado,
+    /** Of `cobrado`, what was handed in cash. */
+    cobradoEnMano: totals.cash,
+    /** The cash agreed over the months counted, net as handed: with none cobrado en mano it is a prompt to record. */
+    enManoAgreed: sum(ended.map((row) => row.agreedCash)),
+    falta,
+    sobra: Math.max(0, cents(cobrado - corresponde)),
     running: current ? { month: current.month, amount: net(monthlyDue(current) * elapsed) } : null,
     vacation: finished ? 0 : net(sum(rows.map((row) => row.items.vacation.due))),
     lines,
     unclosed: ended.filter((row) => !row.closed),
     belowMinimumOnPayroll: net(totals.belowMinimumOnPayroll),
+    /** Every month counted, with its state and, for dating a claim, what the oldest-first assignment leaves open of it. */
     months: ended.map((row) => ({
       month: row.month,
       closed: row.closed,
       due: net(row.due),
-      owed: net(row.owed),
-      deadline: row.deadline,
+      owed: falta > 0 ? net(row.owed) : 0,
+      deadline: falta > 0 ? row.deadline : null,
       lapsed: row.lapsed,
-      daysLeft: row.deadline ? daysBetween(today, row.deadline) : null,
+      daysLeft: falta > 0 && row.deadline ? daysBetween(today, row.deadline) : null,
     })),
+    /** The claim that lapses first, or null. */
+    nearest: deadlines.length ? deadlines.reduce((a, b) => (b.deadline < a.deadline ? b : a)) : null,
+    deadlines,
   };
 }

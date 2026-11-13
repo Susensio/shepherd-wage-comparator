@@ -59,7 +59,7 @@ const NET_HINT = html`<p class="hint">Cantidades netas: lo que llega, sin retenc
 function hastaHoy(c) {
   const { standing: s, today } = c;
   const months = joinAnd(s.ended.map((r) => monthName(r.month)));
-  const owing = s.balance >= 0;
+  const owing = s.falta - s.sobra >= 0;
   const label = !s.hasPayments
     ? 'Hasta hoy · corresponde'
     : owing
@@ -73,7 +73,7 @@ function hastaHoy(c) {
         : 'Se ha cobrado más de lo que corresponde hasta ahora.'
       : 'Todavía no ha acabado ningún mes.';
   const unclosed = s.unclosed.length ? joinAnd(s.unclosed.map((r) => monthName(r.month))) : '';
-  return html`<div class="tag"><span class="lbl">${label}</span><span class="big">${money(s.hasPayments ? Math.abs(s.balance) : s.accrued)}</span><span class="sub">${sub}</span></div>
+  return html`<div class="tag"><span class="lbl">${label}</span><span class="big">${money(s.hasPayments ? Math.abs(s.falta - s.sobra) : s.corresponde)}</span><span class="sub">${sub}</span></div>
     <div class="block">
       ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado por adelantado' })}
       ${NET_HINT}
@@ -95,10 +95,10 @@ function hastaHoy(c) {
  * subtraction. What arrived beyond what corresponds is one row more, outside the sum, and only when there is any.
  */
 function ledger(s, { owing, ahead }) {
-  const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.accrued))];
+  const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.corresponde))];
   if (!s.hasPayments) return html`<div class="rows">${lines}</div>`;
-  const over = s.balance < 0;
-  return html`<div class="rows">${lines}${row('− Cobrado', money(over ? s.accrued : s.received))}${row(`= ${owing}`, money(over ? 0 : s.balance), { valueCls: over ? undefined : 'bad' })}${over ? row(ahead, money(-s.balance), { cls: 'sub' }) : nothing}</div>`;
+  const over = s.falta - s.sobra < 0;
+  return html`<div class="rows">${lines}${row('− Cobrado', money(over ? s.corresponde : s.cobrado))}${row(`= ${owing}`, money(over ? 0 : s.falta - s.sobra), { valueCls: over ? undefined : 'bad' })}${over ? row(ahead, money(-(s.falta - s.sobra)), { cls: 'sub' }) : nothing}</div>`;
 }
 
 /** One line per month: its state, what is owed of it and when its claim lapses. */
@@ -118,7 +118,7 @@ function monthRow(m, today, hasPayments) {
 function cuentas(c) {
   const { standing: s, today } = c;
   const open = s.unclosed.length;
-  const tag = html`<div class="tag"><span class="lbl">${s.hasPayments ? 'Cuentas · debe el ganadero' : 'Cuentas · corresponde'}</span><span class="big">${money(s.hasPayments ? Math.max(0, s.balance) : s.accrued)}</span><span class="sub">${
+  const tag = html`<div class="tag"><span class="lbl">${s.hasPayments ? 'Cuentas · debe el ganadero' : 'Cuentas · corresponde'}</span><span class="big">${money(s.hasPayments ? Math.max(0, s.falta - s.sobra) : s.corresponde)}</span><span class="sub">${
     !s.hasPayments
       ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
       : open
@@ -134,9 +134,9 @@ function cuentas(c) {
     <div class="bh"><h3>Por conceptos</h3>${s.hasPayments ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p>
     ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado de más' })}
-    ${s.cash > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cash), { cls: 'sub', sub: nothing })}</div>` : nothing}
+    ${s.cobradoEnMano > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cobradoEnMano), { cls: 'sub', sub: nothing })}</div>` : nothing}
     ${NET_HINT}
-    ${s.cash > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+    ${s.cobradoEnMano > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
   </div>`;
   return html`${tag}${months}${accounts}`;
 }

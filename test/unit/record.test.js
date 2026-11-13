@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
+import { lawFromRecord } from '../../src/model/compliance.js';
 import {
   addPayment,
   closeMonth,
@@ -248,7 +249,7 @@ describe('where an offer stands, in net', () => {
       s.ended.map((r) => r.month),
       ['2026-06'],
     );
-    assert.equal(s.accrued, net(rows[0].items.salary.due + rows[0].items.overnight.due));
+    assert.equal(s.corresponde, net(rows[0].items.salary.due + rows[0].items.overnight.due));
     assert.equal(s.hasPayments, false);
     assert.equal(s.running?.month, '2026-07');
     assert.ok(s.running.amount > 0 && s.running.amount < net(rows[1].items.salary.due));
@@ -259,16 +260,23 @@ describe('where an offer stands, in net', () => {
     );
   });
 
-  test('cobros are what arrived, and the balance is accrued minus them', () => {
+  test('Corresponde − Cobrado = Falta, never below 0, and what was cobrado beyond is a note, not a debt', () => {
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 1000, via: 'payroll' });
     const s = stand(record, '2026-07-15', 'underway');
-    assert.equal(s.received, 1000);
-    assert.equal(s.balance, Math.round((s.accrued - 1000) * 100) / 100);
+    assert.equal(s.cobrado, 1000);
+    assert.equal(s.falta, Math.round((s.corresponde - 1000) * 100) / 100);
+    assert.equal(s.sobra, 0);
     assert.equal(s.hasPayments, true);
+    addPayment(record, { date: '2026-07-06', amount: 100000, via: 'payroll' });
+    const over = stand(record, '2026-07-15', 'underway');
+    assert.equal(over.falta, 0);
+    assert.equal(over.sobra, Math.round((over.cobrado - over.corresponde) * 100) / 100);
+    assert.deepEqual(over.deadlines, []);
+    assert.equal(over.nearest, null);
   });
 
-  test('finished: the items add up to the accrued, and each month has its state, owed amount and deadline', () => {
+  test('finished: the lines add up to Corresponde, and the nearest deadline is the first month with something missing', () => {
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 1000, via: 'cash' });
     closeMonth(OFFER, record, JUNE);
@@ -276,23 +284,121 @@ describe('where an offer stands, in net', () => {
     const s = standingOf(settled, '2026-11-12', 'finished', record.payments, NET);
     assert.equal(
       s.lines.reduce((t, x) => t + x.due, 0),
-      s.accrued,
+      s.corresponde,
     );
     assert.equal(s.running, null);
     assert.equal(s.vacation, 0);
-    assert.deepEqual(
-      s.months.map((m) => [m.month, m.closed]),
-      [
-        ['2026-06', true],
-        ['2026-07', false],
-        ['2026-08', false],
-      ],
-    );
     assert.equal(s.unclosed.length, 2);
-    const owing = s.months.filter((m) => m.owed > 0);
-    assert.ok(owing.length > 0 && owing.every((m) => m.deadline && m.daysLeft !== null));
-    assert.equal(s.months[0].due, net(settled.rows[0].due));
-    assert.equal(s.cash, settled.totals.cash);
+    assert.ok(s.falta > 0 && s.deadlines.length > 0);
+    assert.ok(s.deadlines.every((d) => d.owed > 0 && d.daysLeft !== null));
+    const first = s.deadlines.map((d) => d.deadline).sort()[0];
+    assert.equal(s.nearest?.deadline, first);
+    assert.equal(s.cobradoEnMano, settled.totals.cash);
+  });
+
+  test('without cobros nothing is dated: no nearest deadline is invented from the accrued alone', () => {
+    const s = stand(emptyRecord(), '2026-11-12', 'finished');
+    assert.equal(s.hasPayments, false);
+    assert.equal(s.cobrado, 0);
+    assert.equal(s.cobradoEnMano, 0);
+  });
+});
+
+describe('a net total agreed is what corresponds, scaled by the days worked', () => {
+  const agreed = (changes) =>
+    offerOf({
+      ...OFFER.terms,
+      ...OFFER.mine,
+      id: 'n',
+      vacation: 'taken',
+      payUnit: 'day',
+      payType: 'gross',
+      payAmount: 40,
+      cashMode: 'total',
+      totalUnit: 'day',
+      totalAmount: 70,
+      daysOff: 0,
+      ...changes,
+    });
+  const corresponde = (offer, record) => {
+    const r = calc(offer, ctx);
+    const settled = settle(offer, record, '2026-11-12', ctx);
+    return standingOf(settled, '2026-11-12', 'finished', [], r.netFactor).corresponde;
+  };
+
+  test('70 € net a day, every day worked: the total is 70 × the days, with no withholding simulated', () => {
+    const offer = agreed({});
+    const r = calc(offer, ctx);
+    assert.ok(r.cash.total > 0 && r.cash.unit === 'day');
+    const days = r.time.daysWorked;
+    assert.ok(Math.abs(corresponde(offer, emptyRecord()) - 70 * days) < 0.5);
+  });
+
+  test('each day worked less in a closed month takes 70 € net off, payroll and cash together', () => {
+    const offer = agreed({});
+    const closedWith = (worked) => {
+      const record = emptyRecord();
+      const days = {};
+      for (let d = 1; d <= 30; d++) days[String(d).padStart(2, '0')] = d <= worked ? 'work' : 'off';
+      record.months['2026-06'] = { closed: true, days };
+      return corresponde(offer, record);
+    };
+    assert.ok(Math.abs(closedWith(25) - closedWith(22) - 3 * 70) < 0.5, `${closedWith(25)} - ${closedWith(22)}`);
+  });
+});
+
+describe('the law, from the record', () => {
+  // Two days off a week, over the legal day and a half
+  const restful = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'r', daysOff: 2, daysOffUnit: 'week' });
+  const law = (record, offer = OFFER) => {
+    const r = calc(offer, ctx);
+    return lawFromRecord(offer, record, settle(offer, record, '2026-11-12', ctx), r, record.payments.length);
+  };
+
+  test('the weekly rest is counted from the days marked off, per period of weeks', () => {
+    const record = emptyRecord();
+    const ok = law(record, restful);
+    assert.deepEqual(ok.rest.fails, []);
+    assert.ok(law(emptyRecord()).rest.fails.length > 0, 'four days off a month do not reach a day and a half a week');
+    assert.ok(ok.rest.periods >= 3);
+    // Every day of June worked: the first periods fall short
+    const days = {};
+    for (let d = 1; d <= 30; d++) days[String(d).padStart(2, '0')] = 'work';
+    record.months['2026-06'] = { closed: true, days };
+    const bad = law(record, restful);
+    assert.ok(bad.rest.fails.length >= 1);
+    assert.equal(bad.rest.fails[0].off, 0);
+    assert.ok(bad.rest.fails[0].due >= 5);
+  });
+
+  test('days worked against those due: the extra ones are counted, not invented', () => {
+    const base = law(emptyRecord());
+    assert.ok(base.days.worked > 0 && base.days.due > 0);
+    assert.equal(base.days.extra, Math.max(0, base.days.worked - base.days.due));
+  });
+
+  test('the overnight bonus: unknown without cobros, and missing when what arrived does not reach it', () => {
+    const withBonus = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'o', overnight: 'yes' });
+    const r = calc(withBonus, ctx);
+    assert.ok(r.min.overnight > 0);
+    const none = lawFromRecord(withBonus, emptyRecord(), settle(withBonus, emptyRecord(), '2026-11-12', ctx), r, 0);
+    assert.equal(none.overnight.applicable, true);
+    assert.equal(none.overnight.known, false);
+    const record = emptyRecord();
+    addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
+    const some = lawFromRecord(withBonus, record, settle(withBonus, record, '2026-11-12', ctx), r, 1);
+    assert.ok(some.overnight.missing > 0);
+    const rich = emptyRecord();
+    addPayment(rich, { date: '2026-07-05', amount: 99999, via: 'payroll' });
+    const full = lawFromRecord(withBonus, rich, settle(withBonus, rich, '2026-11-12', ctx), r, 1);
+    assert.equal(full.overnight.missing, 0);
+  });
+
+  test('an offer without an overnight bonus has no such row', () => {
+    const none = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'p', overnight: 'no' });
+    const r = calc(none, ctx);
+    const res = lawFromRecord(none, emptyRecord(), settle(none, emptyRecord(), '2026-11-12', ctx), r, 0);
+    assert.equal(res.overnight.applicable, r.min.overnight > 0);
   });
 });
 
@@ -337,11 +443,11 @@ describe('the agreed cash is a line of its own, inside what corresponds', () => 
     assert.equal(cash?.due, 1080); // three months at 360 in hand
     assert.equal(
       s.lines.reduce((t, x) => t + x.due, 0),
-      s.accrued,
+      s.corresponde,
     );
     // The same offer without the cash corresponds to less, by the cash
     const plain = standingOf(settle(OFFER, emptyRecord(), '2026-11-12', ctx), '2026-11-12', 'finished', [], NET);
-    assert.ok(Math.abs(s.accrued - plain.accrued - 1080) < 0.05);
+    assert.ok(Math.abs(s.corresponde - plain.corresponde - 1080) < 0.05);
   });
 
   test('the calendar of a month carries it too, and the lines add up to the month', () => {

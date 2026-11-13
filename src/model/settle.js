@@ -85,6 +85,7 @@ export function settle(offer, record, today, ctx) {
   const { time, pay, min } = r;
   // The wage as calculated: «solo el mínimo» turns it into a total
   const perDay = (terms.payrollMin ? 'total' : terms.payUnit) === 'day' && time.paidDays > 0;
+  const totalPerDay = r.split?.unit === 'day' && time.daysWorked > 0;
   const dayRate = perDay ? pay.base / time.paidDays : 0;
   const vacationMinimum = terms.vacation === 'taken' && !r.noContract ? 0 : min.vacation; // as the ficha's debt
   // Vacation taken is paid and follows the offer, like the holidays; the vacation owed comes from the terms, not the days.
@@ -114,7 +115,15 @@ export function settle(offer, record, today, ctx) {
       r.cash.unit === 'day' && time.daysWorked > 0 ? (r.cash.total / time.daysWorked) * worked : r.cash.total * w;
     // The payroll pay, plus the cash as the gross that would bring it net (what `calc` credits): without a contract the
     // pay is only that. Both go to the one pool that covers the minimum salary first, then the overnight bonus.
-    const payroll = r.noContract ? 0 : perDay ? dayRate * paid + pay.extraPays * w : pay.salary * w;
+    // A net total agreed per day is that much for each day worked, payroll and cash together: the payroll follows the
+    // days worked alone (the vacation taken is inside the total), so the total scales with them
+    const payroll = r.noContract
+      ? 0
+      : totalPerDay
+        ? (pay.base / time.daysWorked) * worked + pay.extraPays * w
+        : perDay
+          ? dayRate * paid + pay.extraPays * w
+          : pay.salary * w;
     const cashGross = cash * cashRatio;
     const wage = payroll + cashGross;
     const casual = min.casual && time.daysWorked > 0;

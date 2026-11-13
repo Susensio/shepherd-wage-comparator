@@ -356,7 +356,7 @@ export function cardRecord(o, r) {
     phase,
     line: {
       hasPayments: s.hasPayments,
-      owed: Math.max(0, s.balance),
+      owed: s.falta,
       unclosed: s.unclosed.length,
     },
   };

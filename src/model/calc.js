@@ -210,8 +210,14 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     pay,
     /** gross → net for this offer's figures (without payroll, the worker's Social Security alone) */
     netFactor: pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100,
-    /** `unit`: what the agreed cash is per (day, month or total), after the answers of «Pago» are applied */
-    cash: { total: cash, share: cashShare, allCash, grossEq: cashGrossEq, unit: t.cashUnit },
+    /** `unit`: what the agreed cash is per (day, month or total); a total agreed per day keeps the day, so it follows the days worked */
+    cash: {
+      total: cash,
+      share: cashShare,
+      allCash,
+      grossEq: cashGrossEq,
+      unit: split?.unit === 'day' ? 'day' : t.cashUnit,
+    },
     inKind: { housing, food, total: housing + food },
     car,
     expenses: { car: car.cost, other: otherExpenses, total: car.cost + otherExpenses },
