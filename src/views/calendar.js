@@ -1,9 +1,9 @@
 /** The calendar of a month (ADR-0032): its days as shown, the counts, the money of the month and the button that closes it. */
 
 import { html, nothing } from 'lit-html';
-import { cents, fSumE, sum } from '../ledger.js';
+import { fSumE } from '../ledger.js';
 import { monthName } from '../text.js';
-import { row } from './parts.js';
+import { ledgerLines, row } from './parts.js';
 
 /** @typedef {import('../ui/record.js').CalendarContext} CalendarContext */
 /** @typedef {import('../ui/record.js').ReviewDone} ReviewDone */
@@ -46,17 +46,10 @@ function grid(cal) {
 /** The money of the month, from what is on the calendar; one line more when the jornadas differ from the offer. */
 function money(cal) {
   const { acc } = cal;
-  const { items } = acc.row;
-  const { jornadas } = acc;
-  // In net, like every figure of the ficha; the total is the sum of the rows as shown
-  const net = (gross) => cents(gross * cal.netFactor) + 0;
-  const [salary, overnight, vacation] = [items.salary.due, items.overnight.due, items.vacation.due].map(net);
-  const delta = acc.delta === null ? null : net(acc.delta);
+  const { jornadas, delta } = acc;
   return html`<div class="rows">
-    ${row('Salario', fSumE(salary))}
-    ${overnight > 0 ? row('+ Plus de pernocta', fSumE(overnight)) : nothing}
-    ${vacation > 0 ? row('+ Vacaciones', fSumE(vacation), { sub: 'según la oferta: se pagan al acabar' }) : nothing}
-    ${row('= Corresponde', fSumE(sum([salary, overnight, vacation])), { sub: acc.row.closed ? nothing : 'estimado' })}
+    ${ledgerLines(acc.lines, { vacation: 'según la oferta: se pagan al acabar' })}
+    ${row('= Corresponde', fSumE(acc.due), { sub: acc.row.closed ? nothing : 'estimado' })}
     ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
   </div>`;
 }

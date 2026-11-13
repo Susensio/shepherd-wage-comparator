@@ -22,7 +22,6 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof monthAccounts>} acc
  * @property {number} index where this month is among `count`
  * @property {number} count
- * @property {number} netFactor the figures of the month are shown net
  * @property {boolean} asking whether «Reabrir» is waiting for its confirmation
  * @property {boolean} canClose only a month that has ended can be closed
  *
@@ -104,10 +103,9 @@ export function recordContext(o, r) {
   const shown = settled.rows.filter((row) => row.from <= today);
   const calendarOf = (key, mode, index, count) => ({
     mode,
-    acc: monthAccounts(o, record, key, today, ctx),
+    acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
     index,
     count,
-    netFactor: r.netFactor,
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
     canClose: settled.rows.find((row) => row.month === key).to < today,
   });

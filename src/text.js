@@ -503,7 +503,7 @@ export function leversOf(r) {
 export const PHASE_TEXT = { undecided: 'Por decidir', underway: 'En curso', finished: 'Acabada' };
 
 /** What an item of a settled month is called in the claim and on the screens. */
-export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones' };
+export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones', cash: 'En negro' };
 
 const MONTH_NAMES = [
   'enero',
@@ -544,6 +544,10 @@ export function recordClaimText(o, settled, record) {
   lines.push(
     `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llegó neto y aquí se compara en bruto.`,
   );
+  if (totals.agreedCash > 0)
+    lines.push(
+      `De ese total, ${fSumE(totals.agreedCash)} netos se pactaron en mano, sin declarar: se reclaman como se pactaron.`,
+    );
   if (!payments.length) {
     lines.push('No consta ningún cobro.');
   } else {

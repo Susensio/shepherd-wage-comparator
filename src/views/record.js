@@ -4,9 +4,9 @@ import { html, nothing } from 'lit-html';
 import { fDate, joinAnd } from '../format.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
-import { ITEM_TEXT, monthName } from '../text.js';
+import { monthName } from '../text.js';
 import { calendarView } from './calendar.js';
-import { COPY_ICON, row } from './parts.js';
+import { COPY_ICON, ledgerLines, row } from './parts.js';
 
 /** @typedef {import('../ui/record.js').RecordContext} RecordContext */
 
@@ -73,12 +73,9 @@ function hastaHoy(c) {
         : 'Se ha cobrado más de lo que corresponde hasta ahora.'
       : 'Todavía no ha acabado ningún mes.';
   const unclosed = s.unclosed.length ? joinAnd(s.unclosed.map((r) => monthName(r.month))) : '';
-  const accruedSub = s.ended.length ? `${months}: salario y plus de pernocta` : 'ningún mes acabado';
   return html`<div class="tag"><span class="lbl">${label}</span><span class="big">${money(s.hasPayments ? Math.abs(s.balance) : s.accrued)}</span><span class="sub">${sub}</span></div>
     <div class="block">
-      <div class="rows">
-        ${s.hasPayments ? balanceRows(s, { owing: 'Debe el ganadero', ahead: 'Cobrado por adelantado', accruedSub }) : row('Corresponde', money(s.accrued), { sub: accruedSub })}
-      </div>
+      ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado por adelantado' })}
       ${NET_HINT}
       ${unclosed ? html`<p class="hint">Según la oferta, sin cerrar: ${unclosed}. Ciérralos en el calendario cuando estén revisados.</p>` : nothing}
       ${
@@ -93,13 +90,16 @@ function hastaHoy(c) {
     </div>`;
 }
 
-/** Accrued minus received as a ledger that adds up whichever is greater: the greater first, the other taken off. */
-function balanceRows(s, { owing, ahead, accruedSub }) {
-  const accrued = row(s.balance >= 0 ? 'Corresponde' : '− Corresponde', money(s.accrued), { sub: accruedSub });
-  const received = row(s.balance >= 0 ? '− Cobrado' : 'Cobrado', money(s.received), {});
-  return s.balance >= 0
-    ? [accrued, received, row(`= ${owing}`, money(s.balance))]
-    : [received, accrued, row(`= ${ahead}`, money(-s.balance))];
+/**
+ * What corresponds, less what was received, is what is owed: the lines that add up to what corresponds, then the
+ * subtraction. When more arrived than corresponds, what arrived goes first so the subtraction still comes out whole.
+ */
+function ledger(s, { owing, ahead }) {
+  const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.accrued))];
+  if (!s.hasPayments) return html`<div class="rows">${lines}</div>`;
+  if (s.balance >= 0)
+    return html`<div class="rows">${lines}${row('− Cobrado', money(s.received))}${row(`= ${owing}`, money(s.balance), { valueCls: 'bad' })}</div>`;
+  return html`<div class="rows">${lines}</div><div class="rows">${row('Cobrado', money(s.received))}${row('− Corresponde', money(s.accrued))}${row(`= ${ahead}`, money(-s.balance))}</div>`;
 }
 
 /** One line per month: its state, what is owed of it and when its claim lapses. */
@@ -131,27 +131,15 @@ function cuentas(c) {
     ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
     ${s.hasPayments ? html`<p class="hint">El plazo cuenta desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2).</p>` : nothing}
   </div>`;
-  const shown = s.items.filter((x) => x.due > 0);
-  const items = shown.map((x, i) =>
-    row(`${i ? '+ ' : ''}${ITEM_TEXT[x.item]}`, money(x.due), {
-      sub: x.byMinimum ? html`<b>El mínimo legal</b>: lo pactado no llegaba` : nothing,
-    }),
-  );
-  const balance = s.balance >= 0;
-  const ledger = html`<div class="block">
+  const accounts = html`<div class="block">
     <div class="bh"><h3>Por conceptos</h3>${s.hasPayments ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p>
-    <div class="rows">
-      ${items}
-      ${row('= Corresponde', money(s.accrued))}
-      ${s.hasPayments && balance ? [row('− Cobrado', money(s.received), {}), row('= Debe el ganadero', money(s.balance), { valueCls: 'bad' })] : nothing}
-    </div>
-    ${s.hasPayments && !balance ? html`<div class="rows">${row('Cobrado', money(s.received), {})}${row('− Corresponde', money(s.accrued))}${row('= Cobrado de más', money(-s.balance))}</div>` : nothing}
+    ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado de más' })}
     ${s.cash > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cash), { cls: 'sub', sub: nothing })}</div>` : nothing}
     ${NET_HINT}
     ${s.cash > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
   </div>`;
-  return html`${tag}${months}${ledger}`;
+  return html`${tag}${months}${accounts}`;
 }
 
 /**

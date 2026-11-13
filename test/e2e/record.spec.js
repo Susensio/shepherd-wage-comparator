@@ -205,6 +205,26 @@ test.describe('finished', () => {
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
   });
 
+  test('what was agreed in hand is a line of the ledgers: Cuentas, Hasta hoy, the calendar; none without cash', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await page.locator('details[data-fold=days] > summary').click();
+    const lines = page.locator('#result .block .rows .row, #result .cal .rows .row', { hasText: /^\+?\s*En negro/ });
+    await expect(lines).toHaveCount(2); // Cuentas, and the month on the calendar
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    await at(page, '2026-08-12');
+    await reselect(page);
+    await expect(
+      page.locator('#result .block .rows .row, #result .cal .rows .row', { hasText: /^\+?\s*En negro/ }),
+    ).toHaveCount(2); // Hasta hoy, calendar
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    await at(page, '2026-11-12');
+    await loadOffers(page, sample, 3); // Invernada C: no cash
+    await expect(page.locator('#result')).not.toContainText('En negro');
+  });
+
   test('«¿Es legal?» is a row with its verdict after «Días»; the rest of the analysis is one closed fold', async ({
     page,
   }) => {

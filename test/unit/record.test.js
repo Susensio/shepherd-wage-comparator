@@ -108,9 +108,9 @@ describe('closing and reopening', () => {
     const month = record.months['2026-06'];
     assert.equal(month.closed, true);
     assert.equal(Object.keys(month.days).length, 30);
-    const before = settle(OFFER, record, '2026-09-10', ctx).rows[0];
+    const before = settle(OFFER, record, '2026-09-10', ctx, NET).rows[0];
     const raised = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 't', daysOff: 8, payAmount: 80 });
-    const after = settle(raised, record, '2026-09-10', ctx).rows[0];
+    const after = settle(raised, record, '2026-09-10', ctx, NET).rows[0];
     assert.equal(after.facts.work, before.facts.work);
     assert.equal(after.facts.off, before.facts.off);
     assert.equal(after.closed, true);
@@ -199,7 +199,7 @@ describe('saving through the list of offers', () => {
 
 describe('a month on its calendar', () => {
   test('untouched: the offer’s days, no difference and an estimate', () => {
-    const m = monthAccounts(OFFER, emptyRecord(), '2026-06', '2026-09-10', ctx);
+    const m = monthAccounts(OFFER, emptyRecord(), '2026-06', '2026-09-10', ctx, NET);
     assert.equal(m.row.closed, false);
     assert.equal(m.jornadas, 0);
     assert.equal(m.delta, null);
@@ -209,9 +209,9 @@ describe('a month on its calendar', () => {
   test('one jornada less is one daily wage less, by counts', () => {
     const record = emptyRecord();
     toggleDay(OFFER, record, JUNE, '02');
-    const m = monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx);
+    const m = monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx, NET);
     assert.equal(m.jornadas, -1);
-    assert.equal(m.delta, -60);
+    assert.equal(m.delta, Math.round(-60 * NET * 100) / 100);
     assert.equal(m.counts.work, 25);
   });
 
@@ -222,7 +222,7 @@ describe('a month on its calendar', () => {
     const workDay = asOffer.find((m) => m.kind === 'work' && m.day !== '01').day;
     toggleDay(OFFER, record, JUNE, offDay);
     toggleDay(OFFER, record, JUNE, workDay);
-    const m = monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx);
+    const m = monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx, NET);
     assert.equal(m.jornadas, 0);
     assert.equal(m.delta, null);
   });
@@ -231,8 +231,8 @@ describe('a month on its calendar', () => {
     const record = emptyRecord();
     toggleDay(OFFER, record, JUNE, '02');
     closeMonth(OFFER, record, JUNE);
-    assert.equal(monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx).delta, null);
-    assert.equal(monthAccounts(OFFER, record, '2025-01', '2026-09-10', ctx), null);
+    assert.equal(monthAccounts(OFFER, record, '2026-06', '2026-09-10', ctx, NET).delta, null);
+    assert.equal(monthAccounts(OFFER, record, '2025-01', '2026-09-10', ctx, NET), null);
   });
 });
 
@@ -275,7 +275,7 @@ describe('where an offer stands, in net', () => {
     const settled = settle(OFFER, record, '2026-11-12', ctx);
     const s = standingOf(settled, '2026-11-12', 'finished', record.payments, NET);
     assert.equal(
-      s.items.reduce((t, x) => t + x.due, 0),
+      s.lines.reduce((t, x) => t + x.due, 0),
       s.accrued,
     );
     assert.equal(s.running, null);
@@ -293,6 +293,51 @@ describe('where an offer stands, in net', () => {
     assert.ok(owing.length > 0 && owing.every((m) => m.deadline && m.daysLeft !== null));
     assert.equal(s.months[0].due, net(settled.rows[0].due));
     assert.equal(s.cash, settled.totals.cash);
+  });
+});
+
+describe('the agreed cash is a line of its own, inside what corresponds', () => {
+  const CASH = offerOf({
+    ...OFFER.terms,
+    ...OFFER.mine,
+    id: 'c',
+    cashMode: 'amount',
+    cashAmount: 360,
+    cashUnit: 'month',
+  });
+  const netOf = calc(CASH, ctx).netFactor;
+
+  test('the lines add up to what corresponds, and «En negro» is the cash as handed', () => {
+    const settled = settle(CASH, emptyRecord(), '2026-11-12', ctx);
+    const s = standingOf(settled, '2026-11-12', 'finished', [], netOf);
+    const cash = s.lines.find((x) => x.key === 'cash');
+    assert.equal(cash?.due, 1080); // three months at 360 in hand
+    assert.equal(
+      s.lines.reduce((t, x) => t + x.due, 0),
+      s.accrued,
+    );
+    // The same offer without the cash corresponds to less, by the cash
+    const plain = standingOf(settle(OFFER, emptyRecord(), '2026-11-12', ctx), '2026-11-12', 'finished', [], NET);
+    assert.ok(Math.abs(s.accrued - plain.accrued - 1080) < 0.05);
+  });
+
+  test('the calendar of a month carries it too, and the lines add up to the month', () => {
+    const m = monthAccounts(CASH, emptyRecord(), '2026-06', '2026-11-12', ctx, netOf);
+    assert.equal(m.lines.find((x) => x.key === 'cash')?.due, 360);
+    assert.equal(
+      m.lines.reduce((t, x) => t + x.due, 0),
+      m.due,
+    );
+  });
+
+  test('under way it is part of what has fallen due', () => {
+    const s = standingOf(settle(CASH, emptyRecord(), '2026-07-15', ctx), '2026-07-15', 'underway', [], netOf);
+    assert.equal(s.lines.find((x) => x.key === 'cash')?.due, 360);
+  });
+
+  test('the claim says what was agreed in hand', () => {
+    const text = recordClaimText(CASH, settle(CASH, emptyRecord(), '2026-11-12', ctx), emptyRecord());
+    assert.match(text, /1\.080\s€ netos se pactaron en mano, sin declarar: se reclaman como se pactaron/);
   });
 });
 
@@ -330,6 +375,6 @@ describe('the claim text', () => {
 });
 
 test('spanOf takes a settled row as the helpers need it', () => {
-  const row = settle(OFFER, emptyRecord(), '2026-09-10', ctx).rows[2];
+  const row = settle(OFFER, emptyRecord(), '2026-09-10', ctx, NET).rows[2];
   assert.deepEqual(spanOf(row), { key: '2026-08', from: '2026-08-01', to: '2026-08-31' });
 });
