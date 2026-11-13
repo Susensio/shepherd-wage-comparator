@@ -56,7 +56,7 @@ function money(cal) {
     ${row('Salario', fSumE(salary))}
     ${overnight > 0 ? row('+ Plus de pernocta', fSumE(overnight)) : nothing}
     ${vacation > 0 ? row('+ Vacaciones', fSumE(vacation), { sub: 'según la oferta: se pagan al acabar' }) : nothing}
-    ${row('= Devengado', fSumE(sum([salary, overnight, vacation])), { sub: acc.row.closed ? nothing : 'estimado' })}
+    ${row('= Corresponde', fSumE(sum([salary, overnight, vacation])), { sub: acc.row.closed ? nothing : 'estimado' })}
     ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
   </div>`;
 }

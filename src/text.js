@@ -542,7 +542,7 @@ export function recordClaimText(o, settled, record) {
   const when = datesText(o.terms);
   lines.push(`Trabajo de pastor ${when ? `${when}` : ''}.`.replace(' .', '.'));
   lines.push(
-    `Devengado: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llegó neto y aquí se compara en bruto.`,
+    `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llegó neto y aquí se compara en bruto.`,
   );
   if (!payments.length) {
     lines.push('No consta ningún cobro.');

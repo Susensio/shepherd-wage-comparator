@@ -44,7 +44,7 @@ test.describe('under way', () => {
 
   test('with no cobros nothing is claimed: the accrued figure, and no accusation', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('#result .tag .lbl').first()).toHaveText(/devengado/i);
+    await expect(page.locator('#result .tag .lbl').first()).toHaveText(/corresponde/i);
     await expect(page.locator('#result')).not.toContainText('Debe el ganadero');
     await expect(page.locator('#result')).not.toContainText('mínimo legal');
   });
@@ -57,7 +57,7 @@ test.describe('under way', () => {
     });
     await page.locator('details[data-fold=days] > summary').click();
     const counts = page.locator('.cal .counts');
-    const accrued = page.locator('.cal .row', { hasText: 'Devengado' });
+    const accrued = page.locator('.cal .row', { hasText: 'Corresponde' });
     const first = await counts.textContent();
     const money = amount(await accrued.locator(':scope > :last-child').textContent());
     await page.locator('.cal .day.work').first().click();
@@ -90,7 +90,7 @@ test.describe('under way', () => {
     await expect(page.locator('details[data-fold=analysis]')).toHaveCount(0);
     await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
     await expect(
-      page.locator('#result .rows', { hasText: 'Devengado' }).locator('.row', { hasText: /^Cobrado/ }),
+      page.locator('#result .rows', { hasText: 'Corresponde' }).locator('.row', { hasText: /^Cobrado/ }),
     ).toContainText('1.000');
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
   });
@@ -182,7 +182,7 @@ test.describe('finished', () => {
       'Salario',
       'Plus de pernocta',
       'Vacaciones',
-      'Devengado',
+      'Corresponde',
       'Cobrado',
       'Debe el ganadero',
     ]);
