@@ -5,9 +5,10 @@
 
 import { LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
-import { endOf, isoOf, parseDate } from '../offer.js';
+import { daysInclusive, endOf, isoOf, parseDate } from '../offer.js';
 import { calc } from './calc.js';
 import { monthShares } from './payslips.js';
+import { lastWorkedDay } from './record.js';
 import { claimDeadline } from './time.js';
 
 /**
@@ -70,6 +71,88 @@ function openEndedShares(terms, today) {
   return shares;
 }
 
+const monthFirst = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+const monthLast = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+const sameDay = (a, b) => +a === +b;
+
+/** A share of a month as the payslips have it: a whole month is 1, a part is a day count over `LAW.payrollMonthDays`. */
+function shareOf(from, to) {
+  const days = daysInclusive(from, to);
+  if (days <= 0) return { days: 0, share: 0 };
+  const whole = sameDay(from, monthFirst(from)) && sameDay(to, monthLast(to));
+  return { days, share: whole ? 1 : Math.min(LAW.payrollMonthDays, days) / LAW.payrollMonthDays };
+}
+
+/**
+ * The months of the job as it really was, from the offer's and the record's days (ADR-0032). A month after the offer's
+ * last one enters only if it holds a day worked, and the job then goes on to the last day worked, the months between
+ * included; each day of that period is paid 1/30 of a month's pay. In a closed month the days libre before the first day
+ * worked of the first month, or after the last one worked of the last, lie outside the job (the calendar cannot tell
+ * libre because the contract ended from libre as the last rest); open months follow the offer.
+ * `weight` is the pay's share of the contract, over the offer's own shares; `dayWeight` the same before trimming (a wage
+ * per day does not change); `calendarFrom` and `calendarTo` the days the calendar shows.
+ * @param {ReturnType<typeof monthShares>} base the offer's months
+ * @param {Date} offerEnd
+ * @param {OfferRecord | undefined} record
+ */
+function jobShares(base, offerEnd, record) {
+  const baseTotal = base.reduce((t, x) => t + x.share, 0) || 1;
+  const entryOf = (x) => record?.months?.[isoOf(x.month).slice(0, 7)];
+  const workDays = (x) =>
+    Object.entries(entryOf(x)?.days ?? {})
+      .filter(([, kind]) => kind === 'work')
+      .map(([day]) => Number(day))
+      .sort((a, b) => a - b);
+  let list = base.map((x) => ({ ...x, extension: false, calendarFrom: x.from, calendarTo: monthLast(x.month) }));
+  // Extension: through the last day worked after the offer's end
+  const lastWork = lastWorkedDay(record);
+  if (list.length && lastWork > isoOf(offerEnd)) {
+    const until = parseDate(lastWork);
+    const tail = list.at(-1);
+    const sameMonth = tail.month.getFullYear() === until.getFullYear() && tail.month.getMonth() === until.getMonth();
+    tail.to = sameMonth ? until : monthLast(tail.month);
+    for (let y = tail.month.getFullYear(), m = tail.month.getMonth() + 1; new Date(y, m, 1) <= until; m++) {
+      const first = new Date(y, m, 1);
+      const to =
+        first.getFullYear() === until.getFullYear() && first.getMonth() === until.getMonth() ? until : monthLast(first);
+      list.push({
+        month: first,
+        from: first,
+        to,
+        days: 0,
+        share: 0,
+        weight: 0,
+        extension: true,
+        calendarFrom: first,
+        calendarTo: monthLast(first),
+      });
+    }
+  }
+  list = list.map((x) => ({ ...x, ...shareOf(x.from, x.to) }));
+  const dayShare = list.map((x) => x.share);
+  // Trimming, in closed months only
+  const first = list[0];
+  if (first && entryOf(first)?.closed) {
+    const [day] = workDays(first);
+    if (day)
+      first.from = new Date(first.month.getFullYear(), first.month.getMonth(), Math.max(day, first.from.getDate()));
+  }
+  // An open month follows the offer, so the job still goes on in it; only closed months can end it
+  const lastIndex = list.findLastIndex((x) => !entryOf(x)?.closed || workDays(x).length > 0);
+  if (lastIndex >= 0) {
+    list.forEach((x, i) => {
+      if (!entryOf(x)?.closed) return;
+      if (i > lastIndex) x.to = new Date(x.from.getFullYear(), x.from.getMonth(), x.from.getDate() - 1);
+      else if (i === lastIndex)
+        x.to = new Date(x.month.getFullYear(), x.month.getMonth(), Math.min(x.to.getDate(), workDays(x).at(-1)));
+    });
+  }
+  return list.map((x, i) => {
+    const trimmed = shareOf(x.from, x.to);
+    return { ...x, ...trimmed, weight: trimmed.share / baseTotal, dayWeight: dayShare[i] / baseTotal };
+  });
+}
+
 /**
  * @param {{ id?: string, terms: object, mine: object }} offer
  * @param {OfferRecord | undefined} record empty or missing parts mean nothing happened yet
@@ -80,7 +163,16 @@ export function settle(offer, record, today, ctx) {
   const { terms } = offer;
   const r = calc(offer, ctx);
   const openEnded = !endOf(terms);
-  const shares = openEnded ? openEndedShares(terms, today) : monthShares(terms);
+  const offerEnd = endOf(terms);
+  const shares = openEnded
+    ? openEndedShares(terms, today).map((x) => ({
+        ...x,
+        dayWeight: x.weight,
+        extension: false,
+        calendarFrom: x.from,
+        calendarTo: x.to,
+      }))
+    : jobShares(monthShares(terms), /** @type {Date} */ (offerEnd), record);
   const labour = !r.selfEmployed; // labour law does not apply to an invoice (ADR-0029)
   const { time, pay, min } = r;
   // The wage as calculated: «solo el mínimo» turns it into a total
@@ -101,13 +193,15 @@ export function settle(offer, record, today, ctx) {
     const closed = Boolean(entry?.closed);
     const { counts, touched } = factsOf(entry, share.from, share.to);
     // The part of the month that still follows the offer: none once closed
-    const open = closed ? 0 : (share.days - touched) / share.days;
+    // (an extension month has no offer to follow: its days default to libre)
+    const open = closed || share.extension || share.days <= 0 ? 0 : (share.days - touched) / share.days;
     const w = share.weight;
+    const wDay = share.dayWeight;
     const worked = counts.work + open * time.daysWorked * w;
     // Paid days (docs/model.md): worked, plus vacation taken, plus holidays, which follow the offer even in a closed
     // month. TODO: a holiday worked is counted twice, and sick days are not paid; unblocked by the owner's answer on
     // how a real month pays them.
-    const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * w;
+    const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * wDay;
 
     // The agreed cash of the month, net as handed: per day worked it follows the days (the facts of a closed month
     // included), else it is the month's share like the pay
@@ -151,7 +245,8 @@ export function settle(offer, record, today, ctx) {
   const overnightMinRows = spread(plans.map((x) => (labour ? min.overnightRate * x.minimumSalary : 0)));
 
   // Known end: the vacation falls due with the final settlement. No end: it accrues month by month.
-  const vacationShareOf = (index) => (openEnded ? plans[index].share.weight : index === shares.length - 1 ? 1 : 0);
+  const vacationShareOf = (index) =>
+    openEnded ? plans[index].share.weight : index === shares.length - 1 ? shares.reduce((t, x) => t + x.weight, 0) : 0;
   const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
   const vacationMinimumOf = (index) => (labour ? cents(vacationMinimum * vacationShareOf(index)) : 0);
   // Cash above what the month's minimum salary and bonus need covers a vacation shortfall, as in `calc`: that much of the
@@ -204,13 +299,18 @@ export function settle(offer, record, today, ctx) {
     // Days worked above the due workdays: valued at the minimum wage, apart. TODO: count them in `owed` once the ficha
     // sets the pay above the minimum against them per month (`paidAbove` in calc.js covers them over the whole contract).
     const extraDays = Math.max(0, worked - r.extra.due * share.weight);
-    const dueDate = share.to;
+    const dueDate = share.days > 0 ? share.to : share.calendarTo;
     return {
       month: key,
       closed,
       estimate: !closed,
       from: isoOf(share.from),
-      to: isoOf(share.to),
+      to: isoOf(share.days > 0 ? share.to : share.calendarTo),
+      /** The days the calendar shows, whatever the job's own span: the offer's month, or the whole month after it. */
+      calendarFrom: isoOf(share.calendarFrom),
+      calendarTo: isoOf(share.calendarTo),
+      /** A month after the offer's last one, in the job because a day was worked in it or after it. */
+      extension: share.extension,
       /** Days of the record, by kind, and the share of the month still following the offer. */
       facts: { ...counts, followingOffer: open },
       /** The cash agreed for the month, net as handed: part of the pay in `items`, shown apart. */
@@ -286,5 +386,17 @@ export function settle(offer, record, today, ctx) {
     unassigned: pool,
     items: itemTotals,
   };
-  return { rows: rows.map(({ claimDeadlineDate, ...row }) => row), totals };
+  // The period the work really had, from the days: the offer's, unless days were marked beyond or short of it
+  const live = shares.filter((x) => x.days > 0);
+  const job = {
+    from: live.length ? isoOf(live[0].from) : terms.start || '',
+    to: openEnded || !live.length ? '' : isoOf(live[live.length - 1].to),
+    offerFrom: terms.start || '',
+    offerTo: offerEnd ? isoOf(offerEnd) : '',
+  };
+  return {
+    rows: rows.map(({ claimDeadlineDate, ...row }) => row),
+    totals,
+    job: { ...job, differs: !openEnded && (job.from !== job.offerFrom || job.to !== job.offerTo) },
+  };
 }

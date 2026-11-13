@@ -482,3 +482,115 @@ test('paying exactly the cash agreed leaves nothing of it owed', () => {
   const plain = settleOf(withCash({ payAmount: 1424.5 }), {});
   near(plain.rows[0].due - x.rows[0].owed, calc(offer, ctx).cash.grossEq / 3, 'the first month is paid by it', 0.011);
 });
+
+// The job as it really was: days beyond the offer's end, and closed months that end early (ADR-0032)
+const workOn = (month, days, closed = false) => ({
+  [month]: { closed, days: Object.fromEntries(days.map((d) => [String(d).padStart(2, '0'), 'work'])) },
+});
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+test('no extension without a day worked: a month after the offer with nothing worked is ignored', () => {
+  const x = settleOf(offerWith(), { months: { '2026-04': { closed: true, days: { '01': 'off', '02': 'off' } } } });
+  assert.equal(x.rows.length, 3);
+  assert.equal(x.job.differs, false);
+});
+
+test('a day worked after the offer’s end extends the job; a wage per day pays the day rate for each day worked', () => {
+  const offer = perDay();
+  const plain = settleOf(offer, {});
+  const x = settleOf(offer, { months: workOn('2026-04', [1, 2]) });
+  assert.equal(x.rows.length, 4);
+  const april = x.rows[3];
+  assert.equal(april.extension, true);
+  assert.equal(april.facts.work, 2);
+  assert.equal(april.from, '2026-04-01');
+  assert.equal(april.to, '2026-04-02');
+  assert.equal(april.calendarTo, '2026-04-30'); // the calendar shows the whole month
+  assert.equal(april.items.salary.agreed + april.items.overnight.agreed, 200);
+  // The months of the offer are as they were
+  assert.deepEqual(
+    x.rows.slice(0, 3).map((row) => row.items.salary.agreed),
+    plain.rows.map((row) => row.items.salary.agreed),
+  );
+  assert.deepEqual(x.job, {
+    from: '2026-01-01',
+    to: '2026-04-02',
+    offerFrom: '2026-01-01',
+    offerTo: '2026-03-31',
+    differs: true,
+  });
+});
+
+test('a monthly wage pays one thirtieth of the month for each day of the period, rest days inside it included', () => {
+  const x = settleOf(offerWith(), { months: workOn('2026-04', [1, 10]) });
+  const april = x.rows[3];
+  assert.equal(april.to, '2026-04-10');
+  near(april.items.salary.agreed + april.items.overnight.agreed, (1424.5 * 10) / 30, 'ten days of the period', 0.01);
+  // The last day of the period decides it, not how many days were worked
+  const later = settleOf(offerWith(), { months: workOn('2026-04', [20]) });
+  near(
+    later.rows[3].items.salary.agreed + later.rows[3].items.overnight.agreed,
+    (1424.5 * 20) / 30,
+    'twenty days',
+    0.01,
+  );
+});
+
+test('an extension across two months pays the whole first and the part of the second; the months between are included', () => {
+  const x = settleOf(offerWith(), { months: { ...workOn('2026-04', [3]), ...workOn('2026-06', [5]) } });
+  assert.deepEqual(
+    x.rows.map((row) => row.month),
+    ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
+  );
+  const pay = (row) => row.items.salary.agreed + row.items.overnight.agreed;
+  near(pay(x.rows[3]), 1424.5, 'April whole', 0.01);
+  near(pay(x.rows[4]), 1424.5, 'May whole, though nothing is marked in it', 0.01);
+  near(pay(x.rows[5]), (1424.5 * 5) / 30, 'June to the 5th', 0.01);
+  assert.equal(x.job.to, '2026-06-05');
+});
+
+test('the offer’s own last month, worked beyond its end, goes on to the day worked', () => {
+  const offer = offerWith({ duration: 75 }); // ends on 16 March
+  const x = settleOf(offer, { months: workOn('2026-03', [25]) });
+  assert.equal(x.rows.length, 3);
+  assert.equal(x.rows[2].to, '2026-03-25');
+  const plain = settleOf(offer, {});
+  assert.ok(x.rows[2].items.salary.agreed > plain.rows[2].items.salary.agreed);
+});
+
+test('a closed month: libre days before the first day worked, or after the last, lie outside the job; a wage per day does not change', () => {
+  const closed = { ...workOn('2026-01', range(10, 31), true), ...workOn('2026-03', range(1, 20), true) };
+  const x = settleOf(offerWith(), { months: closed });
+  const pay = (row) => row.items.salary.agreed + row.items.overnight.agreed;
+  near(pay(x.rows[0]), (1424.5 * 22) / 30, 'January from the 10th: 22 days', 0.01);
+  near(pay(x.rows[1]), 1424.5, 'February follows the offer', 0.01);
+  near(pay(x.rows[2]), (1424.5 * 20) / 30, 'March to the 20th: 20 days', 0.01);
+  assert.deepEqual([x.job.from, x.job.to], ['2026-01-10', '2026-03-20']);
+  // The same days with a wage per day: the days decide, nothing is trimmed
+  const perDayPlain = settleOf(perDay(), { months: { '2026-01': { closed: true, days: closed['2026-01'].days } } });
+  assert.equal(perDayPlain.rows[0].items.salary.agreed, 2200);
+});
+
+test('a job that ends early: closed months after the last worked one are outside it, open ones follow the offer', () => {
+  const closedAll = {
+    ...workOn('2026-01', range(1, 31), true),
+    ...workOn('2026-02', range(1, 10), true),
+    '2026-03': { closed: true, days: {} },
+  };
+  const x = settleOf(offerWith(), { months: closedAll });
+  const pay = (row) => row.items.salary.agreed + row.items.overnight.agreed;
+  near(pay(x.rows[1]), (1424.5 * 10) / 30, 'February to the 10th', 0.01);
+  assert.equal(pay(x.rows[2]), 0);
+  // Not closed: the offer is followed
+  const open = settleOf(offerWith(), { months: { '2026-03': { days: { '05': 'off' } } } });
+  near(pay(open.rows[2]), 1424.5, 'an open month is whole', 0.01);
+});
+
+test('the empty-record invariant still holds with the trimming in place: nothing marked, nothing moves', () => {
+  const x = settleOf(offerWith(), {});
+  assert.equal(x.job.differs, false);
+  assert.equal(
+    x.rows.every((row) => !row.extension),
+    true,
+  );
+});

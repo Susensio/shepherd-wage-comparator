@@ -73,7 +73,7 @@ export function setUpRecord(given) {
 
 /** The phase of an offer that has a record to show, or null: not decided, only an offer, or not complete. */
 export function recordPhase(o, today = todayISO()) {
-  const phase = phaseOf(o, today);
+  const phase = phaseOf(o, today, o.mine.record);
   return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
 }
 
@@ -112,16 +112,16 @@ export function recordContext(o, r) {
     acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
     index,
     count,
-    current: spanOfKey(key).from <= today && today <= spanOfKey(key).to,
+    current: spanOfKey(key).from <= today && today <= spanOfKey(key).calendarTo,
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
-    canClose: spanOfKey(key).to < today,
+    canClose: spanOfKey(key).calendarTo < today,
   });
   const key = monthOnCalendar(o, settled.rows, today, phase);
   const index = shown.findIndex((row) => row.month === key);
   /** @type {RecordContext['strip']} */
   const strip = settled.rows.map((row) => ({
     month: row.month,
-    state: row.closed ? 'closed' : row.from > today ? 'later' : row.to < today ? 'due' : 'now',
+    state: row.closed ? 'closed' : row.from > today ? 'later' : row.calendarTo < today ? 'due' : 'now',
     selected: row.month === key,
   }));
   const waiting = standing.unclosed.find((row) => row.month !== key);
@@ -352,7 +352,7 @@ export function forgetRecordUi(offerId) {
  */
 export function cardRecord(o, r) {
   const today = todayISO();
-  const phase = phaseOf(o, today);
+  const phase = phaseOf(o, today, o.mine.record);
   if (phase === 'offerOnly') return { phase: null, line: null };
   if (!recordPhase(o, today)) return { phase, line: null };
   const settled = settleOffer(o);

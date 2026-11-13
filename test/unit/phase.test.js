@@ -36,3 +36,18 @@ test('a duration in months ends by date', () => {
   assert.equal(phaseOf(offer, '2026-02-28'), 'underway');
   assert.equal(phaseOf(offer, '2026-03-01'), 'finished');
 });
+
+test('with a record, the job ends on the later of the offer’s end and the last day worked', () => {
+  const record = { months: { '2026-06': { days: { 14: 'work', 20: 'off' } } } };
+  const offer = days('2026-06-01', 10); // ends on the 10th
+  assert.equal(phaseOf(offer, '2026-06-14', record), 'underway'); // worked until the 14th
+  assert.equal(phaseOf(offer, '2026-06-15', record), 'finished');
+  assert.equal(phaseOf(offer, '2026-06-15', { months: { '2026-06': { days: { 14: 'off' } } } }), 'finished');
+  assert.equal(phaseOf(offer, '2026-06-15'), 'finished'); // no record: as before
+});
+
+test('a month with nothing worked does not extend it, and an earlier day worked does not shorten it', () => {
+  const offer = days('2026-06-01', 10);
+  assert.equal(phaseOf(offer, '2026-07-15', { months: { '2026-07': { closed: true, days: {} } } }), 'finished');
+  assert.equal(phaseOf(offer, '2026-06-11', { months: { '2026-06': { days: { '03': 'work' } } } }), 'finished');
+});

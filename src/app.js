@@ -190,7 +190,7 @@ export function paintAll({ animate = false } = {}) {
   document.body.classList.toggle('loading-account', loading);
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
   $('#fichaMenu').dataset.id = o.id;
-  const phase = phaseOf(o, todayISO());
+  const phase = phaseOf(o, todayISO(), o.mine.record);
   $('#fichaPhase').hidden = !(phase in PHASE_TEXT);
   $('#fichaPhase').textContent = PHASE_TEXT[phase] ?? '';
   $('#fichaPhase').dataset.phase = phase;

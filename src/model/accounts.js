@@ -35,7 +35,7 @@ export function linesOf(grossItems, cash, cashGross, netFactor) {
 const daysBetween = (from, to) => Math.round((+parseDate(to) - +parseDate(from)) / DAY_MS);
 
 /** The span of a settled month, as the record's helpers take it. */
-export const spanOf = (row) => ({ key: row.month, from: row.from, to: row.to });
+export const spanOf = (row) => ({ key: row.month, from: row.calendarFrom ?? row.from, to: row.calendarTo ?? row.to });
 
 /**
  * One month for its calendar: the marks as shown, their counts, the money of the month and, when the jornadas differ
@@ -65,8 +65,9 @@ export function monthAccounts(offer, record, key, today, ctx, netFactor) {
         [key]: { closed: false, days: Object.fromEntries(defaultMarks(offer, span).map((m) => [m.day, m.kind])) },
       },
     };
+    // (a month after the offer is not in the job without a day worked: all of it is more than the offer)
     const base = settle(offer, asOffer, today, ctx).rows.find((x) => x.month === key);
-    delta = cents(row.due - base.due) + 0; // + 0: no -0
+    delta = cents(row.due - (base?.due ?? 0)) + 0; // + 0: no -0
   }
   const lines = linesOf(
     ITEMS.map((item) => ({ item, due: row.items[item].due })),

@@ -4,7 +4,7 @@
  * is the caller's. No DOM.
  */
 
-import { isoOf, newId, parseDate } from '../offer.js';
+import { endOf, isoOf, newId, parseDate } from '../offer.js';
 import { schedule } from './time.js';
 
 /** @typedef {import('./settle.js').OfferRecord} OfferRecord */
@@ -34,8 +34,19 @@ function defaultKinds(terms, count) {
   return Array.from({ length: count }, (_, i) => (before(i + 1) > before(i) ? 'off' : 'work'));
 }
 
+/** The last day marked as worked anywhere in the record, as an ISO date, or '' (months without a worked day count for nothing). */
+export function lastWorkedDay(record) {
+  let last = '';
+  for (const [key, month] of Object.entries(record?.months ?? {}))
+    for (const [day, kind] of Object.entries(month?.days ?? {})) {
+      const iso = `${key}-${day}`;
+      if (kind === 'work' && iso > last) last = iso;
+    }
+  return last;
+}
+
 /**
- * The days of a month as shown: the recorded kind, else the offer's default.
+ * The days of a month as shown: the recorded kind, else the offer's default; days after the offer's end default to libre.
  * @param {{ terms: object }} offer
  * @param {OfferRecord | undefined} record
  * @param {Span} span
@@ -43,12 +54,14 @@ function defaultKinds(terms, count) {
  */
 export function marksOf(offer, record, span) {
   const days = daysOf(span);
-  const kinds = defaultKinds(offer.terms, days.length);
+  const end = endOf(offer.terms);
+  const endIso = end ? isoOf(end) : '9999-12-31';
+  const kinds = defaultKinds(offer.terms, days.filter(([, date]) => date <= endIso).length);
   const recorded = record?.months?.[span.key]?.days ?? {};
   return days.map(([day, date], i) => ({
     day,
     date,
-    kind: recorded[day] ?? kinds[i],
+    kind: recorded[day] ?? (date <= endIso ? kinds[i] : 'off'),
     recorded: day in recorded,
   }));
 }
