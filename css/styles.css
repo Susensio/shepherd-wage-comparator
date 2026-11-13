@@ -4393,13 +4393,13 @@ h2.mode small {
   font-stretch: 100%;
   color: var(--muted);
 }
-.strip {
+.monthstrip {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 4px;
 }
-.strip button {
+.monthstrip button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4410,21 +4410,21 @@ h2.mode small {
   font-size: 14px;
   line-height: 1.2;
 }
-.strip button small {
+.monthstrip button small {
   font-size: 10.5px;
   font-weight: 600;
   color: var(--muted);
 }
-.strip button.closed small {
+.monthstrip button.closed small {
   color: var(--c-pay);
 }
-.strip button.due small {
+.monthstrip button.due small {
   color: var(--c-cash-t);
 }
-.strip button.later {
+.monthstrip button.later {
   opacity: 0.55;
 }
-.strip button[aria-current="true"] {
+.monthstrip button[aria-current="true"] {
   border: 2px solid var(--ink);
 }
 .nudge {
@@ -4489,14 +4489,14 @@ h2.mode small {
   display: flex;
   flex-direction: column;
 }
-.step {
+.regstep {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   gap: 0 10px;
   padding-bottom: 18px;
   position: relative;
 }
-.step::before {
+.regstep::before {
   content: "";
   position: absolute;
   left: 14px;
@@ -4505,10 +4505,10 @@ h2.mode small {
   width: 2px;
   background: var(--line);
 }
-.step:last-child::before {
+.regstep:last-child::before {
   display: none;
 }
-.step .num {
+.regstep .num {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -4520,18 +4520,18 @@ h2.mode small {
   background: var(--bg);
   position: relative;
 }
-.step.done .num {
+.regstep.done .num {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
 }
-.step .sb {
+.regstep .sb {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
 }
-.step h3 {
+.regstep h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
@@ -4543,13 +4543,13 @@ h2.mode small {
   letter-spacing: 0;
   color: var(--ink);
 }
-.step .bh h3 {
+.regstep .bh h3 {
   font-size: 18px;
 }
-.step .tag {
+.regstep .tag {
   padding: 14px 16px 12px;
 }
-.step .tag .big {
+.regstep .tag .big {
   font-size: clamp(32px, 8vw, 44px);
 }
 .tocl button {
@@ -4564,12 +4564,12 @@ h2.mode small {
 .due-line.near {
   color: var(--neg);
 }
-.law {
+.lawcheck {
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--line);
 }
-.law > div {
+.lawcheck > div {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
   gap: 0 8px;
@@ -4577,34 +4577,34 @@ h2.mode small {
   border-bottom: 1px solid var(--line);
   font-size: 14px;
 }
-.law .m {
+.lawcheck .m {
   font-weight: 800;
   font-size: 15px;
 }
-.law .m.bad {
+.lawcheck .m.bad {
   color: var(--neg);
 }
-.law .m.ok {
+.lawcheck .m.ok {
   color: var(--c-pay);
 }
-.law .m.warn {
+.lawcheck .m.warn {
   color: var(--c-cash-t);
 }
-.law b {
+.lawcheck b {
   font-weight: 650;
 }
-.law small {
+.lawcheck small {
   display: block;
   color: var(--muted);
   font-size: 12.5px;
 }
-.step .sofar {
+.regstep .sofar {
   gap: 4px;
 }
-.step .sofar > div {
+.regstep .sofar > div {
   padding: 6px 5px;
 }
-.step .sofar b {
+.regstep .sofar b {
   font-size: 12.5px;
   letter-spacing: -0.04em;
 }
@@ -4614,7 +4614,7 @@ h2.mode small {
   font-size: 13px;
   color: var(--muted);
 }
-.strip button.add {
+.monthstrip button.add {
   border-style: dashed;
   background: none;
   font-weight: 500;

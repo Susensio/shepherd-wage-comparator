@@ -303,6 +303,21 @@ test('a new offer from the list opens the entry over it, and «Cerrar» goes bac
   await expect(page.locator('#cards .ocard')).toHaveCount(sample.offers.length);
 });
 
+test('every step uses the width of the screen: no rule of another block squeezes the form', async ({ page }) => {
+  await loadOffers(page, sample, 0);
+  for (const id of ['offer', 'pay', 'day', 'trip']) {
+    await openStep(page, id);
+    const widths = await page.evaluate((id) => {
+      const step = document.querySelector(`#entry .step[data-step=${id}]`);
+      const first = step.querySelector('fieldset');
+      return { step: step.getBoundingClientRect().width, fieldset: first ? first.getBoundingClientRect().width : null };
+    }, id);
+    expect(widths.step).toBeGreaterThan(300);
+    if (widths.fieldset !== null) expect(widths.fieldset).toBeGreaterThan(300);
+    await page.locator('#entryClose').click();
+  }
+});
+
 test('each step fits a phone: nothing wider than the screen', async ({ page }) => {
   await loadOffers(page, sample, 0);
   await openStep(page, 'pay');

@@ -76,7 +76,7 @@ const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso',
 
 /** The months of the job in a strip; the one tapped opens below. */
 function strip(c) {
-  return html`<div class="strip" role="group" aria-label="Meses del trabajo">${c.strip.map(
+  return html`<div class="monthstrip" role="group" aria-label="Meses del trabajo">${c.strip.map(
     (m) =>
       html`<button type="button" class=${`${m.state === 'closed' ? 'closed' : ''} ${m.state === 'due' ? 'due' : ''} ${m.state === 'later' ? 'later' : ''} ${m.state === 'add' ? 'add' : ''}`} data-action="selectMonth" data-key=${m.month} aria-current=${String(m.selected)} ?disabled=${m.state === 'later'}>${m.state === 'add' ? '+ ' : ''}${capital(monthShort(m.month))}<small>${MONTH_STATE[m.state]}</small></button>`,
   )}</div>`;
@@ -111,7 +111,7 @@ const howItAdds = (s) =>
 function monthsToRecord(c) {
   const months = c.strip.filter((m) => m.state !== 'add');
   const open = months.filter((m) => m.state !== 'closed');
-  return html`<div class=${open.length ? 'step' : 'step done'}><span class="num">${open.length ? '1' : '✔'}</span><div class="sb">
+  return html`<div class=${open.length ? 'regstep' : 'regstep done'}><span class="num">${open.length ? '1' : '✔'}</span><div class="sb">
     <h3>Registrar lo que falta</h3>
     <p class="hint">${open.length ? `${open.length === 1 ? 'Queda 1 mes sin cerrar' : `Quedan ${open.length} meses sin cerrar`}. Cada uno se abre con su calendario.` : 'Todos los meses cerrados: días confirmados.'}</p>
     <div class="tocl">${months.map((m) => html`<div><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><button type="button" class="linkbtn" data-action="reviewStart" data-key=${m.month}>${m.state === 'closed' ? 'Ver' : 'Abrir'}</button></div>`)}</div>
@@ -125,7 +125,7 @@ function monthsToRecord(c) {
 function howMuch(c) {
   const { standing: s } = c;
   const open = s.unclosed.length;
-  return html`<div class="step"><span class="num">2</span><div class="sb">
+  return html`<div class="regstep"><span class="num">2</span><div class="sb">
     <h3>Cuánto se debe</h3>
     <div class="tag"><span class="lbl">${s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${money(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
       !s.hasPayments
@@ -150,7 +150,7 @@ function claim(c) {
     d.lapsed
       ? `plazo vencido el ${fWhen(d.deadline, today)}`
       : `hasta el ${fWhen(d.deadline, today)} · quedan ${d.daysLeft} ${d.daysLeft === 1 ? 'día' : 'días'}`;
-  return html`<div class="step"><span class="num">3</span><div class="sb block">
+  return html`<div class="regstep"><span class="num">3</span><div class="sb block">
     <div class="bh"><h3>Reclamar</h3>${s.hasPayments && s.falta > 0 ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p>
     ${
@@ -212,7 +212,7 @@ function lawBlock(c) {
         : mark('ok', 'Plus de pernocta', 'Cubierto con lo cobrado.');
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
     <p class="hint">Con lo que pasó: los días del registro y lo cobrado.</p>
-    <div class="law">${rest}${days}${overnight}</div>
+    <div class="lawcheck">${rest}${days}${overnight}</div>
     <p class="hint">No se puede comprobar con lo apuntado: festivos trabajados (falta la lista de festivos del lugar) y salario mínimo (falta el bruto de la nómina).</p>
   </div>`;
 }

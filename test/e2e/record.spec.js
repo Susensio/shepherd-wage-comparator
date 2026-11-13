@@ -19,7 +19,7 @@ test.describe('under way: Registro', () => {
   test.use({ today: '2026-08-12' });
 
   const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
-  const strip = (page, month) => page.locator(`.strip button[data-key="${month}"]`);
+  const strip = (page, month) => page.locator(`.monthstrip button[data-key="${month}"]`);
 
   test('the phase comes from the date: Registro under way, the offer before, and the offer’s headline back', async ({
     page,
@@ -46,7 +46,7 @@ test.describe('under way: Registro', () => {
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
-    await expect(page.locator('.strip button')).toHaveCount(4);
+    await expect(page.locator('.monthstrip button')).toHaveCount(4);
     await expect(strip(page, '2026-06')).toContainText('por cerrar');
     await expect(strip(page, '2026-08')).toContainText('en curso');
     await expect(strip(page, '2026-09')).toContainText('por venir');
@@ -191,7 +191,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(page.locator('.conditions')).toBeVisible();
-    await expect(page.locator('.step h3')).toHaveText(['Registrar lo que falta', 'Cuánto se debe', 'Reclamar']);
+    await expect(page.locator('.regstep h3')).toHaveText(['Registrar lo que falta', 'Cuánto se debe', 'Reclamar']);
     await expect(page.locator('#result')).toContainText('¿Se cumplió la ley?');
     for (const gone of [
       'Por conceptos',
@@ -216,8 +216,8 @@ test.describe('finished: Cuentas', () => {
     const falta = amount(await tile(page, 'Falta').textContent());
     expect(cobrado).toBe(1000);
     expect(Math.round((corresponde - cobrado) * 100) / 100).toBe(falta);
-    await expect(page.locator('.step .tag .lbl')).toHaveText('Debe el ganadero');
-    expect(amount(await page.locator('.step .tag .big').textContent())).toBe(falta);
+    await expect(page.locator('.regstep .tag .lbl')).toHaveText('Debe el ganadero');
+    expect(amount(await page.locator('.regstep .tag .big').textContent())).toBe(falta);
     await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
   });
 
@@ -225,20 +225,20 @@ test.describe('finished: Cuentas', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
-    await expect(page.locator('.step .tag .big')).toHaveText(/^0\s€$/);
+    await expect(page.locator('.regstep .tag .big')).toHaveText(/^0\s€$/);
     await expect(page.locator('#result')).toContainText(
       'las retenciones reales de la nómina suelen diferir de las simuladas',
     );
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);
-    await expect(page.locator('.step .tag .sub')).not.toContainText('debe');
+    await expect(page.locator('.regstep .tag .sub')).not.toContainText('debe');
     await expect(page.getByRole('button', { name: 'Copiar texto de la reclamación' })).toHaveCount(0);
     await expect(page.locator('#result')).toContainText('No falta nada por reclamar');
   });
 
   test('no cobros: Corresponde and a prompt, no debt and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('.step .tag .lbl')).toHaveText('Corresponde');
+    await expect(page.locator('.regstep .tag .lbl')).toHaveText('Corresponde');
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
     await expect(page.locator('#result')).toContainText('Apunta lo cobrado para saber qué reclamar');
@@ -292,7 +292,7 @@ test.describe('finished: Cuentas', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    const law = page.locator('.law');
+    const law = page.locator('.lawcheck');
     await expect(law.locator('> div').first()).toContainText('Descanso semanal');
     await expect(law.locator('> div').first().locator('.m')).toHaveText('✘');
     await expect(law).toContainText('periodos de 4 semanas');
@@ -332,7 +332,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#result')).toContainText('2 meses cerrados');
     await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
     await page.getByRole('button', { name: 'Ver cuánto se debe' }).click();
-    await expect(page.locator('.step h3').first()).toHaveText('Registrar lo que falta');
+    await expect(page.locator('.regstep h3').first()).toHaveText('Registrar lo que falta');
     await expect(page.locator('.tocl')).toContainText('cerrado');
     await expect.poll(index).toBe(ficha);
   });
@@ -427,7 +427,7 @@ test.describe('the real period of the work', () => {
     await reselect(page);
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     await expect(page.locator('#result h2.mode')).toHaveText(/Registro/);
-    await expect(page.locator('.strip button[data-key="2026-10"]')).toContainText('en curso');
+    await expect(page.locator('.monthstrip button[data-key="2026-10"]')).toContainText('en curso');
     await at(page, '2026-10-03');
     await reselect(page);
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
@@ -477,8 +477,8 @@ test.describe('the real period of the work', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
-    await expect(page.locator('.strip button')).toHaveCount(5);
-    await expect(page.locator('.strip button[data-key="2026-10"]')).toContainText('en curso');
+    await expect(page.locator('.monthstrip button')).toHaveCount(5);
+    await expect(page.locator('.monthstrip button[data-key="2026-10"]')).toContainText('en curso');
     await expect(page.locator('.real')).toContainText('al 5 oct 2026');
   });
 });
