@@ -44,3 +44,8 @@ Weighed and discarded:
 - A month cannot be closed without its calendar having been shown: closing happens from the calendar or from a month-by-month review, never in bulk and blind.
 - An offer with no known end gets its months from the start date up to today.
 - What differs from the offer in a month is judged by counts (worked days, days off), not day by day: moving a libranza from one day to another is not a difference.
+
+13 November 2026, after the first real use. The owner decided:
+- The record works with totals: what matters at the end is Corresponde against Cobrado. Payments are a free list that does not cover months; the oldest-first assignment only dates the claim, and the months remain only for days.
+- The real period of a job follows what is marked in the calendar, not dates kept in the record: a month after the offer's last one joins the job if a day is marked worked in it, and in a closed month the days off before the first or after the last worked day lie outside the job. The saved format does not change.
+- The phase of a job follows its real end, the later of the offer's end and the last worked day.
