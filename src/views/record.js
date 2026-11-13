@@ -107,64 +107,76 @@ function registro(c) {
 const howItAdds = (s) =>
   html`<details class="plg" data-fold="how"><summary>Cómo sale lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
 
-/** The months of a job that is over, each one opening its calendar; the ones not closed first in the flow. */
-function monthsToRecord(c) {
-  const months = c.strip.filter((m) => m.state !== 'add');
-  const open = months.filter((m) => m.state !== 'closed');
-  return html`<div class=${open.length ? 'regstep' : 'regstep done'}><span class="num">${open.length ? '1' : '✔'}</span><div class="sb">
-    <h3>Registrar lo que falta</h3>
-    <p class="hint">${open.length ? `${open.length === 1 ? 'Queda 1 mes sin cerrar' : `Quedan ${open.length} meses sin cerrar`}. Cada uno se abre con su calendario.` : 'Todos los meses cerrados: días confirmados.'}</p>
-    <div class="tocl">${months.map((m) => html`<div><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><button type="button" class="linkbtn" data-action="reviewStart" data-key=${m.month}>${m.state === 'closed' ? 'Ver' : 'Abrir'}</button></div>`)}</div>
-    ${c.addable ? html`<button type="button" class="linkbtn addmonth" data-action="reviewStart" data-key=${c.addable}>+ Añadir ${monthName(c.addable)}</button>` : nothing}
-    ${open.length ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
-    ${cobrosView(c)}
-  </div></div>`;
-}
-
-/** How much is owed: the headline, Corresponde, Cobrado and Falta in net, and how Corresponde comes out. */
-function howMuch(c) {
+/** The yellow block: what the ganadero owes, the three figures, and the one action while months are not closed. */
+function result(c) {
   const { standing: s } = c;
   const open = s.unclosed.length;
-  return html`<div class="regstep"><span class="num">2</span><div class="sb">
-    <h3>Cuánto se debe</h3>
+  const minimum = c.law.minimum;
+  return html`<div class="block result">
     <div class="tag"><span class="lbl">${s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${money(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
       !s.hasPayments
         ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
         : open
-          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: repasa y cierra para fijar la cifra.`
+          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
           : 'Todos los meses están cerrados.'
     }</span></div>
     ${tiles(s)}
     ${NET_HINT}
     ${notes(s, { over: '' })}
-    ${c.law.minimum.known && c.law.minimum.short >= 1 ? html`<p class="hint">La nómina declarada queda ${money(c.law.minimum.short)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
-    ${howItAdds(s)}
-  </div></div>`;
+    ${minimum.known && minimum.short >= 1 ? html`<p class="hint">La nómina declarada queda ${money(minimum.short)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+    ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
+  </div>`;
 }
 
-/** The claim: the text to copy, the nearest deadline, and the deadline of each month in a closed fold. */
+/** «Lo que dejó el trabajo»: what it came to, from «Final de campaña» without its simulator; what still follows the offer says so. */
+function balanceBlock(c) {
+  const { balance: b, standing: s } = c;
+  const cashLine = s.lines.find((x) => x.key === 'cash');
+  const unsure = b.firm ? '' : 'estimado: aún hay meses según la oferta';
+  return html`<div class="block"><div class="bh"><h2>Lo que dejó el trabajo</h2></div>
+    <div class="rows">
+      ${row('Corresponde en total', money(b.corresponde), { sub: [unsure || 'con todos los meses cerrados', cashLine && cashLine.due > 0 ? `de ello, en negro ${money(cashLine.due)}` : ''].filter(Boolean).join(' · ') })}
+      ${row('Cobrado', money(b.cobrado), { sub: `en nómina ${money(b.cobradoNomina)} · en mano ${money(b.cobradoMano)}` })}
+      ${row('Jornadas', String(b.worked), { sub: b.firm ? 'de los meses cerrados' : `${b.workedClosed} en meses cerrados; el resto, según la oferta` })}
+      ${b.contribDays > 0 ? row('Días cotizados', String(Math.round(b.contribDays)), { sub: 'según la oferta: la nómina real no se apunta' }) : nothing}
+      ${b.paroDays >= 1 ? row('Paro que genera', `unos ${Math.round(b.paroDays)} días`, { sub: `unos ${money(b.paroEuros)}, según la oferta; se cobran más adelante` }) : nothing}
+    </div>
+    ${howItAdds(s)}
+  </div>`;
+}
+
+/** The claim: the text to copy, the nearest deadline, and the deadline of each month in a closed fold. Only while something is missing. */
 function claim(c) {
   const { standing: s, today } = c;
+  if (!s.hasPayments || s.falta <= 0) return nothing;
   const near = s.nearest;
   const by = (d) =>
     d.lapsed
       ? `plazo vencido el ${fWhen(d.deadline, today)}`
       : `hasta el ${fWhen(d.deadline, today)} · quedan ${d.daysLeft} ${d.daysLeft === 1 ? 'día' : 'días'}`;
-  return html`<div class="regstep"><span class="num">3</span><div class="sb block">
-    <div class="bh"><h3>Reclamar</h3>${s.hasPayments && s.falta > 0 ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
+  return html`<div class="block">
+    <div class="bh"><h2>Reclamar</h2><button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button></div>
     <p class="hint copy-msg" role="status"></p>
-    ${
-      near
-        ? html`<p class=${near.lapsed || near.daysLeft < 120 ? 'due-line near' : 'due-line'}>Plazo más cercano: lo de ${monthName(near.month)}, ${by(near)}.</p>`
-        : html`<p class="hint">${s.hasPayments ? 'No falta nada por reclamar.' : 'Apunta lo cobrado para saber qué reclamar.'}</p>`
-    }
+    ${near ? html`<p class=${near.lapsed || near.daysLeft < 120 ? 'due-line near' : 'due-line'}>Plazo más cercano: lo de ${monthName(near.month)}, ${by(near)}.</p>` : nothing}
     ${
       s.deadlines.length
         ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${s.deadlines.map((d) => row(capital(monthName(d.month)), money(d.owed), { sub: html`<span class=${d.lapsed || d.daysLeft < 120 ? 'due-by near' : 'due-by'}>${by(d)}</span>` }))}</div>
           <p class="hint">Se cuenta un año desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2). Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
         : nothing
     }
-  </div></div>`;
+  </div>`;
+}
+
+/** «Registro del trabajo»: the months and the cobros, open only while something remains to record. */
+function registroFold(c) {
+  const { standing: s } = c;
+  const months = c.strip.filter((m) => m.state !== 'add');
+  const open = s.unclosed.length > 0 || c.payments.length === 0;
+  return html`<details class="plg" data-autofold="registro" ?open=${open}><summary>Registro del trabajo<span class="stat dt">${s.unclosed.length ? `${s.unclosed.length} sin cerrar` : 'meses cerrados'} · ${c.payments.length === 1 ? '1 cobro' : `${c.payments.length} cobros`}</span></summary>
+    <div class="tocl">${months.map((m) => html`<button type="button" class="monthrow" data-action="reviewStart" data-key=${m.month}><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><span aria-hidden="true">›</span></button>`)}</div>
+    ${c.addable ? html`<button type="button" class="linkbtn addmonth" data-action="reviewStart" data-key=${c.addable}>+ Añadir ${monthName(c.addable)}</button>` : nothing}
+    ${cobrosView(c)}
+  </details>`;
 }
 
 /** «¿Se cumplió la ley?»: facts only, from the record; what is not settled yet says when it will be. */
@@ -238,11 +250,14 @@ function lawBlock(c) {
   </div>`;
 }
 
-/** «Cuentas»: regularizing a job that is over, in three steps, and whether the law was kept. */
+/** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
 function cuentas(c) {
-  return html`<h2 class="mode">Cuentas<small>Regularizar: lo que corresponde frente a lo cobrado.</small></h2>
-    <div class="spine">${monthsToRecord(c)}${howMuch(c)}${claim(c)}</div>
-    ${lawBlock(c)}`;
+  return html`<h2 class="mode small">Cuentas</h2>
+    ${result(c)}
+    ${balanceBlock(c)}
+    ${lawBlock(c)}
+    ${claim(c)}
+    ${registroFold(c)}`;
 }
 
 /** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */

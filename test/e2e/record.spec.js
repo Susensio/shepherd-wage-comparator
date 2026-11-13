@@ -180,30 +180,60 @@ test.describe('finished: Cuentas', () => {
   test.use({ today: '2026-11-12' });
 
   const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+  /** Whether the first element matching `a` comes before the first matching `b`; `h2:text` picks a heading by its text. */
+  const after = (page, a, b) =>
+    page.evaluate(
+      ([a, b]) => {
+        const find = (sel) =>
+          sel.startsWith('h2:')
+            ? [...document.querySelectorAll('#result h2')].find((h) => h.textContent.trim() === sel.slice(3))
+            : document.querySelector(sel);
+        return !!(find(a).compareDocumentPosition(find(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      },
+      [a, b],
+    );
 
-  test('three steps, and the law replaces the offer’s analysis; the old structure is gone', async ({ page }) => {
+  test('the result first: the yellow block right after the conditions, then what the work left, the law, the claim and the chores', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [
       { date: '2026-07-05', amount: 1000, via: 'payroll' },
       { date: '2026-08-20', amount: 300, via: 'cash' },
     ]);
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
-    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
     await expect(page.locator('.conditions')).toBeVisible();
-    await expect(page.locator('.regstep h3')).toHaveText(['Registrar lo que falta', 'Cuánto se debe', 'Reclamar']);
-    await expect(page.locator('#result')).toContainText('¿Se cumplió la ley?');
+    // The yellow block is the first block after the conditions row, and on the first screen
+    expect(await after(page, '.conditions', '#result .tag')).toBe(true);
+    const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('result'));
+    expect(first).toBe(true);
+    const box = await page.locator('#result .tag').boundingBox();
+    expect(box?.y ?? 9999).toBeLessThan(500);
+    // The order of the rest
+    const order = [
+      '#result .result',
+      'h2:Lo que dejó el trabajo',
+      'h2:¿Se cumplió la ley?',
+      'h2:Reclamar',
+      'details[data-autofold=registro]',
+      'details[data-fold=reference]',
+    ];
+    for (let i = 0; i < order.length - 1; i++)
+      expect(await after(page, order[i], order[i + 1]), `${order[i]} before ${order[i + 1]}`).toBe(true);
+    // Gone: the numbered steps, the old names and the second path to the review
     for (const gone of [
+      'Regularizar',
+      'Registrar lo que falta',
+      'Repasar los meses',
+      'Cuánto se debe',
       'Por conceptos',
-      'Meses por cerrar',
-      'Plazo para reclamar',
-      'Análisis de la oferta',
-      '¿Es legal?',
+      'Abrir',
       'Para negociar',
-      'de más:',
-      'Registro',
     ])
       await expect(page.locator('#result')).not.toContainText(gone);
-    await expect(page.locator('details[data-fold=analysis]')).toHaveCount(0);
+    await expect(page.locator('.regstep')).toHaveCount(0);
     await expect(page.locator('#secEmployer')).toHaveCount(0);
   });
 
@@ -215,35 +245,55 @@ test.describe('finished: Cuentas', () => {
     const falta = amount(await tile(page, 'Falta').textContent());
     expect(cobrado).toBe(1000);
     expect(Math.round((corresponde - cobrado) * 100) / 100).toBe(falta);
-    await expect(page.locator('.regstep .tag .lbl')).toHaveText('Debe el ganadero');
-    expect(amount(await page.locator('.regstep .tag .big').textContent())).toBe(falta);
+    await expect(page.locator('.result .tag .lbl')).toHaveText('Debe el ganadero');
+    expect(amount(await page.locator('.result .tag .big').textContent())).toBe(falta);
     await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
   });
 
-  test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más»', async ({ page }) => {
+  test('months not closed: one action, «Revisar los meses», and the line that the figure is not firm; none once all are closed', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(1);
+    await expect(page.locator('.result .tag .sub')).toContainText(
+      '4 meses según la oferta: la cifra no es firme hasta cerrarlos',
+    );
+    await closeMonths(page, 'all');
+    await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(0);
+    await expect(page.locator('.result .tag .sub')).toHaveText('Todos los meses están cerrados.');
+  });
+
+  test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más», and nothing to claim', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
-    await expect(page.locator('.regstep .tag .big')).toHaveText(/^0\s€$/);
+    await expect(page.locator('.result .tag .big')).toHaveText(/^0\s€$/);
     await expect(page.locator('#result')).toContainText(
       'las retenciones reales de la nómina suelen diferir de las simuladas',
     );
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);
-    await expect(page.locator('.regstep .tag .sub')).not.toContainText('debe');
+    await expect(page.locator('.result .tag .sub')).not.toContainText('debe');
     await expect(page.getByRole('button', { name: 'Copiar texto de la reclamación' })).toHaveCount(0);
-    await expect(page.locator('#result')).toContainText('No falta nada por reclamar');
+    await expect(page.locator('#result h2', { hasText: 'Reclamar' })).toHaveCount(0);
   });
 
-  test('no cobros: Corresponde and a prompt, no debt and no deadline', async ({ page }) => {
+  test('no cobros: Corresponde and a prompt, no debt, no claim and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('.regstep .tag .lbl')).toHaveText('Corresponde');
+    await expect(page.locator('.result .tag .lbl')).toHaveText('Corresponde');
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
-    await expect(page.locator('#result')).toContainText('Apunta lo cobrado para saber qué reclamar');
+    await expect(page.locator('#result h2', { hasText: 'Reclamar' })).toHaveCount(0);
   });
 
-  test('the nearest deadline in one line; the deadline of each month in a closed fold', async ({ page }) => {
+  test('«Reclamar»: the copy icon, the nearest deadline, and the deadline of each month in a closed fold', async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('.due-line')).toContainText(
@@ -251,18 +301,41 @@ test.describe('finished: Cuentas', () => {
     );
     const fold = page.locator('details[data-fold=deadlines]');
     await expect(fold).not.toHaveAttribute('open', '');
-    await expect(fold.locator(':scope > summary')).toHaveText('Plazos por mes');
     await fold.locator(':scope > summary').click();
     await expect(fold.locator('.row').first()).toContainText(/hasta el \d+ \w+ 2027/);
     await expect(fold).toContainText('ET art. 59.2');
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    await page.getByRole('button', { name: 'Copiar texto de la reclamación' }).click();
+    await expect(page.locator('#result .copy-msg[role=status]')).toHaveText('Texto copiado.');
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    expect(text).toMatch(/Cobrado: 1\.000\s€ netos en 1 cobro/);
+    expect(text).toMatch(/Queda por pagar, bruto/);
   });
 
-  test('«Cómo sale lo que corresponde» is a closed fold whose lines add up, with En negro only when cash was agreed', async ({
+  test('«Lo que dejó el trabajo»: estimated while months follow the offer, firm once all are closed; the paro always from the offer', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    const fold = page.locator('details[data-fold=how]');
+    await addPayments(page, [
+      { date: '2026-07-05', amount: 1000, via: 'payroll' },
+      { date: '2026-08-20', amount: 300, via: 'cash' },
+    ]);
+    const block = page.locator('#result .block', { hasText: 'Lo que dejó el trabajo' });
+    await expect(block.locator('.row', { hasText: 'Corresponde en total' })).toContainText(
+      'estimado: aún hay meses según la oferta',
+    );
+    await expect(block.locator('.row', { hasText: /^Cobrado/ })).toContainText('en nómina 1.000');
+    await expect(block.locator('.row', { hasText: /^Cobrado/ })).toContainText('en mano 300');
+    await expect(block.locator('.row', { hasText: 'Jornadas' })).toContainText('0 en meses cerrados');
+    await expect(block.locator('.row', { hasText: 'Paro que genera' })).toContainText('según la oferta');
+    await expect(block).not.toContainText('Simulador de nóminas');
+    await closeMonths(page, 'all');
+    await expect(block.locator('.row', { hasText: 'Corresponde en total' })).toContainText(
+      'con todos los meses cerrados',
+    );
+    await expect(block.locator('.row', { hasText: 'Corresponde en total' })).not.toContainText('estimado');
+    // How it adds up: a closed fold, with En negro only when cash was agreed
+    const fold = block.locator('details[data-fold=how]');
     await expect(fold).not.toHaveAttribute('open', '');
     await fold.locator(':scope > summary').click();
     await expect(fold.locator('.row')).toContainText([
@@ -272,19 +345,47 @@ test.describe('finished: Cuentas', () => {
       'En negro',
       'Corresponde',
     ]);
-    expect(
-      amount(
-        await fold
-          .locator('.row', { hasText: '= Corresponde' })
-          .or(fold.locator('.row').last())
-          .locator(':scope > :last-child')
-          .textContent(),
-      ),
-    ).toBe(amount(await tile(page, 'Corresponde').textContent()));
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
     await loadOffers(page, sample, 3); // Invernada C: no cash
     await page.locator('details[data-fold=how] > summary').click();
     await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
+  });
+
+  test('«Registro del trabajo» is open while something remains to record, closed when nothing does', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const fold = page.locator('details[data-autofold=registro]');
+    await expect(fold).toHaveAttribute('open', ''); // months not closed, and no cobros
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await expect(fold).toHaveAttribute('open', ''); // months not closed
+    await closeMonths(page, 'all');
+    await expect(fold).not.toHaveAttribute('open', ''); // nothing remains
+    await expect(fold.locator(':scope > summary')).toContainText('meses cerrados · 1 cobro');
+    await fold.locator(':scope > summary').click(); // it can still be opened
+    await expect(fold.locator('.monthrow')).toHaveCount(4);
+    await expect(fold.locator('.cobros')).toBeVisible();
+    // Closed months and no cobros: open again
+    await page.evaluate(() => {
+      app.active().mine.record.payments = [];
+      app.select(app.active().id);
+    });
+    await expect(page.locator('details[data-autofold=registro]')).toHaveAttribute('open', '');
+  });
+
+  test('«Lo que decía la oferta» is one closed fold at the end, without «Para negociar», with the simulator', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const fold = page.locator('details[data-fold=reference]');
+    await expect(fold).not.toHaveAttribute('open', '');
+    await expect(fold.locator(':scope > summary')).toHaveText('Lo que decía la oferta');
+    await expect(fold.locator('[data-fold=breakdown2]')).toHaveCount(1);
+    await expect(fold.locator('#secLegal')).toHaveCount(1);
+    await expect(fold.locator('[data-fold=payslips]')).toHaveCount(1);
+    await expect(fold.locator('[data-fold=workings]')).toHaveCount(1);
+    await expect(page.locator('#secEmployer')).toHaveCount(0);
+    expect(await after(page, 'details[data-autofold=registro]', 'details[data-fold=reference]')).toBe(true);
   });
 
   /** Closes months of the active offer from the page, as the review would. */
@@ -333,22 +434,22 @@ test.describe('finished: Cuentas', () => {
     await expect(rows.filter({ hasText: 'Salario mínimo en nómina' }).locator('.m')).toHaveText('✔');
   });
 
-  test('«Repasar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({
+  test('«Revisar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({
     page,
   }) => {
     const index = () => page.evaluate(() => navigation.currentEntry?.index);
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     const ficha = await index();
-    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    await page.getByRole('button', { name: 'Revisar los meses' }).click();
     await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 4');
     await expect(page.locator('.cal .grid .day').first()).toBeVisible();
     expect(await index()).toBe(ficha + 1);
     await page.goBack();
     await expect(page.locator('.review-progress')).toHaveCount(0);
-    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
     expect(await index()).toBe(ficha);
-    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    await page.getByRole('button', { name: 'Revisar los meses' }).click();
     await page.getByRole('button', { name: 'Cerrar junio' }).click();
     await expect(page.locator('.review-progress')).toContainText('Julio, 2 de 4');
     await page.getByRole('button', { name: 'Saltar' }).click();
@@ -358,28 +459,29 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#result')).toContainText('Repaso hecho');
     await expect(page.locator('#result')).toContainText('2 meses cerrados');
     await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
-    await page.getByRole('button', { name: 'Ver cuánto se debe' }).click();
-    await expect(page.locator('.regstep h3').first()).toHaveText('Registrar lo que falta');
-    await expect(page.locator('.tocl')).toContainText('cerrado');
+    await page.getByRole('button', { name: 'Ver las cuentas' }).click();
+    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
+    await expect(page.locator('.result .tag .sub')).toContainText('2 meses según la oferta');
     await expect.poll(index).toBe(ficha);
   });
 
-  test('a closed month keeps its days when the offer changes; it is reopened from Cuentas, asking first', async ({
+  test('a month tapped in the registro opens its calendar alone; a closed one keeps its days and is reopened, asking first', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    await page.getByRole('button', { name: 'Revisar los meses' }).click();
     const counts = await page.locator('.cal .counts').textContent();
     await page.getByRole('button', { name: 'Cerrar junio' }).click();
     await page.getByRole('button', { name: 'Saltar' }).click();
     await page.getByRole('button', { name: 'Saltar' }).click();
     await page.getByRole('button', { name: 'Saltar' }).click();
-    await page.getByRole('button', { name: 'Ver cuánto se debe' }).click();
+    await page.getByRole('button', { name: 'Ver las cuentas' }).click();
     await page.evaluate(() => {
       app.active().terms.daysOff = 12;
       app.select(app.active().id);
     });
-    await page.locator('.tocl > div', { hasText: 'Junio' }).getByRole('button', { name: 'Ver' }).click();
+    await page.locator('details[data-autofold=registro] .monthrow', { hasText: 'Junio' }).click();
+    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 1');
     await expect(page.locator('.cal .state')).toHaveText('Cerrado');
     await expect(page.locator('.cal .counts')).toHaveText(counts ?? '');
     await expect(page.locator('.cal .day[data-action]')).toHaveCount(0);
@@ -392,17 +494,6 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('.cal .state')).toHaveText('Según la oferta');
   });
 
-  test('the claim is copied from what the record shows', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await page.getByRole('button', { name: 'Copiar texto de la reclamación' }).click();
-    await expect(page.locator('#result .copy-msg[role=status]')).toHaveText('Texto copiado.');
-    const text = await page.evaluate(() => navigator.clipboard.readText());
-    expect(text).toMatch(/Cobrado: 1\.000\s€ netos en 1 cobro/);
-    expect(text).toMatch(/Queda por pagar, bruto/);
-  });
-
   for (const scheme of ['light', 'dark']) {
     test(`nothing is wider than 375 px (${scheme})`, async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 800 });
@@ -411,8 +502,9 @@ test.describe('finished: Cuentas', () => {
       await addPayments(page, [
         { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
       ]);
-      await page.locator('details[data-fold=how] > summary').click();
-      await page.locator('details[data-fold=deadlines] > summary').click();
+      await closeMonths(page, ['2026-06', '2026-07']);
+      for (const fold of ['how', 'deadlines', 'reference'])
+        await page.locator(`details[data-fold=${fold}] > summary`).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
       const wide = await page.evaluate(
         () => [...document.querySelectorAll('#result *')].filter((e) => e.getBoundingClientRect().right > 376).length,

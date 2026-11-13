@@ -40,11 +40,11 @@ const hooks = {
   viewChanged: /** @type {() => void} */ (() => {}),
   /** Back closed the entry: it is dismissed, not saved. */
   entryDismissed: /** @type {() => void} */ (() => {}),
-  /** Back left «Repasar los meses». */
+  /** Back left «Revisar los meses». */
   reviewDismissed: /** @type {() => void} */ (() => {}),
 };
 
-/** «Repasar los meses» is open over the ficha: it has a history entry of its own, so Back leaves it for the ficha. */
+/** «Revisar los meses» is open over the ficha: it has a history entry of its own, so Back leaves it for the ficha. */
 const review = { open: false };
 
 /** @param {Partial<typeof hooks>} given */

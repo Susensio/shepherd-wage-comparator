@@ -4050,29 +4050,6 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   flex-direction: column;
   border-top: 1px solid var(--line);
 }
-.tocl > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0 10px;
-  align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--line);
-}
-.tocl b {
-  font-size: 14.5px;
-}
-.tocl small {
-  display: inline;
-  color: var(--muted);
-  font-size: 12px;
-}
-.tocl .n {
-  font-family: var(--f-num);
-  font-size: 13.5px;
-}
-.tocl small.due-by {
-  display: block;
-}
 .due-by {
   font-size: 12px;
   color: var(--muted);
@@ -4485,78 +4462,6 @@ h2.mode small {
   border-style: solid;
 }
 
-.spine {
-  display: flex;
-  flex-direction: column;
-}
-.regstep {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 0 10px;
-  padding-bottom: 18px;
-  position: relative;
-}
-.regstep::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 30px;
-  bottom: 0;
-  width: 2px;
-  background: var(--line);
-}
-.regstep:last-child::before {
-  display: none;
-}
-.regstep .num {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 14px;
-  background: var(--bg);
-  position: relative;
-}
-.regstep.done .num {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-.regstep .sb {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-.regstep h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  font-stretch: 85%;
-  min-height: 30px;
-  display: flex;
-  align-items: center;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--ink);
-}
-.regstep .bh h3 {
-  font-size: 18px;
-}
-.regstep .tag {
-  padding: 14px 16px 12px;
-}
-.regstep .tag .big {
-  font-size: clamp(32px, 8vw, 44px);
-}
-.tocl button {
-  min-height: 40px;
-  padding: 4px 12px;
-  font-size: 13px;
-}
 .due-line {
   margin: 0;
   font-size: 13.5px;
@@ -4598,16 +4503,6 @@ h2.mode small {
   color: var(--muted);
   font-size: 12.5px;
 }
-.regstep .sofar {
-  gap: 4px;
-}
-.regstep .sofar > div {
-  padding: 6px 5px;
-}
-.regstep .sofar b {
-  font-size: 12.5px;
-  letter-spacing: -0.04em;
-}
 
 .real {
   margin: 0;
@@ -4622,4 +4517,38 @@ h2.mode small {
 .addmonth {
   align-self: flex-start;
   min-height: var(--tap);
+}
+
+h2.mode.small {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-stretch: 100%;
+  color: var(--muted);
+}
+.tocl .monthrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 4px;
+  text-align: left;
+  font-weight: 400;
+  font-size: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+.tocl .monthrow small {
+  display: inline;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sofar b {
+  font-size: 13.5px;
+  letter-spacing: -0.03em;
 }

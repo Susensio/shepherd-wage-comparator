@@ -87,23 +87,23 @@ function month(cal) {
   </div>`;
 }
 
-/** The end of «Repasar los meses»: how many were closed and which stay as the offer has them. */
+/** The end of «Revisar los meses»: how many were closed and which stay as the offer has them. */
 /** @param {ReviewDone} cal */
 function reviewDone(cal) {
   const left = cal.left.map(monthName);
-  return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Registrar lo que falta</button></div>
-    <div class="confirm"><b>Repaso hecho</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span><button type="button" class="pri addbtn" data-action="reviewEnd">Ver cuánto se debe</button></div>`;
+  return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Cuentas</button></div>
+    <div class="confirm"><b>Repaso hecho</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span><button type="button" class="pri addbtn" data-action="reviewEnd">Ver las cuentas</button></div>`;
 }
 
 /**
- * The month on its calendar: a block of the Registro, or alone as a step of «Repasar los meses».
+ * The month on its calendar: a block of the Registro, or alone as a step of «Revisar los meses».
  * @param {CalendarContext | ReviewDone | null} cal
  */
 export function calendarView(cal) {
   if (!cal) return nothing;
   if ('done' in cal) return reviewDone(cal);
   if (cal.mode === 'review')
-    return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Registrar lo que falta</button></div>
+    return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Cuentas</button></div>
       <div class="review-progress"><span><b>${capital(monthName(cal.acc.row.month))}</b>, ${cal.index + 1} de ${cal.count}</span><span class="bar"><i style=${`width:${((cal.index + 1) / cal.count) * 100}%`}></i></span></div>
       ${month(cal)}`;
   return html`<div class="block days">${month(cal)}</div>`;

@@ -227,3 +227,36 @@ export function standingOf(settled, today, phase, payments, netFactor) {
     deadlines,
   };
 }
+
+/**
+ * What the job came to, for «Lo que dejó el trabajo» (ADR-0032): Corresponde and Cobrado (of it, in nómina and in hand),
+ * the days worked, and the days contributed and the paro the offer generates. `firm` is whether every month is closed:
+ * until then Corresponde and the days worked partly follow the offer. The contributions and the paro always follow the
+ * offer, because the real payslip is not recorded. In net, as the rest.
+ * @param {{ terms: object }} offer
+ * @param {import('./settle.js').OfferRecord} record
+ * @param {ReturnType<typeof settle>} settled
+ * @param {ReturnType<typeof standingOf>} standing
+ * @param {{ unemployment: { contribDays: number, days: number, euros: number } }} r the offer's figures
+ */
+export function balanceOf(offer, record, settled, standing, r) {
+  const inJob = settled.rows.filter((row) => row.days > 0);
+  const marks = inJob.map((row) => ({
+    closed: row.closed,
+    worked: marksOf(offer, record, { key: row.month, from: row.from, to: row.to }).filter((m) => m.kind === 'work')
+      .length,
+  }));
+  return {
+    months: { closed: inJob.filter((row) => row.closed).length, total: inJob.length },
+    firm: inJob.length > 0 && inJob.every((row) => row.closed),
+    corresponde: standing.corresponde,
+    cobrado: standing.cobrado,
+    cobradoMano: standing.cobradoEnMano,
+    cobradoNomina: cents(standing.cobrado - standing.cobradoEnMano),
+    worked: marks.reduce((t, m) => t + m.worked, 0),
+    workedClosed: marks.filter((m) => m.closed).reduce((t, m) => t + m.worked, 0),
+    contribDays: r.unemployment.contribDays,
+    paroDays: r.unemployment.days,
+    paroEuros: r.unemployment.euros,
+  };
+}

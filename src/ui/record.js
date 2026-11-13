@@ -6,7 +6,7 @@
 
 import { $ } from '../dom.js';
 import { num } from '../format.js';
-import { addableMonth, monthAccounts, monthSpan, spanOf, standingOf } from '../model/accounts.js';
+import { addableMonth, balanceOf, monthAccounts, monthSpan, spanOf, standingOf } from '../model/accounts.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
@@ -46,6 +46,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {string | null} addable the month after the job's last that can be added, «+ Añadir <mes>»
  * @property {ReturnType<typeof settleOffer>['job']} job the period the work really had, and the offer's
  * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
+ * @property {ReturnType<typeof balanceOf> | null} balance once the job is over: what it came to
  * @property {{ month: string } | null} nudge a month that has ended and waits to be closed, other than the one shown
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
@@ -158,6 +159,7 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
+    balance: phase === 'finished' ? balanceOf(o, record, settled, standing, r) : null,
     addable,
     job: settled.job,
     strip,
@@ -292,14 +294,15 @@ export const recordActions = {
     offers.removePayment(active(), b.dataset.id);
     callbacks.paint();
   },
-  /** From the first month not closed, or from the month tapped: one that is closed is looked at alone, to reopen it. */
+  /** The months not closed in turn, or one month alone: a closed one, to reopen it. */
   reviewStart(b) {
     const o = active();
     const rows = settleOffer(o).rows;
     const open = rows.filter((row) => !row.closed).map((row) => row.month);
     const key = b.dataset.key;
-    const keys = key && !open.includes(key) ? [key] : open;
-    ui.review = { offerId: o.id, keys, index: Math.max(0, keys.indexOf(key)), closed: 0 };
+    // A month tapped opens alone; «Revisar los meses» goes through the ones not closed
+    const keys = key ? [key] : open;
+    ui.review = { offerId: o.id, keys, index: 0, closed: 0 };
     ui.ask = null;
     openReview();
     callbacks.paint();

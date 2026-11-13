@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
+import { balanceOf, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { lawFromRecord } from '../../src/model/compliance.js';
 import {
@@ -459,6 +459,41 @@ describe('the law, from the record: facts only', () => {
     const none = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'p', overnight: 'no' });
     const x = lawFromRecord(none, emptyRecord(), settledOf(none, emptyRecord()), calc(none, ctx), []);
     assert.equal(x.overnight.applicable, calc(none, ctx).min.overnight > 0);
+  });
+});
+
+describe('what the job left', () => {
+  test('firm only with every month closed; cobrado split into payroll and hand; the days real in closed months', () => {
+    const record = emptyRecord();
+    addPayment(record, { date: '2026-07-05', amount: 1000, via: 'payroll' });
+    addPayment(record, { date: '2026-07-06', amount: 300, via: 'cash' });
+    const settled = settle(OFFER, record, '2026-11-12', ctx);
+    const r = calc(OFFER, ctx);
+    const open = balanceOf(
+      OFFER,
+      record,
+      settled,
+      standingOf(settled, '2026-11-12', 'finished', record.payments, r.netFactor),
+      r,
+    );
+    assert.equal(open.firm, false);
+    assert.equal(open.cobrado, 1300);
+    assert.equal(open.cobradoMano, 300);
+    assert.equal(open.cobradoNomina, 1000);
+    assert.equal(open.workedClosed, 0);
+    assert.ok(open.worked > 0);
+    for (const row of settled.rows) closeMonth(OFFER, record, spanOf(row));
+    const s2 = settle(OFFER, record, '2026-11-12', ctx);
+    const closed = balanceOf(
+      OFFER,
+      record,
+      s2,
+      standingOf(s2, '2026-11-12', 'finished', record.payments, r.netFactor),
+      r,
+    );
+    assert.equal(closed.firm, true);
+    assert.equal(closed.workedClosed, closed.worked);
+    assert.equal(closed.contribDays, r.unemployment.contribDays);
   });
 });
 

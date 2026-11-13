@@ -29,6 +29,10 @@ const oneLine = (lines) => [lines.when, lines.pay, lines.workday].filter(Boolean
 const closedAnalysis = (sections) =>
   html`<details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${sections.breakdown}${sections.legal}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
 
+/** What the offer said before the job, for comparing promise and reality: not «Para negociar», and not part of the result. */
+const referenceFold = (sections) =>
+  html`<details class="plg" data-fold="reference"><summary>Lo que decía la oferta</summary>${sections.breakdown}${sections.legal}${sections.seasonEnd}${sections.workings}</details>`;
+
 /**
  * @param {object} o
  * @param {object} r its figures
@@ -57,5 +61,5 @@ export function fichaView(o, r, places, record = null) {
       )}</div>
     </details>
     ${record ? recordView(record) : head}
-    ${record?.phase === 'finished' ? nothing : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    ${record?.phase === 'finished' && sections ? referenceFold(sections) : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }

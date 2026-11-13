@@ -38,7 +38,8 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   let periods = 0;
   for (let i = 0; i < days.length; i += length) {
     const part = days.slice(i, i + length);
-    if (!part.every((x) => x.closed)) continue;
+    // (a last period shorter than the weeks it groups over says nothing: a day and a half a week cannot be told from a day)
+    if (part.length < length || !part.every((x) => x.closed)) continue;
     const off = part.filter((x) => x.kind === 'off').length;
     const due = Math.ceil((LAW.weeklyRest * part.length) / 7);
     periods++;
