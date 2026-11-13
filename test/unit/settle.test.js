@@ -66,20 +66,21 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     assert.ok(x.rows.length, `${offer.mine.name} has no rows`);
     const name = offer.mine.name;
     const T = x.totals.items;
-    // The agreed pay is payroll plus the agreed cash as the gross that brings it net (nothing but cash without a contract)
-    const agreedSalary = (r.noContract ? 0 : r.pay.salary) + r.cash.total / r.netFactor;
+    // The agreed pay is payroll plus the agreed cash as the gross that brings it net, as `calc` credits it (nothing but
+    // cash without a contract, where `calc` brings it to gross through the net factor)
+    const agreedSalary = r.noContract ? r.cash.total / r.netFactor : r.pay.salary + r.cash.grossEq;
     near(T.salary.agreed + T.overnight.agreed, cents(agreedSalary), `${name}: agreed salary`);
     near(T.vacation.agreed, cents(r.pay.vacationPay), `${name}: agreed vacation`);
     near(T.salary.minimum, cents(r.min.salary), `${name}: minimum salary`);
     near(T.overnight.minimum, cents(r.min.overnight), `${name}: minimum overnight`);
-    // The debt after the cash, as the ficha shows what is owed (`r.debt.owed`); by item when no cash covers part of it.
-    // Cash covers the salary and the overnight bonus here; `calc` lets it cover the vacation too (TODO in settle.js).
+    // The debt after the cash, as the ficha shows what is owed (`r.debt.owed`), to the cent. By item only where no cash
+    // is involved: `calc` has no item split of what the cash covers.
     if (r.cash.total === 0 || r.noContract) {
       near(T.salary.shortfall, cents(r.debt.parts.salary), `${name}: salary debt`);
       near(T.overnight.shortfall, cents(r.debt.parts.overnight), `${name}: overnight debt`);
       near(T.vacation.shortfall, cents(r.debt.parts.vacation), `${name}: vacation debt`);
     }
-    near(x.totals.shortfall, cents(r.debt.owed), `${name}: debt after cash`, 1);
+    near(x.totals.shortfall, cents(r.debt.owed), `${name}: debt after cash`, 0.01);
     // With nothing received, everything due is owed
     near(x.totals.owed, x.totals.due, `${name}: owed`);
     checked++;
@@ -408,7 +409,12 @@ test('the cash agreed is part of what is due, as the gross that brings it net, a
   const plain = settleOf(offerWith({ payAmount: 1424.5 }), {});
   for (const row of x.rows) {
     assert.equal(row.agreedCash, 500);
-    near(row.due - plain.rows[0].due, cents(500 / NET), 'cash adds its gross equivalent to what is due', 0.011);
+    near(
+      row.due - plain.rows[0].due,
+      cents(calc(offer, ctx).cash.grossEq / 3),
+      'cash adds its gross equivalent to what is due',
+      0.011,
+    );
   }
   assert.equal(x.totals.agreedCash, 1500);
 });
@@ -419,7 +425,7 @@ test('cash and payroll are one pool: together they cover the minimum, and cobros
   const covered = settleOf(withCash({ payAmount: 1000 }), {});
   assert.equal(covered.totals.shortfall, 0); // 1000 + 500 / NET is over 1424.50
   const r = calc(withCash({ payAmount: 1000 }), ctx);
-  near(covered.totals.shortfall, r.debt.owed, 'what the ficha shows as owed after cash', 1);
+  near(covered.totals.shortfall, r.debt.owed, 'what the ficha shows as owed after cash', 0.01);
   // Due with and without cobros: cash received reduces owed as before
   const paid = settleOf(withCash({ payAmount: 1000 }), { payments: [payment('a', '2026-01-31', 1000, 'cash')] });
   near(paid.totals.owed, covered.totals.due - 1000, 'owed', 0.011);
@@ -450,4 +456,29 @@ test('the cash of the sample offers is the cash of the ficha, month by month', (
     seen++;
   }
   assert.ok(seen >= 3);
+});
+
+test('cash also covers a vacation shortfall, as in calc: the debt after cash agrees with the ficha to the cent', () => {
+  // Salary short, vacation short too, and a cash that covers part of both
+  const offer = offerWith({
+    payAmount: 1000,
+    vacation: 'included',
+    cashMode: 'amount',
+    cashAmount: 400,
+    cashUnit: 'month',
+  });
+  const r = calc(offer, ctx);
+  assert.ok(r.debt.vacation > 0 && r.debt.owed > 0 && r.debt.owed < r.debt.total, 'the case has both shortfalls');
+  const x = settleOf(offer, {});
+  near(x.totals.shortfall, r.debt.owed, 'the debt after cash', 0.01);
+  // Nothing but the cash moved between items: what is due is the pay, the cash and what the cash did not cover
+  const plain = settleOf(offerWith({ payAmount: 1000, vacation: 'included' }), {});
+  near(x.totals.due, plain.totals.due + r.cash.grossEq - (plain.totals.shortfall - x.totals.shortfall), 'due', 0.02);
+});
+
+test('paying exactly the cash agreed leaves nothing of it owed', () => {
+  const offer = withCash({ payAmount: 1424.5 });
+  const x = settleOf(offer, { payments: [{ id: 'a', date: '2026-01-31', amount: 500, via: 'cash' }] });
+  const plain = settleOf(withCash({ payAmount: 1424.5 }), {});
+  near(plain.rows[0].due - x.rows[0].owed, calc(offer, ctx).cash.grossEq / 3, 'the first month is paid by it', 0.011);
 });

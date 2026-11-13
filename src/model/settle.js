@@ -91,8 +91,9 @@ export function settle(offer, record, today, ctx) {
   const vacationTaken = time.vacationTaken;
   const holidaysOff = terms.holidays === 'yes' ? (LAW.holidaysPerYear * time.months) / 12 : 0;
 
-  // TODO: the agreed cash covers the minimum salary and the overnight bonus of its month, not the vacation: `calc` also
-  // lets it cover a vacation shortfall, so the two differ only for a contract with cash and a vacation below the minimum.
+  // Cash as gross, as `calc` credits it: its bisection (`r.cash.grossEq`) shared out over the cash, since the tax is
+  // progressive; without a contract, through the net factor, as `calc` does for the debt.
+  const cashRatio = r.noContract || !(r.cash.total > 0) ? 1 / r.netFactor : r.cash.grossEq / r.cash.total;
   const plans = shares.map((share) => {
     const key = isoOf(share.month).slice(0, 7);
     const entry = record?.months?.[key];
@@ -114,10 +115,11 @@ export function settle(offer, record, today, ctx) {
     // The payroll pay, plus the cash as the gross that would bring it net (what `calc` credits): without a contract the
     // pay is only that. Both go to the one pool that covers the minimum salary first, then the overnight bonus.
     const payroll = r.noContract ? 0 : perDay ? dayRate * paid + pay.extraPays * w : pay.salary * w;
-    const wage = payroll + cash / r.netFactor;
+    const cashGross = cash * cashRatio;
+    const wage = payroll + cashGross;
     const casual = min.casual && time.daysWorked > 0;
     const minimumSalary = casual ? (min.salary * worked) / time.daysWorked : min.salary * w;
-    return { share, key, closed, counts, open, worked, wage, cash, minimumSalary };
+    return { share, key, closed, counts, open, worked, wage, payroll, cash, cashGross, minimumSalary };
   });
 
   // Rounded by running total, so a column of rows adds up to its total rounded (a share of 6867.586 over 4 months
@@ -133,9 +135,33 @@ export function settle(offer, record, today, ctx) {
     });
   };
   const wageRows = spread(plans.map((x) => (labour ? x.wage : 0)));
+  const payrollRows = spread(plans.map((x) => (labour ? x.payroll : 0)));
   const cashRows = spread(plans.map((x) => (labour ? x.cash : 0)));
+  const cashGrossRows = spread(plans.map((x) => (labour ? x.cashGross : 0)));
   const salaryMinRows = spread(plans.map((x) => (labour ? x.minimumSalary : 0)));
   const overnightMinRows = spread(plans.map((x) => (labour ? min.overnightRate * x.minimumSalary : 0)));
+
+  // Known end: the vacation falls due with the final settlement. No end: it accrues month by month.
+  const vacationShareOf = (index) => (openEnded ? plans[index].share.weight : index === shares.length - 1 ? 1 : 0);
+  const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
+  const vacationMinimumOf = (index) => (labour ? cents(vacationMinimum * vacationShareOf(index)) : 0);
+  // Cash above what the month's minimum salary and bonus need covers a vacation shortfall, as in `calc`: that much of the
+  // cash moves from the salary to the vacation, so the vacation is covered and the total due is the pay agreed
+  // (not without a contract: `calc` owes the whole vacation whatever the cash)
+  const spare = plans.map((_, i) =>
+    labour && !r.noContract
+      ? Math.max(0, cents(wageRows[i] - Math.max(salaryMinRows[i] + overnightMinRows[i], payrollRows[i])))
+      : 0,
+  );
+  const last = plans.length - 1;
+  const shortOf = (i) => Math.max(0, cents(vacationMinimumOf(i) - vacationAgreedOf(i)));
+  const moveIn = plans.map((_, i) =>
+    openEnded ? Math.min(spare[i], shortOf(i)) : i === last ? Math.min(sum(spare), shortOf(i)) : 0,
+  );
+  const spareTotal = sum(spare);
+  const moveOut = openEnded
+    ? moveIn
+    : spread(spare.map((x) => (spareTotal > 0 ? (x * (moveIn[last] ?? 0)) / spareTotal : 0)));
 
   const rows = plans.map(({ share, key, closed, counts, open, worked }, index) => {
     // The agreed pay covers the minimum salary first, then the overnight bonus
@@ -143,17 +169,15 @@ export function settle(offer, record, today, ctx) {
       overnightMinRows[index],
       Math.max(0, cents(wageRows[index] - salaryMinRows[index])),
     );
-    // Known end: the vacation falls due with the final settlement. No end: it accrues month by month.
-    const vacationShare = openEnded ? share.weight : index === shares.length - 1 ? 1 : 0;
     const agreed = {
-      salary: cents(wageRows[index] - overnightCovered),
+      salary: cents(wageRows[index] - overnightCovered - moveOut[index]),
       overnight: overnightCovered,
-      vacation: labour ? cents(pay.vacationPay * vacationShare) : 0,
+      vacation: cents(vacationAgreedOf(index) + moveIn[index]),
     };
     const minimum = {
       salary: salaryMinRows[index],
       overnight: overnightMinRows[index],
-      vacation: labour ? cents(vacationMinimum * vacationShare) : 0,
+      vacation: vacationMinimumOf(index),
     };
     /** @type {Record<typeof ITEMS[number], ItemRow>} */
     const items = { salary: zeroItem(), overnight: zeroItem(), vacation: zeroItem() };
@@ -182,6 +206,8 @@ export function settle(offer, record, today, ctx) {
       facts: { ...counts, followingOffer: open },
       /** The cash agreed for the month, net as handed: part of the pay in `items`, shown apart. */
       agreedCash: cashRows[index],
+      /** The same cash as the gross that brings it net, as it counts in `items`. */
+      agreedCashGross: cashGrossRows[index],
       items,
       extraDays: { days: extraDays, value: cents(extraDays * r.extra.dayValue) },
       due: sum(ITEMS.map((item) => items[item].due)),
@@ -201,7 +227,8 @@ export function settle(offer, record, today, ctx) {
   // Payments, oldest first, fill the oldest unpaid month first, cash included: it arrived. Cash is also reported apart.
   // What arrived is net; it is grossed up as `calc` credits cash, so it compares with the gross dues.
   const payments = [...(record?.payments || [])].sort((a, b) => a.date.localeCompare(b.date));
-  const grossOf = (list) => sum(list.map((p) => cents(p.amount / r.netFactor)));
+  // Cash as agreed is grossed up the way the agreement was, so paying it exactly leaves nothing owed
+  const grossOf = (list) => sum(list.map((p) => cents(p.amount * (p.via === 'cash' ? cashRatio : 1 / r.netFactor))));
   const cash = sum(payments.filter((p) => p.via === 'cash').map((p) => p.amount));
   let pool = grossOf(payments);
   let declaredPool = grossOf(payments.filter((p) => p.via === 'payroll'));
@@ -241,6 +268,7 @@ export function settle(offer, record, today, ctx) {
     belowMinimumOnPayroll: column('belowMinimumOnPayroll'),
     /** Cash agreed over the whole job, net as handed (inside the agreed pay of the items). */
     agreedCash: column('agreedCash'),
+    agreedCashGross: column('agreedCashGross'),
     /** Owed in months whose claim has not lapsed. */
     claimable: sum(rows.filter((row) => !row.lapsed).map((row) => row.owed)),
     /** Cash handed over, net as recorded: the «en negro» money. */
