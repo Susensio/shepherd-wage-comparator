@@ -301,6 +301,8 @@ describe('where an offer stands, in net', () => {
     assert.equal(s.hasPayments, false);
     assert.equal(s.cobrado, 0);
     assert.equal(s.cobradoEnMano, 0);
+    assert.equal(s.nearest, null);
+    assert.deepEqual(s.deadlines, []);
   });
 });
 

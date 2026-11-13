@@ -22,7 +22,7 @@ import {
   UNIT_TEXT,
   UNITS,
 } from '../units.js';
-import { legalSection, legalVerdict } from './legal.js';
+import { legalSection } from './legal.js';
 import { negotiationSection } from './negotiate.js';
 import { columns, ICONS, incomeBar, row, stampLines, withTip } from './parts.js';
 import { seasonEndSection } from './season-end.js';
@@ -250,7 +250,6 @@ export function resultParts(o, r, { readOnly = false } = {}) {
   const sections = {
     breakdown: breakdownView,
     legal: legalSection(o, r, money),
-    verdict: legalVerdict(o, r, money),
     negotiation: readOnly ? nothing : negotiationSection(o, r, money),
     seasonEnd: readOnly ? nothing : seasonEndSection(o, r),
     workings: html`<details class="plg" data-fold="workings"><summary>Cómo se calcula</summary><div class="doc">${workings(o, r)}</div></details>`,

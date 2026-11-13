@@ -1,7 +1,8 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fDate } from '../format.js';
+import { fDate, fDaysSpoken } from '../format.js';
+import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName, monthShort } from '../text.js';
@@ -102,53 +103,123 @@ function registro(c) {
     ${cobrosView(c)}`;
 }
 
-/**
- * What corresponds, less what was received, is what is owed (Cuentas, until its redesign).
- */
-function ledger(s, { owing }) {
-  const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.corresponde))];
-  if (!s.hasPayments) return html`<div class="rows">${lines}</div>`;
-  return html`<div class="rows">${lines}${row('− Cobrado', money(Math.min(s.cobrado, s.corresponde)))}${row(`= ${owing}`, money(s.falta), { valueCls: 'bad' })}</div>`;
+/** «Cómo sale lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
+const howItAdds = (s) =>
+  html`<details class="plg" data-fold="how"><summary>Cómo sale lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
+
+/** The months of a job that is over, each one opening its calendar; the ones not closed first in the flow. */
+function monthsToRecord(c) {
+  const open = c.strip.filter((m) => m.state !== 'closed');
+  return html`<div class=${open.length ? 'step' : 'step done'}><span class="num">${open.length ? '1' : '✔'}</span><div class="sb">
+    <h3>Registrar lo que falta</h3>
+    <p class="hint">${open.length ? `${open.length === 1 ? 'Queda 1 mes sin cerrar' : `Quedan ${open.length} meses sin cerrar`}. Cada uno se abre con su calendario.` : 'Todos los meses cerrados: días confirmados.'}</p>
+    <div class="tocl">${c.strip.map((m) => html`<div><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><button type="button" class="linkbtn" data-action="reviewStart" data-key=${m.month}>${m.state === 'closed' ? 'Ver' : 'Abrir'}</button></div>`)}</div>
+    ${open.length ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
+    ${cobrosView(c)}
+  </div></div>`;
 }
 
-/** One line per month: its state, what is owed of it and when its claim lapses. */
-function monthRow(m, today, hasPayments) {
-  const state = m.closed ? 'cerrado' : 'según la oferta';
-  const owing = hasPayments && m.owed > 0;
-  const by = !owing
-    ? ''
-    : m.lapsed
-      ? `plazo vencido el ${fWhen(m.deadline, today)}`
-      : `hasta el ${fWhen(m.deadline, today)} · quedan ${m.daysLeft} ${m.daysLeft === 1 ? 'día' : 'días'}`;
-  const near = owing && (m.lapsed || m.daysLeft < 120);
-  return html`<div><span><b>${capital(monthName(m.month))}</b> <small>${state}</small>${owing ? html`<small class=${near ? 'due-by near' : 'due-by'}>${by}</small>` : nothing}</span><span class="n">${money(hasPayments ? m.owed : m.due)}</span></div>`;
-}
-
-/** «Cuentas»: what the ganadero owes once the job is over, by month with its deadline, and by item. */
-function cuentas(c) {
-  const { standing: s, today } = c;
+/** How much is owed: the headline, Corresponde, Cobrado and Falta in net, and how Corresponde comes out. */
+function howMuch(c) {
+  const { standing: s } = c;
   const open = s.unclosed.length;
-  const tag = html`<div class="tag"><span class="lbl">${s.hasPayments ? 'Cuentas · debe el ganadero' : 'Cuentas · corresponde'}</span><span class="big">${money(s.hasPayments ? Math.max(0, s.falta - s.sobra) : s.corresponde)}</span><span class="sub">${
-    !s.hasPayments
-      ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
-      : open
-        ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: repasa y cierra para fijar la cifra.`
-        : 'Todos los meses están cerrados.'
-  }</span></div>`;
-  const months = html`<div class="block"><div class="bh"><h3>Meses</h3><span class="hint">${s.hasPayments ? 'lo que se debe de cada uno' : 'lo que corresponde'}</span></div>
-    <div class="tocl">${s.months.map((m) => monthRow(m, today, s.hasPayments))}</div>
-    ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Repasar los meses</button>` : nothing}
-    ${s.hasPayments ? html`<p class="hint">El plazo cuenta desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2).</p>` : nothing}
-  </div>`;
-  const accounts = html`<div class="block">
-    <div class="bh"><h3>Por conceptos</h3>${s.hasPayments ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
-    <p class="hint copy-msg" role="status"></p>
-    ${ledger(s, { owing: 'Debe el ganadero' })}
-    ${s.cobradoEnMano > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cobradoEnMano), { cls: 'sub', sub: nothing })}</div>` : nothing}
+  return html`<div class="step"><span class="num">2</span><div class="sb">
+    <h3>Cuánto se debe</h3>
+    <div class="tag"><span class="lbl">${s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${money(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
+      !s.hasPayments
+        ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
+        : open
+          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: repasa y cierra para fijar la cifra.`
+          : 'Todos los meses están cerrados.'
+    }</span></div>
+    ${tiles(s)}
     ${NET_HINT}
+    ${notes(s, { over: '' })}
     ${s.cobradoEnMano > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+    ${howItAdds(s)}
+  </div></div>`;
+}
+
+/** The claim: the text to copy, the nearest deadline, and the deadline of each month in a closed fold. */
+function claim(c) {
+  const { standing: s, today } = c;
+  const near = s.nearest;
+  const by = (d) =>
+    d.lapsed
+      ? `plazo vencido el ${fWhen(d.deadline, today)}`
+      : `hasta el ${fWhen(d.deadline, today)} · quedan ${d.daysLeft} ${d.daysLeft === 1 ? 'día' : 'días'}`;
+  return html`<div class="step"><span class="num">3</span><div class="sb block">
+    <div class="bh"><h3>Reclamar</h3>${s.hasPayments && s.falta > 0 ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
+    <p class="hint copy-msg" role="status"></p>
+    ${
+      near
+        ? html`<p class=${near.lapsed || near.daysLeft < 120 ? 'due-line near' : 'due-line'}>Plazo más cercano: lo de ${monthName(near.month)}, ${by(near)}.</p>`
+        : html`<p class="hint">${s.hasPayments ? 'No falta nada por reclamar.' : 'Apunta lo cobrado para saber qué reclamar.'}</p>`
+    }
+    ${
+      s.deadlines.length
+        ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${s.deadlines.map((d) => row(capital(monthName(d.month)), money(d.owed), { sub: html`<span class=${d.lapsed || d.daysLeft < 120 ? 'due-by near' : 'due-by'}>${by(d)}</span>` }))}</div>
+          <p class="hint">Se cuenta un año desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2). Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
+        : nothing
+    }
+  </div></div>`;
+}
+
+/** «¿Se cumplió la ley?»: rows built from the record, and one line for what it cannot support. */
+function lawBlock(c) {
+  const { law } = c;
+  const weeks = LAW.restPeriodWeeks;
+  const mark = (kind, title, text) =>
+    html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
+  const range = (f) => `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${f.off} de ${f.due}`;
+  const rest = law.rest.fails.length
+    ? mark(
+        'bad',
+        'Descanso semanal',
+        `Faltan días libres en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
+      )
+    : mark(
+        'ok',
+        'Descanso semanal',
+        `Se libra al menos ${fDaysSpoken(LAW.weeklyRest)} por semana en todos los periodos de ${weeks} semanas.`,
+      );
+  const extra = Math.round(law.days.extra);
+  const days =
+    extra >= 1
+      ? mark(
+          'bad',
+          'Jornadas de más',
+          `${law.days.worked} jornadas; corresponden unas ${Math.round(law.days.due)} con descanso, festivos y vacaciones: unas ${extra} de más (estimado).`,
+        )
+      : mark(
+          'ok',
+          'Jornadas de más',
+          `${law.days.worked} jornadas, dentro de las unas ${Math.round(law.days.due)} que corresponden (estimado).`,
+        );
+  const o = law.overnight;
+  const overnight = !o.applicable
+    ? nothing
+    : !o.known
+      ? mark('warn', 'Plus de pernocta', 'No se puede comprobar: no hay cobros apuntados.')
+      : o.missing >= 1
+        ? mark(
+            'bad',
+            'Plus de pernocta',
+            `Lo cobrado no llega a cubrirlo: faltan ${money(o.missing)} de ${money(o.due)} (el ${LAW.overnightPct} % del salario, netos).`,
+          )
+        : mark('ok', 'Plus de pernocta', 'Cubierto con lo cobrado.');
+  return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
+    <p class="hint">Con lo que pasó: los días del registro y lo cobrado.</p>
+    <div class="law">${rest}${days}${overnight}</div>
+    <p class="hint">No se puede comprobar con lo apuntado: festivos trabajados (falta la lista de festivos del lugar) y salario mínimo (falta el bruto de la nómina).</p>
   </div>`;
-  return html`${tag}${months}${accounts}`;
+}
+
+/** «Cuentas»: regularizing a job that is over, in three steps, and whether the law was kept. */
+function cuentas(c) {
+  return html`<h2 class="mode">Cuentas<small>Regularizar: lo que corresponde frente a lo cobrado.</small></h2>
+    <div class="spine">${monthsToRecord(c)}${howMuch(c)}${claim(c)}</div>
+    ${lawBlock(c)}`;
 }
 
 /**
@@ -158,5 +229,5 @@ function cuentas(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return c.phase === 'finished' ? html`${cuentas(c)}${cobrosView(c)}${calendarView(c.calendar)}` : registro(c);
+  return c.phase === 'finished' ? cuentas(c) : registro(c);
 }

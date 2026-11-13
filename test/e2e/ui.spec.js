@@ -274,6 +274,9 @@ test('without accounts, a backup, downloaded and loaded in another browser', asy
 });
 
 test('opening a card in «¿Es legal?» does not shrink its title while it animates', async ({ loaded: page }) => {
+  // Before the job: a job that is over shows its Cuentas, not the offer's analysis
+  await page.clock.setFixedTime(new Date('2025-01-01T12:00:00'));
+  await page.evaluate(() => app.select(app.active().id));
   const card = page.locator('details.owed[data-fold]:not([open])').first();
   await expect(card).toHaveCount(1);
   await card.scrollIntoViewIfNeeded();

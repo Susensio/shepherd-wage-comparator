@@ -4484,3 +4484,127 @@ h2.mode small {
 .state.now {
   border-style: solid;
 }
+
+.spine {
+  display: flex;
+  flex-direction: column;
+}
+.step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 0 10px;
+  padding-bottom: 18px;
+  position: relative;
+}
+.step::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 30px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.step:last-child::before {
+  display: none;
+}
+.step .num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  background: var(--bg);
+  position: relative;
+}
+.step.done .num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.step .sb {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.step h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  font-stretch: 85%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.step .bh h3 {
+  font-size: 18px;
+}
+.step .tag {
+  padding: 14px 16px 12px;
+}
+.step .tag .big {
+  font-size: clamp(32px, 8vw, 44px);
+}
+.tocl button {
+  min-height: 40px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.due-line {
+  margin: 0;
+  font-size: 13.5px;
+}
+.due-line.near {
+  color: var(--neg);
+}
+.law {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+.law > div {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 0 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.law .m {
+  font-weight: 800;
+  font-size: 15px;
+}
+.law .m.bad {
+  color: var(--neg);
+}
+.law .m.ok {
+  color: var(--c-pay);
+}
+.law .m.warn {
+  color: var(--c-cash-t);
+}
+.law b {
+  font-weight: 650;
+}
+.law small {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.step .sofar {
+  gap: 4px;
+}
+.step .sofar > div {
+  padding: 6px 5px;
+}
+.step .sofar b {
+  font-size: 12.5px;
+  letter-spacing: -0.04em;
+}

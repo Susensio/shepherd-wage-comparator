@@ -177,8 +177,193 @@ test.describe('under way: Registro', () => {
   });
 });
 
-test.describe('finished', () => {
+test.describe('finished: Cuentas', () => {
   test.use({ today: '2026-11-12' });
+
+  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+
+  test('three steps, and the law replaces the offer’s analysis; the old structure is gone', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [
+      { date: '2026-07-05', amount: 1000, via: 'payroll' },
+      { date: '2026-08-20', amount: 300, via: 'cash' },
+    ]);
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await expect(page.locator('.conditions')).toBeVisible();
+    await expect(page.locator('.step h3')).toHaveText(['Registrar lo que falta', 'Cuánto se debe', 'Reclamar']);
+    await expect(page.locator('#result')).toContainText('¿Se cumplió la ley?');
+    for (const gone of [
+      'Por conceptos',
+      'Meses por cerrar',
+      'Plazo para reclamar',
+      'Análisis de la oferta',
+      '¿Es legal?',
+      'Para negociar',
+      'de más:',
+      'Registro',
+    ])
+      await expect(page.locator('#result')).not.toContainText(gone);
+    await expect(page.locator('details[data-fold=analysis]')).toHaveCount(0);
+    await expect(page.locator('#secEmployer')).toHaveCount(0);
+  });
+
+  test('Corresponde − Cobrado = Falta, in net, and the headline «Debe el ganadero» is Falta', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const corresponde = amount(await tile(page, 'Corresponde').textContent());
+    const cobrado = amount(await tile(page, 'Cobrado').textContent());
+    const falta = amount(await tile(page, 'Falta').textContent());
+    expect(cobrado).toBe(1000);
+    expect(Math.round((corresponde - cobrado) * 100) / 100).toBe(falta);
+    await expect(page.locator('.step .tag .lbl')).toHaveText('Debe el ganadero');
+    expect(amount(await page.locator('.step .tag .big').textContent())).toBe(falta);
+    await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
+  });
+
+  test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más»', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
+    await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
+    await expect(page.locator('.step .tag .big')).toHaveText(/^0\s€$/);
+    await expect(page.locator('#result')).toContainText(
+      'las retenciones reales de la nómina suelen diferir de las simuladas',
+    );
+    for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
+      await expect(page.locator('#result')).not.toContainText(gone);
+    await expect(page.locator('.step .tag .sub')).not.toContainText('debe');
+    await expect(page.getByRole('button', { name: 'Copiar texto de la reclamación' })).toHaveCount(0);
+    await expect(page.locator('#result')).toContainText('No falta nada por reclamar');
+  });
+
+  test('no cobros: Corresponde and a prompt, no debt and no deadline', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await expect(page.locator('.step .tag .lbl')).toHaveText('Corresponde');
+    await expect(tile(page, 'Falta')).toHaveText('—');
+    await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
+    await expect(page.locator('#result')).toContainText('Apunta lo cobrado para saber qué reclamar');
+  });
+
+  test('the nearest deadline in one line; the deadline of each month in a closed fold', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await expect(page.locator('.due-line')).toContainText(
+      /Plazo más cercano: lo de \w+, hasta el \d+ \w+ 2027 · quedan \d+ días/,
+    );
+    const fold = page.locator('details[data-fold=deadlines]');
+    await expect(fold).not.toHaveAttribute('open', '');
+    await expect(fold.locator(':scope > summary')).toHaveText('Plazos por mes');
+    await fold.locator(':scope > summary').click();
+    await expect(fold.locator('.row').first()).toContainText(/hasta el \d+ \w+ 2027/);
+    await expect(fold).toContainText('ET art. 59.2');
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+  });
+
+  test('«Cómo sale lo que corresponde» is a closed fold whose lines add up, with En negro only when cash was agreed', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const fold = page.locator('details[data-fold=how]');
+    await expect(fold).not.toHaveAttribute('open', '');
+    await fold.locator(':scope > summary').click();
+    await expect(fold.locator('.row')).toContainText([
+      'Salario',
+      'Plus de pernocta',
+      'Vacaciones',
+      'En negro',
+      'Corresponde',
+    ]);
+    expect(
+      amount(
+        await fold
+          .locator('.row', { hasText: '= Corresponde' })
+          .or(fold.locator('.row').last())
+          .locator(':scope > :last-child')
+          .textContent(),
+      ),
+    ).toBe(amount(await tile(page, 'Corresponde').textContent()));
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+    await loadOffers(page, sample, 3); // Invernada C: no cash
+    await page.locator('details[data-fold=how] > summary').click();
+    await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
+  });
+
+  test('«¿Se cumplió la ley?» from the record: rest, days worked, overnight bonus, and one line of what cannot be checked', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const law = page.locator('.law');
+    await expect(law.locator('> div').first()).toContainText('Descanso semanal');
+    await expect(law.locator('> div').first().locator('.m')).toHaveText('✘');
+    await expect(law).toContainText('periodos de 4 semanas');
+    await expect(law).toContainText('Jornadas de más');
+    await expect(law).toContainText('Plus de pernocta');
+    await expect(law).toContainText('No se puede comprobar: no hay cobros apuntados');
+    await expect(page.locator('#result')).toContainText('No se puede comprobar con lo apuntado: festivos trabajados');
+    await expect(page.locator('#result')).toContainText('salario mínimo');
+    // Marking every day of June a day off clears the rest of its first period; marking them worked makes it worse
+    await addPayments(page, [{ date: '2026-07-05', amount: 99999, via: 'payroll' }]);
+    await expect(law).toContainText('Cubierto con lo cobrado');
+  });
+
+  test('«Repasar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({
+    page,
+  }) => {
+    const index = () => page.evaluate(() => navigation.currentEntry?.index);
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const ficha = await index();
+    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 4');
+    await expect(page.locator('.cal .grid .day').first()).toBeVisible();
+    expect(await index()).toBe(ficha + 1);
+    await page.goBack();
+    await expect(page.locator('.review-progress')).toHaveCount(0);
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    expect(await index()).toBe(ficha);
+    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    await page.getByRole('button', { name: 'Cerrar junio' }).click();
+    await expect(page.locator('.review-progress')).toContainText('Julio, 2 de 4');
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await page.locator('.cal .day.work').first().click(); // a day can be changed in the review
+    await page.getByRole('button', { name: 'Cerrar agosto' }).click();
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await expect(page.locator('#result')).toContainText('Repaso hecho');
+    await expect(page.locator('#result')).toContainText('2 meses cerrados');
+    await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
+    await page.getByRole('button', { name: 'Ver cuánto se debe' }).click();
+    await expect(page.locator('.step h3').first()).toHaveText('Registrar lo que falta');
+    await expect(page.locator('.tocl')).toContainText('cerrado');
+    await expect.poll(index).toBe(ficha);
+  });
+
+  test('a closed month keeps its days when the offer changes; it is reopened from Cuentas, asking first', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.getByRole('button', { name: 'Repasar los meses' }).click();
+    const counts = await page.locator('.cal .counts').textContent();
+    await page.getByRole('button', { name: 'Cerrar junio' }).click();
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await page.getByRole('button', { name: 'Ver cuánto se debe' }).click();
+    await page.evaluate(() => {
+      app.active().terms.daysOff = 12;
+      app.select(app.active().id);
+    });
+    await page.locator('.tocl > div', { hasText: 'Junio' }).getByRole('button', { name: 'Ver' }).click();
+    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
+    await expect(page.locator('.cal .counts')).toHaveText(counts ?? '');
+    await expect(page.locator('.cal .day[data-action]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Reabrir' }).click();
+    await expect(page.locator('.cal .confirm')).toContainText('¿Reabrir junio?');
+    await page.locator('[data-action=reopenNo]').click();
+    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
+    await page.getByRole('button', { name: 'Reabrir' }).click();
+    await page.locator('[data-action=reopenYes]').click();
+    await expect(page.locator('.cal .state')).toHaveText('Según la oferta');
+  });
 
   test('the claim is copied from what the record shows', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -190,6 +375,25 @@ test.describe('finished', () => {
     expect(text).toMatch(/Cobrado: 1\.000\s€ netos en 1 cobro/);
     expect(text).toMatch(/Queda por pagar, bruto/);
   });
+
+  for (const scheme of ['light', 'dark']) {
+    test(`nothing is wider than 375 px (${scheme})`, async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await page.emulateMedia({ colorScheme: scheme });
+      await loadOffers(page, sample, PUERTO_A_OTRA);
+      await addPayments(page, [
+        { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
+      ]);
+      await page.getByRole('button', { name: 'Ver todos los cobros' }).click();
+      await page.locator('details[data-fold=how] > summary').click();
+      await page.locator('details[data-fold=deadlines] > summary').click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+      const wide = await page.evaluate(
+        () => [...document.querySelectorAll('#result *')].filter((e) => e.getBoundingClientRect().right > 376).length,
+      );
+      expect(wide).toBe(0);
+    });
+  }
 });
 
 test.describe('the cards', () => {

@@ -7,6 +7,7 @@
 import { $ } from '../dom.js';
 import { num } from '../format.js';
 import { monthAccounts, spanOf, standingOf } from '../model/accounts.js';
+import { lawFromRecord } from '../model/compliance.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
 import { missing, todayISO } from '../offer.js';
@@ -42,6 +43,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {{ type: string, id?: string } | null} ask
  * @property {boolean} showAll the whole list of cobros, each removable, instead of the last two
  * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later', selected: boolean }[]} strip the months of the job, the one on the calendar marked
+ * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
  * @property {{ month: string } | null} nudge a month that has ended and waits to be closed, other than the one shown
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
@@ -91,7 +93,7 @@ function monthOnCalendar(o, rows, today, phase) {
 /**
  * Everything the record's views need for an offer, or null where it has none.
  * @param {any} o
- * @param {{ netFactor: number }} r its figures: what reaches the shepherd is shown, not the gross
+ * @param {any} r its figures: what reaches the shepherd is shown, not the gross
  * @returns {RecordContext | null}
  */
 export function recordContext(o, r) {
@@ -149,6 +151,7 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     showAll: ui.showAll,
+    law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments.length) : null,
     strip,
     nudge: waiting && phase === 'underway' ? { month: waiting.month } : null,
     calendar: calendarOf(key, 'ficha', index, shown.length),
@@ -284,10 +287,14 @@ export const recordActions = {
     ui.ask = null;
     callbacks.paint();
   },
-  reviewStart() {
+  /** From the first month not closed, or from the month tapped: one that is closed is looked at alone, to reopen it. */
+  reviewStart(b) {
     const o = active();
-    const rows = settleOffer(o).rows.filter((row) => !row.closed);
-    ui.review = { offerId: o.id, keys: rows.map((row) => row.month), index: 0, closed: 0 };
+    const rows = settleOffer(o).rows;
+    const open = rows.filter((row) => !row.closed).map((row) => row.month);
+    const key = b.dataset.key;
+    const keys = key && !open.includes(key) ? [key] : open;
+    ui.review = { offerId: o.id, keys, index: Math.max(0, keys.indexOf(key)), closed: 0 };
     ui.ask = null;
     openReview();
     callbacks.paint();

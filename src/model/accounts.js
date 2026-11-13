@@ -131,18 +131,19 @@ export function standingOf(settled, today, phase, payments, netFactor) {
   const cobrado = sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
   const elapsed = current ? (daysBetween(current.from, today) + 1) / (daysBetween(current.from, current.to) + 1) : 0;
-  const deadlines =
-    falta > 0
-      ? rows
-          .filter((row) => row.owed > 0 && row.deadline)
-          .map((row) => ({
-            month: row.month,
-            owed: net(row.owed),
-            deadline: /** @type {string} */ (row.deadline),
-            lapsed: row.lapsed,
-            daysLeft: daysBetween(today, /** @type {string} */ (row.deadline)),
-          }))
-      : [];
+  // Nothing is dated while nothing was said to be paid: with no cobro the debt is only what corresponds
+  const claimable = falta > 0 && payments.length > 0;
+  const deadlines = claimable
+    ? rows
+        .filter((row) => row.owed > 0 && row.deadline)
+        .map((row) => ({
+          month: row.month,
+          owed: net(row.owed),
+          deadline: /** @type {string} */ (row.deadline),
+          lapsed: row.lapsed,
+          daysLeft: daysBetween(today, /** @type {string} */ (row.deadline)),
+        }))
+    : [];
   return {
     hasPayments: payments.length > 0,
     ended,
@@ -164,10 +165,10 @@ export function standingOf(settled, today, phase, payments, netFactor) {
       month: row.month,
       closed: row.closed,
       due: net(row.due),
-      owed: falta > 0 ? net(row.owed) : 0,
-      deadline: falta > 0 ? row.deadline : null,
+      owed: claimable ? net(row.owed) : 0,
+      deadline: claimable ? row.deadline : null,
       lapsed: row.lapsed,
-      daysLeft: falta > 0 && row.deadline ? daysBetween(today, row.deadline) : null,
+      daysLeft: claimable && row.deadline ? daysBetween(today, row.deadline) : null,
     })),
     /** The claim that lapses first, or null. */
     nearest: deadlines.length ? deadlines.reduce((a, b) => (b.deadline < a.deadline ? b : a)) : null,

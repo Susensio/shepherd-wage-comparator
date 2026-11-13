@@ -30,20 +30,6 @@ const closedAnalysis = (sections) =>
   html`<details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${sections.breakdown}${sections.legal}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
 
 /**
- * The analysis of a job that is over: «¿Es legal?» as a row that carries its verdict, and the rest of what was
- * worked out before the job in one closed fold.
- */
-function finishedAnalysis(sections) {
-  const { verdict } = sections;
-  return html`${
-    verdict
-      ? html`<details class="plg" data-fold="legalRow"><summary>¿Es legal?<span class=${`stat dt ${verdict.tone}`}>${verdict.text}</span></summary>${sections.legal}</details>`
-      : nothing
-  }
-    <details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${sections.breakdown}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
-}
-
-/**
  * @param {object} o
  * @param {object} r its figures
  * @param {import('../places.js').PlacesIndex | null} places to name the municipality and province
@@ -71,5 +57,5 @@ export function fichaView(o, r, places, record = null) {
       )}</div>
     </details>
     ${record ? recordView(record) : head}
-    ${record?.phase === 'finished' && sections ? finishedAnalysis(sections) : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    ${record?.phase === 'finished' ? nothing : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }
