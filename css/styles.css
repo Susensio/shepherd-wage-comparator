@@ -4377,3 +4377,110 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   background: var(--ink);
   color: var(--bg);
 }
+
+/* Registro and Cuentas: the modes of a job worked */
+h2.mode {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  font-stretch: 85%;
+}
+h2.mode small {
+  display: block;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 500;
+  font-stretch: 100%;
+  color: var(--muted);
+}
+.strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+}
+.strip button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.strip button small {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.strip button.closed small {
+  color: var(--c-pay);
+}
+.strip button.due small {
+  color: var(--c-cash-t);
+}
+.strip button.later {
+  opacity: 0.55;
+}
+.strip button[aria-current="true"] {
+  border: 2px solid var(--ink);
+}
+.nudge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 6px 10px;
+  border-left: 3px solid var(--tag);
+  font-size: 13.5px;
+}
+.sofar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.sofar > div {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+.sofar span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.sofar b {
+  font-family: var(--f-num);
+  font-weight: 600;
+  font-size: 15px;
+}
+.sofar small {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.25;
+}
+.sofar .f b {
+  color: var(--neg);
+}
+.mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.mh h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  font-stretch: 85%;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.state.now {
+  border-style: solid;
+}

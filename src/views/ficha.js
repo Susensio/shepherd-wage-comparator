@@ -25,6 +25,10 @@ function missingBySteps(terms) {
 /** The conditions in one line: when, pay and hours. It is cut short by the width, not here. */
 const oneLine = (lines) => [lines.when, lines.pay, lines.workday].filter(Boolean).join(' · ');
 
+/** What was worked out before the job, closed under the record of a job under way. */
+const closedAnalysis = (sections) =>
+  html`<details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${sections.breakdown}${sections.legal}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
+
 /**
  * The analysis of a job that is over: «¿Es legal?» as a row that carries its verdict, and the rest of what was
  * worked out before the job in one closed fold.
@@ -67,5 +71,5 @@ export function fichaView(o, r, places, record = null) {
       )}</div>
     </details>
     ${record ? recordView(record) : head}
-    ${record?.phase === 'finished' && sections ? finishedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    ${record?.phase === 'finished' && sections ? finishedAnalysis(sections) : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }

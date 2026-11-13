@@ -1,9 +1,9 @@
-/** The calendar of a month (ADR-0032): its days as shown, the counts, the money of the month and the button that closes it. */
+/** The calendar of a month (ADR-0032): its days as shown, the counts, what the month corresponds to and the button that closes it. */
 
 import { html, nothing } from 'lit-html';
 import { fSumE } from '../ledger.js';
 import { monthName } from '../text.js';
-import { ledgerLines, row } from './parts.js';
+import { row } from './parts.js';
 
 /** @typedef {import('../ui/record.js').CalendarContext} CalendarContext */
 /** @typedef {import('../ui/record.js').ReviewDone} ReviewDone */
@@ -13,8 +13,12 @@ const KIND_TEXT = { work: 'jornada', off: 'libre', sick: 'de baja' };
 const LOCK = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const stateOf = (closed) =>
-  closed ? html`<span class="state closed">${LOCK} Cerrado</span>` : html`<span class="state">Según la oferta</span>`;
+const stateOf = (acc, now) =>
+  acc.row.closed
+    ? html`<span class="state closed">${LOCK} Cerrado</span>`
+    : now
+      ? html`<span class="state now">En curso</span>`
+      : html`<span class="state">Según la oferta</span>`;
 
 /** The days, in weeks that start on Monday. A day outside the offer's dates is not tappable. */
 function grid(cal) {
@@ -43,13 +47,12 @@ function grid(cal) {
   return html`<div class="wd" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="grid">${cells}</div>`;
 }
 
-/** The money of the month, from what is on the calendar; one line more when the jornadas differ from the offer. */
+/** What the month corresponds to, and one line more when the jornadas differ from the offer's. */
 function money(cal) {
   const { acc } = cal;
   const { jornadas, delta } = acc;
   return html`<div class="rows">
-    ${ledgerLines(acc.lines, { vacation: 'según la oferta: se pagan al acabar' })}
-    ${row('= Corresponde', fSumE(acc.due), { sub: acc.row.closed ? nothing : 'estimado' })}
+    ${row(`Corresponde de ${monthName(acc.row.month)}`, fSumE(acc.due), { sub: acc.row.closed ? nothing : 'estimado' })}
     ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
   </div>`;
 }
@@ -71,16 +74,13 @@ function actions(cal) {
 function month(cal) {
   const { acc } = cal;
   const [y] = acc.row.month.split('-');
-  const title = html`<h3>${capital(monthName(acc.row.month))} ${y}</h3>`;
-  const head =
-    cal.mode === 'review'
-      ? html`<div class="calh solo"><span class="t">${title}${stateOf(acc.row.closed)}</span></div>`
-      : html`<div class="calh"><button type="button" class="nav" data-action="calendarMonth" data-step="-1" ?disabled=${cal.index <= 0} aria-label="Mes anterior">‹</button><span class="t">${title}${stateOf(acc.row.closed)}</span><button type="button" class="nav" data-action="calendarMonth" data-step="1" ?disabled=${cal.index >= cal.count - 1} aria-label="Mes siguiente">›</button></div>`;
+  const now = cal.mode === 'ficha' && cal.current;
   const { counts } = acc;
   return html`<div class=${acc.row.closed ? 'cal closed' : 'cal'}>
-    ${head}
+    <div class="mh"><h3>${capital(monthName(acc.row.month))} ${y}</h3>${stateOf(acc, now)}</div>
     ${grid(cal)}
     <div class="counts"><span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
+    ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
     ${money(cal)}
     ${actions(cal)}
   </div>`;
@@ -90,20 +90,20 @@ function month(cal) {
 /** @param {ReviewDone} cal */
 function reviewDone(cal) {
   const left = cal.left.map(monthName);
-  return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Repasar los meses</button></div>
-    <div class="confirm"><b>Repaso hecho</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span><button type="button" class="pri addbtn" data-action="reviewEnd">Volver a las cuentas</button></div>`;
+  return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Registrar lo que falta</button></div>
+    <div class="confirm"><b>Repaso hecho</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span><button type="button" class="pri addbtn" data-action="reviewEnd">Ver cuánto se debe</button></div>`;
 }
 
 /**
- * The month on its calendar: a fold of the ficha, or alone as a step of «Repasar los meses».
+ * The month on its calendar: a block of the Registro, or alone as a step of «Repasar los meses».
  * @param {CalendarContext | ReviewDone | null} cal
  */
 export function calendarView(cal) {
   if (!cal) return nothing;
   if ('done' in cal) return reviewDone(cal);
   if (cal.mode === 'review')
-    return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Repasar los meses</button></div>
+    return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Registrar lo que falta</button></div>
       <div class="review-progress"><span><b>${capital(monthName(cal.acc.row.month))}</b>, ${cal.index + 1} de ${cal.count}</span><span class="bar"><i style=${`width:${((cal.index + 1) / cal.count) * 100}%`}></i></span></div>
       ${month(cal)}`;
-  return html`<details class="plg" data-fold="days"><summary>Días<span class="stat dt">${monthName(cal.acc.row.month)} · ${cal.acc.row.closed ? 'cerrado' : 'según la oferta'}</span></summary>${month(cal)}</details>`;
+  return html`<div class="block days">${month(cal)}</div>`;
 }

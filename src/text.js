@@ -521,6 +521,8 @@ const MONTH_NAMES = [
 ];
 /** «junio» from «2026-06». */
 export const monthName = (key) => MONTH_NAMES[Number(key.slice(5, 7)) - 1];
+/** «jun», «sept»: the short name of a month, for the strip of months. */
+export const monthShort = (key) => (monthName(key) === 'septiembre' ? 'sept' : monthName(key).slice(0, 3));
 /** «junio de 2026». */
 export const monthYear = (key) => `${monthName(key)} de ${key.slice(0, 4)}`;
 

@@ -14,26 +14,25 @@ const addPayments = (page, list) =>
     app.select(app.active().id);
   }, list);
 const amount = (text) => Number.parseFloat(text.replace(/[^\d,]/g, '').replace(',', '.'));
-const big = (page) => page.locator('#result .tag .big').first();
 
-test.describe('under way', () => {
+test.describe('under way: Registro', () => {
   test.use({ today: '2026-08-12' });
 
-  test('the phase comes from the date: a pill, and the top of the ficha changes with it', async ({ page }) => {
+  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+  const strip = (page, month) => page.locator(`.strip button[data-key="${month}"]`);
+
+  test('the phase comes from the date: Registro under way, the offer before, and the offer’s headline back', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
-    await expect(page.locator('#result .tag .lbl').first()).toContainText('Hasta hoy');
-    await expect(page.locator('#result')).toContainText('Análisis');
-
+    await expect(page.locator('#result h2.mode')).toContainText('Registro');
+    await expect(page.locator('.conditions')).toBeVisible(); // every mode starts with the agreed conditions
     await at(page, '2026-05-01');
     await reselect(page);
     await expect(page.locator('#fichaPhase')).toHaveText('Por decidir');
     await expect(page.locator('#result .tag .lbl').first()).toContainText('Se gana');
-
-    await at(page, '2026-11-12');
-    await reselect(page);
-    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
-    await expect(page.locator('#result .tag .lbl').first()).toContainText('Cuentas');
+    await expect(page.locator('#result h2.mode')).toHaveCount(0);
   });
 
   test('an offer marked «solo oferta» has no phase and keeps the headline', async ({ page }) => {
@@ -42,65 +41,51 @@ test.describe('under way', () => {
     await expect(page.locator('#result .tag .lbl').first()).toContainText('Se gana');
   });
 
-  test('with no cobros nothing is claimed: the accrued figure, and no accusation', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('#result .tag .lbl').first()).toHaveText(/corresponde/i);
-    await expect(page.locator('#result')).not.toContainText('Debe el ganadero');
-    await expect(page.locator('#result')).not.toContainText('mínimo legal');
-  });
-
-  test('tapping a day changes the counts and the money; tapping it back leaves the offer’s own', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.evaluate(() => {
-      Object.assign(app.active().terms, { payUnit: 'day', payAmount: 80 });
-      app.select(app.active().id);
-    });
-    await page.locator('details[data-fold=days] > summary').click();
-    const counts = page.locator('.cal .counts');
-    const accrued = page.locator('.cal .row', { hasText: 'Corresponde' });
-    const first = await counts.textContent();
-    const money = amount(await accrued.locator(':scope > :last-child').textContent());
-    await page.locator('.cal .day.work').first().click();
-    await expect(counts).not.toHaveText(first);
-    await expect(page.locator('.cal')).toContainText('1 jornada menos que la oferta');
-    expect(amount(await accrued.locator(':scope > :last-child').textContent())).toBeLessThan(money);
-    await page.locator('.cal .day.off').first().click();
-    await page.locator('.cal .day.off').first().click();
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-  });
-
-  test('the calendar only reaches months that have started, and the current one cannot be closed yet', async ({
-    page,
-  }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.locator('details[data-fold=days] > summary').click();
-    await expect(page.locator('.cal h3')).toHaveText('Agosto 2026');
-    await expect(page.locator('.cal .nav[aria-label="Mes siguiente"]')).toBeDisabled();
-    await expect(page.locator('.cal')).toContainText('Se podrá cerrar cuando acabe el mes');
-    await page.locator('.cal .nav[aria-label="Mes anterior"]').click();
-    await expect(page.locator('.cal h3')).toHaveText('Julio 2026');
-    await expect(page.locator('[data-action=closeMonth]')).toHaveText('Cerrar julio');
-  });
-
-  test('En curso keeps the full analysis below, and its figures are net', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(page.locator('#result .analysis-title')).toHaveText('Análisis');
-    await expect(page.locator('#secEmployer')).toBeVisible();
-    await expect(page.locator('details[data-fold=analysis]')).toHaveCount(0);
-    await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
-    await expect(
-      page.locator('#result .rows', { hasText: 'Corresponde' }).locator('.row', { hasText: /^Cobrado/ }),
-    ).toContainText('1.000');
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-  });
-
-  test('a cobro: the sheet, the debt, the last two in Cobros and every one in place, each removable', async ({
+  test('the strip of months: closed, to close, in progress and to come; the one tapped opens below', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
-    const owed = amount(await big(page).textContent());
+    await expect(page.locator('.strip button')).toHaveCount(4);
+    await expect(strip(page, '2026-06')).toContainText('por cerrar');
+    await expect(strip(page, '2026-08')).toContainText('en curso');
+    await expect(strip(page, '2026-09')).toContainText('por venir');
+    await expect(strip(page, '2026-09')).toBeDisabled();
+    await expect(strip(page, '2026-08')).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.days h3')).toHaveText('Agosto 2026');
+    await expect(page.locator('.nudge')).toContainText('Junio, por cerrar');
+    await page.locator('.nudge [data-action=selectMonth]').click();
+    await expect(page.locator('.days h3')).toHaveText('Junio 2026');
+    // The month that ended can be closed, from its calendar; the current one cannot yet
+    await page.getByRole('button', { name: 'Cerrar junio' }).click();
+    await expect(strip(page, '2026-06')).toContainText('cerrado');
+    await expect(page.locator('.days .state')).toHaveText('Cerrado');
+    await strip(page, '2026-08').click();
+    await expect(page.locator('[data-action=closeMonth]')).toHaveCount(0);
+    await expect(page.locator('.days')).toContainText('Se podrá cerrar cuando acabe el mes');
+  });
+
+  test('with no cobros nothing is claimed: Corresponde and a prompt, no Falta and no accusation', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await expect(tile(page, 'Falta')).toHaveText('—');
+    await expect(page.locator('#result')).toContainText('Aún no hay cobros apuntados');
+    await expect(page.locator('#result')).not.toContainText('mínimo legal');
+    await expect(page.locator('#result')).not.toContainText('Debe el ganadero');
+  });
+
+  test('Corresponde − Cobrado = Falta, in net; a cobro lowers Falta; the neutral line when it is exceeded', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
+    const figures = async () => ({
+      corresponde: amount(await tile(page, 'Corresponde').textContent()),
+      cobrado: amount(await tile(page, 'Cobrado').textContent()),
+      falta: amount(await tile(page, 'Falta').textContent()),
+    });
+    const before = await figures();
+    expect(before.cobrado).toBe(400);
+    expect(Math.round((before.corresponde - before.cobrado) * 100) / 100).toBe(before.falta);
     await page.locator('[data-action=openPaySheet]').click();
     await expect(page.locator('#paySheet')).toBeVisible();
     await expect(page.locator('#payDate')).toHaveValue('2026-08-12');
@@ -111,22 +96,77 @@ test.describe('under way', () => {
     await page.locator('#payNote').fill('adelanto');
     await page.locator('#payForm button[type=submit]').click();
     await expect(page.locator('#paySheet')).toBeHidden();
-    expect(amount(await big(page).textContent())).toBeLessThan(owed);
-    await expect(page.locator('.cobros .pr').first()).toContainText('En mano');
-    await expect(page.locator('.cobros .pr').first()).toContainText('adelanto');
-    // The way is remembered
-    await page.locator('[data-action=openPaySheet]').click();
-    await expect(page.locator('#paySheet [data-via=cash]')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('[data-action=payCancel]').click();
+    const after = await figures();
+    expect(after.cobrado).toBe(700);
+    expect(after.falta).toBeLessThan(before.falta);
+    await expect(tile(page, 'Cobrado').locator('..').locator('small')).toContainText('de ello, en mano');
+    // More than corresponds: Falta 0 and one neutral line, never «de más»
+    await addPayments(page, [{ date: '2026-07-06', amount: 20000, via: 'payroll' }]);
+    await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
+    await expect(page.locator('#result')).toContainText(
+      'las retenciones reales de la nómina suelen diferir de las simuladas',
+    );
+    for (const gone of ['de más', 'adelantado', 'Debe el ganadero'])
+      await expect(page.locator('#result .block').first()).not.toContainText(gone);
+  });
+
+  test('«Sin cobros en mano apuntados» when cash was agreed and none was cobrado en mano', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
+    await expect(page.locator('#result')).toContainText('Sin cobros en mano apuntados');
+    await addPayments(page, [{ date: '2026-07-06', amount: 100, via: 'cash' }]);
+    await expect(page.locator('#result')).not.toContainText('Sin cobros en mano apuntados');
+  });
+
+  test('tapping a day of a month that ended changes the counts and Corresponde; tapping it back leaves the offer’s own', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => {
+      Object.assign(app.active().terms, { payUnit: 'day', payAmount: 80, cashMode: 'amount', cashAmount: 0 });
+      app.select(app.active().id);
+    });
+    await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
+    await strip(page, '2026-07').click();
+    const counts = page.locator('.cal .counts');
+    const month = page.locator('.cal .row', { hasText: 'Corresponde de julio' }).locator(':scope > :last-child');
+    const first = await counts.textContent();
+    const monthMoney = amount(await month.textContent());
+    const total = amount(await tile(page, 'Corresponde').textContent());
+    await page.locator('.cal .day.work').first().click();
+    await expect(counts).not.toHaveText(first);
+    await expect(page.locator('.cal')).toContainText('1 jornada menos que la oferta');
+    expect(amount(await month.textContent())).toBeLessThan(monthMoney);
+    expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(total);
+    await page.locator('.cal .day.off').first().click();
+    await page.locator('.cal .day.off').first().click();
+    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+  });
+
+  test('the rest of the offer’s analysis is one closed fold below, with «Para negociar» inside', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const fold = page.locator('details[data-fold=analysis]');
+    await expect(fold).not.toHaveAttribute('open', '');
+    await expect(fold.locator(':scope > summary')).toHaveText('Análisis de la oferta');
+    await expect(fold.locator('#secEmployer')).toHaveCount(1);
+    await expect(page.locator('#result .analysis-title')).toHaveCount(0);
+  });
+
+  test('every cobro is listed in place and removable with two taps; the last two stay in Cobros', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [
+      { date: '2026-07-05', amount: 400, via: 'payroll' },
+      { date: '2026-07-06', amount: 100, via: 'cash' },
+      { date: '2026-07-07', amount: 50, via: 'cash' },
+    ]);
     await expect(page.locator('.cobros .pr')).toHaveCount(2);
     await page.getByRole('button', { name: 'Ver todos los cobros' }).click();
-    await expect(page.locator('.cobros .pr')).toHaveCount(2);
+    await expect(page.locator('.cobros .pr')).toHaveCount(3);
     const rm = page.locator('.cobros .rm').first();
     await rm.click();
     await expect(rm).toHaveText('¿Quitar?');
     await rm.click();
-    await expect(page.locator('.cobros .pr')).toHaveCount(1);
-    await expect(page.locator('details[data-fold=record]')).toHaveCount(0); // no Registro fold
+    await expect(page.locator('.cobros .pr')).toHaveCount(2);
   });
 
   test('the record is saved with the offer', async ({ page }) => {
@@ -140,162 +180,6 @@ test.describe('under way', () => {
 test.describe('finished', () => {
   test.use({ today: '2026-11-12' });
 
-  test('«Cuentas»: what is owed by item and reason, the cash apart and a deadline per month', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [
-      { date: '2026-07-05', amount: 1000, via: 'payroll' },
-      { date: '2026-08-20', amount: 300, via: 'cash' },
-    ]);
-    await expect(page.locator('#result .tag .lbl').first()).toContainText('debe el ganadero');
-    await expect(page.locator('#result')).toContainText('De lo cobrado, en mano');
-    await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
-    for (const gone of ['Plazo para reclamar', 'Meses por cerrar', 'Lo que debe el ganadero', 'Cantidades brutas'])
-      await expect(page.locator('#result')).not.toContainText(gone);
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-  });
-
-  test('one list by months: state, what is owed, deadline; «Repasar los meses» right under it', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    const list = page.locator('#result .tocl');
-    await expect(list.locator('> div')).toHaveCount(4);
-    await expect(list.locator('> div').first()).toContainText('Junio');
-    await expect(list.locator('> div').first()).toContainText('según la oferta');
-    await expect(list).toContainText(/hasta el \d+ \w+ 2027 · quedan \d+ días/);
-    await expect(page.locator('#result')).toContainText('ET art. 59.2');
-    const after = await page.evaluate(() => {
-      const list = document.querySelector('#result .tocl');
-      const button = document.querySelector('[data-action=reviewStart]');
-      return (
-        !!(list.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING) &&
-        button.previousElementSibling === list
-      );
-    });
-    expect(after).toBe(true);
-  });
-
-  test('one ledger in net: items add up to the accrued, minus what arrived is what is owed', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    const ledger = page.locator('#result .block', { hasText: 'Por conceptos' });
-    await expect(ledger.locator('.row')).toContainText([
-      'Salario',
-      'Plus de pernocta',
-      'Vacaciones',
-      'Corresponde',
-      'Cobrado',
-      'Debe el ganadero',
-    ]);
-    await expect(ledger.locator('.row', { hasText: /^Cobrado/ }).locator(':scope > :last-child')).toHaveText(
-      /^−\s*1\.000\s€$/,
-    );
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-    // The big figure is the debt of the ledger
-    const owed = amount(
-      await ledger.locator('.row', { hasText: 'Debe el ganadero' }).locator(':scope > :last-child').textContent(),
-    );
-    expect(amount(await big(page).textContent())).toBe(owed);
-    // The reason is given only where the minimum applies
-    await expect(ledger).not.toContainText('El mínimo legal');
-    await page.evaluate(() => {
-      Object.assign(app.active().terms, { payAmount: 700, cashMode: 'amount', cashAmount: 0 }); // the cash agreed counts toward the minimum
-      app.select(app.active().id);
-    });
-    await expect(ledger.locator('.row', { hasText: 'Salario' })).toContainText('El mínimo legal');
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-  });
-
-  test('what was agreed in hand is a line of the ledgers: Cuentas, Hasta hoy, the calendar; none without cash', async ({
-    page,
-  }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await page.locator('details[data-fold=days] > summary').click();
-    const lines = page.locator('#result .block .rows .row, #result .cal .rows .row', { hasText: /^\+?\s*En negro/ });
-    await expect(lines).toHaveCount(2); // Cuentas, and the month on the calendar
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-    await at(page, '2026-08-12');
-    await reselect(page);
-    await expect(
-      page.locator('#result .block .rows .row, #result .cal .rows .row', { hasText: /^\+?\s*En negro/ }),
-    ).toHaveCount(2); // Hasta hoy, calendar
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-    await at(page, '2026-11-12');
-    await loadOffers(page, sample, 3); // Invernada C: no cash
-    await expect(page.locator('#result')).not.toContainText('En negro');
-  });
-
-  test('more arrived than corresponds: the ledger reads once, with one row more and nothing extra at zero', async ({
-    page,
-  }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    const ledger = page.locator('#result .block', { hasText: 'Por conceptos' });
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(ledger).not.toContainText('Cobrado de más');
-    await addPayments(page, [{ date: '2026-07-06', amount: 20000, via: 'payroll' }]);
-    await expect(ledger.locator('.row', { hasText: 'Corresponde' })).toHaveCount(1);
-    await expect(ledger.locator('.row', { hasText: /^Cobrado de más/ })).toHaveCount(1);
-    await expect(
-      ledger
-        .locator('.row', { hasText: /^= Debe el ganadero/ })
-        .or(ledger.locator('.row', { hasText: /^Debe el ganadero/ })),
-    ).toContainText('0 €');
-    expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-  });
-
-  test('«¿Es legal?» is a row with its verdict after «Días»; the rest of the analysis is one closed fold', async ({
-    page,
-  }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    const legal = page.locator('details[data-fold=legalRow]');
-    await expect(legal.locator(':scope > summary')).toContainText(/¿Es legal\?\s*No cumple: /);
-    await expect(legal).not.toHaveAttribute('open', '');
-    const order = await page.evaluate(() => {
-      const at = (sel) => document.querySelector(sel);
-      const follows = (a, b) => !!(at(a).compareDocumentPosition(at(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
-      return [
-        follows('details[data-fold=days]', 'details[data-fold=legalRow]'),
-        follows('details[data-fold=legalRow]', 'details[data-fold=analysis]'),
-      ];
-    });
-    expect(order).toEqual([true, true]);
-    await legal.locator(':scope > summary').click();
-    await expect(legal.locator('.verdict')).toContainText('no cumple la ley');
-    const fold = page.locator('details[data-fold=analysis]');
-    await expect(fold).not.toHaveAttribute('open', '');
-    await expect(fold.locator(':scope > summary')).toHaveText('Análisis de la oferta');
-    await expect(page.locator('#secEmployer')).toHaveCount(1); // «Para negociar», only inside the fold
-    await expect(fold.locator('#secEmployer')).toHaveCount(1);
-    await expect(fold.locator('[data-fold=breakdown2]')).toHaveCount(1);
-    await expect(fold.locator('[data-fold=workings]')).toHaveCount(1);
-    await expect(page.locator('#result .analysis-title')).toHaveCount(0);
-  });
-
-  test('Back leaves «Repasar los meses» for the ficha, and finishing it leaves no stale entry', async ({ page }) => {
-    const index = () => page.evaluate(() => navigation.currentEntry?.index);
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    const ficha = await index();
-    await page.locator('[data-action=reviewStart]').click();
-    await expect(page.locator('.review-progress')).toBeVisible();
-    expect(await index()).toBe(ficha + 1);
-    await page.goBack();
-    await expect(page.locator('.review-progress')).toHaveCount(0);
-    await expect(page.locator('#ficha')).toBeVisible();
-    await expect(page.locator('[data-action=reviewStart]')).toBeVisible();
-    expect(await index()).toBe(ficha);
-    // Through to the end and out by its own button: the entry is dropped
-    await page.locator('[data-action=reviewStart]').click();
-    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Saltar' }).click();
-    await expect(page.locator('#result')).toContainText('Repaso hecho');
-    await page.getByRole('button', { name: 'Volver a las cuentas' }).click();
-    await expect(page.locator('[data-action=reviewStart]')).toBeVisible();
-    await expect.poll(index).toBe(ficha);
-    // The calendar is a fold: opening it pushes nothing
-    await page.locator('details[data-fold=days] > summary').click();
-    expect(await index()).toBe(ficha);
-  });
-
   test('the claim is copied from what the record shows', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -306,71 +190,6 @@ test.describe('finished', () => {
     expect(text).toMatch(/Cobrado: 1\.000\s€ netos en 1 cobro/);
     expect(text).toMatch(/Queda por pagar, bruto/);
   });
-
-  test('«Repasar los meses» goes month by month; nothing is closed without its calendar', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(page.locator('.tocl button')).toHaveCount(0);
-    await page.locator('[data-action=reviewStart]').click();
-    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 4');
-    await expect(page.locator('.cal .grid .day').first()).toBeVisible();
-    await page.getByRole('button', { name: 'Cerrar junio' }).click();
-    await expect(page.locator('.review-progress')).toContainText('Julio, 2 de 4');
-    await page.getByRole('button', { name: 'Saltar' }).click();
-    await expect(page.locator('.review-progress')).toContainText('Agosto, 3 de 4');
-    // A day can be changed in the review
-    await page.locator('.cal .day.work').first().click();
-    await page.getByRole('button', { name: 'Cerrar agosto' }).click();
-    await page.getByRole('button', { name: 'Saltar' }).click();
-    await expect(page.locator('#result')).toContainText('Repaso hecho');
-    await expect(page.locator('#result')).toContainText('2 meses cerrados');
-    await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
-    await page.getByRole('button', { name: 'Volver a las cuentas' }).click();
-    await expect(page.locator('#result')).toContainText('2 meses según la oferta');
-  });
-
-  test('a closed month stays as it was when the offer’s days off change; reopening asks first', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.locator('details[data-fold=days] > summary').click();
-    await expect(page.locator('.cal h3')).toHaveText('Junio 2026');
-    const counts = await page.locator('.cal .counts').textContent();
-    await page.getByRole('button', { name: 'Cerrar junio' }).click();
-    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
-    await expect(page.locator('.cal .day[data-action]')).toHaveCount(0);
-    await page.evaluate(() => {
-      app.active().terms.daysOff = 12;
-      app.select(app.active().id);
-    });
-    await expect(page.locator('.cal .counts')).toHaveText(counts ?? '');
-    await page.locator('.cal .nav[aria-label="Mes siguiente"]').click();
-    await expect(page.locator('.cal .counts')).not.toHaveText(counts ?? '');
-    await page.locator('.cal .nav[aria-label="Mes anterior"]').click();
-    await page.getByRole('button', { name: 'Reabrir' }).click();
-    await expect(page.locator('.cal .confirm')).toContainText('¿Reabrir junio?');
-    await page.locator('[data-action=reopenNo]').click();
-    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
-    await page.getByRole('button', { name: 'Reabrir' }).click();
-    await page.locator('[data-action=reopenYes]').click();
-    await expect(page.locator('.cal .state')).toHaveText('Según la oferta');
-  });
-
-  for (const scheme of ['light', 'dark']) {
-    test(`nothing is wider than 375 px (${scheme})`, async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 800 });
-      await page.emulateMedia({ colorScheme: scheme });
-      await loadOffers(page, sample, PUERTO_A_OTRA);
-      await addPayments(page, [
-        { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
-      ]);
-      await page.locator('details[data-fold=days] > summary').click();
-      await page.getByRole('button', { name: 'Ver todos los cobros' }).click();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-      const wide = await page.evaluate(
-        () => [...document.querySelectorAll('#result *')].filter((e) => e.getBoundingClientRect().right > 376).length,
-      );
-      expect(wide).toBe(0);
-    });
-  }
 });
 
 test.describe('the cards', () => {

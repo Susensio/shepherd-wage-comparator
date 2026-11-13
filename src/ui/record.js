@@ -22,6 +22,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof monthAccounts>} acc
  * @property {number} index where this month is among `count`
  * @property {number} count
+ * @property {boolean} current the month is the one in progress
  * @property {boolean} asking whether «Reabrir» is waiting for its confirmation
  * @property {boolean} canClose only a month that has ended can be closed
  *
@@ -40,6 +41,8 @@ import { closeReview, openReview } from './navigation.js';
  * @property {string | null} fresh the cobro just added
  * @property {{ type: string, id?: string } | null} ask
  * @property {boolean} showAll the whole list of cobros, each removable, instead of the last two
+ * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later', selected: boolean }[]} strip the months of the job, the one on the calendar marked
+ * @property {{ month: string } | null} nudge a month that has ended and waits to be closed, other than the one shown
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -101,16 +104,25 @@ export function recordContext(o, r) {
   const ctx = calcContext();
   const standing = standingOf(settled, today, phase, record.payments, r.netFactor);
   const shown = settled.rows.filter((row) => row.from <= today);
+  const spanOfKey = (month) => settled.rows.find((row) => row.month === month);
   const calendarOf = (key, mode, index, count) => ({
     mode,
     acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
     index,
     count,
+    current: spanOfKey(key).from <= today && today <= spanOfKey(key).to,
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
-    canClose: settled.rows.find((row) => row.month === key).to < today,
+    canClose: spanOfKey(key).to < today,
   });
   const key = monthOnCalendar(o, settled.rows, today, phase);
   const index = shown.findIndex((row) => row.month === key);
+  /** @type {RecordContext['strip']} */
+  const strip = settled.rows.map((row) => ({
+    month: row.month,
+    state: row.closed ? 'closed' : row.from > today ? 'later' : row.to < today ? 'due' : 'now',
+    selected: row.month === key,
+  }));
+  const waiting = standing.unclosed.find((row) => row.month !== key);
   /** @type {CalendarContext | ReviewDone | null} */
   let review = null;
   if (ui.review?.offerId === o.id) {
@@ -137,6 +149,8 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     showAll: ui.showAll,
+    strip,
+    nudge: waiting && phase === 'underway' ? { month: waiting.month } : null,
     calendar: calendarOf(key, 'ficha', index, shown.length),
     review,
   };
@@ -210,18 +224,6 @@ function savePayment(event) {
 
 const spanOfMonth = (key) => spanOf(settleOffer(active()).rows.find((row) => row.month === key));
 
-/** The month of the calendar moves among those that have started. */
-function moveMonth(step) {
-  const o = active();
-  const today = todayISO();
-  const all = settleOffer(o).rows;
-  const rows = all.filter((row) => row.from <= today);
-  const at = rows.findIndex((row) => row.month === monthOnCalendar(o, all, today, recordPhase(o, today)));
-  const next = rows[Math.min(rows.length - 1, Math.max(0, at + step))];
-  ui.months[o.id] = next.month;
-  ui.ask = null;
-}
-
 /** The calendar stays on a month it was used on, though the month stops being the first still open. */
 const stayOn = (key) => {
   ui.months[active().id] = key;
@@ -239,8 +241,10 @@ export const recordActions = {
     offers.toggleDay(active(), spanOfMonth(b.dataset.key), b.dataset.day);
     callbacks.paint();
   },
-  calendarMonth(b) {
-    moveMonth(Number(b.dataset.step));
+  /** A month of the strip: it opens below. */
+  selectMonth(b) {
+    ui.months[active().id] = b.dataset.key;
+    ui.ask = null;
     callbacks.paint();
   },
   closeMonth(b) {

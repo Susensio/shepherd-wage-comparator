@@ -1,10 +1,10 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fDate, joinAnd } from '../format.js';
+import { fDate } from '../format.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
-import { monthName } from '../text.js';
+import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { COPY_ICON, ledgerLines, row } from './parts.js';
 
@@ -55,50 +55,60 @@ function cobrosView({ today, payments, fresh, showAll, ask }) {
 
 const NET_HINT = html`<p class="hint">Cantidades netas: lo que llega, sin retenciones.</p>`;
 
-/** «Hasta hoy»: accrued minus received is what the ganadero owes, the current month and the vacation aside. */
-function hastaHoy(c) {
+/** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
+function tiles(s) {
+  return html`<div class="sofar">
+    <div><span>Corresponde</span><b>${money(s.corresponde)}</b></div>
+    <div><span>Cobrado</span><b>${money(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${money(s.cobradoEnMano)}</small>` : nothing}</div>
+    <div class="f"><span>Falta</span><b>${s.hasPayments ? money(s.falta) : '—'}</b></div>
+  </div>`;
+}
+
+/** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
+function notes(s, { over }) {
+  return html`${!s.hasPayments ? html`<p class="hint">Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.</p>` : nothing}
+    ${s.hasPayments && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados: se pactaron ${money(s.enManoAgreed)} en mano.</p>` : nothing}
+    ${s.sobra >= 1 ? html`<p class="hint">Se cobró ${money(s.sobra)} más de lo calculado${over}: las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
+}
+
+const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir' };
+
+/** The months of the job in a strip; the one tapped opens below. */
+function strip(c) {
+  return html`<div class="strip" role="group" aria-label="Meses del trabajo">${c.strip.map(
+    (m) =>
+      html`<button type="button" class=${`${m.state === 'closed' ? 'closed' : ''} ${m.state === 'due' ? 'due' : ''} ${m.state === 'later' ? 'later' : ''}`} data-action="selectMonth" data-key=${m.month} aria-current=${String(m.selected)} ?disabled=${m.state === 'later'}>${capital(monthShort(m.month))}<small>${MONTH_STATE[m.state]}</small></button>`,
+  )}</div>`;
+}
+
+/** «Registro»: the months strip, «Hasta hoy» in net, the month open below with its calendar, and the cobros. */
+function registro(c) {
   const { standing: s, today } = c;
-  const months = joinAnd(s.ended.map((r) => monthName(r.month)));
-  const owing = s.falta - s.sobra >= 0;
-  const label = !s.hasPayments
-    ? 'Hasta hoy · corresponde'
-    : owing
-      ? `Hasta hoy, ${fWhen(today, today)} · debe el ganadero`
-      : 'Hasta hoy · cobrado por adelantado';
-  const sub = !s.hasPayments
-    ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
-    : s.ended.length
-      ? owing
-        ? `Debe el ganadero, de ${months}.`
-        : 'Se ha cobrado más de lo que corresponde hasta ahora.'
-      : 'Todavía no ha acabado ningún mes.';
-  const unclosed = s.unclosed.length ? joinAnd(s.unclosed.map((r) => monthName(r.month))) : '';
-  return html`<div class="tag"><span class="lbl">${label}</span><span class="big">${money(s.hasPayments ? Math.abs(s.falta - s.sobra) : s.corresponde)}</span><span class="sub">${sub}</span></div>
+  const aside = [
+    s.running ? `${monthName(s.running.month)} hasta hoy ${money(s.running.amount)}` : '',
+    s.vacation > 0 ? `vacaciones ${money(s.vacation)}, al acabar` : '',
+  ].filter(Boolean);
+  return html`<h2 class="mode">Registro<small>Lo que pasa, mes a mes.</small></h2>
+    ${strip(c)}
+    ${c.nudge ? html`<div class="nudge"><span>${capital(monthName(c.nudge.month))}, por cerrar.</span><button type="button" class="linkbtn" data-action="selectMonth" data-key=${c.nudge.month}>Abrir</button></div>` : nothing}
     <div class="block">
-      ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado por adelantado' })}
+      <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
+      ${tiles(s)}
       ${NET_HINT}
-      ${unclosed ? html`<p class="hint">Según la oferta, sin cerrar: ${unclosed}. Ciérralos en el calendario cuando estén revisados.</p>` : nothing}
-      ${
-        s.running || s.vacation > 0
-          ? html`<div class="rows">
-          ${row('Aparte, aún sin pagar', '', { cls: 'hd' })}
-          ${s.running ? row(`${capital(monthName(s.running.month))}, hasta hoy`, money(s.running.amount), { sub: 'se paga al acabar el mes' }) : nothing}
-          ${s.vacation > 0 ? row('Vacaciones', money(s.vacation), { sub: 'se pagan al acabar' }) : nothing}
-        </div>`
-          : nothing
-      }
-    </div>`;
+      ${notes(s, { over: ' hasta hoy' })}
+      ${aside.length ? html`<p class="hint">Aparte, aún sin pagar: ${aside.join(' · ')}.</p>` : nothing}
+    </div>
+    ${calendarView(c.calendar)}
+    ${cobrosView(c)}`;
 }
 
 /**
- * What corresponds, less what was received, is what is owed: the lines that add up to what corresponds, then the
- * subtraction. What arrived beyond what corresponds is one row more, outside the sum, and only when there is any.
+ * What corresponds, less what was received, is what is owed (Cuentas, until its redesign).
  */
-function ledger(s, { owing, ahead }) {
+function ledger(s, { owing }) {
   const lines = [...ledgerLines(s.lines), row('= Corresponde', money(s.corresponde))];
   if (!s.hasPayments) return html`<div class="rows">${lines}</div>`;
-  const over = s.falta - s.sobra < 0;
-  return html`<div class="rows">${lines}${row('− Cobrado', money(over ? s.corresponde : s.cobrado))}${row(`= ${owing}`, money(over ? 0 : s.falta - s.sobra), { valueCls: over ? undefined : 'bad' })}${over ? row(ahead, money(-(s.falta - s.sobra)), { cls: 'sub' }) : nothing}</div>`;
+  return html`<div class="rows">${lines}${row('− Cobrado', money(Math.min(s.cobrado, s.corresponde)))}${row(`= ${owing}`, money(s.falta), { valueCls: 'bad' })}</div>`;
 }
 
 /** One line per month: its state, what is owed of it and when its claim lapses. */
@@ -133,7 +143,7 @@ function cuentas(c) {
   const accounts = html`<div class="block">
     <div class="bh"><h3>Por conceptos</h3>${s.hasPayments ? html`<button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p>
-    ${ledger(s, { owing: 'Debe el ganadero', ahead: 'Cobrado de más' })}
+    ${ledger(s, { owing: 'Debe el ganadero' })}
     ${s.cobradoEnMano > 0 ? html`<div class="rows">${row('De lo cobrado, en mano (en negro)', money(s.cobradoEnMano), { cls: 'sub', sub: nothing })}</div>` : nothing}
     ${NET_HINT}
     ${s.cobradoEnMano > 0 && s.belowMinimumOnPayroll > 0 ? html`<p class="hint">La nómina declarada queda ${money(s.belowMinimumOnPayroll)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
@@ -148,7 +158,5 @@ function cuentas(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return html`${c.phase === 'finished' ? cuentas(c) : hastaHoy(c)}
-    ${cobrosView(c)}
-    ${calendarView(c.calendar)}`;
+  return c.phase === 'finished' ? html`${cuentas(c)}${cobrosView(c)}${calendarView(c.calendar)}` : registro(c);
 }

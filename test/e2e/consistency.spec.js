@@ -199,6 +199,17 @@ for (const offer of sample.offers) {
         for (const d of document.querySelectorAll('#result details')) d.open = true;
       });
       expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
+      // Corresponde − Cobrado = Falta, never below 0, as the tiles show them
+      const tiles = await page.evaluate(() => {
+        const read = (name) => {
+          const el = [...document.querySelectorAll('#result .sofar > div')].find((d) => d.textContent.startsWith(name));
+          const text = el?.querySelector('b')?.textContent;
+          return text && text !== '—' ? Number.parseFloat(text.replace(/[^\d,]/g, '').replace(',', '.')) : null;
+        };
+        return { corresponde: read('Corresponde'), cobrado: read('Cobrado'), falta: read('Falta') };
+      });
+      if (tiles.corresponde !== null && tiles.falta !== null)
+        expect(tiles.falta).toBe(Math.max(0, Math.round((tiles.corresponde - tiles.cobrado) * 100) / 100));
     });
   }
 }
