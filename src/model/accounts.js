@@ -229,7 +229,7 @@ export function standingOf(settled, today, phase, payments, netFactor) {
 }
 
 /**
- * What the job came to, for «Lo que dejó el trabajo» (ADR-0032): Corresponde and Cobrado (of it, in nómina and in hand),
+ * What the job came to, for «Balance del trabajo» (ADR-0032): Corresponde and Cobrado (of it, in nómina and in hand),
  * the days worked, and the days contributed and the paro the offer generates. `firm` is whether every month is closed:
  * until then Corresponde and the days worked partly follow the offer. The contributions and the paro always follow the
  * offer, because the real payslip is not recorded. In net, as the rest.

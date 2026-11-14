@@ -556,14 +556,14 @@ export function recordClaimText(o, settled, record) {
     : 0;
   if (after > 0)
     lines.push(
-      `Se trabajó hasta el ${fIso(job.to)}: ${after} ${after === 1 ? 'día' : 'días'} después del fin de la oferta (${fIso(job.offerTo)}), que se reclaman como el resto.`,
+      `Trabajado hasta el ${fIso(job.to)}: ${after} ${after === 1 ? 'día' : 'días'} después del fin de la oferta (${fIso(job.offerTo)}), que se reclaman como el resto.`,
     );
   lines.push(
-    `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llegó neto y aquí se compara en bruto.`,
+    `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llega neto y se compara en bruto.`,
   );
   if (totals.agreedCash > 0)
     lines.push(
-      `De ese total, ${fSumE(totals.agreedCash)} netos se pactaron en mano, sin declarar: se reclaman como se pactaron.`,
+      `De ese total, ${fSumE(totals.agreedCash)} netos son lo pactado en mano, sin declarar; se reclaman como pactado.`,
     );
   if (!payments.length) {
     lines.push('No consta ningún cobro.');

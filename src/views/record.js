@@ -68,8 +68,8 @@ function tiles(s) {
 /** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
 function notes(s, { over }) {
   return html`${!s.hasPayments ? html`<p class="hint">Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.</p>` : nothing}
-    ${s.hasPayments && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados: se pactaron ${money(s.enManoAgreed)} en mano.</p>` : nothing}
-    ${s.sobra >= 1 ? html`<p class="hint">Se cobró ${money(s.sobra)} más de lo calculado${over}: las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
+    ${s.hasPayments && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${money(s.enManoAgreed)}.</p>` : nothing}
+    ${s.sobra >= 1 ? html`<p class="hint">Cobrado ${money(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
 
 const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir', add: 'añadir' };
@@ -103,9 +103,9 @@ function registro(c) {
     ${cobrosView(c)}`;
 }
 
-/** «Cómo sale lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
+/** «Detalle de lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
 const howItAdds = (s) =>
-  html`<details class="plg" data-fold="how"><summary>Cómo sale lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
+  html`<details class="plg" data-fold="how"><summary>Detalle de lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
 
 /** The yellow block: what the ganadero owes, the three figures, and the one action while months are not closed. */
 function result(c) {
@@ -123,23 +123,23 @@ function result(c) {
     ${tiles(s)}
     ${NET_HINT}
     ${notes(s, { over: '' })}
-    ${minimum.known && minimum.short >= 1 ? html`<p class="hint">La nómina declarada queda ${money(minimum.short)} bajo el mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
+    ${minimum.known && minimum.short >= 1 ? html`<p class="hint">La nómina declarada está ${money(minimum.short)} por debajo del mínimo legal; lo cobrado en mano no cotiza.</p>` : nothing}
     ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
   </div>`;
 }
 
-/** «Lo que dejó el trabajo»: what it came to, from «Final de campaña» without its simulator; what still follows the offer says so. */
+/** «Balance del trabajo»: what it came to, from «Final de campaña» without its simulator; what still follows the offer says so. */
 function balanceBlock(c) {
   const { balance: b, standing: s } = c;
   const cashLine = s.lines.find((x) => x.key === 'cash');
-  const unsure = b.firm ? '' : 'estimado: aún hay meses según la oferta';
-  return html`<div class="block"><div class="bh"><h2>Lo que dejó el trabajo</h2></div>
+  const unsure = b.firm ? '' : 'estimado: hay meses según la oferta';
+  return html`<div class="block"><div class="bh"><h2>Balance del trabajo</h2></div>
     <div class="rows">
       ${row('Corresponde en total', money(b.corresponde), { sub: [unsure || 'con todos los meses cerrados', cashLine && cashLine.due > 0 ? `de ello, en negro ${money(cashLine.due)}` : ''].filter(Boolean).join(' · ') })}
       ${row('Cobrado', money(b.cobrado), { sub: `en nómina ${money(b.cobradoNomina)} · en mano ${money(b.cobradoMano)}` })}
       ${row('Jornadas', String(b.worked), { sub: b.firm ? 'de los meses cerrados' : `${b.workedClosed} en meses cerrados; el resto, según la oferta` })}
-      ${b.contribDays > 0 ? row('Días cotizados', String(Math.round(b.contribDays)), { sub: 'según la oferta: la nómina real no se apunta' }) : nothing}
-      ${b.paroDays >= 1 ? row('Paro que genera', `unos ${Math.round(b.paroDays)} días`, { sub: `unos ${money(b.paroEuros)}, según la oferta; se cobran más adelante` }) : nothing}
+      ${b.contribDays > 0 ? row('Días cotizados', String(Math.round(b.contribDays)), { sub: 'según la oferta (la nómina real no se apunta)' }) : nothing}
+      ${b.paroDays >= 1 ? row('Paro', `unos ${Math.round(b.paroDays)} días`, { sub: `unos ${money(b.paroEuros)}, según la oferta; se cobran más adelante` }) : nothing}
     </div>
     ${howItAdds(s)}
   </div>`;
@@ -194,7 +194,7 @@ function lawBlock(c) {
       ? mark(
           'bad',
           'Descanso semanal',
-          `Faltan días libres en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
+          `Días libres insuficientes en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
         )
       : mark(
           'ok',
@@ -226,7 +226,7 @@ function lawBlock(c) {
         ? mark(
             'bad',
             'Plus de pernocta',
-            `Lo cobrado no llega a cubrirlo: faltan ${money(o.missing)} de ${money(o.due)} (el ${LAW.overnightPct} % del salario, netos).`,
+            `Lo cobrado no lo cubre: faltan ${money(o.missing)} de ${money(o.due)} (el ${LAW.overnightPct} % del salario, netos).`,
           )
         : mark('ok', 'Plus de pernocta', 'Cubierto con lo cobrado.');
   const m = law.minimum;
@@ -236,7 +236,7 @@ function lawBlock(c) {
       ? mark(
           'bad',
           'Salario mínimo en nómina',
-          `En nómina llegaron ${money(m.payroll)} netos; el mínimo equivale a unos ${money(m.minimumNet)} netos, y falta más de lo que explican las retenciones.`,
+          `Cobrado en nómina: ${money(m.payroll)} netos. Mínimo equivalente: unos ${money(m.minimumNet)} netos; la diferencia supera lo que explican las retenciones.`,
         )
       : mark(
           'ok',
@@ -244,7 +244,7 @@ function lawBlock(c) {
           'Lo cobrado en nómina cubre el mínimo, en neto y con margen para las retenciones.',
         );
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
-    <p class="hint">Con lo que pasó, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>
+    <p class="hint">Según el registro, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>
     <div class="lawcheck">${rest}${days}${overnight}${minimum}</div>
     <p class="hint">No se puede comprobar con lo apuntado: festivos trabajados ni el mínimo contra la nómina real.</p>
   </div>`;
@@ -266,7 +266,7 @@ function realPeriod(c) {
   if (!job.differs) return nothing;
   const date = (iso) => fDate(parseDate(iso));
   const said = job.from === job.offerFrom ? date(job.offerTo) : `del ${date(job.offerFrom)} al ${date(job.offerTo)}`;
-  return html`<p class="real">Trabajo real: del ${date(job.from)} al ${date(job.to)} (la oferta decía ${said}).</p>`;
+  return html`<p class="real">Trabajo real: del ${date(job.from)} al ${date(job.to)} (oferta: ${said}).</p>`;
 }
 
 /**

@@ -561,7 +561,7 @@ describe('the agreed cash is a line of its own, inside what corresponds', () => 
 
   test('the claim says what was agreed in hand', () => {
     const text = recordClaimText(CASH, settle(CASH, emptyRecord(), '2026-11-12', ctx), emptyRecord());
-    assert.match(text, /1\.080\s€ netos se pactaron en mano, sin declarar: se reclaman como se pactaron/);
+    assert.match(text, /1\.080\s€ netos son lo pactado en mano, sin declarar; se reclaman como pactado/);
   });
 });
 

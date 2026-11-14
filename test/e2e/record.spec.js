@@ -104,7 +104,7 @@ test.describe('under way: Registro', () => {
     await addPayments(page, [{ date: '2026-07-06', amount: 20000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
     await expect(page.locator('#result')).toContainText(
-      'las retenciones reales de la nómina suelen diferir de las simuladas',
+      'Las retenciones reales de la nómina suelen diferir de las simuladas',
     );
     for (const gone of ['de más', 'adelantado', 'Debe el ganadero'])
       await expect(page.locator('#result .block').first()).not.toContainText(gone);
@@ -214,7 +214,7 @@ test.describe('finished: Cuentas', () => {
     // The order of the rest
     const order = [
       '#result .result',
-      'h2:Lo que dejó el trabajo',
+      'h2:Balance del trabajo',
       'h2:¿Se cumplió la ley?',
       'h2:Reclamar',
       'details[data-autofold=registro]',
@@ -272,7 +272,7 @@ test.describe('finished: Cuentas', () => {
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
     await expect(page.locator('.result .tag .big')).toHaveText(/^0\s€$/);
     await expect(page.locator('#result')).toContainText(
-      'las retenciones reales de la nómina suelen diferir de las simuladas',
+      'Las retenciones reales de la nómina suelen diferir de las simuladas',
     );
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);
@@ -312,7 +312,7 @@ test.describe('finished: Cuentas', () => {
     expect(text).toMatch(/Queda por pagar, bruto/);
   });
 
-  test('«Lo que dejó el trabajo»: estimated while months follow the offer, firm once all are closed; the paro always from the offer', async ({
+  test('«Balance del trabajo»: estimated while months follow the offer, firm once all are closed; the paro always from the offer', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -320,14 +320,14 @@ test.describe('finished: Cuentas', () => {
       { date: '2026-07-05', amount: 1000, via: 'payroll' },
       { date: '2026-08-20', amount: 300, via: 'cash' },
     ]);
-    const block = page.locator('#result .block', { hasText: 'Lo que dejó el trabajo' });
+    const block = page.locator('#result .block', { hasText: 'Balance del trabajo' });
     await expect(block.locator('.row', { hasText: 'Corresponde en total' })).toContainText(
-      'estimado: aún hay meses según la oferta',
+      'estimado: hay meses según la oferta',
     );
     await expect(block.locator('.row', { hasText: /^Cobrado/ })).toContainText('en nómina 1.000');
     await expect(block.locator('.row', { hasText: /^Cobrado/ })).toContainText('en mano 300');
     await expect(block.locator('.row', { hasText: 'Jornadas' })).toContainText('0 en meses cerrados');
-    await expect(block.locator('.row', { hasText: 'Paro que genera' })).toContainText('según la oferta');
+    await expect(block.locator('.row', { hasText: 'Paro' })).toContainText('según la oferta');
     await expect(block).not.toContainText('Simulador de nóminas');
     await closeMonths(page, 'all');
     await expect(block.locator('.row', { hasText: 'Corresponde en total' })).toContainText(
@@ -373,13 +373,13 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('details[data-autofold=registro]')).toHaveAttribute('open', '');
   });
 
-  test('«Lo que decía la oferta» is one closed fold at the end, without «Para negociar», with the simulator', async ({
+  test('«Oferta original» is one closed fold at the end, without «Para negociar», with the simulator', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     const fold = page.locator('details[data-fold=reference]');
     await expect(fold).not.toHaveAttribute('open', '');
-    await expect(fold.locator(':scope > summary')).toHaveText('Lo que decía la oferta');
+    await expect(fold.locator(':scope > summary')).toHaveText('Oferta original');
     await expect(fold.locator('[data-fold=breakdown2]')).toHaveCount(1);
     await expect(fold.locator('#secLegal')).toHaveCount(1);
     await expect(fold.locator('[data-fold=payslips]')).toHaveCount(1);
@@ -424,7 +424,7 @@ test.describe('finished: Cuentas', () => {
       'Se comprobará al cerrar todos los meses',
     );
     await expect(block).toContainText('No se puede comprobar con lo apuntado: festivos trabajados');
-    await expect(page.locator('#result')).not.toContainText('La nómina declarada queda');
+    await expect(page.locator('#result')).not.toContainText('La nómina declarada está');
     // Every month closed and a payroll cobro: the bonus and the minimum get their verdict
     await closeMonths(page, 'all');
     await expect(block).toContainText('sobre 4 de 4 meses cerrados');
@@ -456,7 +456,7 @@ test.describe('finished: Cuentas', () => {
     await page.locator('.cal .day.work').first().click(); // a day can be changed in the review
     await page.getByRole('button', { name: 'Cerrar agosto' }).click();
     await page.getByRole('button', { name: 'Saltar' }).click();
-    await expect(page.locator('#result')).toContainText('Repaso hecho');
+    await expect(page.locator('#result')).toContainText('Revisión hecha');
     await expect(page.locator('#result')).toContainText('2 meses cerrados');
     await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
     await page.getByRole('button', { name: 'Ver las cuentas' }).click();
@@ -535,7 +535,7 @@ test.describe('the real period of the work', () => {
     await page.locator('.cal .day[data-day="02"]').click();
     await page.locator('[data-action=reviewEnd]').first().click();
     await expect(page.locator('.real')).toHaveText(
-      /^Trabajo real: del 21 jun 2026 al 2 oct 2026 \(la oferta decía 30 sept 2026\)\.$/,
+      /^Trabajo real: del 21 jun 2026 al 2 oct 2026 \(oferta: 30 sept 2026\)\.$/,
     );
     expect(amount(await tile(page, 'Corresponde').textContent())).toBeGreaterThan(before);
     await expect(page.locator('.tocl')).toContainText('Octubre');
@@ -576,7 +576,7 @@ test.describe('the real period of the work', () => {
       offers.closeMonth(o, { key: '2026-09', from: '2026-09-01', to: '2026-09-30' });
       app.select(o.id);
     });
-    await expect(page.locator('.real')).toHaveText(/al 10 sept 2026 \(la oferta decía 30 sept 2026\)/);
+    await expect(page.locator('.real')).toHaveText(/al 10 sept 2026 \(oferta: 30 sept 2026\)/);
     expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(before);
   });
 
