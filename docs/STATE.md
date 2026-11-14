@@ -1,5 +1,26 @@
 # State
 
+## Union assistant: Reclamar as a guided ladder, the dossier, how the job ended (ADR-0034, proposed)
+
+Started 14 November 2026 while the owner was away, under their mandate («asistente sindical, gestor y ayuda al pastor»); the owner confirms ADR-0034 on return. Nothing of it on `master` until they do.
+
+### Plan (phase 1: no new legal data)
+
+1. Glossary: «Reclamar» as the ladder; one term per step («Hablar con el ganadero», «Petición de pago», «Sindicato», «Papeleta de conciliación», «Inspección de Trabajo», «Juzgado de lo Social», «FOGASA»); «Expediente», «Resumen para el ganadero», «¿Cómo acabó?», «Cuentas saldadas», «Para reclamar».
+2. `law.js`: sources `lrjs` (BOE-A-2011-15936), the ITSS mailbox, FOGASA, Importass (vida laboral), Aragón's conciliation procedure (https://www.aragon.es/tramitador/-/tramite/conciliaciones/laboral-preceptiva-previa-a-la-jurisdiccion-social, temporary until the knowledge base); figures `dismissalDays` 20 working days (ET 59.3), `conciliationResumeDays` 15 (LRJS 65.1), `conciliationEndDays` 30 (Aragón page).
+3. `src/model/claim.js` (pure): the steps in order with `applies`, `deadline`, `lapsed`, `done`; `dismissalDeadline(date)` = 20 weekdays after the day after, holidays ignored (conservative). Unit tests: a Friday dismissal, August, lapsed months.
+4. `src/text.js`: «Resumen para el ganadero» (net, by item and month, no citations, ends «¿Cuándo se puede pagar?»), «Petición de pago» (gross, a pay-by date, default +15 days; no claim that it stops the deadline), «Hechos para la Inspección» (facts only), the papeleta's fields; amounts equal `settle`/`standingOf`.
+5. Saved format 6: `mine.record.end = { how: agreed|dismissed|quit|sick, date }`, `mine.parties = { employerName, employerId?, workerName? }`, `months[k].closedAt`, `record.evidence = [{ date, text }]`, `mine.claim = { steps: { id: { done, note? } } }`; upgrader, fixture, migration, `rls.test.js`, `PAGE_VERSION`/`min_page_version`. Owner exports a backup before `master`.
+6. `src/views/claim.js`: the «Reclamar» block replacing today's in Acabada; shown when Falta > 0, when dismissed, or with no cobros (prompt); dismissal first in red; «Hecho» per step; the disclaimer. Aragón offices: Huesca C/ Ricardo del Arco 6, 2ª, 974 293 017; Zaragoza Pº Fernando el Católico 63-65, 976 715 946; Teruel C/ San Francisco 1, 1ª, 978 641 182 (from the aragon.es page; elsewhere «el servicio de mediación de la comunidad»).
+7. Cards «¿Empezó el trabajo?» (Por decidir on or after the start) and «¿Cómo acabó?» (Acabada, or «Acabó antes» in the «⋯» menu).
+8. The «Expediente»: `views/dossier.js` with a history entry, print CSS (no app chrome), «Imprimir o guardar PDF»; totals equal the Cuentas tiles.
+9. Offers list: a «Para reclamar» group first; the next step and its date on the card.
+10. Leyes: «Dónde reclamar» rewritten as the ladder in brief.
+11. Hints without data: the finiquito («recibí» or «no conforme», never «recibí y conforme» if it does not add up; a representative may attend, ET 49.2), vida laboral link, «certificado de empresa» for the paro, the guest backup nudge when something is owed.
+12. Docs: `docs/model.md` (claim section).
+
+Left out until verified (memory only): interest for late pay (ET 29.3), in-kind limits (ET 26.1), FOGASA ceilings (ET 33), whether August counts in dismissal deadlines (LRJS 43.4), free legal aid. Phase 2 with the knowledge base: mediation office per province, the dismissal date with holidays, agreements per province, gross per cobro, hours and notes per day.
+
 ## Knowledge base for territorial law figures (ADR-0033)
 
 Decided with the owner on 14 November 2026: documents with provenance, distilled reports, verified tables and a build script that generates the page's data; no servers; review by a summary table shown by the main agent; where no agreement is known the general rules of Spain apply and nothing above the entitlement is claimed. Nothing built yet. The full design of 14 November (manifest fields, report template, table schemas, validation checks, job roles) was written by a design agent and lives in the conversation; this plan is its first slice, to be written into `kb/README.md` as it is built.
