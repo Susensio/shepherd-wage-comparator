@@ -565,6 +565,7 @@ export function recordClaimText(o, settled, record) {
     lines.push(
       `De ese total, ${fSumE(totals.agreedCash)} netos son lo pactado en mano, sin declarar; se reclaman como pactado.`,
     );
+  const said = payments.length > 0 || record.nothingPaid === true;
   if (!payments.length) {
     lines.push('No consta ningún cobro.');
   } else {
@@ -578,7 +579,7 @@ export function recordClaimText(o, settled, record) {
       );
   }
   const owing = rows.filter((row) => row.owed > 0);
-  if (payments.length && owing.length) {
+  if (said && owing.length) {
     lines.push('', `Queda por pagar, bruto: ${fSumE(totals.owed)}.`);
     for (const row of owing) {
       const parts = Object.entries(row.items)
@@ -594,7 +595,7 @@ export function recordClaimText(o, settled, record) {
       lines.push(
         `Plazo para reclamar: ${LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`} desde que cada pago era debido (${citeOf('et', '59.2').label}); el primero acaba el ${fIso(first)}.`,
       );
-  } else if (payments.length) lines.push('', 'No queda nada por pagar.');
+  } else if (said) lines.push('', 'No queda nada por pagar.');
   const open = rows.filter((row) => !row.closed).map((row) => monthName(row.month));
   if (open.length) lines.push(`Meses sin cerrar, calculados según la oferta: ${joinAnd(open)}.`);
   lines.push(
