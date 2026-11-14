@@ -114,8 +114,11 @@ test.describe('«Acabó antes» in the «⋯» menu', () => {
     await card.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     expect((await record(page)).end).toEqual({ how: 'quit', date: '2026-08-10' });
-    // The days after it are libre: September is not worked
-    expect((await record(page)).months['2026-09'].days['15']).toBe('off');
+    // The job stops there: the real period says so, and the months after it are not part of it
+    await expect(page.locator('#result .real', { hasText: 'Trabajo real' })).toContainText(
+      'Trabajo real: del 21 jun 2026 al 10 ago 2026',
+    );
+    await expect(page.locator('.monthstrip button[data-key="2026-09"]')).toHaveCount(0);
   });
 
   test('not offered for an offer only', async ({ page }) => {

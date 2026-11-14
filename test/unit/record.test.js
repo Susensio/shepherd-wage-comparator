@@ -779,22 +779,63 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
     assert.equal('closedAt' in other.months['2026-06'], false);
   });
 
-  test('setEnd earlier than the offer’s marks the remaining days libre in the months not closed, and leaves closed ones', () => {
+  test('setEnd says the end and records nothing else; an empty date is refused', () => {
     const record = emptyRecord();
-    closeMonth(OFFER, record, { key: '2026-08', from: '2026-08-01', to: '2026-08-31' }, '2026-09-01');
-    const before = structuredClone(record.months['2026-08']);
-    assert.equal(setEnd(OFFER, record, { how: 'dismissed', date: '2026-07-10' }), true);
-    assert.deepEqual(record.end, { how: 'dismissed', date: '2026-07-10' });
-    assert.equal(record.months['2026-07'].days['10'], undefined, 'the day of the end is not touched');
-    assert.equal(record.months['2026-07'].days['11'], 'off');
-    assert.equal(record.months['2026-07'].days['31'], 'off');
-    assert.deepEqual(record.months['2026-08'], before);
-    assert.equal(setEnd(OFFER, record, { how: 'dismissed', date: '' }), false);
+    assert.equal(setEnd(record, { how: 'dismissed', date: '2026-07-10' }), true);
+    assert.deepEqual(record, { months: {}, payments: [], end: { how: 'dismissed', date: '2026-07-10' } });
+    assert.equal(setEnd(record, { how: 'dismissed', date: '' }), false);
+  });
+
+  test('the end said ends the job in settle with no month closed: less is due, the last month stops there, its deadline is a year after it', () => {
+    const today = '2027-01-15';
+    const whole = settle(OFFER, emptyRecord(), today, ctx);
+    const record = emptyRecord();
+    setEnd(record, { how: 'dismissed', date: '2026-08-18' }); // a Tuesday; the offer runs to 31 August
+    const cut = settle(OFFER, record, today, ctx);
+    assert.ok(cut.totals.due < whole.totals.due);
+    const august = cut.rows.at(-1);
+    assert.equal(august.month, '2026-08');
+    assert.equal(august.to, '2026-08-18');
+    assert.equal(august.jobTo, '2026-08-18');
+    assert.equal(august.dueDate, '2026-08-18');
+    assert.equal(august.deadline, '2027-08-18');
+    assert.equal(cut.job.to, '2026-08-18');
+    assert.equal(cut.job.differs, true);
+    // The days after it are outside the job, not libre
+    const marks = marksOf(OFFER, record, spanOf(august), { from: august.jobFrom, to: august.jobTo });
+    assert.ok(marks.filter((m) => m.date > '2026-08-18').every((m) => m.outside));
+    // A month wholly after the end is not part of the job
+    setEnd(record, { how: 'dismissed', date: '2026-07-10' });
+    const july = settle(OFFER, record, today, ctx);
+    assert.deepEqual(
+      july.rows.map((row) => row.month),
+      ['2026-06', '2026-07'],
+    );
+    assert.equal(july.rows.at(-1).deadline, '2027-07-10');
+  });
+
+  test('a day worked after the end said keeps the job going to it', () => {
+    const record = emptyRecord();
+    setEnd(record, { how: 'quit', date: '2026-08-10' });
+    record.months['2026-08'] = { days: { 14: 'work' } };
+    assert.equal(settle(OFFER, record, '2027-01-15', ctx).job.to, '2026-08-14');
+  });
+
+  test('an offer with no end stops at the end said', () => {
+    const open = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'o', durationUnit: 'unknown' });
+    const record = emptyRecord();
+    setEnd(record, { how: 'dismissed', date: '2026-07-20' });
+    const s = settle(open, record, '2027-01-15', ctx);
+    assert.equal(s.job.to, '2026-07-20');
+    assert.deepEqual(
+      s.rows.map((row) => row.month),
+      ['2026-06', '2026-07'],
+    );
   });
 
   test('setEnd at or after the offer’s end changes only the end', () => {
     const record = emptyRecord();
-    setEnd(OFFER, record, { how: 'agreed', date: '2026-09-01' });
+    setEnd(record, { how: 'agreed', date: '2026-09-01' });
     assert.deepEqual(record, { months: {}, payments: [], end: { how: 'agreed', date: '2026-09-01' } });
     assert.equal(clearEnd(record), true);
     assert.equal(clearEnd(record), false);

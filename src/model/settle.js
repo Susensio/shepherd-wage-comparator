@@ -105,6 +105,17 @@ function jobShares(base, offerEnd, record) {
       .map(([day]) => Number(day))
       .sort((a, b) => a - b);
   let list = base.map((x) => ({ ...x, extension: false, calendarFrom: x.from, calendarTo: monthLast(x.month) }));
+  // An end the shepherd said, before the offer's, ends the job there (unless days were marked worked after it): the
+  // months after it are not part of the job and the last one stops on that day
+  const said = record?.end?.date ?? '';
+  if (said && said < isoOf(offerEnd)) {
+    const cut = lastWorkedDay(record) > said ? lastWorkedDay(record) : said;
+    if (cut < isoOf(offerEnd)) {
+      list = list.filter((x) => isoOf(x.from) <= cut);
+      const tail = list.at(-1);
+      if (tail && cut < isoOf(tail.to)) tail.to = parseDate(cut);
+    }
+  }
   // Extension: through the last day worked after the offer's end
   const lastWork = lastWorkedDay(record);
   if (list.length && lastWork > isoOf(offerEnd)) {
@@ -429,7 +440,7 @@ export function settle(offer, record, today, ctx) {
   const live = shares.filter((x) => x.days > 0);
   const job = {
     from: live.length ? isoOf(live[0].from) : terms.start || '',
-    to: openEnded || !live.length ? '' : isoOf(live[live.length - 1].fullTo),
+    to: openEnded ? (record?.end?.date ?? '') : !live.length ? '' : isoOf(live[live.length - 1].fullTo),
     offerFrom: terms.start || '',
     offerTo: offerEnd ? isoOf(offerEnd) : '',
   };

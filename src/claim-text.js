@@ -10,7 +10,7 @@ import { cents, fSumE, spreadTo } from './ledger.js';
 import { spanOf } from './model/accounts.js';
 import { marksOf } from './model/record.js';
 import { ITEMS } from './model/settle.js';
-import { datesText, isoOf, parseDate } from './offer.js';
+import { isoOf, parseDate } from './offer.js';
 import { ITEM_TEXT, monthName, monthYear, summaries } from './text.js';
 
 /** @typedef {{ employerName: string, employerId?: string, workerName?: string }} Parties */
@@ -19,6 +19,19 @@ import { ITEM_TEXT, monthName, monthYear, summaries } from './text.js';
 const fIso = (iso) => fDate(parseDate(iso));
 const jobName = (o) => o.mine.name || 'sin nombre';
 const WAY = { payroll: 'en nómina', cash: 'en mano' };
+
+/**
+ * When the job really ran, from `settle`: the offer's dates unless the end said or the days marked make it otherwise.
+ * «21 jun – 18 sept 2026»; «desde el 21 jun 2026» without an end.
+ * @param {{ from: string, to: string }} job `settled.job`
+ */
+export function jobDates(job) {
+  if (!job.from) return '';
+  if (!job.to) return `desde el ${fIso(job.from)}`;
+  const from = parseDate(job.from);
+  const sameYear = from.getFullYear() === parseDate(job.to).getFullYear();
+  return `${fDate(from, !sameYear)} – ${fIso(job.to)}`;
+}
 
 /** ISO date `days` after `iso`. */
 export function daysAfter(iso, days) {
@@ -91,7 +104,7 @@ const cobrosLines = (payments) =>
  */
 export function employerSummaryText({ o, r, settled, standing, record, parties }) {
   const lines = summaries(o, r);
-  const when = datesText(o.terms);
+  const when = jobDates(settled.job);
   const to = parties.employerName ? `Hola, ${parties.employerName}.` : 'Hola.';
   const out = [to, `Se han repasado las cuentas del trabajo de ${jobName(o)}${when ? ` (${when})` : ''}.`, ''];
   out.push(`Pactado: ${lines.pay}.`);
@@ -135,7 +148,7 @@ export function employerSummaryText({ o, r, settled, standing, record, parties }
  */
 export function paymentRequestText({ o, settled, record, parties, today, payBy, netFactor }) {
   const { rows, totals } = settled;
-  const when = datesText(o.terms);
+  const when = jobDates(settled.job);
   const net = (record.payments ?? []).reduce((t, p) => t + p.amount, 0);
   const out = [`Fecha: ${fIso(today)}`];
   if (parties.employerName)
@@ -180,7 +193,7 @@ export function paymentRequestText({ o, settled, record, parties, today, payBy, 
  * @param {Parties} c.parties
  */
 export function inspectionText({ o, r, settled, record, parties }) {
-  const when = datesText(o.terms);
+  const when = jobDates(settled.job);
   const out = [`Hechos del trabajo de pastor en ${jobName(o)}${when ? ` (${when})` : ''}.`];
   if (parties.employerName)
     out.push(`Ganadero: ${parties.employerName}${parties.employerId ? ` (${parties.employerId})` : ''}.`);

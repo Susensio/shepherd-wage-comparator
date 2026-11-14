@@ -6,6 +6,7 @@
  */
 
 import { html, nothing } from 'lit-html';
+import { jobDates } from '../claim-text.js';
 import { fDate, fE } from '../format.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
@@ -78,7 +79,7 @@ export function dossierView(d, o, r, places) {
     </section>
 
     <section><h2>Condiciones</h2>
-      <ul class="dlist">${[lines.when, lines.pay, lines.workday, lines.housing, o.terms.place || o.terms.municipality ? lines.place : ''].filter(Boolean).map((x) => html`<li>${x}</li>`)}</ul>
+      <ul class="dlist">${[jobDates(data.job) || lines.when, lines.pay, lines.workday, lines.housing, o.terms.place || o.terms.municipality ? lines.place : ''].filter(Boolean).map((x) => html`<li>${x}</li>`)}</ul>
       ${record.end ? html`<p>Acabó el ${fIso(record.end.date)}: ${END_TEXT[record.end.how]}.</p>` : nothing}
     </section>
 

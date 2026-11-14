@@ -169,25 +169,14 @@ export function confirmStart(record, date) {
 }
 
 /**
- * Says how and when the job ended (ADR-0034). A job that ended before the offer's end has its remaining days marked
- * libre in the months not closed, so the calendar shows what happened; closing those months is what makes the figures firm.
- * @param {{ terms: object }} offer
+ * Says how and when the job ended (ADR-0034). `settle` ends the job on that date: the days after it are outside the
+ * job, whether or not their months are closed.
  * @param {OfferRecord} record
  * @param {import('./settle.js').JobEnd} end `date` is an ISO date
  */
-export function setEnd(offer, record, { how, date }) {
+export function setEnd(record, { how, date }) {
   if (!date) return false;
   record.end = { how, date };
-  const offerEnd = endOf(offer.terms);
-  if (!offerEnd || date >= isoOf(offerEnd)) return true;
-  for (const d = parseDate(date); ; ) {
-    d.setDate(d.getDate() + 1);
-    if (d > offerEnd) break;
-    const iso = isoOf(d);
-    const key = iso.slice(0, 7);
-    if (record.months?.[key]?.closed) continue;
-    monthOf(record, key).days[iso.slice(8)] = 'off';
-  }
   return true;
 }
 

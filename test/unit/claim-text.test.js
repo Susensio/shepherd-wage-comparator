@@ -181,3 +181,38 @@ describe('the Expediente’s figures add up to the tiles', () => {
       }
   });
 });
+
+describe('the end said ends the job in every text', () => {
+  const o = worked[0]; // 21 June to 30 September 2026
+  const ended = (how) => {
+    const c = contextOf(o, 300);
+    c.record.end = { how, date: '2026-09-18' };
+    c.settled = settle(o, c.record, TODAY, ctx);
+    c.standing = standingOf(c.settled, TODAY, 'finished', c.record.payments, c.r.netFactor);
+    return c;
+  };
+
+  test('the dates are the job’s, and the amounts follow them', () => {
+    const whole = contextOf(o, 300);
+    const c = ended('dismissed');
+    assert.ok(c.standing.corresponde < whole.standing.corresponde);
+    for (const text of [employerSummaryText(c), paymentRequestText(c), inspectionText(c)]) {
+      assert.ok(text.includes('18 sept 2026'), text);
+      assert.ok(!text.includes('30 sept 2026'), text);
+    }
+    const period = conciliationFields(c).find((f) => f.id === 'period');
+    assert.equal(period?.value, 'del 21 jun 2026 al 18 sept 2026');
+    const september = c.settled.rows.at(-1);
+    assert.equal(september.deadline, '2027-09-18');
+  });
+
+  test('the Expediente’s calendar shows the days after the end as outside the job, never libre', async () => {
+    const { dossierOf } = await import('../../src/model/dossier.js');
+    const c = ended('dismissed');
+    const d = dossierOf({ o, netFactor: c.r.netFactor, settled: c.settled, standing: c.standing, record: c.record });
+    const september = d.months.at(-1);
+    assert.equal(september.month, '2026-09');
+    assert.ok(september.marks.filter((m) => m.date > '2026-09-18').every((m) => m.outside));
+    assert.equal(d.job.to, '2026-09-18');
+  });
+});

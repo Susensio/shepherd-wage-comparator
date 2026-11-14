@@ -38,6 +38,7 @@ export function dossierOf({ o, netFactor, settled, standing, record }) {
     gross: { due: row.due, received: row.received, owed: row.owed },
   }));
   return {
+    job: settled.job,
     months,
     totals: {
       net: {
