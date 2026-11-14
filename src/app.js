@@ -190,11 +190,15 @@ export function paintAll({ animate = false } = {}) {
   document.body.classList.toggle('loading-account', loading);
   $('#fichaName').textContent = o.mine.name || 'Sin nombre';
   $('#fichaMenu').dataset.id = o.id;
-  const phase = phaseOf(o, todayISO(), o.mine.record);
+  // Without a start date an offer counts as «solo oferta», which has no phase
+  const phase = o.terms.start ? phaseOf(o, todayISO(), o.mine.record) : 'offerOnly';
   $('#fichaPhase').hidden = !(phase in PHASE_TEXT);
   $('#fichaPhase').textContent = PHASE_TEXT[phase] ?? '';
   $('#fichaPhase').dataset.phase = phase;
-  render(fichaView(o, r, placesIfLoaded(), recordContext(o, r)), $('#result'));
+  const record = recordContext(o, r);
+  // «Revisar los meses» has its own «‹ Cuentas»: the ficha's back link would be a second one
+  document.body.classList.toggle('reviewing', !!record?.review);
+  render(fichaView(o, r, placesIfLoaded(), record), $('#result'));
   restoreFolds($('#result'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
   if (animate) for (const el of appeared) fadeIn(el);

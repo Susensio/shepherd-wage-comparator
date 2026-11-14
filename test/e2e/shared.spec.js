@@ -326,12 +326,12 @@ test.describe('whose voice an offer speaks in', () => {
     expect(all.some(({ shared }) => /¿Cuánto se gana\?/.test(shared) && /Debe el ganadero/.test(shared))).toBe(true);
   });
 
-  test("another shepherd's ranking rows say «Debe el ganadero», like own rows", async ({ openApp }) => {
+  test("another shepherd's ranking rows say «Falta para el mínimo», like own rows", async ({ openApp }) => {
     const others = sample.offers.map((o, i) => ({ id: sharedId(i + 1), user_id: OTHER, terms: o.terms }));
     const page = await openOthers(openApp, { others });
     await include(page);
     const theirs = (await page.locator('.lr.other').allTextContents()).join('\n');
-    expect(theirs).toContain('Debe el ganadero');
+    expect(theirs).toContain('Falta para el mínimo');
     expect(theirs).not.toMatch(SECOND_PERSON);
   });
 });

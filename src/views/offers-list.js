@@ -2,8 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { fCount, fE } from '../format.js';
-import { fSumE } from '../ledger.js';
-import { yearShares } from '../model/calc.js';
+import { yearMoney, yearShares } from '../model/calc.js';
 import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
 import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
@@ -21,10 +20,10 @@ const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
 
 /**
- * What was worked each year: how many offers, the money received and the days contributed. Each contract is split by
+ * What was worked each year: how many offers, the cobros recorded, what the offers say they pay and the days contributed. Each contract is split by
  * days between the years it touches; offers of solo oferta, incomplete ones and those without a duration are left out.
  * @param {{ o: any, r: any }[]} items
- * @returns {Record<string, { jobs: number, money: number, contrib: number }>}
+ * @returns {Record<string, { jobs: number, recorded: number, projected: number, contrib: number }>}
  */
 function yearTotals(items) {
   const worked = new Set(workedOffers(items.map((x) => x.o)));
@@ -32,26 +31,24 @@ function yearTotals(items) {
   for (const { o, r } of items) {
     if (!worked.has(o) || startsLater(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
     for (const [year, share] of Object.entries(yearShares(o.terms)))
-      parts[year] = [...(parts[year] || []), { r, share }];
+      parts[year] = [...(parts[year] || []), { o, r, share }];
   }
   return Object.fromEntries(
     Object.entries(parts).map(([year, list]) => {
-      const sum = (fn) => list.reduce((total, { r, share }) => total + fn(r) * share, 0);
-      return [
-        year,
-        { jobs: list.length, money: sum((r) => r.earnings.received), contrib: sum((r) => r.unemployment.contribDays) },
-      ];
+      const contrib = list.reduce((total, { r, share }) => total + r.unemployment.contribDays * share, 0);
+      return [year, { jobs: list.length, ...yearMoney(list, year), contrib }];
     }),
   );
 }
 
-/** «2026 · 3 trabajadas · 14.200 € cobrados · 180 días cotizados» */
+/** «2026 · 3 trabajadas · 900 € cobrados · 14.200 € según las ofertas · 180 días cotizados» */
 function yearHeading(year, totals) {
-  const { jobs = 0, money = 0, contrib = 0 } = totals ?? {};
+  const { jobs = 0, recorded = 0, projected = 0, contrib = 0 } = totals ?? {};
   const days = fCount(contrib);
   const parts = [
     jobs === 0 ? 'ninguna trabajada' : jobs === 1 ? '1 trabajada' : `${jobs} trabajadas`,
-    jobs > 0 && money >= 0.5 && `${fE(money)} cobrados`,
+    recorded >= 0.5 && `${fE(recorded)} cobrados`,
+    jobs > 0 && projected >= 0.5 && `${fE(projected)} según las ofertas`,
     jobs > 0 && contrib >= 0.5 && `${days} ${days === '1' ? 'día cotizado' : 'días cotizados'}`,
   ].filter(Boolean);
   return html`<h3 class="year-head"><b>${year}</b> · ${parts.join(' · ')}</h3>`;
@@ -85,15 +82,15 @@ export function offersListView(items, activeId) {
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
 
-/** The extra line of a job under way or finished: what the ganadero owes, and the months still to close. */
-function recordLine(line) {
+/** The extra line of a job under way or finished: what is missing (what the ganadero owes, once over), and the months still to close. */
+function recordLine(line, phase) {
   if (!line) return nothing;
   const months = line.unclosed === 1 ? '1 mes sin cerrar' : `${line.unclosed} meses sin cerrar`;
   return html`<span class="oc-rec"><span>${
     !line.hasPayments
       ? 'Sin cobros apuntados'
       : line.owed > 0
-        ? html`Debe el ganadero <b>${fSumE(line.owed)}</b>`
+        ? html`${phase === 'finished' ? 'Debe el ganadero' : 'Falta'} <b>${fE(line.owed, 0)}</b>`
         : 'Sin deuda'
   }</span>${line.unclosed ? html`<span>${months}</span>` : nothing}</span>`;
 }
@@ -105,14 +102,14 @@ function card({ o, r, record }, activeId) {
   const worked = !!o.terms.start && !o.terms.offerOnly;
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
   return html`<div class="ocwrap"><button type="button" class=${worked ? 'ocard' : 'ocard offer-only'} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
-    <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}${record?.phase ? html` <span class="phase" data-phase=${record.phase}>${PHASE_TEXT[record.phase]}</span>` : nothing}</b>${
+    <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${
       complete
         ? html`<span class="oc-fig">${fUnit(inUnit(r.earnings.total, r, unit), unit)}${UNITS[unit].suffix}</span>`
         : ''
     }</span>
-    <span class="oc-detail">${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
+    <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.phase}>${PHASE_TEXT[record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
       complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
-    }</span>${recordLine(record?.line)}
+    }</span>${recordLine(record?.line, record?.phase)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
 }
 

@@ -1,8 +1,9 @@
 /**
  * Whether the law was kept, from what the record holds and not from what the offer promised (ADR-0032), judging facts
- * only: the weekly rest and the days worked above those due look at CLOSED months alone (the periods wholly inside
- * them); the overnight bonus and the minimum on payroll are judged only once every month is closed and a payroll cobro
- * exists. Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
+ * only: the facts of the terms (no contract, cash agreed) need no month closed; the weekly rest and the days worked above
+ * those due look at CLOSED months alone (the periods wholly inside them). The overnight bonus and the minimum on payroll
+ * are worked out once every month is closed and a payroll cobro exists, but the screens do not judge them until every
+ * cobro is known (a later round). Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
  * No DOM.
  */
 
@@ -15,7 +16,7 @@ import { ITEMS } from './settle.js';
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ extra: { due: number }, min: { overnight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, min: { overnight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -62,7 +63,16 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   const minimumGross = sum(ITEMS.map((item) => settled.totals.items[item].minimum));
   const minimumNet = cents(minimumGross * r.netFactor);
   const floor = cents(minimumGross * Math.max(0, r.netFactor - r.pay.irpfPct));
+  // Facts of the terms, known before any month is closed: no contract means no alta in Social Security, and cash
+  // agreed is pay off the payslip (the whole pay, without a contract, so it is said once)
+  const facts = [
+    ...(r.noContract ? [{ id: /** @type {const} */ ('noContract') }] : []),
+    ...(!r.noContract && (r.cash?.total ?? 0) >= 1
+      ? [{ id: /** @type {const} */ ('cash'), amount: settled.totals.agreedCash }]
+      : []),
+  ];
   return {
+    facts,
     months: { closed: closed.length, total: inJob.length },
     allClosed,
     rest: { periods, fails },

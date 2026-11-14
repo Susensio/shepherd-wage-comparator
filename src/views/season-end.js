@@ -132,7 +132,7 @@ export function seasonEndSection(o, r) {
     `${fN(r.time.daysWorked)} días trabajados (${fN(r.time.hours)}\u00a0h)`,
     r.car.km > 0.5 && `${fN(r.car.km)} km, unos ${fE(r.car.cost)} de coche`,
     r.unemployment.contribDays > 0 &&
-      `${fN(r.unemployment.contribDays)} días cotizados, unos ${fN(r.unemployment.days)} de paro`,
+      `${fN(r.unemployment.contribDays)} días cotizados${r.unemployment.contribVacationDays >= 0.5 ? ` (con ${fN(r.unemployment.contribVacationDays)} de vacaciones pagadas)` : ''}, unos ${fN(r.unemployment.days)} de paro`,
   ]
     .filter(Boolean)
     .join(' · ');

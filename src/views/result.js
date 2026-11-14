@@ -79,9 +79,8 @@ function pills(o, r) {
       : fallback;
   const extra = joinAnd(
     [
-      r.extraDays.extra >= 1 && r.extra.daysValue > 0 && `unos ${fCount(r.extraDays.extra)} días de más ${overTxt}`,
-      r.extra.overtimePerWeek >= 0.5 &&
-        `unas ${fN(r.extra.over40PerWeek)}\u00a0h a la semana por encima de ${LAW.weeklyHours}`,
+      r.extraDays.extra >= 1 && r.extra.daysValue > 0 && `unas ${fCount(r.extraDays.extra)} jornadas de más ${overTxt}`,
+      r.extra.overtimePerWeek >= 0.5 && `unas ${fN(r.extra.overtimePerWeek)}\u00a0h extra a la semana`,
     ].filter(Boolean),
   );
   const daysOff = num(o.terms.daysOff);

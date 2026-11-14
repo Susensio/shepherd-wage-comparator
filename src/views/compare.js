@@ -3,7 +3,7 @@
 import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import { yearShares } from '../model/calc.js';
+import { yearMoney, yearShares } from '../model/calc.js';
 import { DAY_MS, datesText, isComplete, missing, spanOf, workedOffers } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
 import { MISSING_TEXT, unpaidTime } from '../text.js';
@@ -187,7 +187,7 @@ function headToHead(list, pairing, unit) {
       'Derechos',
       [
         ['En negro', (x) => x.r.cash.share, (v) => (v <= 0.005 ? 'nada' : `${fN(v * 100)} %`), 'min'],
-        ['Lo que debe el ganadero', debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
+        ['Falta para el mínimo', debt, (v) => (isWorthCounting(v) ? fE(v) : 'nada'), 'min'],
         // In the unit Comparar is in, like the money rows above: the days would not add to them
         !totalsHidden && [
           `Paro que genera ${U.short}`,
@@ -355,7 +355,7 @@ export function compareView({
       ${incomeBar(r, max, per(r))}
       <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
-          ? html`<span class="bad">Debe el ganadero ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
+          ? html`<span class="bad">Falta para el mínimo ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
       }</span>`;
     return pairing.on
@@ -466,15 +466,28 @@ export function trendView(all, unit, width) {
       return xc - xa < 1 ? `M${xa},${ya}L${xc},${yc}` : `M${xa},${ya}C${mid},${ya} ${mid},${yc} ${xc},${yc}`;
     })
     .join('');
+  // Names above their segment, kept inside the plot (clear of the axis figures) and off each other: when a spot is taken
+  // the name goes below the line, or higher
+  const LABEL_H = 15;
+  const placed = [];
+  const labels = points.map((p) => {
+    const width = p.o.mine.name.length * 6.8;
+    const x = Math.max(M.l + width / 2, Math.min(W - M.r - width / 2, (X(p.a) + xEnd(p)) / 2));
+    const y0 = Y(p.y);
+    const free = (y) =>
+      placed.every((q) => Math.abs(q.x - x) >= (q.width + width) / 2 + 2 || Math.abs(q.y - y) >= LABEL_H);
+    const y = [-7, 16, -22, 31, -37].map((dy) => y0 + dy).find(free) ?? y0 - 7;
+    placed.push({ x, y, width });
+    return { name: p.o.mine.name, x, y };
+  });
   const tip = (p) =>
     `${p.o.mine.name} · ${datesText(p.o.terms)}: se gana ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.r.min.overnightRate > 0 ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que se gana ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que se gana ${U.label} en cada oferta trabajada, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)
-      .join('')}/>${points.map(
-      (p) =>
-        svg`<text class="nm" x=${(X(p.a) + xEnd(p)) / 2} y=${Y(p.y) - 7} text-anchor="middle">${p.o.mine.name}</text>`,
-    )}${points.map(
+      .join(
+        '',
+      )}/>${labels.map((l) => svg`<text class="nm" x=${l.x} y=${l.y} text-anchor="middle">${l.name}</text>`)}${points.map(
       (p) =>
         svg`<rect class="hit" data-tip=${tip(p)} tabindex="0" role="button" x=${X(p.a) - 4} y=${Y(p.y) - 16} width=${xEnd(p) - X(p.a) + 8} height="28"/>`,
     )}</svg>
@@ -492,19 +505,20 @@ export function yearlyView(all) {
   for (const { o, r } of all) {
     if (!worked.has(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
     for (const [year, share] of Object.entries(yearShares(o.terms)))
-      byYear[year] = [...(byYear[year] || []), { r, share }];
+      byYear[year] = [...(byYear[year] || []), { o, r, share }];
   }
   const years = Object.keys(byYear).sort().reverse();
   if (!years.length) return nothing;
   const columns = years.map((year) => {
     const items = byYear[year];
     const sum = (fn) => items.reduce((s, { r, share }) => s + fn(r) * share, 0);
-    const money = sum((r) => r.earnings.received);
+    const { recorded, projected: money } = yearMoney(items, year);
     const hours = sum((r) => r.time.hours);
     return {
       year,
       jobs: items.length,
       days: sum((r) => r.time.daysWorked),
+      recorded,
       money,
       cash: sum((r) => r.cash.total),
       perHour: hours > 0 ? money / hours : 0,
@@ -516,9 +530,10 @@ export function yearlyView(all) {
   return html`<div class="yearly"><h4 class="sub">Año a año</h4><div class="tablew"><table class="table">
     <thead><tr><th></th>${columns.map((c) => html`<th>${c.year}<small>${c.jobs === 1 ? '1 oferta' : `${c.jobs} ofertas`}</small></th>`)}</tr></thead><tbody>
     ${row('Días trabajados', (c) => fN(c.days))}
-    ${row('Cobrado', (c) => fE(c.money))}
+    ${columns.some((c) => c.recorded > 0.5) ? row('Cobrado', (c) => (c.recorded > 0.5 ? fE(c.recorded) : '—')) : nothing}
+    ${row('Según las ofertas', (c) => fE(c.money))}
     ${columns.some((c) => c.cash > 0.5) ? row('de ello, en negro', (c) => (c.cash > 0.5 ? `${fN((c.cash / c.money) * 100)}\u00a0%` : '—')) : nothing}
-    ${row('Cobrado por hora', (c) => fE(c.perHour, 2))}
+    ${row('Por hora, según las ofertas', (c) => fE(c.perHour, 2))}
     ${row('Total', (c) => fE(c.earned))}
     ${row('Días cotizados', (c) => fN(c.contrib))}
     </tbody></table></div><p class="hint">Sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;

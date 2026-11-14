@@ -95,10 +95,14 @@ test('the hours warning shows under the question while it is empty, and goes whe
   await startOffer(page, 'day');
   const warning = page.locator('[data-required=hoursPerDay]');
   await expect(warning).toHaveText('Sin las horas no se puede calcular cuánto se gana.');
+  await expect(warning).toBeHidden(); // nothing is said before the field has been left
+  await page.focus('#hoursPerDay');
+  await page.locator('#hoursPerDay').blur();
   await expect(warning).toBeVisible();
   await page.fill('#hoursPerDay', '9');
   await expect(warning).toBeHidden();
   await page.fill('#hoursPerDay', '');
+  await page.locator('#hoursPerDay').blur();
   await expect(warning).toBeVisible();
   await page.fill('#hoursPerDay', '9');
   await page.locator('#entryNext').click(); // not blocked, and no warning leaks into the next step

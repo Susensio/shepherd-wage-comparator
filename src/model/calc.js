@@ -22,7 +22,7 @@ import {
 import { effectiveOffer, legalMinimum, payroll, travel } from './pay.js';
 import { selfEmployed } from './self-employed.js';
 import { bisect, unemploymentBenefit } from './tax.js';
-import { extraTime, hoursWeek, overtimePerWeek, schedule } from './time.js';
+import { extraTime, overtimePerWeek, schedule } from './time.js';
 
 /** Which share of an offer falls in each year, by days: {2025: 0.4, 2026: 0.6}. Without dates, all in its year. */
 export function yearShares(terms) {
@@ -36,6 +36,23 @@ export function yearShares(terms) {
     if (to >= from) shares[y] = daysInclusive(from, to) / days;
   }
   return shares;
+}
+
+/**
+ * The money of one year, from the jobs that touch it: what was recorded (`recorded`: the cobros dated in that year, net,
+ * as they arrived) and what the offers say (`projected`: `earnings.received` of each, split by days, which for a job
+ * with cobros is only a reference). The two are never added.
+ * @param {{ o: { mine: { record?: { payments?: { date: string, amount: number }[] } } }, r: { earnings: { received: number } }, share: number }[]} items
+ * @param {string} year
+ */
+export function yearMoney(items, year) {
+  const recorded = items.reduce(
+    (total, { o }) =>
+      total + (o.mine.record?.payments ?? []).filter((p) => p.date.startsWith(year)).reduce((t, p) => t + p.amount, 0),
+    0,
+  );
+  const projected = items.reduce((total, { r, share }) => total + r.earnings.received * share, 0);
+  return { recorded, projected };
 }
 
 /**
@@ -232,6 +249,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     },
     unemployment: {
       contribDays,
+      /** of `contribDays`, the vacation days paid at the end, which contribute too */
+      contribVacationDays: pay.gross > 0 && vacationPaid(t) ? time.vacationDays : 0,
       days: benefit.days,
       euros: benefit.euros,
       /** what money paid en negro does not generate: the benefit payroll plus its gross equivalent would give, less this one */
@@ -258,7 +277,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
       daysUnpaidCount: dayValue > 0 ? daysUnpaid / dayValue : 0,
       overtimePerWeek: perWeek,
       overtimeUnpaidPerWeek: overtimeValue > 0 ? (perWeek * overtimeUnpaid) / overtimeValue : 0,
-      over40PerWeek: hoursWeek(extra).over,
     },
     /** days worked, due and extra, rounded so the subtraction adds up on screen */
     extraDays: extraDaysRounded(time, extra),

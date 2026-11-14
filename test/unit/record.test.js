@@ -1,6 +1,7 @@
 // The record's transitions, the figures the screens read from settle, and the claim text. Run with `npm run test:unit`.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import { balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
@@ -19,6 +20,7 @@ import {
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
+import { ingestSaved } from '../../src/schema.js';
 import { recordClaimText } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
@@ -469,37 +471,24 @@ describe('the law, from the record: facts only', () => {
 });
 
 describe('what the job left', () => {
-  test('firm only with every month closed; cobrado split into payroll and hand; the days real in closed months', () => {
+  test('firm only with every month closed; the days real in closed months; vacation days among those contributed', () => {
     const record = emptyRecord();
     addPayment(record, { date: '2026-07-05', amount: 1000, via: 'payroll' });
     addPayment(record, { date: '2026-07-06', amount: 300, via: 'cash' });
     const settled = settle(OFFER, record, '2026-11-12', ctx);
     const r = calc(OFFER, ctx);
-    const open = balanceOf(
-      OFFER,
-      record,
-      settled,
-      standingOf(settled, '2026-11-12', 'finished', record.payments, r.netFactor),
-      r,
-    );
+    const open = balanceOf(OFFER, record, settled, r);
     assert.equal(open.firm, false);
-    assert.equal(open.cobrado, 1300);
-    assert.equal(open.cobradoMano, 300);
-    assert.equal(open.cobradoNomina, 1000);
     assert.equal(open.workedClosed, 0);
     assert.ok(open.worked > 0);
     for (const row of settled.rows) closeMonth(OFFER, record, spanOf(row));
     const s2 = settle(OFFER, record, '2026-11-12', ctx);
-    const closed = balanceOf(
-      OFFER,
-      record,
-      s2,
-      standingOf(s2, '2026-11-12', 'finished', record.payments, r.netFactor),
-      r,
-    );
+    const closed = balanceOf(OFFER, record, s2, r);
     assert.equal(closed.firm, true);
     assert.equal(closed.workedClosed, closed.worked);
     assert.equal(closed.contribDays, r.unemployment.contribDays);
+    // vacation paid at the end contributes too: the days say so
+    assert.ok(closed.contribVacationDays > 0 && closed.contribVacationDays < closed.contribDays);
   });
 });
 
@@ -710,6 +699,20 @@ describe('why Corresponde is more than the pay agreed', () => {
       true,
     );
     assert.equal(note(below({ payUnit: 'day', payAmount: 20 }))?.unit, 'día');
+  });
+
+  test('an item short while the pay agreed is above the minimum as a whole: no total sentence, the item says so', () => {
+    const saved = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
+    const d = ingestSaved(saved, { fallbackCfg: { ...DEF_CFG } }).offers.find((o) => o.mine.name === 'Sin contrato D');
+    const x = note(d);
+    assert.ok(x);
+    assert.equal(x.exceeds, false);
+    assert.ok(x.total <= x.agreed, `${x.total} vs ${x.agreed}`);
+    assert.deepEqual(
+      x.short.map((s) => s.key),
+      ['vacation'],
+    );
+    assert.ok(x.short[0].amount > 0);
   });
 
   test('a pay above the minimum has no line', () => {

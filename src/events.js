@@ -39,7 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { recordActions } from './ui/record.js';
+import { recordActions, recordClaimOf, recordPhase } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -143,6 +143,7 @@ function onFormInput(e) {
 /** An empty name does not leave the offer without one. */
 function onFormFocusOut(e) {
   const el = /** @type {HTMLInputElement} */ (e.target);
+  el.closest('.fld')?.classList.add('touched');
   const o = active();
   if (el.name !== 'name' || o.mine.name.trim()) return;
   o.mine.name = `Oferta ${state.offers.indexOf(o) + 1}`;
@@ -225,7 +226,8 @@ function runMenuAction(action, id, msg) {
       failMsg: 'No se pudo copiar. Aquí está para seleccionarla:',
       rows: 7,
     });
-  return copyText(claimText(o, calcOffer(o)), msg, {
+  // A job worked copies its record's claim, which is what its ficha shows; the offer's own claim is for one not worked
+  return copyText(recordClaimOf(o) ?? claimText(o, calcOffer(o)), msg, {
     ok: 'Texto copiado.',
     failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
     rows: 12,
@@ -238,11 +240,20 @@ function menuAvailability(id) {
   const copy = missing(o.terms).length === 0;
   const r = copy ? calcOffer(o) : null;
   // Self-employed there is no labour claim to copy: the warning is about the kind of contract itself
-  return { copy, claim: !!r && !r.selfEmployed && !!legalLine(o, r) };
+  return { copy, claim: !!r && !r.selfEmployed && (!!recordPhase(o) || !!legalLine(o, r)) };
 }
 
 /* Everything done with a button: the button says what with data-action, and data-id if it is about an offer. One
    object per screen, joined in ACTIONS. */
+
+/** Opens a fold of «Leyes y fuentes» and takes it into view. */
+function openLawSection(id) {
+  const fold = /** @type {HTMLDetailsElement | null} */ (document.getElementById(id));
+  if (!fold) return;
+  fold.open = true;
+  saveFold(fold);
+  scrollToElement(fold);
+}
 
 /** Tabs and pages. */
 const NAVIGATION_ACTIONS = {
@@ -252,7 +263,11 @@ const NAVIGATION_ACTIONS = {
   },
   openAccountPage: () => openAccountPage(),
   openSettingsPage: () => openSettingsPage(),
-  openLawsPage: () => openLawsPage(),
+  openLawsPage(b) {
+    openLawsPage();
+    if (b.dataset.section) openLawSection(b.dataset.section);
+  },
+  lawSection: (b) => openLawSection(b.dataset.target),
   openAccountFromPrompt: () => openAccountPage(true),
   closePage,
 };

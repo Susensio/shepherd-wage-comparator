@@ -302,7 +302,7 @@ export function cardText(o, r) {
     [
       x.daysValue > 0 && r.extraDays.extra >= 1 && `Jornadas de más: ${fCount(r.extraDays.extra)} en el contrato`,
       x.overtime >= 0.5 &&
-        `Horas extra: unas ${fN(x.over40PerWeek)} a la semana por encima de ${LAW.weeklyHours} (estimado)`,
+        `Horas extra: unas ${fN(x.overtimePerWeek)} a la semana por encima de la jornada normal (estimado)`,
     ]
       .filter(Boolean)
       .join(' · '),
@@ -494,7 +494,7 @@ export function leversOf(r) {
         ['Horas', `unas ${fN(x.overtimeUnpaidPerWeek)}\u00a0h a la semana sin pagar`],
       ],
       estimate: true,
-      proposal: `Salen unas ${fN(x.over40PerWeek)} horas a la semana por encima de ${LAW.weeklyHours}. Pagadas, serían unos ${fE(x.overtimeUnpaid)} brutos ${over} (estimado).`,
+      proposal: `Salen unas ${fN(x.overtimePerWeek)} horas extra a la semana, por encima de la jornada normal. Pagadas, serían unos ${fE(x.overtimeUnpaid)} brutos ${over} (estimado).`,
     });
   return levers;
 }

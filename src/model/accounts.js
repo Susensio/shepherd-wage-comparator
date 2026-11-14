@@ -236,17 +236,16 @@ export function standingOf(settled, today, phase, payments, netFactor) {
 }
 
 /**
- * What the job came to, for «Balance del trabajo» (ADR-0032): Corresponde and Cobrado (of it, in nómina and in hand),
- * the days worked, and the days contributed and the paro the offer generates. `firm` is whether every month is closed:
- * until then Corresponde and the days worked partly follow the offer. The contributions and the paro always follow the
+ * What the job left besides the figures of the tiles, for «Balance del trabajo» (ADR-0032): the days worked, and the days
+ * contributed and the paro the offer generates. `firm` is whether every month is closed: until then Corresponde and the
+ * days worked partly follow the offer. The contributions and the paro always follow the
  * offer, because the real payslip is not recorded. In net, as the rest.
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof settle>} settled
- * @param {ReturnType<typeof standingOf>} standing
- * @param {{ unemployment: { contribDays: number, days: number, euros: number } }} r the offer's figures
+ * @param {{ unemployment: { contribDays: number, contribVacationDays: number, days: number, euros: number } }} r the offer's figures
  */
-export function balanceOf(offer, record, settled, standing, r) {
+export function balanceOf(offer, record, settled, r) {
   const inJob = settled.rows.filter((row) => row.days > 0);
   const marks = inJob.map((row) => ({
     closed: row.closed,
@@ -256,13 +255,10 @@ export function balanceOf(offer, record, settled, standing, r) {
   return {
     months: { closed: inJob.filter((row) => row.closed).length, total: inJob.length },
     firm: inJob.length > 0 && inJob.every((row) => row.closed),
-    corresponde: standing.corresponde,
-    cobrado: standing.cobrado,
-    cobradoMano: standing.cobradoEnMano,
-    cobradoNomina: cents(standing.cobrado - standing.cobradoEnMano),
     worked: marks.reduce((t, m) => t + m.worked, 0),
     workedClosed: marks.filter((m) => m.closed).reduce((t, m) => t + m.worked, 0),
     contribDays: r.unemployment.contribDays,
+    contribVacationDays: r.unemployment.contribVacationDays,
     paroDays: r.unemployment.days,
     paroEuros: r.unemployment.euros,
   };
@@ -270,8 +266,9 @@ export function balanceOf(offer, record, settled, standing, r) {
 
 /**
  * Why Corresponde is more than the pay agreed, where it is: the minimum the law and the convenio demand exceeds the
- * pay agreed (ADR-0004: the greater is owed). In net, one unit (per day, or per month), the components of the minimum
- * that apply. Null where the minimum does not exceed what was agreed. The figures are the model's own.
+ * pay agreed, item by item (ADR-0004: the greater is owed per item). In net, one unit (per day, or per month), the
+ * components of the minimum that apply and the items that fall short. Null where no item falls short. The figures are the
+ * model's own.
  * @param {{ terms: object }} offer
  * @param {ReturnType<typeof settle>} settled
  * @param {{ netFactor: number, time: { daysWorked: number, months: number }, split?: { unit?: string } | null }} r
@@ -291,10 +288,15 @@ export function minimumNote(offer, settled, r) {
     { key: 'vacation', amount: each(items.vacation.minimum) },
   ].filter((x) => x.amount > 0);
   const agreedGross = sum(ITEMS.map((item) => items[item].agreed)) - totals.agreedCashGross;
+  const total = sum(components.map((x) => x.amount));
+  const agreed = cents((agreedGross * r.netFactor + totals.agreedCash) / per);
   return {
     unit: perDay ? 'día' : 'mes',
     components,
-    total: sum(components.map((x) => x.amount)),
-    agreed: cents((agreedGross * r.netFactor + totals.agreedCash) / per),
+    total,
+    agreed,
+    /** The minimum as a whole is above the pay agreed; else only some items fall short (ADR-0004), listed in `short`. */
+    exceeds: total > agreed,
+    short: ITEMS.map((key) => ({ key, amount: each(items[key].shortfall) })).filter((x) => x.amount > 0),
   };
 }

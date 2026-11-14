@@ -126,7 +126,7 @@ test('focusing the field brings it near the top, where the keyboard will not cov
   await startOffer(page);
   await page.evaluate(() => document.querySelector('#scroller').scrollTo(0, 1e6));
   await page.focus('#place');
-  await expect.poll(() => page.locator('#place').evaluate((e) => e.getBoundingClientRect().top)).toBeLessThan(250);
+  await expect.poll(() => page.locator('#place').evaluate((e) => e.getBoundingClientRect().top)).toBeLessThan(300); // the page ends below the field: it cannot be brought higher
 });
 
 test('keyboard: arrows move, Enter picks, Escape closes', async ({ page }) => {
@@ -257,6 +257,7 @@ test.describe('data saving', () => {
 
 test('«Leyes» credits GeoNames for the place list', async ({ page }) => {
   await page.evaluate(() => app.openLawsPage());
+  await page.locator('.lawindex [data-target=law-sources]').click();
   const credit = page.locator('[data-panel=laws] li', { hasText: 'GeoNames' });
   await expect(credit).toContainText('CC BY 4.0');
   await expect(credit.getByRole('link', { name: 'GeoNames' })).toHaveAttribute('href', 'https://www.geonames.org/');

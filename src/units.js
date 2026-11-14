@@ -75,7 +75,7 @@ export const offerUnit = (r, terms) => {
 export const PARTS = [
   { key: 'payroll', color: '--c-pay', label: 'Nómina', value: (p) => p.base + p.extraPays, money: true },
   { key: 'invoice', color: '--c-pay', label: 'Factura', value: (p) => p.invoice ?? 0, money: true },
-  { key: 'b', color: '--c-cash', label: 'Negro', value: (p) => p.b, money: true },
+  { key: 'b', color: '--c-cash', label: 'En negro', value: (p) => p.b, money: true },
   { key: 'km', color: '--c-km', label: 'Km', value: (p) => p.km, money: true },
   { key: 'vacationPay', color: '--c-vac', label: 'Vacaciones', value: (p) => p.vacationPay, money: true },
   { key: 'severance', color: '--c-sev', label: 'Indemnización', value: (p) => p.severance },

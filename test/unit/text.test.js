@@ -4,11 +4,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { fN } from '../../src/format.js';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG } from '../../src/offer.js';
 import { buildIndex } from '../../src/places.js';
 import { normalizeOffer } from '../../src/schema.js';
-import { cardText, claimText, herdText, summaries, whereText } from '../../src/text.js';
+import { cardText, claimText, herdText, leversOf, summaries, whereText } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
 const sample = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
@@ -199,6 +200,22 @@ test('claim: opens with the offer name and has the section headings', () => {
   assert.equal(claim.split('\n')[0], 'Oferta: Puerto A');
   assert.match(claim, /^SALARIO$/m);
   assert.match(claim, /Estatuto, art\./);
+});
+
+test('horas extra: the card text, the claim and the lever say the same quantity per week', () => {
+  let checked = 0;
+  for (const o of offers) {
+    const r = resultOf(o);
+    const { overtimePerWeek } = r.extra;
+    if (r.extra.overtime < 0.5) continue;
+    const week = fN(overtimePerWeek);
+    assert.match(claimText(o, r), new RegExp(`unas ${week} a la semana\\.`), o.mine.name);
+    assert.match(cardText(o, r), new RegExp(`Horas extra: unas ${week} a la semana`), o.mine.name);
+    const lever = leversOf(r).find((x) => x.id === 'overtime');
+    if (lever) assert.match(lever.proposal, new RegExp(`Salen unas ${week} horas extra a la semana`), o.mine.name);
+    checked++;
+  }
+  assert.ok(checked > 0);
 });
 
 test('claim: without a contract it cites article 8 and the cash paid', () => {

@@ -28,6 +28,7 @@ import { closeReview, openReview } from './navigation.js';
 /**
  * @typedef {object} CalendarContext
  * @property {'ficha' | 'review'} mode
+ * @property {string} today ISO date
  * @property {ReturnType<typeof monthAccounts>} acc
  * @property {number} index where this month is among `count`
  * @property {number} count
@@ -56,7 +57,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof settleOffer>['job']} job the period the work really had, and the offer's
  * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
  * @property {ReturnType<typeof balanceOf> | null} balance once the job is over: what it came to
- * @property {{ month: string } | null} nudge a month that has ended and waits to be closed, other than the one shown
+ * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -86,6 +87,11 @@ export function setUpRecord(given) {
 export function recordPhase(o, today = todayISO()) {
   const phase = phaseOf(o, today, o.mine.record);
   return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
+}
+
+/** The claim of a job under way or finished, from its record; null for an offer not worked. */
+export function recordClaimOf(o) {
+  return recordPhase(o) ? recordClaimText(o, settleOffer(o), o.mine.record) : null;
 }
 
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
@@ -123,6 +129,7 @@ export function recordContext(o, r) {
   const rowOf = (month) => settled.rows.find((row) => row.month === month);
   const calendarOf = (key, mode, index, count) => ({
     mode,
+    today,
     acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
     index,
     count,
@@ -141,7 +148,7 @@ export function recordContext(o, r) {
     selected: row.month === key,
   }));
   if (addable) strip.push({ month: addable, state: 'add', selected: addable === key });
-  const waiting = standing.unclosed.find((row) => row.month !== key);
+  const waiting = standing.unclosed.filter((row) => row.month !== key).map((row) => row.month);
   /** @type {CalendarContext | ReviewDone | null} */
   let review = null;
   if (ui.review?.offerId === o.id) {
@@ -168,12 +175,12 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
-    balance: phase === 'finished' ? balanceOf(o, record, settled, standing, r) : null,
+    balance: phase === 'finished' ? balanceOf(o, record, settled, r) : null,
     addable,
     job: settled.job,
     minimum: minimumNote(o, settled, r),
     strip,
-    nudge: waiting && phase === 'underway' ? { month: waiting.month } : null,
+    nudge: waiting.length && phase === 'underway' ? { months: waiting } : null,
     calendar: calendarOf(key, 'ficha', index, shown.length),
     review,
   };
@@ -336,7 +343,7 @@ export const recordActions = {
   async copyRecordClaim(b) {
     const o = active();
     const msg = /** @type {HTMLElement} */ (b.closest('.block').querySelector('.copy-msg'));
-    const copied = await copyText(recordClaimText(o, settleOffer(o), o.mine.record), msg, {
+    const copied = await copyText(/** @type {string} */ (recordClaimOf(o)), msg, {
       ok: 'Texto copiado.',
       failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
       rows: 12,
@@ -371,7 +378,7 @@ export function forgetRecordUi(offerId) {
 export function cardRecord(o, r) {
   const today = todayISO();
   const phase = phaseOf(o, today, o.mine.record);
-  if (phase === 'offerOnly') return { phase: null, line: null };
+  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, line: null };
   if (!recordPhase(o, today)) return { phase, line: null };
   const settled = settleOffer(o);
   const s = standingOf(

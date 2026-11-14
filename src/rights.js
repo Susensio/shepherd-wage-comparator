@@ -183,7 +183,7 @@ export function rightsOf(o, r, unit = 'month') {
   else if (hoursPerWeek <= H_MAX && hoursPerDay <= LAW.maxDayHours) {
     const what =
       x.overtimePerWeek >= 0.5
-        ? `${fN(hoursPerWeek)} h a la semana: unas ${fN(x.over40PerWeek)} por encima de ${LAW.weeklyHours}.`
+        ? `${fN(hoursPerWeek)} h a la semana: unas ${fN(x.overtimePerWeek)} son horas extra, por encima de la jornada normal.`
         : `${fN(hoursPerWeek)} h a la semana.`;
     if (isWorthCounting(x.overtimeUnpaid) && !r.noContract)
       add(

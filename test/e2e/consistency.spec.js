@@ -226,7 +226,8 @@ for (const offer of sample.offers) {
         return { corresponde: read('Corresponde'), cobrado: read('Cobrado'), falta: read('Falta') };
       });
       if (tiles.corresponde !== null && tiles.falta !== null)
-        expect(tiles.falta).toBe(Math.max(0, Math.round((tiles.corresponde - tiles.cobrado) * 100) / 100));
+        // whole euros on the tiles: each is rounded on its own, so the subtraction may be one off
+        expect(Math.abs(tiles.falta - Math.max(0, tiles.corresponde - tiles.cobrado))).toBeLessThanOrEqual(1);
     });
   }
 }

@@ -83,6 +83,7 @@ export function paintEnd(terms) {
 
 /** Puts the offer's values in the form. */
 export function fillForm(o) {
+  for (const field of $$('#f .fld.touched')) field.classList.toggle('touched', false); // another offer: nothing left yet
   paintEnd(o.terms);
   /** @type {HTMLInputElement} */ ($('#place')).value = o.terms.place;
   for (const el of /** @type {HTMLInputElement[]} */ ([...form().elements])) {
@@ -291,6 +292,8 @@ export function paintForm(o, r, offers, places) {
   for (const line of $$('[data-required]')) {
     const id = line.dataset.required;
     line.textContent = odd.has(id) ? IMPLAUSIBLE_TEXT[id] : lines.includes(id) ? textOf(REQUIRED_TEXT[id]) : '';
+    // What is missing shows once the field is left (`.touched`) or the entry asks for it; a wrong figure shows at once
+    line.toggleAttribute('data-late', !odd.has(id));
   }
   text('#payHint', payHint(o, r));
   paintAnswers(o, r);

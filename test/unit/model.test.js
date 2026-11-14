@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { num } from '../../src/format.js';
 import { MIN_WAGE } from '../../src/law.js';
-import { calc, calcTermsOnly } from '../../src/model/calc.js';
+import { calc, calcTermsOnly, yearMoney } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
@@ -319,4 +319,26 @@ test('sleeping out counts the bonus only where an agreement known for the provin
     near(r.extra.dayValue, plain.extra.dayValue, 0.001, 'a day is not worth more');
   }
   assert.ok(huesca.extra.dayValue > plain.extra.dayValue);
+});
+
+test('yearMoney: recorded cobros of the year apart from what the offers project, never added', () => {
+  const job = (payments, received, share) => ({
+    o: { mine: { record: { payments } } },
+    r: { earnings: { received } },
+    share,
+  });
+  const items = [
+    job(
+      [
+        { date: '2026-03-02', amount: 300 },
+        { date: '2025-12-30', amount: 90 },
+      ],
+      1000,
+      0.5,
+    ),
+    job([], 400, 1),
+  ];
+  const money = yearMoney(items, '2026');
+  assert.equal(money.recorded, 300);
+  assert.equal(money.projected, 900);
 });

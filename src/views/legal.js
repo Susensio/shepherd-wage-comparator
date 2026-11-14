@@ -173,13 +173,14 @@ function hoursBar(r) {
     <div class="br-mw">${segmentBar(
       [
         ['w', normal, 'normales'],
-        ['wx', restDays + beyond, 'extra'],
+        ['wx', restDays + beyond, 'de más'],
       ],
       total,
       hours,
       13,
       restDays + beyond > 0.05 ? ((normal + paidRestDays + paidBeyond) / total) * 100 : null,
     )}${restDays + beyond > 0.05 ? marker(((normal + paidRestDays + paidBeyond) / total) * 100, 'pagado', true) : nothing}</div>
+    ${restDays > 0.05 ? html`<p class="hint">Las horas de más son las ${f1(beyond)} h extra y las ${f1(restDays)} h de las jornadas de más.</p>` : nothing}
   </div>`;
 }
 
@@ -226,9 +227,9 @@ function extraTimeCards(r) {
     const status = payStatus(x.overtimeUnpaid, x.overtimeValue);
     cards.push(
       html`<details class="owed warn" data-fold="law-hours"><summary>${figureCard(
-        html`${fN(x.over40PerWeek)}<small> h</small><small class="u">/sem</small>`,
+        html`${fN(x.overtimePerWeek)}<small> h</small><small class="u">/sem</small>`,
         'Horas extra',
-        html`Por encima de ${LAW.weeklyHours} h a la semana · ${payMark(status)}`,
+        html`Por encima de la jornada normal (${f1(x.workday)} h) · ${payMark(status)}`,
         'Estimado',
       )}</summary>${hoursBar(r)}</details>`,
     );
@@ -284,6 +285,6 @@ export function legalSection(o, r, money) {
       .map(
         item,
       )}</ul>${passed.length ? html`<p class="hint">✔ Cumple: ${joinAnd(passed.map((x) => x.title.toLowerCase()))}.</p>` : nothing}
-      <p class="hint">Dónde reclamar (sindicato, Inspección de Trabajo): <button type="button" class="linkbtn" data-action="openLawsPage">en «Leyes»</button>.</p></details>
+      <p class="hint">Dónde reclamar (sindicato, Inspección de Trabajo): <button type="button" class="linkbtn" data-action="openLawsPage" data-section="law-claim">en «Leyes»</button>.</p></details>
   </section>`;
 }

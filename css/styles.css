@@ -6,7 +6,7 @@
    · Motion: --t (duration) and --ease; in JS, ANIM with the same values
    ========================================================================= */
 :root {
-  --tap: 40px; /* smallest height of what is tapped */
+  --tap: 44px; /* smallest height of what is tapped */
   --bg: #ecefe8;
   --surface: #f8faf5;
   --ink: #18231d;
@@ -183,6 +183,13 @@ a {
 .hint {
   font-size: 12.5px;
   color: var(--muted);
+}
+.hint[data-late] {
+  display: none;
+}
+.fld.touched .hint[data-late]:not(:empty),
+.fld.missing .hint[data-late]:not(:empty) {
+  display: block;
 }
 .hint:empty {
   display: none;
@@ -550,7 +557,7 @@ summary:focus-visible,
   position: relative;
   text-align: center;
   font-size: 13.5px;
-  padding: 8px 10px;
+  padding: 12px 10px;
   cursor: pointer;
   color: var(--ink);
   border-right: 1px solid var(--line);
@@ -743,10 +750,18 @@ button.sm,
 .filebtn {
   font-size: 12.5px;
   padding: 6px 10px;
+  min-width: var(--tap);
 }
 
 button.danger {
   color: var(--neg);
+}
+.linkbtn.rm,
+.nudge .linkbtn,
+.addmonth {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 10px;
 }
 .linkbtn {
   border: 0;
@@ -911,15 +926,6 @@ details.plg[data-fold="breakdown2"] {
   border-top: 0;
   padding-top: 4px;
 }
-/* «Cómo se calcula»: the workings, in the background at the end of the ficha, as a small link */
-details.plg[data-fold="workings"] > summary {
-  font-family: var(--f-body);
-  font-weight: 600;
-  font-size: 14px;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--accent);
-}
 details.plg > summary {
   font-family: var(--f-display);
   font-size: 13px;
@@ -1044,11 +1050,11 @@ div.welcome {
 div.welcome[hidden] {
   display: none;
 }
-.welcome h2 {
+div.welcome h2 {
   font-size: clamp(24px, 5.5vw, 34px);
   outline: 0;
 }
-.welcome .pri {
+div.welcome .pri {
   align-self: stretch;
   margin-top: 6px;
 }
@@ -2328,7 +2334,7 @@ section.season-end details.plg {
 .view .seg label {
   flex: 1;
   text-align: center;
-  padding: 7px 4px;
+  padding: 12px 4px;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
@@ -3253,8 +3259,8 @@ details > * {
 .copybtn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: var(--tap);
+  height: var(--tap);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -3774,10 +3780,21 @@ details.plg > summary .stat.dt b {
     margin-bottom: 0;
     z-index: 20;
   }
+  /* One row, so it stays within the line of the intro and never reaches the ficha's header with its «⋯» */
   .tip-slot .tip {
     position: absolute;
     top: 0;
     right: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    max-width: 460px;
+  }
+  .tip-slot .tip p {
+    margin: 0;
+  }
+  .tip-slot .tip .tip-actions {
+    flex: none;
   }
 }
 
@@ -3919,9 +3936,10 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
 .fichatitle .phase {
   margin-right: auto;
 }
-.oc-name .phase {
-  margin-left: 8px;
-  vertical-align: 2px;
+.oc-detail .phase {
+  margin-right: 6px;
+  font-size: 11.5px;
+  padding: 1px 8px;
 }
 .oc-rec {
   display: flex;
@@ -4054,7 +4072,8 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
 .pay .pr .rm {
   font-size: 12.5px;
   font-weight: 600;
-  padding-inline: 4px;
+  padding-inline: 10px;
+  align-self: center;
 }
 .via {
   font-weight: 600;
@@ -4269,6 +4288,18 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
 }
 .day.pad {
   visibility: hidden;
+}
+.day.ahead {
+  opacity: 0.45;
+}
+.day.today {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ink);
+}
+.counts .upto {
+  color: var(--muted);
+  font-weight: 700;
 }
 .day.out {
   opacity: 0.25;
@@ -4588,4 +4619,20 @@ h2.mode.small {
 }
 .day.away small {
   font-size: 9px;
+}
+
+/* «Revisar los meses»: one way back, its own */
+body.reviewing .ficha > .back {
+  display: none;
+}
+
+/* «Leyes y fuentes»: an index, then one fold per section */
+.lawindex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+.lawindex .linkbtn {
+  min-height: var(--tap);
+  padding: 0 10px 0 0;
 }

@@ -2,6 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { fSumE } from '../ledger.js';
+import { countsOf } from '../model/record.js';
 import { monthName } from '../text.js';
 import { row } from './parts.js';
 
@@ -34,13 +35,16 @@ function grid(cal) {
     const day = String(d).padStart(2, '0');
     const mark = inSpan.get(day);
     if (!mark) {
-      cells.push(html`<span class="day out" aria-hidden="true">${d}</span>`);
+      cells.push(html`<span class="day out" aria-hidden="true">${d}<small>fuera</small></span>`);
       continue;
     }
     // A day outside the job is not a libranza: faded, said so, and still tappable to mark it jornada
     const note = mark.outside ? 'fuera' : mark.kind === 'work' ? '' : KIND_TEXT[mark.kind].replace('de ', '');
     const label = `${d} de ${monthName(acc.row.month)}: ${mark.outside ? 'fuera del trabajo' : KIND_TEXT[mark.kind]}`;
-    const cls = `day ${mark.outside ? 'away' : mark.kind}`;
+    // The month in progress: today is ringed, the days still to come are faded (they follow the offer until they happen)
+    const date = `${acc.row.month}-${day}`;
+    const inProgress = cal.mode === 'ficha' && cal.current;
+    const cls = `day ${mark.outside ? 'away' : mark.kind}${inProgress && date === cal.today ? ' today' : ''}${inProgress && date > cal.today ? ' ahead' : ''}`;
     cells.push(
       closed
         ? html`<button type="button" class=${cls} aria-disabled="true" tabindex="-1" aria-label=${label}>${d}<small>${note}</small></button>`
@@ -79,11 +83,14 @@ function month(cal) {
   const { acc } = cal;
   const [y] = acc.row.month.split('-');
   const now = cal.mode === 'ficha' && cal.current;
-  const { counts } = acc;
+  // Up to today in the month in progress: the days after it are neither jornadas nor libranzas yet
+  const counts = now
+    ? countsOf(acc.marks.filter((m) => !m.outside && `${acc.row.month}-${m.day}` <= cal.today))
+    : acc.counts;
   return html`<div class=${acc.row.closed ? 'cal closed' : 'cal'}>
     <div class="mh"><h3>${capital(monthName(acc.row.month))} ${y}</h3>${stateOf(acc, now)}</div>
     ${grid(cal)}
-    <div class="counts"><span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
+    <div class="counts">${now ? html`<span class="upto">hasta hoy</span>` : nothing}<span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
     ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
     ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Los días «fuera» no son del trabajo. Si se marca uno como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
     ${money(cal)}
