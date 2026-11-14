@@ -51,3 +51,16 @@ test('a month with nothing worked does not extend it, and an earlier day worked 
   assert.equal(phaseOf(offer, '2026-07-15', { months: { '2026-07': { closed: true, days: {} } } }), 'finished');
   assert.equal(phaseOf(offer, '2026-06-11', { months: { '2026-06': { days: { '03': 'work' } } } }), 'finished');
 });
+
+test('the end the shepherd said decides: earlier than the offer’s it finishes the job, with or without an offer end', () => {
+  const record = { end: { how: 'dismissed', date: '2026-06-05' } };
+  assert.equal(phaseOf(days('2026-06-01', 30), '2026-06-05', record), 'underway');
+  assert.equal(phaseOf(days('2026-06-01', 30), '2026-06-06', record), 'finished');
+  assert.equal(phaseOf({ terms: { start: '2026-06-01', durationUnit: 'unknown' } }, '2026-06-06', record), 'finished');
+});
+
+test('a day worked after the end said still extends the job', () => {
+  const record = { end: { how: 'agreed', date: '2026-06-10' }, months: { '2026-06': { days: { 15: 'work' } } } };
+  assert.equal(phaseOf(days('2026-06-01', 10), '2026-06-12', record), 'underway');
+  assert.equal(phaseOf(days('2026-06-01', 10), '2026-06-16', record), 'finished');
+});

@@ -117,10 +117,12 @@ export function toggleDay(offer, record, span, day) {
   return true;
 }
 
-/** Closes a month with every day as shown. Returns false if it already was. */
-export function closeMonth(offer, record, span) {
+/** Closes a month with every day as shown; `today` (ISO) is when, for the dossier. Returns false if it already was. */
+export function closeMonth(offer, record, span, today) {
   if (record.months?.[span.key]?.closed) return false;
-  freeze(offer, record, span).closed = true;
+  const month = freeze(offer, record, span);
+  month.closed = true;
+  if (today) month.closedAt = today;
   return true;
 }
 
@@ -129,6 +131,7 @@ export function reopenMonth(record, key) {
   const month = record.months?.[key];
   if (!month?.closed) return false;
   month.closed = false;
+  delete month.closedAt;
   return true;
 }
 
@@ -143,6 +146,7 @@ export function addPayment(record, { date, amount, via, note = '' }) {
   const payment = { id: newId(), date, amount, via, ...(note.trim() ? { note: note.trim() } : {}) };
   record.payments ??= [];
   record.payments.push(payment);
+  delete record.nothingPaid; // a cobro says what «No se cobró nada» said
   return payment;
 }
 
@@ -156,3 +160,89 @@ export function removePayment(record, id) {
 
 /** The way the last payment entered was paid, or payroll before any. */
 export const lastWayOf = (record) => record?.payments?.at(-1)?.via ?? 'payroll';
+
+/** The shepherd confirmed the job began on `date` (the offer's, or another). */
+export function confirmStart(record, date) {
+  if (!date) return false;
+  record.started = { date };
+  return true;
+}
+
+/**
+ * Says how and when the job ended (ADR-0034). A job that ended before the offer's end has its remaining days marked
+ * libre in the months not closed, so the calendar shows what happened; closing those months is what makes the figures firm.
+ * @param {{ terms: object }} offer
+ * @param {OfferRecord} record
+ * @param {import('./settle.js').JobEnd} end `date` is an ISO date
+ */
+export function setEnd(offer, record, { how, date }) {
+  if (!date) return false;
+  record.end = { how, date };
+  const offerEnd = endOf(offer.terms);
+  if (!offerEnd || date >= isoOf(offerEnd)) return true;
+  for (const d = parseDate(date); ; ) {
+    d.setDate(d.getDate() + 1);
+    if (d > offerEnd) break;
+    const iso = isoOf(d);
+    const key = iso.slice(0, 7);
+    if (record.months?.[key]?.closed) continue;
+    monthOf(record, key).days[iso.slice(8)] = 'off';
+  }
+  return true;
+}
+
+/** Takes the end away: the job ends as its dates say again. */
+export function clearEnd(record) {
+  if (!record.end) return false;
+  delete record.end;
+  return true;
+}
+
+/** «No se cobró nada»: nothing was received, said once so Falta can be worked out. Not a payment. */
+export function setNothingPaid(record, on) {
+  if (on === Boolean(record.nothingPaid)) return false;
+  if (on) record.nothingPaid = true;
+  else delete record.nothingPaid;
+  return true;
+}
+
+/** A dated note for the dossier. Returns false for an empty text. */
+export function addEvidence(record, { date, text }) {
+  if (!text.trim() || !date) return false;
+  record.evidence ??= [];
+  record.evidence.push({ date, text: text.trim() });
+  return true;
+}
+
+/** Removes the note at `index`. */
+export function removeEvidence(record, index) {
+  if (!record.evidence?.[index]) return false;
+  record.evidence.splice(index, 1);
+  return true;
+}
+
+/** Sets the parties' names. An empty tax id or pastor's name leaves the field out. */
+export function setParties(offer, { employerName, employerId = '', workerName = '' }) {
+  offer.mine.parties = {
+    employerName: employerName.trim(),
+    ...(employerId.trim() ? { employerId: employerId.trim() } : {}),
+    ...(workerName.trim() ? { workerName: workerName.trim() } : {}),
+  };
+  return true;
+}
+
+/** Marks a claim step «Hecho» on `done` (ISO date), with an optional note; it replaces an earlier mark. */
+export function markStep(offer, id, { done, note = '' }) {
+  const steps = { ...(offer.mine.claim?.steps ?? {}) };
+  steps[id] = { done, ...(note.trim() ? { note: note.trim() } : {}) };
+  offer.mine.claim = { steps };
+  return true;
+}
+
+/** Takes a «Hecho» mark away. */
+export function unmarkStep(offer, id) {
+  if (!offer.mine.claim?.steps?.[id]) return false;
+  const { [id]: _gone, ...steps } = offer.mine.claim.steps;
+  offer.mine.claim = { steps };
+  return true;
+}

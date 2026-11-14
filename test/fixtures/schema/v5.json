@@ -1,0 +1,36 @@
+{
+  "schema_version": 5,
+  "offers": [
+    {
+      "id": "v5-1",
+      "cmp": true,
+      "schema_version": 5,
+      "terms": {
+        "payAmount": 1785,
+        "payType": "net",
+        "payUnit": "month",
+        "contract": "seasonal",
+        "start": "2026-06-21",
+        "duration": 102,
+        "offerOnly": false,
+        "futureTermsField": "kept"
+      },
+      "mine": {
+        "name": "Puerto A",
+        "kmHome": 108,
+        "car": "own",
+        "futureMineField": 7,
+        "record": {
+          "months": { "2026-06": { "closed": true, "days": { "21": "work", "22": "off" } } },
+          "payments": [{ "id": "p1", "date": "2026-07-05", "amount": 400, "via": "payroll" }]
+        }
+      }
+    },
+    {
+      "id": "v5-2",
+      "terms": { "payAmount": 1200 },
+      "mine": { "name": "Puerto B" }
+    }
+  ],
+  "cfg": { "rentValue": 350 }
+}

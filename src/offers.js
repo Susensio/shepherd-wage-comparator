@@ -1,7 +1,7 @@
 /** The list of offers: the active one, the first-visit placeholder, and saving them. Callers ask for transitions; none sets these fields itself. */
 
 import * as record from './model/record.js';
-import { makeOffer } from './offer.js';
+import { makeOffer, todayISO } from './offer.js';
 import { ingestSaved } from './schema.js';
 import { KEY, notifySaved, offersOf, state, store } from './state.js';
 
@@ -47,13 +47,29 @@ export function createOffers({ state, store, notify = () => {} }) {
     return result;
   }
 
+  /** Runs a transition of the offer itself (its parties, its claim steps) and saves if it changed something. */
+  function change(transition) {
+    const result = transition();
+    if (result) save();
+    return result;
+  }
+
   /** The record's edits (`model/record.js`), saved. */
   const recording = {
     toggleDay: (offer, span, day) => edit(offer, (r) => record.toggleDay(offer, r, span, day)),
-    closeMonth: (offer, span) => edit(offer, (r) => record.closeMonth(offer, r, span)),
+    closeMonth: (offer, span) => edit(offer, (r) => record.closeMonth(offer, r, span, todayISO())),
     reopenMonth: (offer, key) => edit(offer, (r) => record.reopenMonth(r, key)),
     addPayment: (offer, payment) => edit(offer, (r) => record.addPayment(r, payment)),
     removePayment: (offer, id) => edit(offer, (r) => record.removePayment(r, id)),
+    confirmStart: (offer, date) => edit(offer, (r) => record.confirmStart(r, date)),
+    setEnd: (offer, end) => edit(offer, (r) => record.setEnd(offer, r, end)),
+    clearEnd: (offer) => edit(offer, (r) => record.clearEnd(r)),
+    setNothingPaid: (offer, on) => edit(offer, (r) => record.setNothingPaid(r, on)),
+    addEvidence: (offer, note) => edit(offer, (r) => record.addEvidence(r, note)),
+    removeEvidence: (offer, index) => edit(offer, (r) => record.removeEvidence(r, index)),
+    setParties: (offer, parties) => change(() => record.setParties(offer, parties)),
+    markStep: (offer, id, mark) => change(() => record.markStep(offer, id, mark)),
+    unmarkStep: (offer, id) => change(() => record.unmarkStep(offer, id)),
   };
 
   /** Reads the saved offers (after `state.config`). Nothing saved is a first visit: a placeholder, replaced by the template picked. */

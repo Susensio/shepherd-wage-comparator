@@ -3,21 +3,30 @@
  * browser, a backup, the account or another shepherd (docs/model.md, «Saved format»).
  */
 
-import { DEF_CFG, DEF_MINE, DEF_TERMS, defaultVacation, emptyRecord, newId } from './offer.js';
+import {
+  DEF_CFG,
+  DEF_MINE,
+  DEF_TERMS,
+  defaultVacation,
+  emptyClaim,
+  emptyParties,
+  emptyRecord,
+  newId,
+} from './offer.js';
 import { toAnswerable } from './pay-answers.js';
 
 /**
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 4;
+export const PAGE_VERSION = 5;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -62,12 +71,16 @@ const withoutLawFigures = (cfg) =>
  *    `vatIncluded`, so the upgrader is the identity; the version keeps pages that do not know the contract from writing.
  * 5: `mine.record`, what happened (days by month, payments received; ADR-0032). The migration of 12 November 2026 gave
  *    every account row an empty one.
+ * 6: how and when a job ended (`record.end`), the start confirmed (`record.started`), the parties (`mine.parties`),
+ *    `closedAt` on a month, `record.evidence`, `record.nothingPaid` and the claim steps done (`mine.claim`; ADR-0034).
+ *    All optional. The migration of 14 November 2026 gave every account row empty parties and claim.
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
   2: { offer: ownToTerms },
   3: { offer: (offer) => offer },
   4: { offer: withRecord },
+  5: { offer: withClaim },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
@@ -85,9 +98,17 @@ function withRecord(offer) {
   return { ...offer, mine: { ...mine, record: mine.record ?? emptyRecord() } };
 }
 
+/** Version 5 to 6: empty parties and claim where there are none; nothing else is touched. */
+function withClaim(offer) {
+  const mine = offer.mine ?? {};
+  return { ...offer, mine: { ...mine, parties: mine.parties ?? emptyParties(), claim: mine.claim ?? emptyClaim() } };
+}
+
 const DAY_KINDS = new Set(['work', 'off', 'sick']);
 const PAYMENT_WAYS = new Set(['payroll', 'cash']);
+const END_HOWS = new Set(['agreed', 'dismissed', 'quit', 'sick']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
+const isIsoDate = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 
 /**
  * A saved record, clean: a day whose kind is unknown, a payment with a non-finite amount or an unknown way, and months
@@ -105,6 +126,7 @@ export function normalizeRecord(saved) {
       ),
     );
     record.months[key] = { closed: month.closed === true, days };
+    if (isIsoDate(month.closedAt)) record.months[key].closedAt = month.closedAt;
   }
   for (const p of Array.isArray(saved.payments) ? saved.payments : []) {
     if (!isObject(p) || !PAYMENT_WAYS.has(p.via) || typeof p.amount !== 'number' || !Number.isFinite(p.amount))
@@ -119,7 +141,35 @@ export function normalizeRecord(saved) {
     if (typeof p.note === 'string' && p.note) payment.note = p.note;
     record.payments.push(payment);
   }
+  if (isObject(saved.end) && END_HOWS.has(saved.end.how) && isIsoDate(saved.end.date))
+    record.end = { how: saved.end.how, date: saved.end.date };
+  if (isObject(saved.started) && isIsoDate(saved.started.date)) record.started = { date: saved.started.date };
+  if (saved.nothingPaid === true) record.nothingPaid = true;
+  const notes = (Array.isArray(saved.evidence) ? saved.evidence : []).filter(
+    (x) => isObject(x) && isIsoDate(x.date) && typeof x.text === 'string' && x.text.trim(),
+  );
+  if (notes.length) record.evidence = notes.map((x) => ({ date: x.date, text: x.text }));
   return record;
+}
+
+/** Saved parties, clean: strings only; the tax id and the pastor's name only when they hold something. */
+export function normalizeParties(saved) {
+  const parties = emptyParties();
+  if (!isObject(saved)) return parties;
+  if (typeof saved.employerName === 'string') parties.employerName = saved.employerName;
+  if (typeof saved.employerId === 'string' && saved.employerId) parties.employerId = saved.employerId;
+  if (typeof saved.workerName === 'string' && saved.workerName) parties.workerName = saved.workerName;
+  return parties;
+}
+
+/** Saved claim steps, clean: a step needs a date of when it was done; its note is kept when it is text. Step ids are not judged. */
+export function normalizeClaim(saved) {
+  const claim = emptyClaim();
+  for (const [id, step] of Object.entries(isObject(saved?.steps) ? saved.steps : {})) {
+    if (!isObject(step) || !isIsoDate(step.done)) continue;
+    claim.steps[id] = { done: step.done, ...(typeof step.note === 'string' && step.note ? { note: step.note } : {}) };
+  }
+  return claim;
 }
 
 const pick = (object, keys) => Object.fromEntries(Object.entries(object ?? {}).filter(([key]) => keys.has(key)));
@@ -131,7 +181,13 @@ const pick = (object, keys) => Object.fromEntries(Object.entries(object ?? {}).f
 export const normalizeOffer = (saved) => ({
   ...saved,
   terms: { ...DEF_TERMS, ...saved.terms },
-  mine: { ...DEF_MINE, ...saved.mine, record: normalizeRecord(saved.mine?.record) },
+  mine: {
+    ...DEF_MINE,
+    ...saved.mine,
+    record: normalizeRecord(saved.mine?.record),
+    parties: normalizeParties(saved.mine?.parties),
+    claim: normalizeClaim(saved.mine?.claim),
+  },
 });
 
 /**
@@ -197,7 +253,13 @@ export function ingestShared({ offer, sharer }) {
   const upgraded = upgradeOffer({ id: offer.id, schema_version: offer.schema_version, terms: offer.terms, mine: {} });
   if (!upgraded) return null;
   const { schema_version: _newer, ...o } = upgraded;
-  o.mine = { ...DEF_MINE, name: sharer?.name || 'Otro pastor', record: emptyRecord() };
+  o.mine = {
+    ...DEF_MINE,
+    name: sharer?.name || 'Otro pastor',
+    record: emptyRecord(),
+    parties: emptyParties(),
+    claim: emptyClaim(),
+  };
   defaultVacation(o.terms);
   return { o, sharer: sharer ?? {} };
 }

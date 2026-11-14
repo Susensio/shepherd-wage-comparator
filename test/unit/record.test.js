@@ -7,15 +7,24 @@ import { balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../..
 import { calc } from '../../src/model/calc.js';
 import { lawFromRecord } from '../../src/model/compliance.js';
 import {
+  addEvidence,
   addPayment,
+  clearEnd,
   closeMonth,
+  confirmStart,
   countsOf,
   defaultMarks,
   lastWayOf,
+  markStep,
   marksOf,
+  removeEvidence,
   removePayment,
   reopenMonth,
+  setEnd,
+  setNothingPaid,
+  setParties,
   toggleDay,
+  unmarkStep,
 } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
@@ -741,5 +750,73 @@ describe('days outside the job are not libranzas', () => {
     assert.equal(m.marks.find((x) => x.day === '21').outside, true);
     assert.equal(m.marks.find((x) => x.day === '16').outside, false); // between the end and the day worked: part of the job
     assert.equal(m.counts.work + m.counts.off, 20);
+  });
+});
+
+describe('the claim ladder’s transitions (ADR-0034)', () => {
+  test('closeMonth notes when it closed, reopening forgets it, and a call without a date leaves none', () => {
+    const record = emptyRecord();
+    const span = { key: '2026-06', from: '2026-06-01', to: '2026-06-30' };
+    assert.equal(closeMonth(OFFER, record, span, '2026-07-02'), true);
+    assert.equal(record.months['2026-06'].closedAt, '2026-07-02');
+    assert.equal(reopenMonth(record, '2026-06'), true);
+    assert.equal('closedAt' in record.months['2026-06'], false);
+    const other = emptyRecord();
+    closeMonth(OFFER, other, span);
+    assert.equal('closedAt' in other.months['2026-06'], false);
+  });
+
+  test('setEnd earlier than the offer’s marks the remaining days libre in the months not closed, and leaves closed ones', () => {
+    const record = emptyRecord();
+    closeMonth(OFFER, record, { key: '2026-08', from: '2026-08-01', to: '2026-08-31' }, '2026-09-01');
+    const before = structuredClone(record.months['2026-08']);
+    assert.equal(setEnd(OFFER, record, { how: 'dismissed', date: '2026-07-10' }), true);
+    assert.deepEqual(record.end, { how: 'dismissed', date: '2026-07-10' });
+    assert.equal(record.months['2026-07'].days['10'], undefined, 'the day of the end is not touched');
+    assert.equal(record.months['2026-07'].days['11'], 'off');
+    assert.equal(record.months['2026-07'].days['31'], 'off');
+    assert.deepEqual(record.months['2026-08'], before);
+    assert.equal(setEnd(OFFER, record, { how: 'dismissed', date: '' }), false);
+  });
+
+  test('setEnd at or after the offer’s end changes only the end', () => {
+    const record = emptyRecord();
+    setEnd(OFFER, record, { how: 'agreed', date: '2026-09-01' });
+    assert.deepEqual(record, { months: {}, payments: [], end: { how: 'agreed', date: '2026-09-01' } });
+    assert.equal(clearEnd(record), true);
+    assert.equal(clearEnd(record), false);
+  });
+
+  test('«No se cobró nada» is a flag, not a payment, and a cobro clears it', () => {
+    const record = emptyRecord();
+    assert.equal(setNothingPaid(record, true), true);
+    assert.equal(setNothingPaid(record, true), false);
+    assert.deepEqual(record.payments, []);
+    addPayment(record, { date: '2026-07-05', amount: 100, via: 'cash' });
+    assert.equal('nothingPaid' in record, false);
+    assert.equal(setNothingPaid(record, false), false);
+  });
+
+  test('evidence, start, parties and steps', () => {
+    const record = emptyRecord();
+    assert.equal(addEvidence(record, { date: '2026-09-01', text: '  ' }), false);
+    assert.equal(addEvidence(record, { date: '2026-09-01', text: ' Mensaje ' }), true);
+    assert.deepEqual(record.evidence, [{ date: '2026-09-01', text: 'Mensaje' }]);
+    assert.equal(removeEvidence(record, 3), false);
+    assert.equal(removeEvidence(record, 0), true);
+    assert.equal(confirmStart(record, '2026-06-02'), true);
+    assert.deepEqual(record.started, { date: '2026-06-02' });
+    const offer = { mine: { parties: Object.freeze({ employerName: '' }), claim: Object.freeze({ steps: {} }) } };
+    setParties(offer, { employerName: ' Casa Pérez ', employerId: '', workerName: 'Ana' });
+    assert.deepEqual(offer.mine.parties, { employerName: 'Casa Pérez', workerName: 'Ana' });
+    markStep(offer, 'talk', { done: '2026-11-01', note: ' por teléfono ' });
+    markStep(offer, 'request', { done: '2026-11-02' });
+    assert.deepEqual(offer.mine.claim.steps, {
+      talk: { done: '2026-11-01', note: 'por teléfono' },
+      request: { done: '2026-11-02' },
+    });
+    assert.equal(unmarkStep(offer, 'talk'), true);
+    assert.equal(unmarkStep(offer, 'talk'), false);
+    assert.deepEqual(Object.keys(offer.mine.claim.steps), ['request']);
   });
 });

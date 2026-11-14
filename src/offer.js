@@ -50,6 +50,12 @@ export const DEF_TERMS = {
 /** A fresh record of what happened (ADR-0032): days by month, and the payments received. Shape: `OfferRecord` in `model/settle.js`. */
 export const emptyRecord = () => ({ months: {}, payments: [] });
 
+/** The two parties of a claim (ADR-0034): the ganadero's name and optional tax id, and the pastor's own name. Typed when first needed. */
+export const emptyParties = () => ({ employerName: '' });
+
+/** The claim steps marked «Hecho» (ADR-0034): `steps[id] = { done: ISO date, note? }`. */
+export const emptyClaim = () => ({ steps: {} });
+
 /** Your own figures for an offer, never shared. Your meal prices, car and rent are in the settings. */
 export const DEF_MINE = {
   name: '',
@@ -64,6 +70,10 @@ export const DEF_MINE = {
   irpfManual: 2,
   /** Frozen: spreading `DEF_MINE` shares it, so an offer takes `emptyRecord()` and never mutates this one. */
   record: Object.freeze({ months: Object.freeze({}), payments: Object.freeze([]) }),
+  /** Frozen, like `record`: an offer takes `emptyParties()` and never mutates this one. */
+  parties: Object.freeze({ employerName: '' }),
+  /** Frozen, like `record`: an offer takes `emptyClaim()`. */
+  claim: Object.freeze({ steps: Object.freeze({}) }),
 };
 
 /** Own figures that cost nothing: no car (so no trips, km or fuel), no expenses, automatic IRPF. */
@@ -147,7 +157,7 @@ export const newId = () => crypto.randomUUID();
 export const makeOffer = (terms = {}, mine = {}) => ({
   id: newId(),
   terms: { ...DEF_TERMS, ...terms },
-  mine: { ...DEF_MINE, name: 'Oferta 1', record: emptyRecord(), ...mine },
+  mine: { ...DEF_MINE, name: 'Oferta 1', record: emptyRecord(), parties: emptyParties(), claim: emptyClaim(), ...mine },
   cmp: true,
 });
 

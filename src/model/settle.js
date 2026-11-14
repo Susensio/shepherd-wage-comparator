@@ -14,8 +14,9 @@ import { claimDeadline } from './time.js';
 /**
  * @typedef {'work' | 'off' | 'sick'} DayKind a libranza and a vacation day are the same mark, «off»
  * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash', note?: string }} Payment `amount` is net: what arrived, after withholdings on payroll, or as handed in cash. Only `payroll` is declared, on a payslip
- * @typedef {{ closed?: boolean, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»
- * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[] }} OfferRecord months keyed «2026-06»
+ * @typedef {{ closed?: boolean, closedAt?: string, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»; `closedAt` is the ISO date it was closed
+ * @typedef {{ how: 'agreed' | 'dismissed' | 'quit' | 'sick', date: string }} JobEnd how and when the job really ended (ADR-0034)
+ * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[], end?: JobEnd, started?: { date: string }, nothingPaid?: boolean, evidence?: { date: string, text: string }[] }} OfferRecord months keyed «2026-06»; `started`: the start the shepherd confirmed; `nothingPaid`: no cobro, said so (a flag, not a payment of 0)
  * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number, declared: number, belowMinimumOnPayroll: number }} ItemRow
  * `agreed` is the pay of the offer, payroll and the agreed cash together (as the gross that would bring the cash net): the
  * minimum is compared with total pay, as `calc` does with `coveredByCash`; `row.agreedCash` says how much of it is cash.
@@ -165,8 +166,10 @@ export function settle(offer, record, today, ctx) {
   const openEnded = !endOf(terms);
   const offerEnd = endOf(terms);
   const offerShares = openEnded ? [] : monthShares(terms);
+  // A job with no end in its offer stops at the end the shepherd said
+  const countedTo = record?.end?.date && record.end.date < today ? record.end.date : today;
   const whole = openEnded
-    ? openEndedShares(terms, today).map((x) => ({
+    ? openEndedShares(terms, countedTo).map((x) => ({
         ...x,
         dayWeight: x.weight,
         extension: false,
