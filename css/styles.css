@@ -1217,9 +1217,10 @@ div.welcome[hidden] {
   background: var(--surface);
   overflow: hidden;
 }
-/* One row that opens the condition rows inside the same card */
+/* One row that opens the condition rows inside the same card. The arrow is centred on the row and sits at the card's
+   edge, where the arrow of every other fold sits. */
 .conditions > summary {
-  padding: 10px 14px;
+  padding: 10px 0 10px 14px;
   /* The title stays where it is when the line under it goes: anchored at the top, not centred */
   align-items: flex-start;
 }
@@ -1250,6 +1251,8 @@ div.welcome[hidden] {
 }
 .conditions > summary::after {
   margin-left: 0;
+  margin-right: 0;
+  align-self: center;
 }
 .crows {
   display: flex;

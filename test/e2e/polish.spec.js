@@ -34,3 +34,19 @@ test('«Para negociar»: the figure of what cash saves is the largest, then extr
   if (cash) expect(cash.size).toBeGreaterThanOrEqual(30);
 });
 
+test('the arrow of «Condiciones» sits at the card’s edge and is centred on its row, like the other folds’', async ({
+  loaded: page,
+}) => {
+  const style = await page.evaluate(() => {
+    const arrow = (selector) => {
+      const summary = document.querySelector(selector);
+      const s = getComputedStyle(summary, '::after');
+      const c = getComputedStyle(summary);
+      return { marginRight: s.marginRight, alignSelf: s.alignSelf, paddingRight: c.paddingRight };
+    };
+    return { conditions: arrow('details.conditions > summary'), fold: arrow('details.plg > summary') };
+  });
+  expect(style.conditions.marginRight).toBe(style.fold.marginRight);
+  expect(style.conditions.paddingRight).toBe(style.fold.paddingRight);
+  expect(style.conditions.alignSelf).toBe('center');
+});
