@@ -112,6 +112,11 @@ describe('«Petición de pago»', () => {
     assert.match(text, /Gracias\.\nAna Gil$/);
   });
 
+  test('says each amount in one unit: what is owed in gross, what arrived in net, never both in one figure', () => {
+    assert.doesNotMatch(text, /se comparan en bruto/);
+    assert.match(text, /queda por pagar, en bruto:/);
+  });
+
   test('does not claim to stop any deadline nor cite law', () => {
     assert.doesNotMatch(text, /interrump|suspend|plazo|art\.|Estatuto/i);
   });

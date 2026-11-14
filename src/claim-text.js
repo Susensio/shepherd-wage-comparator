@@ -147,7 +147,10 @@ export function paymentRequestText({ o, settled, record, parties, today, payBy, 
     '',
     'Buenos días:',
     '',
-    `Revisadas las cuentas del trabajo, corresponden ${fSumE(totals.due)} brutos y se han cobrado ${fSumE(net)} netos${net > 0 ? ` (los cobros se comparan en bruto)` : ''}. Queda por pagar, en bruto:`,
+    // One unit per sentence: what is still owed, in gross as a payslip says it; what arrived is said apart, in net
+    net > 0
+      ? `Revisadas las cuentas del trabajo, y descontado lo ya cobrado (${fSumE(net)} netos), queda por pagar, en bruto:`
+      : 'Revisadas las cuentas del trabajo, queda por pagar, en bruto:',
   );
   for (const row of rows.filter((x) => x.owed > 0)) {
     const parts = ITEMS.filter((item) => row.items[item].owed > 0).map(
