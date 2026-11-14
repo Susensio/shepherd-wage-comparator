@@ -113,3 +113,26 @@ test.describe('the offer cards', () => {
     });
   });
 });
+
+test('«¿Es legal?» without a contract: the figure and the stamp in the summary, the reasons in a closed fold; every big card opens the same way', async ({
+  page,
+}) => {
+  await loadOffers(page, sample, SIN_CONTRATO_D);
+  const owed = page.locator('#secLegal details.owed[data-fold=owed]');
+  await expect(owed).toHaveCount(1);
+  await expect(owed).not.toHaveAttribute('open', '');
+  await expect(owed.locator(':scope > summary')).toContainText('De paro que no se genera');
+  await expect(owed.locator(':scope > summary')).toContainText('Ilegal');
+  await expect(owed.locator('.reasons')).toBeHidden();
+  await owed.locator(':scope > summary').click();
+  await expect(owed.locator('.reasons li').first()).toBeVisible();
+  await expect(owed).toContainText('Para que sea legal');
+  // The open state survives a repaint
+  await page.evaluate(() => app.select(app.active().id));
+  await expect(page.locator('#secLegal details.owed[data-fold=owed]')).toHaveAttribute('open', '');
+  // Every card of the section is a fold
+  await loadOffers(page, sample, 1);
+  const cards = await page.evaluate(() => [...document.querySelectorAll('#secLegal .owed')].map((el) => el.tagName));
+  expect(cards.length).toBeGreaterThan(0);
+  expect(cards.every((tag) => tag === 'DETAILS')).toBe(true);
+});

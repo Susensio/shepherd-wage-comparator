@@ -88,7 +88,8 @@ function owedCard(o, r, money) {
         `Lo que se da no llega al salario mínimo: debe el ganadero ${money.net(r.debt.salary)} ${per}.`,
       'Sin jubilación ni bajas pagadas: en caso de enfermedad o accidente, no se cobra.',
     ].filter(Boolean);
-    return html`<div class="owed">${
+    // The figure and the stamp stay in the summary; the reasons and what makes it legal open from it, like the other cards
+    return html`<details class="owed" data-fold="owed"><summary>${
       lost.euros >= 1
         ? figureCard(
             fE(lost.euros),
@@ -102,9 +103,9 @@ function owedCard(o, r, money) {
             `Sin contrato no se cotiza`,
             'Ilegal',
           )
-    }
+    }</summary>
       <ul class="reasons">${reasons.map((t) => html`<li>${t}</li>`)}</ul>
-      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${isWorthCounting(debt) ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${isWorthCounting(debt) ? claimDeadline(o, debt) : nothing}</div>`;
+      <p class="hint">Para que sea legal: contrato, alta en la Seguridad Social${isWorthCounting(debt) ? ` y un salario de al menos ${money.figure(r.debt.minNetNoContract)} netos ${per}` : ''}.</p>${isWorthCounting(debt) ? claimDeadline(o, debt) : nothing}</details>`;
   }
   if (!isWorthCounting(debt)) return nothing;
   const reasons = owedReasons(o, r, money);
