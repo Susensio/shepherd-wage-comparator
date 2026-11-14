@@ -254,5 +254,121 @@
     "corrected_by": [],
     "status": "current",
     "text_from": "the CSV, only the 28 rows of the 14 pilot municipalities (of 1355); sha256 is of the whole file"
+  },
+  {
+    "id": "BOPH-2016-058-convenio-agricola-2015-2017",
+    "title": "Convenio Colectivo del sector agrícola de la provincia de Huesca 2015-2017 (BOPH núm. 58, 29/03/2016, anuncio 1271; código de convenio 22000015012004)",
+    "publisher": "Subdirección Provincial de Trabajo de Huesca, Gobierno de Aragón (BOPH)",
+    "jurisdiction": [
+      "prov:22"
+    ],
+    "doc_type": "collective-agreement",
+    "authority": "official",
+    "source_urls": [
+      "https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf"
+    ],
+    "published": "2016-03-29",
+    "in_force": {
+      "from": "2015-01-01",
+      "to": "2017-12-31",
+      "note": "expired. src/law.js cited it for the overnight bonus (art. 29). The 2018-2021 agreement that followed (named in BOPH-2023-202-tablas-agricola-2021) was not found."
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "fa1f4df7af77bc66704e28e2b5afe89b81f2776431a57f71f00a294729d428d3",
+    "storage": "link-only",
+    "text": "text/BOPH-2016-058-convenio-agricola-2015-2017.md",
+    "licence": "official publication (BOPH); this copy is hosted by a trade union (UGT-FICA), the BOPH original was not fetched",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "superseded",
+    "text_from": "pdftotext -layout of the PDF"
+  },
+  {
+    "id": "BOPH-2023-202-tablas-agricola-2021",
+    "title": "Resolución de la Subdirección Provincial de Trabajo de Huesca por la que se dispone la inscripción en el registro y publicación de las Tablas Salariales del Convenio colectivo del sector agrícola de la provincia de Huesca (código 22000015012004), con el acta de la comisión paritaria de 16/10/2023 (BOPH núm. 202, 24/10/2023, anuncio 5345)",
+    "publisher": "Subdirección Provincial de Trabajo de Huesca, Gobierno de Aragón (BOPH)",
+    "jurisdiction": [
+      "prov:22"
+    ],
+    "doc_type": "salary-tables",
+    "authority": "official",
+    "source_urls": [
+      "https://bop.dphuesca.es/export/sites/bop/publica/.galleries/PDFs-Anuncios-Antiguos/bopanuncios/pdf/2023/202/2023-202-5345.pdf",
+      "https://bop.dphuesca.es/publica/buscador-anuncios/anuncio/Tablas-salariales-del-Convenio-colectivo-del-sector-agricola-de-la-provincia-de-Huesca/"
+    ],
+    "published": "2023-10-24",
+    "in_force": {
+      "from": "2021-01-01",
+      "to": null,
+      "note": "definitive 2021 tables of the 2018-2021 agreement, the base for 2022 and following (acta, third point); says nothing of a 2022-2025 agreement"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "74acf212bf9238ac5fc780bce8ceb5cd5af46061846ed9c5b5a3a851f3ce426a",
+    "storage": "link-only",
+    "text": "text/BOPH-2023-202-tablas-agricola-2021.md",
+    "licence": "official publication (BOPH)",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "pdftotext -layout of the BOPH announcement PDF"
+  },
+  {
+    "id": "BOPH-convenio-agricola-2022-2025-candidate",
+    "title": "Convenio colectivo del sector agrícola de la provincia de Huesca 2022-2025 (code 22000015012004; publication not found)",
+    "publisher": "Subdirección Provincial de Trabajo de Huesca, Gobierno de Aragón (BOPH)",
+    "jurisdiction": [
+      "prov:22"
+    ],
+    "doc_type": "collective-agreement",
+    "authority": "official",
+    "source_urls": [],
+    "published": null,
+    "in_force": {
+      "from": "2022-01-01",
+      "to": "2025-12-31",
+      "note": "dates are those of the owner's table (OWNER-convenios-2026-table), not of a primary text"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": null,
+    "storage": "link-only",
+    "text": null,
+    "licence": "official publication (BOPH)",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "candidate",
+    "note": "Searched 2026-11-14 in the daily bulletin pages of bop.dphuesca.es, 2022-01-03 to 2026-11-13, by announcement title: every page of every day for «sector agrícola», «agrícola de la provincia», «del campo de la provincia» and «agropecuario»; page 1 of every day also for «convenio colectivo», «tablas salariales», «del campo» and «pastor»; every page of the Subdirección Provincial de Trabajo's announcements from 2024-06-01. Only BOPH-2023-202-tablas-agricola-2021 matched. Not used or not possible: the BOPH announcement search (reCAPTCHA), REGCON of the Ministry (not queryable here), web search engines (blocked). BOA open data (no provincial agreements there) and the open-data register of Aragón convenios (inter-administration agreements only) have no entry."
+  },
+  {
+    "id": "OWNER-convenios-2026-table",
+    "title": "TABLA COMPARATIVA CONVENIOS AGROPECUARIOS ÁMBITO PROVINCIAL: PASTOR/A (2026): País Vasco/Navarra 2023-25, Cantabria 2026-27, Aragón (Huesca) 2022-25, Cataluña 2021-25",
+    "publisher": "owner",
+    "jurisdiction": [
+      "prov:22",
+      "ccaa:06",
+      "ccaa:09",
+      "ccaa:15",
+      "ccaa:16"
+    ],
+    "doc_type": "comparison-table",
+    "authority": "owner-provided",
+    "source_urls": [],
+    "published": "2026-11-12",
+    "in_force": {
+      "from": null,
+      "to": null,
+      "note": "a pointer to the primary texts, not a source of figures"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": null,
+    "storage": "owner-private",
+    "text": null,
+    "licence": "private, not published",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "owner-provided"
   }
 ]

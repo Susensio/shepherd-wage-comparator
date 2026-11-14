@@ -42,6 +42,15 @@ test('Aragón 2026: 12 national and regional days, two local days for each pilot
   assert.ok(local.has('mun:22252'), 'Yebra de Basa');
 });
 
+test("the owner's private table and the unfound agreement carry no text, hash or URL", () => {
+  const manifest = JSON.parse(readFileSync(join(KB, 'manifest.json'), 'utf8'));
+  const owner = manifest.find((d) => d.id === 'OWNER-convenios-2026-table');
+  assert.deepEqual([owner.storage, owner.text, owner.sha256, owner.source_urls], ['owner-private', null, null, []]);
+  const candidate = manifest.find((d) => d.status === 'candidate');
+  assert.deepEqual([candidate.text, candidate.sha256, candidate.source_urls], [null, null, []]);
+  assert.equal(manifest.find((d) => d.id === 'BOPH-2016-058-convenio-agricola-2015-2017').status, 'superseded');
+});
+
 test('a changed quote is caught', () => {
   const dir = copyKb();
   const file = join(dir, 'tables', 'holidays.csv');
