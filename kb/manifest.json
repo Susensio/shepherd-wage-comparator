@@ -1,0 +1,258 @@
+[
+  {
+    "id": "BOE-A-2025-21667",
+    "title": "Resolución de 17 de octubre de 2025, de la Dirección General de Trabajo, por la que se publica la relación de fiestas laborales para el año 2026.",
+    "publisher": "Ministerio de Trabajo y Economía Social (BOE)",
+    "jurisdiction": [
+      "es"
+    ],
+    "doc_type": "resolution",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2025-21667",
+      "https://www.boe.es/boe/dias/2025/10/28/pdfs/BOE-A-2025-21667.pdf",
+      "https://www.boe.es/eli/es/res/2025/10/17/(2)"
+    ],
+    "published": "2025-10-28",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "holidays of the year 2026, annex per community; the Canary Islands and Cataluña have notes"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "31057b03d927672352b3a5163b30e03d75bddacc3a489626f28f14535ce0facf",
+    "storage": "link-only",
+    "text": "text/BOE-A-2025-21667.md",
+    "licence": "BOE reuse conditions (https://www.boe.es/informacion/aviso_legal/): official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOE XML (https://www.boe.es/diario_boe/xml.php?id=BOE-A-2025-21667); sha256 is of the PDF"
+  },
+  {
+    "id": "BOE-A-2026-21254",
+    "title": "Resolución de 8 de octubre de 2026, de la Dirección General de Trabajo, por la que se publica relación de fiestas laborales para el año 2027.",
+    "publisher": "Ministerio de Trabajo y Economía Social (BOE)",
+    "jurisdiction": [
+      "es"
+    ],
+    "doc_type": "resolution",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-21254",
+      "https://www.boe.es/boe/dias/2026/10/13/pdfs/BOE-A-2026-21254.pdf",
+      "https://www.boe.es/eli/es/res/2026/10/08/(1)"
+    ],
+    "published": "2026-10-13",
+    "in_force": {
+      "from": "2027-01-01",
+      "to": "2027-12-31",
+      "note": "holidays of the year 2027; no rows in the tables yet"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "cf9ee3c1407fbdff346a5ffb287660c181435cb35485bb5f3733c99d326063c6",
+    "storage": "link-only",
+    "text": "text/BOE-A-2026-21254.md",
+    "licence": "BOE reuse conditions (https://www.boe.es/informacion/aviso_legal/): official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOE XML (https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-21254); sha256 is of the PDF"
+  },
+  {
+    "id": "BOA-2025-135-decreto-70",
+    "title": "DECRETO 70/2025, de 9 de julio, del Gobierno de Aragón, por el que se fijan las fiestas laborables retribuidas, no recuperables e inhábiles para el año 2026 en la Comunidad Autónoma de Aragón.",
+    "publisher": "Gobierno de Aragón (BOA núm. 135)",
+    "jurisdiction": [
+      "ccaa:02"
+    ],
+    "doc_type": "decree",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1403827540808",
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VERLST&OUTPUTMODE=JSON&BASE=BZHT&SEC=OPENDATABOAJSON&TITU-C=Decreto+70/2025"
+    ],
+    "published": "2025-07-16",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "in force from 2025-07-17 (disposición final única); fixes the holidays of the year 2026"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "116577b5c93398be4c68fd44954c0a10d2453e1c422b9cb9135321f1c857ddf3",
+    "storage": "link-only",
+    "text": "text/BOA-2025-135-decreto-70.md",
+    "licence": "Gobierno de Aragón, BOA: official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOA open-data JSON (DOCN 007950829); sha256 is of the PDF"
+  },
+  {
+    "id": "BOA-2025-225-fiestas-locales-2026",
+    "title": "RESOLUCIÓN de 4 de noviembre de 2025, del Director General de Trabajo, por la que se determinan las fiestas laborales, de carácter retribuido, no recuperables e inhábiles, para el año 2026, en los municipios de las provincias de Huesca, Teruel y Zaragoza.",
+    "publisher": "Gobierno de Aragón, Dirección General de Trabajo (BOA núm. 225)",
+    "jurisdiction": [
+      "ccaa:02",
+      "prov:22",
+      "prov:44",
+      "prov:50"
+    ],
+    "doc_type": "resolution",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1421874360606",
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VERLST&OUTPUTMODE=JSON&BASE=BZHT&SEC=OPENDATABOAJSON&TITU-C=fiestas+laborales+2026+municipios"
+    ],
+    "published": "2025-11-20",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "local days of the year 2026 for most municipalities; the rest are in the complementary resolution"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "6aea25d848f7e8b83a52b479383003fa998aaf76022c72cf4518f946d2917be0",
+    "storage": "link-only",
+    "text": "text/BOA-2025-225-fiestas-locales-2026.md",
+    "licence": "Gobierno de Aragón, BOA: official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOA open-data JSON (DOCN 007953759); sha256 is of the PDF",
+    "supplemented_by": [
+      "BOA-2026-056-fiestas-locales-2026-complementaria"
+    ]
+  },
+  {
+    "id": "BOA-2026-056-fiestas-locales-2026-complementaria",
+    "title": "RESOLUCIÓN de 10 de marzo de 2026, del Director General de Trabajo, complementaria a la Resolución de 4 de noviembre de 2025, por la que se determinan las fiestas locales retribuidas, no recuperables e inhábiles para el año 2026, en los municipios de la Comunidad Autónoma de Aragón.",
+    "publisher": "Gobierno de Aragón, Dirección General de Trabajo (BOA núm. 56)",
+    "jurisdiction": [
+      "ccaa:02",
+      "prov:22",
+      "prov:44",
+      "prov:50"
+    ],
+    "doc_type": "resolution",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1440857030505",
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VERLST&OUTPUTMODE=JSON&BASE=BZHT&SEC=OPENDATABOAJSON&TITU-C=fiestas+locales"
+    ],
+    "published": "2026-03-23",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "adds the municipalities missing from BOA 225 (e.g. Bielsa, Biescas, Fiscal); no municipality of the pilot appears in both"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "c001261dbfda16f4dbc8566cafc2d3c4b151aeedc44a14854e5c897731c5ec9c",
+    "storage": "link-only",
+    "text": "text/BOA-2026-056-fiestas-locales-2026-complementaria.md",
+    "licence": "Gobierno de Aragón, BOA: official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOA open-data JSON (DOCN 007956940); sha256 is of the PDF",
+    "supplements": [
+      "BOA-2025-225-fiestas-locales-2026"
+    ]
+  },
+  {
+    "id": "BOA-2026-180-decreto-163",
+    "title": "DECRETO 163/2026, de 9 de septiembre, del Gobierno de Aragón, por el que se fijan las fiestas laborales retribuidas, no recuperables e inhábiles para el año 2027 en la Comunidad Autónoma de Aragón.",
+    "publisher": "Gobierno de Aragón (BOA núm. 180)",
+    "jurisdiction": [
+      "ccaa:02"
+    ],
+    "doc_type": "decree",
+    "authority": "official",
+    "source_urls": [
+      "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1466225130707"
+    ],
+    "published": "2026-09-16",
+    "in_force": {
+      "from": "2027-01-01",
+      "to": "2027-12-31",
+      "note": "fixes the holidays of the year 2027; no rows in the tables yet"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "50ff871ad012b536830773eb297baf976713d74f77d9d36de1df19f956bc880d",
+    "storage": "link-only",
+    "text": "text/BOA-2026-180-decreto-163.md",
+    "licence": "Gobierno de Aragón, BOA: official text, reuse allowed with the source cited",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "BOA open-data JSON (DOCN 007961175); sha256 is of the PDF"
+  },
+  {
+    "id": "ARAGON-OD-festivos-2026-ccaa",
+    "title": "Calendario de festivos en la comunidad de Aragón 2026 (festivos_aragon_2026_ccaa.csv)",
+    "publisher": "Gobierno de Aragón, open data (opendata.aragon.es)",
+    "jurisdiction": [
+      "ccaa:02"
+    ],
+    "doc_type": "open-data-csv",
+    "authority": "secondary",
+    "source_urls": [
+      "https://opendata.aragon.es/datos/catalogo/dataset/f861c5f7-5424-4b3c-90bf-a6d2c2f5b0bd/recurso/76a36a2f-8e09-4ee5-a640-023fcb4a01cc/descarga/festivos_aragon_2026_ccaa.csv",
+      "https://opendata.aragon.es/datos/catalogo/dataset/calendario-de-festivos-en-comunidad-de-aragon-2026"
+    ],
+    "published": "2026-05-05",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "dataset modified 2026-05-05"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "f4601a3f86e3937c12aa2d22abdbfbc8092a46c74bf5e3a951331890d195395f",
+    "storage": "link-only",
+    "text": "text/ARAGON-OD-festivos-2026-ccaa.md",
+    "licence": "CC BY 4.0",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "the CSV itself, complete"
+  },
+  {
+    "id": "ARAGON-OD-festivos-2026-completo",
+    "title": "Calendario de festivos locales en Aragón 2026 (festivos_aragon_2026_completo.csv)",
+    "publisher": "Gobierno de Aragón, open data (opendata.aragon.es)",
+    "jurisdiction": [
+      "ccaa:02",
+      "prov:22",
+      "prov:44",
+      "prov:50"
+    ],
+    "doc_type": "open-data-csv",
+    "authority": "secondary",
+    "source_urls": [
+      "https://opendata.aragon.es/datos/catalogo/dataset/f861c5f7-5424-4b3c-90bf-a6d2c2f5b0bd/recurso/5ff8c1f8-fb7e-4343-abba-eb7dbd796dbc/descarga/festivos_aragon_2026_completo.csv",
+      "https://opendata.aragon.es/datos/catalogo/dataset/calendario-de-festivos-en-comunidad-de-aragon-2026"
+    ],
+    "published": "2026-05-05",
+    "in_force": {
+      "from": "2026-01-01",
+      "to": "2026-12-31",
+      "note": "dataset modified 2026-05-05; INE code blank for some municipalities (Torla, among others)"
+    },
+    "retrieved": "2026-11-14",
+    "sha256": "549e1b46a80538f2adb426c3032736d1f4b679da56af4e1cf98b5bbede0fd52a",
+    "storage": "link-only",
+    "text": "text/ARAGON-OD-festivos-2026-completo.md",
+    "licence": "CC BY 4.0",
+    "supersedes": [],
+    "superseded_by": [],
+    "corrected_by": [],
+    "status": "current",
+    "text_from": "the CSV, only the 28 rows of the 14 pilot municipalities (of 1355); sha256 is of the whole file"
+  }
+]

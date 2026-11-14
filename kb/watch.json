@@ -1,0 +1,34 @@
+[
+  {
+    "id": "es-holidays-boe",
+    "what": "National resolution listing every community's holidays for the next year (annex table); the BOE XML is the easiest to parse",
+    "where": "https://www.boe.es/diario_boe/xml.php?id=<BOE-A id>; search «relación de fiestas laborales para el año»",
+    "when": "October (2026: BOE-A-2025-21667 on 2025-10-28; 2027: BOE-A-2026-21254 on 2026-10-13)",
+    "then": "add the manifest record and text; add the national and regional rows per community; check the counts 12 to 15",
+    "territory": "es"
+  },
+  {
+    "id": "aragon-holidays-decree",
+    "what": "Decreto of the Gobierno de Aragón fixing next year's holidays",
+    "where": "BOA open data: https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VERLST&OUTPUTMODE=JSON&BASE=BZHT&SEC=OPENDATABOAJSON&TITU-C=fiestas+laborales",
+    "when": "summer (2026: Decreto 70/2025, BOA 16/07/2025; 2027: Decreto 163/2026, BOA 16/09/2026)",
+    "then": "compare with the BOE annex of the same year; any difference is reported, not resolved",
+    "territory": "ccaa:02"
+  },
+  {
+    "id": "aragon-local-holidays",
+    "what": "Resolution of the Director General de Trabajo with the two local days of each municipality, annex by province; complementary resolutions follow in spring, and the open-data CSV is regenerated",
+    "where": "BOA open data, title «fiestas laborales … en los municipios»; CKAN dataset «Calendario de festivos en comunidad de Aragón <year>» on opendata.aragon.es",
+    "when": "November (2026 list: BOA 225, 20/11/2025; complementary: BOA 56, 23/03/2026); the 2027 list is not published yet on 2026-11-14",
+    "then": "refresh every listed municipality; look again in March for the complementary resolution",
+    "territory": "ccaa:02"
+  },
+  {
+    "id": "huesca-agreement",
+    "what": "Convenio colectivo del sector agrícola/del campo de la provincia de Huesca: the 2022-2025 text expires on 2025-12-31, so look for a renewal, a prórroga or ultraactividad notices, and each year's salary table",
+    "where": "Boletín Oficial de la Provincia de Huesca (https://bop.dphuesca.es), announcements of the Subdirección Provincial de Trabajo; the search form needs a captcha, the daily bulletin pages do not",
+    "when": "monthly; salary tables usually in the first half of the year",
+    "then": "update kb/manifest.json (supersedes), re-extract kb/tables/agreement_terms.csv, ask the owner to verify the changed figures",
+    "territory": "prov:22"
+  }
+]
