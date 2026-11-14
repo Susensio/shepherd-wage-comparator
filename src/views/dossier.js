@@ -119,7 +119,7 @@ export function dossierView(d, o, r, places) {
 
     <section><h2>Plazos</h2>
       <ul class="dlist">
-        ${ladder.steps.filter((s) => s.id === 'dismissal').map((s) => html`<li>Despido: como muy tarde el ${fIso(/** @type {string} */ (s.deadline))} (20 días hábiles, de lunes a viernes, sin festivos).</li>`)}
+        ${ladder.steps.filter((s) => s.id === 'dismissal').map((s) => html`<li>Despido: como muy tarde el ${fIso(/** @type {string} */ (s.deadline))} (20 días hábiles, de lunes a viernes, contando los festivos como días hábiles).</li>`)}
         ${d.deadlines.map((x) => html`<li>${capital(monthName(x.month))}, ${money(x.owed)} netos: ${x.lapsed ? `plazo vencido el ${fIso(x.deadline)}` : `hasta el ${fIso(x.deadline)}`}</li>`)}
         ${ladder.steps.some((s) => s.id === 'dismissal') || d.deadlines.length ? nothing : html`<li>No hay plazos abiertos.</li>`}
       </ul>

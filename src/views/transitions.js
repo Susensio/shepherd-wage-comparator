@@ -101,11 +101,11 @@ export function endLine(record) {
   const out = [];
   if (record?.end)
     out.push(
-      html`<p class="real">Acabó el ${fIso(record.end.date)}: ${END_TEXT[record.end.how]}. <button type="button" class="linkbtn" data-action="endedEarly">Cambiar</button></p>`,
+      html`<p class="real">Acabó el ${fIso(record.end.date)}: ${END_TEXT[record.end.how]}. <button type="button" class="linkbtn tapfull" data-action="endedEarly">Cambiar</button></p>`,
     );
   if (record?.sick && !record.sick.to)
     out.push(
-      html`<p class="real">De baja desde el ${fIso(record.sick.from)}. <button type="button" class="linkbtn" data-action="sickBack">Volver al trabajo</button> Si el ganadero despide durante la baja, se contesta como «Despido»: se apunta en «Acabó antes».</p>`,
+      html`<p class="real">De baja desde el ${fIso(record.sick.from)}. <button type="button" class="linkbtn tapfull" data-action="sickBack">Volver al trabajo</button> Si el ganadero despide durante la baja, se contesta como «Despido»: se apunta en «Acabó antes».</p>`,
     );
   else if (record?.sick)
     out.push(

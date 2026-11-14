@@ -128,6 +128,25 @@ test.describe('the ladder', () => {
     await expect(legal).not.toContainText('interés');
   });
 
+  test('the dismissal line leads to the papeleta: two sets of fields, the dismissal and the amounts', async ({
+    page,
+  }) => {
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });
+      offers.setParties(app.active(), { employerName: 'Casa Pérez', employerId: 'B123', workerName: 'Ana Gil' });
+      app.select(app.active().id);
+    });
+    await page.locator('.dismissal').getByRole('button', { name: 'Ver la papeleta y la oficina' }).click();
+    const papeleta = page.locator('details.step[data-step=conciliation]');
+    await expect(papeleta).toHaveAttribute('open', '');
+    await expect(papeleta.locator('h4.pgroup')).toHaveText(['Las partes', 'Despido', 'Cantidades']);
+    await expect(papeleta.locator('.pfield', { hasText: 'Fecha del despido' })).toContainText('6 nov 2026');
+    const concept = await papeleta.locator('.pfield', { hasText: 'Concepto' }).locator('.pv').textContent();
+    expect(concept).toMatch(/^Cantidades pendientes de pago\. [A-Z]/);
+    expect(concept).not.toContain('Despedido');
+  });
+
   test('in Aragón the papeleta names the provincial office', async ({ page }) => {
     await page.evaluate(() => {
       app.active().terms.province = 'HU';
@@ -164,8 +183,13 @@ test.describe('the ladder', () => {
           ),
       ),
     ).toBe(true);
-    await line.getByRole('button', { name: 'Hecho' }).click();
-    await expect(line.locator('.donemark')).toBeVisible();
+    await expect(line).toContainText(
+      'Presenta la papeleta de conciliación por despido antes de esa fecha; un sindicato puede ayudar',
+    );
+    await expect(line).toContainText('contando los festivos como días hábiles');
+    await expect(line).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
+    await line.getByRole('button', { name: 'Papeleta presentada' }).click();
+    await expect(line.locator('.donemark')).toContainText('Papeleta presentada el 12 nov 2026');
   });
 });
 
@@ -197,7 +221,10 @@ test.describe('without cobros, and when nothing is owed', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('.dismissal')).toBeVisible();
-    await expect(page.locator('.ask details.step')).toHaveCount(0);
+    // The union and the papeleta, and nothing else of the ladder
+    await expect(page.locator('.ask details.step')).toHaveCount(2);
+    await expect(page.locator('.ask details.step[data-step=union]')).toHaveCount(1);
+    await expect(page.locator('.ask details.step[data-step=conciliation]')).toHaveCount(1);
   });
 });
 

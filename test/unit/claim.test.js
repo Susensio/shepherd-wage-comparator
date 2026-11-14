@@ -90,7 +90,9 @@ describe('claimSteps', () => {
       end: { how: 'dismissed', date: '2026-11-06' }, // a Friday
     });
     assert.equal(l.mode, 'dismissed');
-    assert.deepEqual(ids(l), ['dismissal']);
+    // The union and the papeleta come with a dismissal whether or not something is owed; the papeleta counts to its date
+    assert.deepEqual(ids(l), ['dismissal', 'union', 'conciliation']);
+    assert.equal(l.steps.find((s) => s.id === 'conciliation')?.deadline, '2026-12-04');
     const [d] = l.steps;
     assert.equal(d.deadline, '2026-12-04');
     assert.equal(d.daysLeft, 20);
@@ -116,7 +118,7 @@ describe('claimSteps', () => {
       marks: { dismissal: { done: '2026-11-10' } },
     });
     assert.equal(acted.inWindow, false);
-    assert.equal(acted.next, null);
+    assert.equal(acted.next?.id, 'union'); // the papeleta and the union stay for whoever wants them
   });
 
   test('other ways of ending add no step of their own', () => {

@@ -35,6 +35,7 @@ import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
+import { scrollToElement } from './motion.js';
 import { closeDossier, closeReview, openDossier, openReview } from './navigation.js';
 
 /**
@@ -148,7 +149,7 @@ function claimContext(o, r, settled, standing, today) {
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',
     inspection: owed ? inspectionText(base) : '',
-    fields: owed ? conciliationFields(base) : [],
+    fields: owed || record.end?.how === 'dismissed' ? conciliationFields(base) : [],
   };
 }
 
@@ -553,6 +554,15 @@ export const recordActions = {
     offers.startSick(o, date);
     delete ui.end[o.id];
     callbacks.paint();
+  },
+  /** «Ver la papeleta y la oficina», on the dismissal line: opens the legal path at the papeleta. */
+  goPapeleta() {
+    const legal = /** @type {HTMLDetailsElement | null} */ (document.querySelector('details.legalpath'));
+    const step = /** @type {HTMLDetailsElement | null} */ (legal?.querySelector('details[data-step=conciliation]'));
+    if (!legal || !step) return;
+    legal.open = true;
+    step.open = true;
+    scrollToElement(step);
   },
   /** «Volver al trabajo»: yesterday was the last day of the leave. */
   sickBack() {

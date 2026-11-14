@@ -4957,3 +4957,22 @@ body.reviewing .ficha > .back {
   padding-top: 0;
   white-space: normal;
 }
+
+/* Links that are the way to an action: a tap area of 44 px without changing the line */
+.stepbody a,
+.dismissal a,
+.ask .hint a {
+  padding: 13px 2px;
+  margin: -13px -2px;
+}
+.linkbtn.tapfull {
+  min-height: var(--tap);
+  padding: 0 4px;
+}
+.pgroup {
+  margin: 8px 0 2px;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}

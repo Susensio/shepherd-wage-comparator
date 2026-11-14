@@ -91,6 +91,9 @@ export function claimSteps({ today, standing, end, marks }) {
       make('court', null, Boolean(marks.conciliation)),
       make('fogasa'),
     );
+  } else if (dismissed) {
+    // A dismissal always has the union and the papeleta, owed or not; the papeleta's deadline is the dismissal's
+    steps.push(make('union'), make('conciliation', steps[0].deadline));
   }
   const dismissal = steps.find((s) => s.id === 'dismissal');
   const next = steps.find((s) => s.ready && !s.done) ?? null;

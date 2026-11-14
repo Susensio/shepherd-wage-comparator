@@ -226,26 +226,43 @@ export function inspectionText({ o, r, settled, record, parties }) {
 export function conciliationFields({ o, settled, record, parties }) {
   const { rows, totals, job } = settled;
   const owing = rows.filter((row) => row.owed > 0);
-  const how = record.end?.how === 'dismissed' ? `Despedido el ${fIso(record.end.date)}. ` : '';
+  // Each month starts a clause, so it is capitalised after the full stop
   const concept = owing
     .map(
       (row) =>
-        `${monthYear(row.month)}: ${ITEMS.filter((i) => row.items[i].owed > 0)
+        `${capitalize(monthYear(row.month))}: ${ITEMS.filter((i) => row.items[i].owed > 0)
           .map((i) => `${ITEM_TEXT[i].toLowerCase()} ${fSumE(row.items[i].owed)}`)
           .join(', ')}`,
     )
     .join('; ');
+  const dismissed = record.end?.how === 'dismissed';
   return [
-    { id: 'worker', label: 'Solicitante (pastor)', value: parties.workerName ?? '' },
-    { id: 'employer', label: 'Demandado (ganadero)', value: parties.employerName },
-    { id: 'employerId', label: 'NIF o CIF del ganadero', value: parties.employerId ?? '' },
-    { id: 'job', label: 'Trabajo', value: `Pastor en ${jobName(o)}` },
+    { group: 'general', id: 'worker', label: 'Solicitante (pastor)', value: parties.workerName ?? '' },
+    { group: 'general', id: 'employer', label: 'Demandado (ganadero)', value: parties.employerName },
+    { group: 'general', id: 'employerId', label: 'NIF o CIF del ganadero', value: parties.employerId ?? '' },
+    { group: 'general', id: 'job', label: 'Trabajo', value: `Pastor en ${jobName(o)}` },
     {
+      group: 'general',
       id: 'period',
       label: 'Periodo trabajado',
       value: job.from ? `del ${fIso(job.from)}${job.to ? ` al ${fIso(job.to)}` : ''}` : '',
     },
-    { id: 'amount', label: 'Cantidad que se reclama (bruta)', value: totals.owed > 0 ? fSumE(totals.owed) : '' },
-    { id: 'concept', label: 'Concepto', value: `${how}Cantidades pendientes de pago. ${concept}`.trim() },
+    ...(dismissed
+      ? [
+          { group: 'dismissal', id: 'dismissalDate', label: 'Fecha del despido', value: fIso(record.end.date) },
+          { group: 'dismissal', id: 'dismissalClaim', label: 'Lo que se pide', value: 'Impugnación del despido.' },
+        ]
+      : []),
+    ...(totals.owed > 0
+      ? [
+          { group: 'amounts', id: 'amount', label: 'Cantidad que se reclama (bruta)', value: fSumE(totals.owed) },
+          {
+            group: 'amounts',
+            id: 'concept',
+            label: 'Concepto',
+            value: `Cantidades pendientes de pago. ${concept}`.trim(),
+          },
+        ]
+      : []),
   ];
 }
