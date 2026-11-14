@@ -5,7 +5,7 @@
 import { html } from 'lit-html';
 import { explanations } from './explanations.js';
 import { fCount, fDaysSpoken, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
-import { citeOf, LAW } from './law.js';
+import { citeOf, LAW, overnightOf } from './law.js';
 import { vacationPayable } from './pay-answers.js';
 import { moneyIn, UNITS } from './units.js';
 import { withTip } from './views/parts.js';
@@ -16,14 +16,28 @@ export const H_MAX = LAW.maxWeekHours + 0.5;
 
 /** Where the law says each right, to link it. */
 export const LAW_SOURCE = {
-  overnight: citeOf('agreement', 29),
   vacation: citeOf('et', 38),
   rest: citeOf('et', 37),
   holidays: citeOf('et', '37.2'),
   hours: citeOf('rd1561', 5),
   contract: citeOf('et', 8),
 };
-/** Short names of what is breached, for pills and summaries. */
+/** What «¿Es legal?» says of a night stay where no agreement known for the province gives a bonus. */
+const overnightNotCounted = (province) =>
+  province
+    ? 'Se duerme en el monte, pero ningún convenio conocido para esta provincia da un plus de pernocta: no se cuenta.'
+    : 'Se duerme en el monte. Sin provincia, no se conoce ningún convenio que dé un plus de pernocta: no se cuenta.';
+/**
+ * The hint under «¿Hay pernocta en el monte?» when it is answered yes: what the night stay does to the figures,
+ * by province. Only an agreement known for the province gives a bonus.
+ * @param {object} terms
+ */
+export const overnightHint = (terms) => {
+  const agreement = overnightOf(terms.province);
+  return agreement
+    ? `En borda o cabaña. No suma dinero: sube el mínimo un ${fN(agreement.pct)}\u00a0% (${agreement.cite}).`
+    : `En borda o cabaña. ${terms.province ? 'Ningún convenio conocido para esta provincia da un plus de pernocta' : 'Sin provincia, no se conoce ningún convenio que dé un plus de pernocta'}: no se cuenta.`;
+}; /** Short names of what is breached, for pills and summaries. */
 export const LAW_SHORT = {
   contract: 'sin contrato',
   salary: 'salario',
@@ -58,7 +72,8 @@ export function rightsOf(o, r, unit = 'month') {
   const hoursPerDay = num(o.terms.hoursPerDay);
   const hoursPerWeek = r.time.hoursPerWeek;
   const vacationDays = fCount(r.time.vacationDays);
-  const pct = fN(LAW.overnightPct);
+  const agreement = r.min.overnightAgreement;
+  const pct = agreement ? fN(agreement.pct) : '';
   const rights = [];
   const add = (id, status, title, text) => rights.push({ id, status, title, text });
 
@@ -69,7 +84,7 @@ export function rightsOf(o, r, unit = 'month') {
       'salary',
       !isWorthCounting(r.debt.salary),
       'Salario mínimo',
-      `Se pagan ${money.figure(r.cash.total)} en negro ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${o.terms.overnight === 'yes' ? ', con el plus de pernocta' : ''}.`,
+      `Se pagan ${money.figure(r.cash.total)} en negro ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${r.min.overnight > 0 ? ', con el plus de pernocta' : ''}.`,
     );
     if (isWorthCounting(r.min.vacation))
       add(
@@ -85,7 +100,7 @@ export function rightsOf(o, r, unit = 'month') {
       'Salario mínimo',
       html`Se pagan ${netWithTip(r.pay.salary)} netos ${per}; el mínimo es ${netWithTip(r.min.salary)}.`,
     );
-    if (o.terms.overnight === 'yes') {
+    if (agreement && r.min.overnightStay) {
       const short = r.min.salary + r.min.overnight - r.pay.salary;
       const title = 'Plus de pernocta';
       if (!salaryOk)
@@ -109,7 +124,8 @@ export function rightsOf(o, r, unit = 'month') {
           title,
           html`Cumple el salario mínimo, pero falta el plus de pernocta: el convenio da un ${pct}\u00a0% más por dormir fuera. Faltan unos ${netWithTip(short)} ${per}.`,
         );
-    } else
+    } else if (r.min.overnightStay) add('overnight', null, 'Plus de pernocta', overnightNotCounted(o.terms.province));
+    else if (agreement)
       add(
         'overnight',
         null,

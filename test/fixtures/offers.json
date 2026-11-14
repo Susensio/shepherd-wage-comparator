@@ -69,6 +69,7 @@
         "duration": 102,
         "payrollMin": false,
         "overnight": "yes",
+        "province": "HU",
         "totalAmount": 2205,
         "totalUnit": "month",
         "vacation": "included",

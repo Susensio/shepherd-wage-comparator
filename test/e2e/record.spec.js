@@ -623,6 +623,7 @@ test.describe('the month in progress, the days outside the job and what the mini
         cashMode: 'amount',
         cashAmount: 0,
         overnight: 'yes',
+        province: 'HU',
       });
       app.select(app.active().id);
     });

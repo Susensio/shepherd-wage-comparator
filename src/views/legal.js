@@ -29,7 +29,7 @@ function owedReasons(o, r, money) {
   const { salary, overnight, vacation } = r.debt.parts;
   const reasons = [
     isWorthCounting(salary) && [`el salario mínimo${r.min.casual ? ' de temporero' : ''}`, salary],
-    isWorthCounting(overnight) && [`el plus de pernocta (${fN(LAW.overnightPct)} %)`, overnight],
+    isWorthCounting(overnight) && [`el plus de pernocta (${fN(r.min.overnightAgreement?.pct ?? 0)} %)`, overnight],
     isWorthCounting(vacation) && [
       o.terms.vacation === 'paidAtEnd' ? 'parte de las vacaciones' : 'las vacaciones, que no caben en el jornal',
       vacation,
@@ -255,12 +255,22 @@ export function legalSection(o, r, money) {
         : warnings.length
           ? `Cumple lo básico, pero ${joinAnd(warnings.map((x) => WARN_TEXT[x.id] || x.title.toLowerCase()))}`
           : 'Esta oferta cumple lo básico';
-  const sourceOf = (id) => (id === 'salary' ? { url: r.wage.url, label: r.wage.decree } : LAW_SOURCE[id]);
+  const sourceOf = (id) => {
+    if (id === 'salary') return { url: r.wage.url, label: r.wage.decree };
+    // Only an agreement gives the bonus: no agreement, nothing to cite
+    if (id === 'overnight')
+      return r.min.overnightAgreement && { url: r.min.overnightAgreement.url, label: r.min.overnightAgreement.cite };
+    return LAW_SOURCE[id];
+  };
   const item = ({ id, status, title, text }) => {
     const [cls, icon] = RIGHT_ICON[status];
     const source = sourceOf(id);
     return html`<li class="law"><span class="ic ${cls}" aria-hidden="true">${icon}</span><div><b>${title}</b><span>${text}${
-      source ? html` <a class="lawlink" href=${source.url} target="_blank" rel="noopener">${source.label}</a>` : nothing
+      !source
+        ? nothing
+        : source.url
+          ? html` <a class="lawlink" href=${source.url} target="_blank" rel="noopener">${source.label}</a>`
+          : html` <span class="lawlink">${source.label}</span>`
     }</span></div></li>`;
   };
   return html`<section class="legal" id="secLegal" aria-label="¿Es legal esta oferta?">

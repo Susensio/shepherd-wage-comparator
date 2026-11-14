@@ -18,11 +18,6 @@ export const SOURCES = {
     title: 'Real Decreto 1561/1995, jornadas especiales',
     url: 'https://www.boe.es/eli/es/rd/1995/09/21/1561/con',
   },
-  agreement: {
-    cite: 'Convenio',
-    title: 'Convenio del campo de Huesca 2015–2017',
-    url: 'https://ugt-fica.org/images/Convenios/campo/convenio_campo_huesca_2015_2017.pdf',
-  },
   ssOrder: {
     cite: 'Orden PJC/297/2026',
     title: 'Orden PJC/297/2026, cotización a la Seguridad Social en 2026',
@@ -103,7 +98,6 @@ export const RULES = {
     art: '5',
     note: 'provincial reference, not a national figure: the Granada farm agreement (BOP Granada nº 229, 1 Dec 2023, valid 2023-2025, expired) sets 1,826 hours a year, 160 a month, 40 a week; other provinces differ (Huesca about 1,760); turns the annual minimum wage into an hourly one',
   },
-  overnightPct: { value: 25, source: 'agreement', art: '29', note: 'bonus for sleeping out when herding, % of salary' },
   casualMaxDays: {
     value: 120,
     note: 'temporary contracts this long or shorter use the casual-worker daily minimum (each year’s minimum-wage decree)',
@@ -299,6 +293,26 @@ export const LAW = {
   irpf: IRPF,
   selfEmployed: SELF_EMPLOYED,
 };
+/**
+ * The overnight bonus (plus de pernocta) of the collective agreements known per province: what a shepherd who must
+ * sleep away from home to watch the flock gets on top of the agreement's salary. Spain has no general rule for it, so
+ * where no agreement is known for the province the page counts and claims nothing (ADR-0033, owner's rule).
+ * Keyed by the province code of the places list (`terms.province`).
+ * TODO: the base is the agreement's salary, which is not modelled; the minimum wage stands in for it until the
+ * knowledge base (ADR-0033) holds the agreements' pay tables.
+ * @type {Record<string, { pct: number, cite: string, url: string | null }>}
+ */
+const OVERNIGHT_BY_PROVINCE = {
+  HU: {
+    pct: 25,
+    cite: 'Convenio colectivo del campo de la provincia de Huesca 2022–2025',
+    // TODO: find the BOP Huesca reference of the 2022–2025 text (STATE plan, ADR-0033 step 3) and link it
+    url: null,
+  },
+};
+/** The overnight bonus an agreement gives in a province: `{ pct, cite, url }`, or null where none is known. */
+export const overnightOf = (province) => OVERNIGHT_BY_PROVINCE[province ?? ''] ?? null;
+
 /** «Estatuto, art. 38» and its link. */
 export const citeOf = (source, art) => ({
   url: articleUrl(source, art),

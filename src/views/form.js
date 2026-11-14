@@ -21,6 +21,7 @@ import {
 } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
+import { overnightHint } from '../rights.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
@@ -311,6 +312,7 @@ export function paintForm(o, r, offers, places) {
       : '',
   );
   text('#daysOffHint', daysOffHint(o, r));
+  text('#overnightHint', overnightHint(o.terms));
   text('#carHint', carHint(o, r));
   return appeared;
 }

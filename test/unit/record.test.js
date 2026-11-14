@@ -412,6 +412,7 @@ describe('the law, from the record: facts only', () => {
       ...OFFER.mine,
       id: 'o',
       overnight: 'yes',
+      province: 'HU',
       payUnit: 'month',
       payAmount: 1500,
     });
@@ -705,7 +706,7 @@ describe('why Corresponde is more than the pay agreed', () => {
       false,
     );
     assert.equal(
-      note(below({ overnight: 'yes' }))?.components.some((c) => c.key === 'overnight'),
+      note(below({ overnight: 'yes', province: 'HU' }))?.components.some((c) => c.key === 'overnight'),
       true,
     );
     assert.equal(note(below({ payUnit: 'day', payAmount: 20 }))?.unit, 'día');

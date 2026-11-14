@@ -105,7 +105,8 @@ function minimumSection(o, r, net) {
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
       : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
   });
-  const bonus = min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(LAW.overnightPct)} %)`, fE(min.overnight));
+  const bonus =
+    min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));
   const salaryShort = (short, sub) =>
     row('= Falta de sueldo', isWorthCounting(short) ? fSumE(short) : 'nada', { cls: 'strong', sub });
   if (r.noContract) {

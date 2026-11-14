@@ -1,7 +1,7 @@
 /** Money: the payroll, the legal minimum, how an agreed total is split, and the car. */
 
 import { num } from '../format.js';
-import { LAW, ssOf } from '../law.js';
+import { LAW, overnightOf, ssOf } from '../law.js';
 import { DAYS_PER_MONTH, fromTotal } from '../offer.js';
 import { bisect, irpfAdded } from './tax.js';
 
@@ -21,7 +21,10 @@ export function legalMinimum(terms, { wage }, time) {
     : ((wage.annual * months) / 12) * partTime;
   const vacation =
     casual || terms.vacation !== 'taken' ? vacationDays * (wage.annual / LAW.smiDaysPerYear) * partTime : 0;
-  const overnightRate = terms.overnight === 'yes' ? LAW.overnightPct / 100 : 0;
+  // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
+  const stay = terms.overnight === 'yes';
+  const agreement = stay ? overnightOf(terms.province) : null;
+  const overnightRate = agreement ? agreement.pct / 100 : 0;
   const overnight = overnightRate * salary;
   return {
     casual,
@@ -30,6 +33,8 @@ export function legalMinimum(terms, { wage }, time) {
     vacation,
     total: salary + overnight + vacation,
     overnightRate,
+    overnightStay: stay,
+    overnightAgreement: agreement,
     hourly: wage.annual / LAW.annualHours,
   };
 }

@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LAW, MIN_WAGE, RULES, SOURCES, ssOf } from '../../src/law.js';
+import { LAW, MIN_WAGE, overnightOf, RULES, SOURCES, ssOf } from '../../src/law.js';
 import { DEF_CFG } from '../../src/offer.js';
 
 const years = Object.keys(MIN_WAGE).map(Number);
@@ -60,4 +60,12 @@ test('self-employed 2026: RETA rates add up to 31,50 %, tramos ascend, the lowes
   assert.equal(Math.round(se.rates.reduce((sum, [, pct]) => sum + pct, 0) * 100) / 100, 31.5);
   for (let i = 1; i < se.tramos.length; i++) assert.ok(se.tramos[i][0] > se.tramos[i - 1][0], `tramo ${i + 1}`);
   assert.equal(Math.round(se.tramos[0][1] * 31.5) / 100, 205.88);
+});
+
+test("the overnight bonus is an agreement's, known per province: Huesca only, and nowhere else", () => {
+  assert.ok(!('overnightPct' in LAW), 'no national figure');
+  const huesca = overnightOf('HU');
+  assert.equal(huesca?.pct, 25);
+  assert.match(huesca.cite, /Huesca 2022–2025/);
+  for (const other of ['Z', 'TE', 'M', '', undefined, null]) assert.equal(overnightOf(other), null, String(other));
 });

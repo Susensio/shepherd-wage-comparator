@@ -394,8 +394,8 @@ function axisStep(x) {
 export function trendView(all, unit, width) {
   const U = UNITS[unit];
   // The legal minimum in the unit, net of the worker's Social Security only
-  const minimumIn = (o, r) => {
-    const bonus = o.terms.overnight === 'yes' ? 1 + LAW.overnightPct / 100 : 1;
+  const minimumIn = (r) => {
+    const bonus = 1 + r.min.overnightRate;
     const annual = r.wage.annual;
     const base =
       unit === 'hour'
@@ -414,7 +414,7 @@ export function trendView(all, unit, width) {
     .map(({ o, r }) => {
       const d = U.per(r);
       const [start, end] = spanOf(o.terms);
-      return { o, r, a: +start, b: +end + DAY_MS, m: minimumIn(o, r), y: d > 0 ? r.earnings.total / d : Number.NaN };
+      return { o, r, a: +start, b: +end + DAY_MS, m: minimumIn(r), y: d > 0 ? r.earnings.total / d : Number.NaN };
     })
     .filter((p) => Number.isFinite(p.y) && p.m > 0 && !(unit === 'total' && p.r.time.noDuration))
     .sort((p, q) => p.a - q.a);
@@ -467,7 +467,7 @@ export function trendView(all, unit, width) {
     })
     .join('');
   const tip = (p) =>
-    `${p.o.mine.name} · ${datesText(p.o.terms)}: se gana ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.o.terms.overnight === 'yes' ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
+    `${p.o.mine.name} · ${datesText(p.o.terms)}: se gana ${euros(p.y)} ${U.label}, el ${fN((p.y / p.m) * 100)} % del mínimo legal${p.r.min.overnightRate > 0 ? ' con pernocta' : ''} (${euros(p.m)} en neto, salario mínimo ${p.r.wage.year}).`;
   return html`<div class="trend"><h4 class="sub">Lo que se gana ${U.label}, en el tiempo</h4>
     <svg viewBox="0 0 ${W} ${H}" width=${W} height=${H} role="img" aria-label="Lo que se gana ${U.label} en cada oferta trabajada, en el tiempo">${grid}${yearLabels}<path class="line step" d=${steps}/><path class="line" d=${jobs
       .map((p) => `M${X(p.a)},${Y(p.y)}H${xEnd(p)}`)

@@ -5,7 +5,7 @@
 
 import { html, render } from 'lit-html';
 import { fN, joinAnd } from '../format.js';
-import { articleUrl, LAW, MIN_WAGE, SOURCES, ssOf } from '../law.js';
+import { articleUrl, LAW, MIN_WAGE, overnightOf, SOURCES, ssOf } from '../law.js';
 
 const decimals = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 2);
 const fPct = (x) => fN(x, decimals(x));
@@ -30,7 +30,7 @@ const LAW_FIGURES = {
   vacationDaysPerYear: fN(LAW.vacationDaysPerYear),
   vacationPerMonth: fN(LAW.vacationDaysPerYear / 12, 1),
   severanceDaysPerYear: fN(LAW.severanceDaysPerYear),
-  overnightPct: fN(LAW.overnightPct),
+  overnightHuescaPct: fN(overnightOf('HU')?.pct ?? 0),
   annualHours: fN(LAW.annualHours),
   casualMaxDays: fN(LAW.casualMaxDays),
   workDaysWeek: fN(7 - LAW.weeklyRest, 1),
@@ -92,6 +92,10 @@ export function fillLawFigures(root = document) {
     if (typeof value === 'string') el.textContent = value;
     else render(value, el);
   }
-  for (const a of /** @type {HTMLAnchorElement[]} */ ([...root.querySelectorAll('a[data-source]')]))
-    a.href = a.dataset.art ? articleUrl(a.dataset.source, a.dataset.art) : SOURCES[a.dataset.source].url;
+  for (const a of /** @type {HTMLAnchorElement[]} */ ([...root.querySelectorAll('a[data-source]')])) {
+    const href = a.dataset.art ? articleUrl(a.dataset.source, a.dataset.art) : SOURCES[a.dataset.source].url;
+    // A source with no link yet stays plain text
+    if (href) a.href = href;
+    else a.removeAttribute('data-source');
+  }
 }

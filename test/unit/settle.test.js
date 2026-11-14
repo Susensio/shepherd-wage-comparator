@@ -95,8 +95,8 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
 test('the invariant also holds when the offer pays below the minimum', () => {
   for (const changes of [
     { payAmount: 1000 },
-    { payAmount: 1000, overnight: 'yes' },
-    { payAmount: 1300, overnight: 'yes' },
+    { payAmount: 1000, overnight: 'yes', province: 'HU' },
+    { payAmount: 1300, overnight: 'yes', province: 'HU' },
   ]) {
     const offer = offerWith(changes);
     const r = calc(offer, ctx);
@@ -628,4 +628,21 @@ test('with an empty record the figures of a finished job are as before: the runn
   const mid = settleOf(offerWith(), {}, '2026-02-10');
   assert.equal(full.totals.due, settleOf(offerWith(), {}, '2030-01-01').totals.due);
   assert.ok(mid.rows[1].due < full.rows[1].due);
+});
+
+test('the overnight bonus enters the accounts only in Huesca; the ledgers add up either way', () => {
+  for (const [province, counted] of [
+    ['HU', true],
+    ['Z', false],
+    ['', false],
+  ]) {
+    const offer = offerWith({ payAmount: 1000, overnight: 'yes', province });
+    const r = calc(offer, ctx);
+    const T = settleOf(offer, {}, '2030-01-01').totals;
+    assert.equal(r.min.overnight > 0, counted, province);
+    assert.equal(T.items.overnight.minimum > 0, counted, `${province}: minimum`);
+    assert.equal(T.items.overnight.shortfall > 0, counted, `${province}: shortfall`);
+    near(T.items.overnight.minimum, cents(r.min.overnight), `${province}: minimum overnight`);
+    near(T.shortfall, cents(r.debt.total), `${province}: debt`, 0.01);
+  }
 });

@@ -15,7 +15,7 @@ import { ITEMS } from './settle.js';
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ extra: { due: number }, min: { overnight: number }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ extra: { due: number }, min: { overnight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -69,6 +69,7 @@ export function lawFromRecord(offer, record, settled, r, payments) {
     days: { worked, due, extra: Math.max(0, worked - due) },
     overnight: {
       applicable: r.min.overnight > 0,
+      pct: r.min.overnightAgreement?.pct ?? 0,
       known,
       /** What the bonus comes to, and what of it was not covered, in net. */
       due: cents(overnight.due * r.netFactor),

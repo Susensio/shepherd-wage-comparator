@@ -231,7 +231,7 @@ function lawBlock(c) {
         ? mark(
             'bad',
             'Plus de pernocta',
-            `Lo cobrado no lo cubre: faltan ${money(o.missing)} de ${money(o.due)} (el ${LAW.overnightPct} % del salario, netos).`,
+            `Lo cobrado no lo cubre: faltan ${money(o.missing)} de ${money(o.due)} (el ${o.pct} % del salario, netos).`,
           )
         : mark('ok', 'Plus de pernocta', 'Cubierto con lo cobrado.');
   const m = law.minimum;

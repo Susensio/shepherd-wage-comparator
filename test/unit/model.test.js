@@ -171,7 +171,7 @@ test('without a contract: paid the minimum, only the vacation is owed', () => {
 });
 
 test('sleeping out: the 25 % overnight bonus is owed', () => {
-  const r = figures({ overnight: 'yes' });
+  const r = figures({ overnight: 'yes', province: 'HU' });
   near(r.debt.salary, 17094 * 0.25, 1, 'owed');
   assert.equal(r.stamp?.code, 'noOvernight');
 });
@@ -300,4 +300,23 @@ test('yearShares counts whole days, whatever the time zone (a daylight-saving ch
     if (zone === undefined) delete process.env.TZ;
     else process.env.TZ = zone;
   }
+});
+
+test('sleeping out counts the bonus only where an agreement known for the province gives it', () => {
+  const plain = figures();
+  const huesca = figures({ overnight: 'yes', province: 'HU' });
+  assert.ok(huesca.min.overnight > 0 && huesca.min.overnightAgreement?.pct === 25);
+  near(huesca.min.overnight, huesca.min.salary * 0.25, 0.01, 'bonus');
+  assert.ok(huesca.debt.total > plain.debt.total + 1, 'owed in Huesca');
+  for (const province of ['Z', 'M', '']) {
+    const r = figures({ overnight: 'yes', province });
+    assert.equal(r.min.overnight, 0, `province «${province}»: no bonus`);
+    assert.equal(r.min.overnightRate, 0);
+    assert.equal(r.min.overnightAgreement, null);
+    assert.equal(r.min.overnightStay, true, 'the night stay stays a fact of the offer');
+    assert.equal(r.debt.total, plain.debt.total, 'nothing more owed');
+    assert.equal(r.stamp?.code ?? null, plain.stamp?.code ?? null);
+    near(r.extra.dayValue, plain.extra.dayValue, 0.001, 'a day is not worth more');
+  }
+  assert.ok(huesca.extra.dayValue > plain.extra.dayValue);
 });

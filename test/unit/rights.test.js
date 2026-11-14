@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG } from '../../src/offer.js';
-import { failuresOf, rightsOf } from '../../src/rights.js';
+import { failuresOf, overnightHint, rightsOf } from '../../src/rights.js';
 import { legalLine, unpaidTime } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
@@ -66,7 +66,7 @@ test('no contract fails contract and salary', () => {
 });
 
 test('sleeping out with the salary reached but the bonus short fails overnight only', () => {
-  const v = verdicts({ overnight: 'yes' });
+  const v = verdicts({ overnight: 'yes', province: 'HU' });
   assert.equal(v.salary, true);
   assert.equal(v.overnight, false);
 });
@@ -118,4 +118,32 @@ test('vacation paid instead of taken passes on a casual contract and warns on a 
   assert.equal(verdicts({ ...casual, contract: 'seasonal' }).vacation, 'warn');
   assert.equal(verdicts({ ...casual, contract: 'seasonal', duration: 30 }).vacation, true);
   assert.equal(verdicts({ vacation: 'paidAtEnd' }).vacation, 'warn');
+});
+
+test('a night stay is judged by province: Huesca cites the agreement, elsewhere nothing is counted', () => {
+  const text = (changes) => {
+    const { o, r } = build(changes);
+    const right = rightsOf(o, r).find((x) => x.id === 'overnight');
+    return { status: right?.status, text: String(right?.text?.strings?.join('') ?? right?.text ?? '') };
+  };
+  assert.equal(text({ overnight: 'yes', province: 'HU' }).status, false);
+  for (const province of ['Z', '']) {
+    const x = text({ overnight: 'yes', province });
+    assert.equal(x.status, null, 'not a warning');
+    assert.match(x.text, /no se cuenta/);
+    assert.doesNotMatch(x.text, /25/);
+  }
+  assert.match(text({ overnight: 'yes', province: 'Z' }).text, /esta provincia/);
+  assert.match(text({ overnight: 'yes', province: '' }).text, /Sin provincia/);
+  assert.equal(verdicts({ overnight: 'yes', province: 'Z' }).salary, true);
+  assert.equal(failuresOf(...Object.values(build({ overnight: 'yes', province: 'Z' }))).includes('overnight'), false);
+});
+
+test('the hint under the night stay speaks by province', () => {
+  assert.match(
+    overnightHint({ province: 'HU' }),
+    /sube el mínimo un 25\u00a0% \(Convenio colectivo del campo de la provincia de Huesca/,
+  );
+  assert.match(overnightHint({ province: 'Z' }), /Ningún convenio conocido para esta provincia .* no se cuenta/);
+  assert.match(overnightHint({ province: '' }), /Sin provincia, no se conoce ningún convenio .* no se cuenta/);
 });
