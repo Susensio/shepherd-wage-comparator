@@ -32,7 +32,6 @@ import { missing, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
-import { recordClaimText } from '../text.js';
 import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
 import { closeDossier, closeReview, openDossier, openReview } from './navigation.js';
@@ -112,9 +111,9 @@ export function recordPhase(o, today = todayISO()) {
   return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
 }
 
-/** The claim of a job under way or finished, from its record; null for an offer not worked. */
+/** The claim of a job worked is its Petición de pago (one claim text); null for an offer not worked or with nothing owed. */
 export function recordClaimOf(o) {
-  return recordPhase(o) ? recordClaimText(o, settleOffer(o), o.mine.record) : null;
+  return (recordPhase(o) && recordContext(o, calcOffer(o))?.claim?.request) || null;
 }
 
 /**

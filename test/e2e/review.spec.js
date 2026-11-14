@@ -32,16 +32,17 @@ test.describe('figures that must agree', () => {
     await expect(page.locator('#result')).not.toContainText('El mínimo exigible supera lo pactado');
   });
 
-  test('«Copiar reclamación» on a job worked copies the record’s claim; on one still to decide, the offer’s', async ({
+  test('«Copiar reclamación» on a job worked copies the Petición de pago; on one still to decide, the offer’s', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await captureCopies(page);
     await page.locator('#fichaMenu').click();
     await page.locator('#offerMenu [data-menu=copyClaim]').click();
     await expect.poll(() => page.evaluate(() => window.copied.length)).toBe(1);
     const worked = await page.evaluate(() => window.copied[0]);
-    expect(worked).toContain('Reclamación de cantidades');
+    expect(worked).toContain('Asunto: petición de pago');
     expect(worked).not.toContain('SALARIO');
     await expect(page.locator('#offerMenu')).toBeHidden(); // it closes by itself after copying
     await page.clock.setFixedTime(new Date('2026-05-01T12:00:00'));

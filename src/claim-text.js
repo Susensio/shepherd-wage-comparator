@@ -6,7 +6,7 @@
  */
 
 import { capitalize, fDate, fE, joinAnd } from './format.js';
-import { cents, fSumE, spreadTo } from './ledger.js';
+import { fSumE, spreadTo } from './ledger.js';
 import { spanOf } from './model/accounts.js';
 import { marksOf } from './model/record.js';
 import { ITEMS } from './model/settle.js';
@@ -144,12 +144,10 @@ export function employerSummaryText({ o, r, settled, standing, record, parties }
  * @param {Parties} c.parties
  * @param {string} c.today ISO date
  * @param {string} c.payBy ISO date
- * @param {number} c.netFactor `r.netFactor`, only for the net equivalent said once
  */
-export function paymentRequestText({ o, settled, record, parties, today, payBy, netFactor }) {
+export function paymentRequestText({ o, settled, record, parties, today, payBy }) {
   const { rows, totals } = settled;
   const when = jobDates(settled.job);
-  const net = (record.payments ?? []).reduce((t, p) => t + p.amount, 0);
   const out = [`Fecha: ${fIso(today)}`];
   if (parties.employerName)
     out.push(`A: ${parties.employerName}${parties.employerId ? ` (${parties.employerId})` : ''}`);
@@ -160,10 +158,8 @@ export function paymentRequestText({ o, settled, record, parties, today, payBy, 
     '',
     'Buenos días:',
     '',
-    // One unit per sentence: what is still owed, in gross as a payslip says it; what arrived is said apart, in net
-    net > 0
-      ? `Revisadas las cuentas del trabajo, y descontado lo ya cobrado (${fSumE(net)} netos), queda por pagar, en bruto:`
-      : 'Revisadas las cuentas del trabajo, queda por pagar, en bruto:',
+    // One unit: what is owed, in gross as a payslip says it. What arrived is in the accounts already, with no figure
+    'Revisadas las cuentas del trabajo, queda por pagar, en bruto:',
   );
   for (const row of rows.filter((x) => x.owed > 0)) {
     const parts = ITEMS.filter((item) => row.items[item].owed > 0).map(
@@ -172,9 +168,9 @@ export function paymentRequestText({ o, settled, record, parties, today, payBy, 
     out.push(`· ${capitalize(monthYear(row.month))}: ${parts.join(', ')}`);
   }
   out.push(
-    `Total pendiente: ${fSumE(totals.owed)} brutos, unos ${fSumE(cents(totals.owed * netFactor))} netos.`,
+    `Total pendiente: ${fSumE(totals.owed)} brutos.${record.payments?.length ? ' Lo ya cobrado está descontado.' : ''}`,
     '',
-    `Se pide que se pague antes del ${fIso(payBy)}. Si hay alguna diferencia con estas cuentas, se puede revisar juntos.`,
+    `Se pide que se pague antes del ${fIso(payBy)}. Si hay alguna diferencia con estas cuentas, se pueden revisar.`,
     '',
     'Gracias.',
   );
@@ -198,7 +194,7 @@ export function inspectionText({ o, r, settled, record, parties }) {
   if (parties.employerName)
     out.push(`Ganadero: ${parties.employerName}${parties.employerId ? ` (${parties.employerId})` : ''}.`);
   if (r.noContract) out.push('No hubo contrato ni alta en la Seguridad Social.');
-  else if ((r.cash?.total ?? 0) >= 1) out.push('Una parte del pago se pactó en mano, sin declarar.');
+  else if ((r.cash?.total ?? 0) >= 1) out.push('Una parte del pago se pactó en negro.');
   out.push(
     `Jornadas por mes: ${jornadasOf(o, settled, record)
       .map((j) => `${monthName(j.month)} ${j.worked}${j.closed ? '' : ' (según lo pactado, mes sin cerrar)'}`)

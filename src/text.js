@@ -4,7 +4,6 @@ import {
   capitalize,
   f1,
   fCount,
-  fDate,
   fDays,
   fDaysSpoken,
   fE,
@@ -17,9 +16,8 @@ import {
   num,
 } from './format.js';
 import { citeOf, LAW } from './law.js';
-import { fSumE } from './ledger.js';
 import { hoursWeek } from './model/time.js';
-import { contractOf, datesText, HERD, mealsGiven, mealsList, parseDate } from './offer.js';
+import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
 import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
@@ -374,12 +372,12 @@ export function claimText(o, r) {
       if (cash > 0)
         add(
           isWorthCounting(r.debt.owed)
-            ? `Se pagan además ${fE(cash)} sin declarar, que no cotizan. Contándolos, siguen faltando ${fE(r.debt.owed)} brutos, unos ${fNet(r.debt.owed)} netos.`
-            : `Se pagan además ${fE(cash)} sin declarar: cubren esa falta, pero no cotizan (menos paro y menos jubilación).`,
+            ? `Se pagan además ${fE(cash)} en negro, que no cotizan. Contándolos, siguen faltando ${fE(r.debt.owed)} brutos, unos ${fNet(r.debt.owed)} netos.`
+            : `Se pagan además ${fE(cash)} en negro: cubren esa falta, pero no cotizan (menos paro y menos jubilación).`,
         );
     } else {
       add('La nómina llega al mínimo legal.');
-      if (cash > 0) add(`Se pagan además ${fE(cash)} sin declarar, que no cotizan.`);
+      if (cash > 0) add(`Se pagan además ${fE(cash)} en negro, que no cotizan.`);
     }
   }
 
@@ -537,82 +535,3 @@ export const monthName = (key) => MONTH_NAMES[Number(key.slice(5, 7)) - 1];
 export const monthShort = (key) => (monthName(key) === 'septiembre' ? 'sept' : monthName(key).slice(0, 3));
 /** «junio de 2026». */
 export const monthYear = (key) => `${monthName(key)} de ${key.slice(0, 4)}`;
-
-/** «5 jun 2026» from an ISO date. */
-const fIso = (iso) => fDate(parseDate(iso));
-
-/**
- * The claim of what a job still owes, from the figures `settle` gives for what the record holds. It says what the
- * record shows and no more: months not closed are said to be as the offer has them, and with no cobros nothing is
- * claimed. Impersonal, like `claimText`.
- * @param {object} o
- * @param {ReturnType<typeof import('./model/settle.js').settle>} settled
- * @param {import('./model/settle.js').OfferRecord} record
- */
-export function recordClaimText(o, settled, record) {
-  const { rows, totals } = settled;
-  const payments = [...(record.payments ?? [])].sort((a, b) => a.date.localeCompare(b.date));
-  const lines = [`Reclamación de cantidades: ${o.mine.name || 'sin nombre'}`];
-  const when = datesText(o.terms);
-  lines.push(`Trabajo de pastor ${when ? `${when}` : ''}.`.replace(' .', '.'));
-  // Days worked outside the offer's dates are said, and claimed like the others
-  const { job } = settled;
-  const after = job.offerTo
-    ? Object.entries(record.months ?? {}).reduce(
-        (total, [key, month]) =>
-          total +
-          Object.entries(month.days ?? {}).filter(([day, kind]) => kind === 'work' && `${key}-${day}` > job.offerTo)
-            .length,
-        0,
-      )
-    : 0;
-  if (after > 0)
-    lines.push(
-      `Trabajado hasta el ${fIso(job.to)}: ${after} ${after === 1 ? 'día' : 'días'} después del fin de la oferta (${fIso(job.offerTo)}), que se reclaman como el resto.`,
-    );
-  lines.push(
-    `Corresponde: ${fSumE(totals.due)} brutos. Lo que se reclama es en bruto; lo cobrado llega neto y se compara en bruto.`,
-  );
-  if (totals.agreedCash > 0)
-    lines.push(
-      `De ese total, ${fSumE(totals.agreedCash)} netos son lo pactado en mano, sin declarar; se reclaman como pactado.`,
-    );
-  const said = payments.length > 0 || record.nothingPaid === true;
-  if (!payments.length) {
-    lines.push('No consta ningún cobro.');
-  } else {
-    const net = payments.reduce((total, p) => total + p.amount, 0);
-    lines.push(
-      `Cobrado: ${fSumE(net)} netos en ${payments.length} ${payments.length === 1 ? 'cobro' : 'cobros'}${totals.cash > 0 ? `, de ellos ${fSumE(totals.cash)} en mano, sin declarar` : ''}.`,
-    );
-    for (const p of payments)
-      lines.push(
-        `· ${fIso(p.date)}: ${fSumE(p.amount)} ${p.via === 'cash' ? 'en mano' : 'en nómina'}${p.note ? ` (${p.note})` : ''}`,
-      );
-  }
-  const owing = rows.filter((row) => row.owed > 0);
-  if (said && owing.length) {
-    lines.push('', `Queda por pagar, bruto: ${fSumE(totals.owed)}.`);
-    for (const row of owing) {
-      const parts = Object.entries(row.items)
-        .filter(([, x]) => x.owed > 0)
-        .map(([item, x]) => `${ITEM_TEXT[item].toLowerCase()} ${fSumE(x.owed)}`);
-      lines.push(`· ${monthYear(row.month)}: ${parts.join(', ')}`);
-    }
-    const first = owing
-      .map((row) => row.deadline)
-      .filter(Boolean)
-      .sort()[0];
-    if (first)
-      lines.push(
-        `Plazo para reclamar: ${LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`} desde que cada pago era debido (${citeOf('et', '59.2').label}); el primero acaba el ${fIso(first)}.`,
-      );
-  } else if (said) lines.push('', 'No queda nada por pagar.');
-  const open = rows.filter((row) => !row.closed).map((row) => monthName(row.month));
-  if (open.length) lines.push(`Meses sin cerrar, calculados según la oferta: ${joinAnd(open)}.`);
-  lines.push(
-    '',
-    'Cálculo aproximado hecho con Zurrón sindical. Conviene revisarlo con el convenio vigente y un sindicato.',
-  );
-  return lines.join('\n');
-}

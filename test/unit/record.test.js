@@ -30,7 +30,6 @@ import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
 import { createOffers } from '../../src/offers.js';
 import { ingestSaved } from '../../src/schema.js';
-import { recordClaimText } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
 const ctx = { cfg: { ...DEF_CFG }, offers: [] };
@@ -575,44 +574,6 @@ describe('the agreed cash is a line of its own, inside what corresponds', () => 
     const s = standingOf(settle(CASH, emptyRecord(), '2026-07-15', ctx), '2026-07-15', 'underway', [], netOf);
     // June whole and July to the 15th: 360 a month, 15 of 31 days in the second
     assert.ok(Math.abs((s.lines.find((x) => x.key === 'cash')?.due ?? 0) - (360 + (360 * 15) / 30)) < 1);
-  });
-
-  test('the claim says what was agreed in hand', () => {
-    const text = recordClaimText(CASH, settle(CASH, emptyRecord(), '2026-11-12', ctx), emptyRecord());
-    assert.match(text, /1\.080\s€ netos son lo pactado en mano, sin declarar; se reclaman como pactado/);
-  });
-});
-
-describe('the claim text', () => {
-  const claim = (record, today = '2026-11-12') => recordClaimText(OFFER, settle(OFFER, record, today, ctx), record);
-
-  test('without a cobro it claims nothing, only what is accrued', () => {
-    const text = claim(emptyRecord());
-    assert.match(text, /No consta ningún cobro/);
-    assert.doesNotMatch(text, /Queda por pagar/);
-    assert.match(text, /Meses sin cerrar, calculados según la oferta: junio, julio y agosto/);
-  });
-
-  test('with cobros it lists them, the cash apart, and what is owed per month and item', () => {
-    const record = emptyRecord();
-    addPayment(record, { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'junio' });
-    addPayment(record, { date: '2026-08-05', amount: 300, via: 'cash' });
-    closeMonth(OFFER, record, JUNE);
-    const text = claim(record);
-    assert.match(text, /Cobrado: 1\.300.* netos en 2 cobros, de ellos 300.* en mano, sin declarar/);
-    assert.match(text, /5 jul 2026: 1\.000.* en nómina \(junio\)/);
-    assert.match(text, /5 ago 2026: 300.* en mano/);
-    assert.match(text, /Queda por pagar, bruto: /);
-    assert.match(text, /· julio de 2026: salario /);
-    assert.match(text, /Plazo para reclamar: un año/);
-    assert.match(text, /calculados según la oferta: julio y agosto\./);
-    assert.doesNotMatch(text, /sin cerrar.*junio/);
-  });
-
-  test('a fully paid job owes nothing', () => {
-    const record = emptyRecord();
-    addPayment(record, { date: '2026-11-01', amount: 99999, via: 'payroll' });
-    assert.match(claim(record), /No queda nada por pagar/);
   });
 });
 

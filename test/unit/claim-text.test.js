@@ -117,6 +117,13 @@ describe('«Petición de pago»', () => {
     assert.match(text, /queda por pagar, en bruto:/);
   });
 
+  test('speaks in gross only: no net figure, and what arrived is said without a figure', () => {
+    assert.doesNotMatch(text, /netos/);
+    assert.match(text, /Lo ya cobrado está descontado\./);
+    assert.doesNotMatch(paymentRequestText(contextOf(worked[0], 0)), /cobrado/);
+    assert.match(text, /se pueden revisar\./);
+  });
+
   test('does not claim to stop any deadline nor cite law', () => {
     assert.doesNotMatch(text, /interrump|suspend|plazo|art\.|Estatuto/i);
   });
@@ -136,6 +143,7 @@ describe('«Hechos para la Inspección» and the papeleta’s fields', () => {
     assert.match(text, /Cobros recibidos:/);
     assert.match(text, /despedido por el ganadero/);
     assert.doesNotMatch(text, /Queda por pagar|Falta|se reclama/);
+    assert.doesNotMatch(text, /sin declarar|en mano, sin/);
   });
 
   test('without a contract it says so as a fact', () => {

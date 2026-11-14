@@ -205,7 +205,7 @@ const FACT_TEXT = {
     'Sin contrato',
     'No hay alta en la Seguridad Social: ni cotización, ni paro, ni derechos de un contrato.',
   ],
-  cash: (amount) => ['Parte en negro', `Se pactan ${whole(amount)} netos en mano, sin declarar: no cotizan.`],
+  cash: (amount) => ['Parte en negro', `Se pactan ${whole(amount)} netos en negro: no cotizan.`],
 };
 
 /**
