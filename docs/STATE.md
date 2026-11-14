@@ -1,5 +1,25 @@
 # State
 
+## Knowledge base for territorial law figures (ADR-0033)
+
+Decided with the owner on 14 November 2026: documents with provenance, distilled reports, verified tables and a build script that generates the page's data; no servers; review by a summary table shown by the main agent; where no agreement is known the general rules of Spain apply and nothing above the entitlement is claimed. Nothing built yet. The full design of 14 November (manifest fields, report template, table schemas, validation checks, job roles) was written by a design agent and lives in the conversation; this plan is its first slice, to be written into `kb/README.md` as it is built.
+
+### Plan (first slice)
+
+1. `AGENTS.md`: «Legal figures» says territorial figures come from `kb/tables` through `scripts/build-law-data.js` and `law.js` lookups; a short «Knowledge base» section points at `kb/README.md`.
+2. Interim, before the data exists: the overnight bonus is owed only for offers in Huesca (province `HU`), from the 2022–2025 agreement; elsewhere and with no province known it is not counted as owed. `law.js` cites the 2022–2025 text, not the 2015–2017 one.
+3. `kb/` skeleton and manifest seed: BOE-A-2025-21667, Aragón Decreto 70/2025, the BOA 225/2025 local list and its correction BOA 56/2026, Aragón's CKAN `festivos_aragon_2026_completo.csv`, the Huesca agreement 2022–2025 (find its BOP reference), the owner's table as owner-private.
+4. A collector run (GitHub Action, `workflow_dispatch`) fetching, hashing and extracting text; release `kb-2026`.
+5. Tables and reports for the two pilots: holidays of Aragón 2026 (national, regional, local for a few municipalities, Yebra de Basa among them) and the Huesca agreement's overnight bonus, overtime and weekly hours, each row with a verbatim quote.
+6. `scripts/build-law-data.js` with its validation in `npm test`; `src/law-territorial.js` and `data/holidays-2026-02.json`.
+7. The calendar marks holidays (national, regional and local where known), after the record's calendar work.
+
+### Owner steps
+
+- Say which villages the shepherds work in most, for the local-holiday pilot.
+- Verify the figures from the summary tables the main agent shows (answer «vale» or point at the row).
+- Confirm the Huesca agreement's reference if it cannot be found.
+
 ## What happened: a record of days and payments, settled against the offer (phases)
 
 Decided with the owner on 12 November 2026 (ADR-0032). Core first, interface after: no screen is built until `settle` and the saved format are done and tested.
