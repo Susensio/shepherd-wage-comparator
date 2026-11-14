@@ -23,7 +23,7 @@ export function setUpOfferMenu({ available, run }) {
   const items = () =>
     /** @type {HTMLElement[]} */ ([...menu.querySelectorAll('[role=menuitem]')]).filter((b) => !b.hidden);
   const del = doubleTap($('[data-menu=delete]', menu), 'Borrar', 4000);
-  /** @type {{ trigger: HTMLElement, id: string } | null} */
+  /** @type {{ trigger: HTMLElement, id: string, point: {x: number, y: number} | null } | null} */
   let current = null;
   let closeTimer;
 
@@ -55,6 +55,12 @@ export function setUpOfferMenu({ available, run }) {
     menu.style.top = `${Math.max(MARGIN, y)}px`;
   }
 
+  /** Under (or above) the trigger button, right-aligned to it. */
+  function placeAt(trigger) {
+    const box = trigger.getBoundingClientRect();
+    place({ right: box.right, top: box.top - GAP, bottom: box.bottom + GAP });
+  }
+
   /**
    * @param {HTMLElement} trigger where focus returns to
    * @param {string} id the offer
@@ -63,7 +69,7 @@ export function setUpOfferMenu({ available, run }) {
   function open(trigger, id, point = null) {
     if (current?.trigger === trigger && !point) return close({ refocus: true });
     close();
-    current = { trigger, id };
+    current = { trigger, id, point };
     const { copy, claim, ended } = available(id);
     $('[data-menu=copyCard]', menu).hidden = !copy;
     $('[data-menu=copyClaim]', menu).hidden = !claim;
@@ -71,11 +77,11 @@ export function setUpOfferMenu({ available, run }) {
     $('[data-menu=dossier]', menu).hidden = !ended;
     if (point) place({ left: point.x, top: point.y - GAP, bottom: point.y + GAP });
     else {
-      const box = trigger.getBoundingClientRect();
-      place({ right: box.right, top: box.top - GAP, bottom: box.bottom + GAP });
+      placeAt(trigger);
       trigger.setAttribute('aria-expanded', 'true');
     }
-    items()[0].focus();
+    // Focusing must not scroll: a scroll would move the trigger under the open menu
+    items()[0].focus({ preventScroll: true });
   }
 
   menu.addEventListener('click', async (e) => {
@@ -110,8 +116,19 @@ export function setUpOfferMenu({ available, run }) {
     const target = /** @type {Element} */ (e.target);
     if (current && !menu.contains(target) && !target.closest('[aria-haspopup=menu]')) close();
   });
-  // The menu is fixed to the screen: it would be left behind by anything that moves
-  addEventListener('scroll', () => close(), true);
+  // The menu is fixed to the screen: on a scroll it follows its button, and closes once the button leaves the screen
+  // (or when it was opened at a pointer, which has no anchor to follow). Closing on every scroll lost the menu to the
+  // scrolls a phone or a test makes right after opening it.
+  addEventListener(
+    'scroll',
+    () => {
+      if (!current) return;
+      const box = current.trigger.getBoundingClientRect();
+      if (current.point || box.bottom < 0 || box.top > innerHeight) close();
+      else placeAt(current.trigger);
+    },
+    true,
+  );
   addEventListener('resize', () => close());
 
   document.addEventListener('contextmenu', (e) => {
