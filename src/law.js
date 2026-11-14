@@ -305,8 +305,9 @@ export const LAW = {
 const OVERNIGHT_BY_PROVINCE = {
   HU: {
     pct: 25,
-    cite: 'Convenio colectivo del campo de la provincia de Huesca 2022–2025',
-    // TODO: find the BOP Huesca reference of the 2022–2025 text (STATE plan, ADR-0033 step 3) and link it
+    cite: 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29',
+    // TODO: no text in force found (kb/manifest.json, record BOPH-convenio-agricola-2022-2025-candidate, status candidate); the last
+    // text found is 2015–2017 (BOPH 58/2016, art. 29 holds the 25 % clause); link a text only once labelled as that one
     url: null,
   },
 };

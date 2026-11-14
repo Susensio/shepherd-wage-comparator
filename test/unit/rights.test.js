@@ -142,7 +142,7 @@ test('a night stay is judged by province: Huesca cites the agreement, elsewhere 
 test('the hint under the night stay speaks by province', () => {
   assert.match(
     overnightHint({ province: 'HU' }),
-    /sube el mínimo un 25\u00a0% \(Convenio colectivo del campo de la provincia de Huesca/,
+    /sube el mínimo un 25\u00a0% \(Convenio colectivo del sector agrícola de la provincia de Huesca/,
   );
   assert.match(overnightHint({ province: 'Z' }), /Ningún convenio conocido para esta provincia .* no se cuenta/);
   assert.match(overnightHint({ province: '' }), /Sin provincia, no se conoce ningún convenio .* no se cuenta/);

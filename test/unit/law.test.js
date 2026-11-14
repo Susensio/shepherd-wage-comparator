@@ -66,6 +66,7 @@ test("the overnight bonus is an agreement's, known per province: Huesca only, an
   assert.ok(!('overnightPct' in LAW), 'no national figure');
   const huesca = overnightOf('HU');
   assert.equal(huesca?.pct, 25);
-  assert.match(huesca.cite, /Huesca 2022–2025/);
+  assert.match(huesca.cite, /sector agrícola de la provincia de Huesca, art\. 29/);
+  assert.doesNotMatch(huesca.cite, /2022/);
   for (const other of ['Z', 'TE', 'M', '', undefined, null]) assert.equal(overnightOf(other), null, String(other));
 });

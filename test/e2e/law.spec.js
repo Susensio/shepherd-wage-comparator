@@ -27,7 +27,7 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   await expect(legal).toContainText(
     'Sin provincia, no se conoce ningún convenio que dé un plus de pernocta: no se cuenta',
   );
-  await expect(legal).not.toContainText('Convenio colectivo del campo');
+  await expect(legal).not.toContainText('Convenio colectivo del sector agrícola');
   await expect(legal).not.toContainText('con el plus de pernocta');
   // Puerto A, otra cuenta (Huesca): the agreement, with no link to follow yet
   await loadOffers(page, sample, 1);
@@ -37,13 +37,13 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   });
   await expect(legal).toContainText('Plus de pernocta');
   await expect(
-    legal.locator('.lawlink', { hasText: 'Convenio colectivo del campo de la provincia de Huesca 2022–2025' }),
+    legal.locator('.lawlink', { hasText: 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29' }),
   ).toHaveCount(1);
   await expect(legal.locator('a.lawlink', { hasText: 'Convenio colectivo' })).toHaveCount(0);
   // The hint under the question, by province
   await openCondition(page, 'day');
   await expect(page.locator('#overnightHint')).toContainText(
-    'sube el mínimo un 25\u00a0% (Convenio colectivo del campo de la provincia de Huesca 2022–2025)',
+    'sube el mínimo un 25\u00a0% (Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29)',
   );
   await page.evaluate(() => {
     app.active().terms.province = 'Z';
@@ -55,6 +55,6 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   // The Leyes page names the agreement without a link
   await page.evaluate(() => app.openLawsPage());
   const laws = page.locator('[data-panel=laws]');
-  await expect(laws).toContainText('Convenio colectivo del campo de la provincia de Huesca 2022–2025');
+  await expect(laws).toContainText('Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29');
   await expect(laws.locator('a', { hasText: 'Huesca' })).toHaveCount(0);
 });
