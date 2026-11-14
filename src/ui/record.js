@@ -123,7 +123,7 @@ export function recordContext(o, r) {
   const settled = settleOffer(o);
   if (!settled.rows.length) return null;
   const ctx = calcContext();
-  const standing = standingOf(settled, today, phase, record.payments, r.netFactor);
+  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.nothingPaid);
   const shown = settled.rows.filter((row) => row.from <= today);
   const addable = addableMonth(settled, today);
   const rowOf = (month) => settled.rows.find((row) => row.month === month);
@@ -387,6 +387,7 @@ export function cardRecord(o, r) {
     /** @type {'underway' | 'finished'} */ (phase),
     o.mine.record.payments,
     r.netFactor,
+    o.mine.record.nothingPaid,
   );
   return {
     phase,

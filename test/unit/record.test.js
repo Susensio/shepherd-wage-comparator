@@ -250,8 +250,21 @@ describe('a month on its calendar', () => {
 
 describe('where an offer stands, in net', () => {
   const stand = (record, today, phase) =>
-    standingOf(settle(OFFER, record, today, ctx), today, phase, record.payments, NET);
+    standingOf(settle(OFFER, record, today, ctx), today, phase, record.payments, NET, record.nothingPaid);
   const net = (gross) => Math.round(gross * NET * 100) / 100;
+
+  test('«No se cobró nada» makes the whole of Corresponde what is missing, and dates it, without a payment', () => {
+    const asked = stand(emptyRecord(), '2026-11-12', 'finished');
+    assert.equal(asked.hasPayments, false);
+    assert.equal(asked.deadlines.length, 0);
+    const record = emptyRecord();
+    setNothingPaid(record, true);
+    const s = stand(record, '2026-11-12', 'finished');
+    assert.equal(s.hasPayments, true);
+    assert.equal(s.cobrado, 0);
+    assert.equal(s.falta, s.corresponde);
+    assert.ok(s.deadlines.length > 0 && s.nearest);
+  });
 
   test('under way: the months that have ended and the one in progress up to today count, with the vacation in proportion', () => {
     const s = stand(emptyRecord(), '2026-07-15', 'underway');
