@@ -4,6 +4,8 @@
 
 Started 14 November 2026 while the owner was away, under their mandate («asistente sindical, gestor y ayuda al pastor»); the owner confirms ADR-0034 on return. Nothing of it on `master` until they do.
 
+Progress, 14 November 2026 (owner away): phase 1 built on the branch (`3c28d4f`..`06da834`), reshaped by the owner («lo común es reclamarle al ganadero»): the block is «Pedir lo que falta», with «Hablar con el ganadero» and «Petición de pago» open first and the formal steps in one closed fold «Si no paga: la vía legal»; a dismissal's 20-working-day date as one plain line. Saved format 6 with its migration `20261114120000_claim_ladder_in_mine.sql` (`min_page_version` 5): not on `master` until the owner approves ADR-0034 and exports a backup. Also on the branch: the offer menu follows its button on scroll (the card-menu tests had been failing most runs); the petition says gross and net apart. A second review of the new flow is running.
+
 ### Plan (phase 1: no new legal data)
 
 1. Glossary: «Reclamar» as the ladder; one term per step («Hablar con el ganadero», «Petición de pago», «Sindicato», «Papeleta de conciliación», «Inspección de Trabajo», «Juzgado de lo Social», «FOGASA»); «Expediente», «Resumen para el ganadero», «¿Cómo acabó?», «Cuentas saldadas», «Para reclamar».
