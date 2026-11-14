@@ -69,6 +69,8 @@ import { closeReview, openReview } from './navigation.js';
  * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
  * @property {boolean} nothingPaid «No se cobró nada» was said
+ * @property {import('../model/settle.js').OfferRecord} record
+ * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, date: string, early: boolean } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -82,6 +84,12 @@ const ui = {
   /** «Repasar los meses»: the months to go through and where it is. */
   review: /** @type {{ offerId: string, keys: string[], index: number, closed: number } | null} */ (null),
   fresh: /** @type {string | null} */ (null),
+  /** «¿Empezó el trabajo?» asked for another date, by offer. */
+  startOther: /** @type {Record<string, boolean>} */ ({}),
+  /** «¿Cómo acabó?» opened by hand («Acabó antes»), by offer, and the way picked before its date. */
+  end: /** @type {Record<string, { how: string | null }>} */ ({}),
+  /** «¿Cómo acabó?» put off for this session with «Sigue, se alargó», by offer. */
+  endLater: /** @type {Record<string, boolean>} */ ({}),
   /** The date a request asks to pay by, by offer; without one, a fortnight on. */
   payBy: /** @type {Record<string, string>} */ ({}),
 };
@@ -136,6 +144,34 @@ function claimContext(o, r, settled, standing, today) {
     inspection: owed ? inspectionText(base) : '',
     fields: owed ? conciliationFields(base) : [],
   };
+}
+
+/**
+ * The questions at the turns of a job. «¿Empezó?» only for a job under way with nothing recorded and no answer yet;
+ * «¿Cómo acabó?» for a finished job with no answer, or when asked from «Acabó antes».
+ * @param {any} o
+ * @param {'underway' | 'finished'} phase
+ * @param {ReturnType<typeof settleOffer>} settled
+ * @param {string} today
+ */
+function cardsOf(o, phase, settled, today) {
+  const record = o.mine.record;
+  const touched = record.payments.length > 0 || Object.keys(record.months).length > 0 || record.nothingPaid;
+  const asked = ui.end[o.id];
+  const start =
+    phase === 'underway' && !record.started && !touched && !asked
+      ? { date: o.terms.start, other: Boolean(ui.startOther[o.id]) }
+      : null;
+  const open = asked || (phase === 'finished' && !record.end && !ui.endLater[o.id]);
+  const end = open
+    ? {
+        how: asked?.how ?? null,
+        // The day it ended, to start from: the last day of the job, never after today
+        date: [settled.job.to, record.end?.date, today].find((d) => d && d <= today) ?? today,
+        early: Boolean(asked),
+      }
+    : null;
+  return start || end ? { start, end } : null;
 }
 
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
@@ -220,6 +256,8 @@ export function recordContext(o, r) {
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
     nothingPaid: Boolean(record.nothingPaid),
+    record,
+    cards: cardsOf(o, phase, settled, today),
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
     balance: phase === 'finished' ? balanceOf(o, record, settled, r) : null,
     addable,
@@ -385,6 +423,73 @@ export const recordActions = {
     closeReview();
     callbacks.paint();
   },
+  /** «¿Empezó el trabajo?»: yes, as the offer says. */
+  confirmStart() {
+    const o = active();
+    offers.confirmStart(o, o.terms.start);
+    callbacks.paint();
+  },
+  startOther() {
+    ui.startOther[active().id] = true;
+    callbacks.paint();
+  },
+  startOtherCancel() {
+    delete ui.startOther[active().id];
+    callbacks.paint();
+  },
+  /** Another start date: the offer's own date moves, since it is a fact of the job, and the answer is kept. */
+  saveStart() {
+    const o = active();
+    const date = /** @type {HTMLInputElement} */ ($('#startOther')).value;
+    if (!date) return;
+    o.terms.start = date;
+    delete ui.startOther[o.id];
+    offers.confirmStart(o, date);
+    callbacks.paint();
+  },
+  /** It was not taken: the offer stays an offer. */
+  notTaken() {
+    const o = active();
+    o.terms.offerOnly = true;
+    offers.save();
+    callbacks.paint();
+  },
+  /** «¿Cómo acabó?»: a way, then its date; «Al final pactado» needs none. */
+  pickEnd(b) {
+    const o = active();
+    if (b.dataset.how === 'agreed') {
+      const end = recordContext(o, calcOffer(o))?.cards?.end;
+      offers.setEnd(o, { how: 'agreed', date: end?.date ?? todayISO() });
+      delete ui.end[o.id];
+    } else ui.end[o.id] = { how: b.dataset.how };
+    callbacks.paint();
+  },
+  saveEnd(b) {
+    const o = active();
+    const date = /** @type {HTMLInputElement} */ ($('#endDate')).value;
+    if (!date) return;
+    offers.setEnd(o, { how: b.dataset.how, date });
+    delete ui.end[o.id];
+    callbacks.paint();
+  },
+  endCancel() {
+    delete ui.end[active().id];
+    ui.endLater[active().id] = true;
+    callbacks.paint();
+  },
+  /** «Sigue, se alargó»: the days after the end are marked in the calendar, starting with the next month. */
+  endLonger() {
+    const o = active();
+    ui.endLater[o.id] = true;
+    const key = recordContext(o, calcOffer(o))?.addable;
+    if (key) recordActions.reviewStart({ dataset: { key } });
+    else callbacks.paint();
+  },
+  /** «Acabó antes», in the menu, or «Cambiar» on the line of the end. */
+  endedEarly() {
+    ui.end[active().id] = { how: null };
+    callbacks.paint();
+  },
   /** «Copiar» under one of the claim texts. The icon of the button shows a tick for a moment. */
   async copyClaimText(b) {
     const claim = claimOf();
@@ -463,6 +568,11 @@ export function forgetRecordUi(offerId) {
     closeReview();
   }
   ui.ask = null;
+}
+
+/** «Acabó antes» from the menu of an offer: asks how it ended on its ficha. */
+export function askHowItEnded(offerId) {
+  ui.end[offerId] = { how: null };
 }
 
 /**

@@ -70,7 +70,7 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | plantilla | a starting point picked in the first step of the entry; it fills the contract, the housing and the trips, not the figures | `TEMPLATES` (`offer.js`) | modelo |
 | solo oferta | an offer received but not taken; it stays out of the year's income. An offer without a start date always counts as one (the box is ticked and locked until a date is set); shared (ADR-0028) | `terms.offerOnly` | |
 | sin desplazamientos ni gastos propios | comparing offers on their terms alone, without the shepherd's own travel and expenses: the Comparar switch | `termsOnly` | solo las condiciones (reads as the ficha's «Condiciones») |
-| «⋯» (Más acciones) | the menu of an offer, on the ficha and on each card: Duplicar, Copiar ficha, Copiar reclamación, Borrar | `ui/offer-menu.js` | menú, opciones |
+| «⋯» (Más acciones) | the menu of an offer, on the ficha and on each card: Duplicar, Copiar ficha, Copiar reclamación, Acabó antes (a job worked), Borrar | `ui/offer-menu.js` | menú, opciones |
 | con el paro / sin el paro | how Comparar ranks: «Ordenar: Con el paro · Sin el paro», with or without the paro each offer generates (ADR-0022) | `moneyOnly` | solo lo que se gana |
 | ganadero | the employer | | empresario, patrón |
 | pastor, pastora | the worker; «pastores y pastoras» when addressing both | | |

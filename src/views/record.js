@@ -9,6 +9,7 @@ import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { claimView } from './claim.js';
 import { ledgerLines, row } from './parts.js';
+import { endLine, endQuestion, startQuestion } from './transitions.js';
 
 /** @typedef {import('../ui/record.js').RecordContext} RecordContext */
 
@@ -251,6 +252,7 @@ function cuentas(c) {
   const settled = c.standing.hasPayments && c.standing.falta === 0;
   return html`<h2 class="mode small">Cuentas${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
+    ${endQuestion(c.cards, c.today, false)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
     ${claimView(c.claim)}
@@ -273,5 +275,5 @@ function realPeriod(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return html`${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
+  return html`${startQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today, true)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
 }

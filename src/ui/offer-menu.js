@@ -1,5 +1,5 @@
 /**
- * The «⋯» menu of an offer (Duplicar, Copiar ficha, Copiar reclamación, Borrar): one menu for the ficha and every
+ * The «⋯» menu of an offer (Duplicar, Copiar ficha, Copiar reclamación, Acabó antes, Borrar): one menu for the ficha and every
  * card, opened from a button with `aria-haspopup="menu"` or, on wide screens, with a right click on a card.
  */
 
@@ -12,7 +12,7 @@ const MARGIN = 8;
 
 /**
  * @param {object} options
- * @param {(id: string) => {copy: boolean, claim: boolean}} options.available what the offer allows
+ * @param {(id: string) => {copy: boolean, claim: boolean, ended: boolean}} options.available what the offer allows
  * @param {(action: string, id: string, msg: HTMLElement) => Promise<boolean | void> | boolean | void} options.run
  *   does the action; returns whether it copied, which closes the menu after a moment
  * @returns {{ open: (trigger: HTMLElement, id: string) => void, close: () => void }}
@@ -64,9 +64,10 @@ export function setUpOfferMenu({ available, run }) {
     if (current?.trigger === trigger && !point) return close({ refocus: true });
     close();
     current = { trigger, id };
-    const { copy, claim } = available(id);
+    const { copy, claim, ended } = available(id);
     $('[data-menu=copyCard]', menu).hidden = !copy;
     $('[data-menu=copyClaim]', menu).hidden = !claim;
+    $('[data-menu=endedEarly]', menu).hidden = !ended;
     if (point) place({ left: point.x, top: point.y - GAP, bottom: point.y + GAP });
     else {
       const box = trigger.getBoundingClientRect();

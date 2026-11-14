@@ -39,7 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { onClaimInput, recordActions, recordClaimOf, recordPhase } from './ui/record.js';
+import { askHowItEnded, onClaimInput, recordActions, recordClaimOf, recordPhase } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -220,6 +220,10 @@ function runMenuAction(action, id, msg) {
   const o = offerById(id);
   if (action === 'duplicate') return duplicate(o);
   if (action === 'delete') return remove(o);
+  if (action === 'endedEarly') {
+    askHowItEnded(id);
+    return openOffer(id);
+  }
   if (action === 'copyCard')
     return copyText(cardText(o, calcOffer(o)), msg, {
       ok: 'Ficha copiada.',
@@ -240,7 +244,7 @@ function menuAvailability(id) {
   const copy = missing(o.terms).length === 0;
   const r = copy ? calcOffer(o) : null;
   // Self-employed there is no labour claim to copy: the warning is about the kind of contract itself
-  return { copy, claim: !!r && !r.selfEmployed && (!!recordPhase(o) || !!legalLine(o, r)) };
+  return { copy, claim: !!r && !r.selfEmployed && (!!recordPhase(o) || !!legalLine(o, r)), ended: !!recordPhase(o) };
 }
 
 /* Everything done with a button: the button says what with data-action, and data-id if it is about an offer. One
