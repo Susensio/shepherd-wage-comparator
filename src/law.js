@@ -50,10 +50,37 @@ export const SOURCES = {
     title: 'Ley 37/1992, del Impuesto sobre el Valor Añadido',
     url: 'https://www.boe.es/buscar/act.php?id=BOE-A-1992-28740',
   },
+  lrjs: {
+    cite: 'LRJS',
+    title: 'Ley 36/2011, reguladora de la jurisdicción social',
+    url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2011-15936',
+  },
+  aragonConciliation: {
+    cite: 'Gobierno de Aragón',
+    title: 'Conciliación laboral preceptiva, previa a la jurisdicción social (Gobierno de Aragón)',
+    // TODO: replace with the knowledge base's record (ADR-0033) once it holds the mediation offices per province
+    url: 'https://www.aragon.es/tramitador/-/tramite/conciliaciones/laboral-preceptiva-previa-a-la-jurisdiccion-social',
+  },
+  itss: {
+    cite: 'Inspección de Trabajo',
+    title: 'Buzón de la Inspección de Trabajo y Seguridad Social',
+    url: 'https://oeitss.mites.gob.es/buzonitss/',
+  },
+  fogasa: {
+    cite: 'FOGASA',
+    title: 'FOGASA, Fondo de Garantía Salarial',
+    // Not reachable from the build environment (14 November 2026): the Ministry's page of the fund, to check by hand
+    url: 'https://www.mites.gob.es/fogasa/',
+  },
+  importass: {
+    cite: 'Seguridad Social',
+    title: 'Informe de vida laboral (Importass, Seguridad Social)',
+    url: 'https://portal.seg-social.gob.es/wps/portal/importass/importass/Categorias/Vida+laboral+e+informes+de+cotizacion/Informe+de+tu+vida+laboral/',
+  },
 };
-/** Link to an article of a source: ET and RD 1561/1995 have one anchor per article («#a37»). */
+/** Link to an article of a source: ET, RD 1561/1995 and LRJS have one anchor per article («#a37»). */
 export const articleUrl = (source, art) =>
-  SOURCES[source].url + (source === 'et' || source === 'rd1561' ? `#a${String(art).split('.')[0]}` : '');
+  SOURCES[source].url + (['et', 'rd1561', 'lrjs'].includes(source) ? `#a${String(art).split('.')[0]}` : '');
 
 /**
  * Fixed rules: {value, source, art}. Figures without a source are the page's own conventions, explained in `note`.
@@ -92,6 +119,22 @@ export const RULES = {
     note: 'unfair dismissal of a permanent worker, days of salary per year',
   },
   claimYears: { value: 1, source: 'et', art: '59.2', note: 'each payment can be claimed for a year after it was due' },
+  dismissalDays: {
+    value: 20,
+    source: 'et',
+    art: '59.3',
+    note: 'working days to act against a dismissal (caducity); «Los días serán hábiles». LRJS art. 103.1 adds that Saturdays, Sundays and holidays of the court do not count',
+  },
+  conciliationResumeDays: {
+    value: 15,
+    source: 'lrjs',
+    art: '65.1',
+    note: 'working days after filing the conciliation without it being held, after which the count of the caducity resumes',
+  },
+  conciliationEndDays: {
+    value: 30,
+    note: 'Aragón: after 30 days without the conciliation being held, the procedure is over (Gobierno de Aragón, conciliation page, SOURCES.aragonConciliation)',
+  },
   annualHours: {
     value: 1826,
     source: 'granada',
@@ -313,6 +356,32 @@ const OVERNIGHT_BY_PROVINCE = {
 };
 /** The overnight bonus an agreement gives in a province: `{ pct, cite, url }`, or null where none is known. */
 export const overnightOf = (province) => OVERNIGHT_BY_PROVINCE[province ?? ''] ?? null;
+
+/**
+ * The offices where the prior conciliation is held, by province code of the places list: only Aragón's three, from the
+ * Gobierno de Aragón's procedure page (SOURCES.aragonConciliation). Elsewhere none is known and the page says «el
+ * servicio de mediación de la comunidad» without an address.
+ * @type {Record<string, { name: string, address: string, phone: string }>}
+ */
+const CONCILIATION_OFFICES = {
+  HU: {
+    name: 'Subdirección Provincial de Trabajo de Huesca',
+    address: 'C/ Ricardo del Arco, 6, 2ª planta',
+    phone: '974 293 017',
+  },
+  Z: {
+    name: 'Subdirección Provincial de Trabajo de Zaragoza',
+    address: 'Pº Fernando el Católico, 63-65',
+    phone: '976 715 946',
+  },
+  TE: {
+    name: 'Subdirección Provincial de Trabajo de Teruel',
+    address: 'C/ San Francisco, 1, 1ª planta',
+    phone: '978 641 182',
+  },
+};
+/** The conciliation office of a province: `{ name, address, phone }`, or null where none is known. */
+export const conciliationOffice = (province) => CONCILIATION_OFFICES[province ?? ''] ?? null;
 
 /** «Estatuto, art. 38» and its link. */
 export const citeOf = (source, art) => ({

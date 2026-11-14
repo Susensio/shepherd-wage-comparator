@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LAW, MIN_WAGE, overnightOf, RULES, SOURCES, ssOf } from '../../src/law.js';
+import { conciliationOffice, LAW, MIN_WAGE, overnightOf, RULES, SOURCES, ssOf } from '../../src/law.js';
 import { DEF_CFG } from '../../src/offer.js';
 
 const years = Object.keys(MIN_WAGE).map(Number);
@@ -69,4 +69,22 @@ test("the overnight bonus is an agreement's, known per province: Huesca only, an
   assert.match(huesca.cite, /sector agrícola de la provincia de Huesca, art\. 29/);
   assert.doesNotMatch(huesca.cite, /2022/);
   for (const other of ['Z', 'TE', 'M', '', undefined, null]) assert.equal(overnightOf(other), null, String(other));
+});
+
+test('the procedural figures of a claim carry their source (ET 59.3, LRJS 65.1, Aragón)', () => {
+  assert.equal(LAW.dismissalDays, 20);
+  assert.equal(RULES.dismissalDays.source, 'et');
+  assert.equal(LAW.conciliationResumeDays, 15);
+  assert.equal(RULES.conciliationResumeDays.source, 'lrjs');
+  assert.equal(LAW.conciliationEndDays, 30);
+  for (const key of ['lrjs', 'aragonConciliation', 'itss', 'fogasa', 'importass'])
+    assert.ok(SOURCES[key].url.startsWith('https://'), key);
+});
+
+test('conciliation offices are known for Aragón only', () => {
+  assert.match(conciliationOffice('HU')?.address ?? '', /Ricardo del Arco/);
+  assert.equal(conciliationOffice('Z')?.phone, '976 715 946');
+  assert.equal(conciliationOffice('TE')?.phone, '978 641 182');
+  assert.equal(conciliationOffice('L'), null);
+  assert.equal(conciliationOffice(''), null);
 });
