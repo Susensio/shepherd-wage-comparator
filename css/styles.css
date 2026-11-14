@@ -4766,3 +4766,187 @@ body.reviewing .ficha > .back {
 .tcard-q .choices button {
   text-align: left;
 }
+
+/* The «Expediente»: over everything on screen, alone on paper */
+.dossier {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: auto;
+  background: var(--bg);
+}
+.dossier[hidden] {
+  display: none;
+}
+.dossier-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.dossier-doc {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 12px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 14px;
+}
+.dossier-doc h1 {
+  margin: 0;
+  font-size: 28px;
+}
+.dossier-doc h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.dossier-doc h3 {
+  margin: 12px 0 4px;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.dossier-doc p,
+.dossier-doc ul {
+  margin: 4px 0;
+}
+.dlist {
+  padding-left: 18px;
+}
+.dmonths {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.dmonth h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.dmonth h4 small {
+  font-weight: 500;
+  color: var(--muted);
+}
+.dgrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+}
+.dgrid > span {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  min-height: 30px;
+  padding: 1px 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.dgrid .dw {
+  min-height: 0;
+  text-align: center;
+  font-weight: 700;
+}
+.dgrid .dd b {
+  align-self: center;
+  font-size: 13px;
+}
+.dgrid .dd small {
+  font-size: 9px;
+}
+.dcount {
+  font-size: 12px;
+  color: var(--muted);
+}
+.dtable {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.dtable th,
+.dtable td {
+  padding: 3px 3px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  font-weight: 400;
+}
+.dtable th:first-child,
+.dtable td:first-child {
+  text-align: left;
+}
+.dtable th {
+  font-weight: 600;
+}
+.dtable .dtot th,
+.dtable .dtot td {
+  font-weight: 700;
+  border-top: 1px solid var(--ink);
+}
+.dtiles {
+  margin-bottom: 8px;
+}
+.ddisclaimer {
+  font-size: 12.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body > *:not(#dossier) {
+    display: none !important;
+  }
+  .dossier {
+    position: static;
+    overflow: visible;
+    background: #fff;
+    color: #000;
+  }
+  .dossier[hidden] {
+    display: none !important;
+  }
+  .noprint {
+    display: none !important;
+  }
+  .dossier-doc {
+    max-width: none;
+    padding: 0;
+    color: #000;
+    font-size: 10.5pt;
+  }
+  .dossier-doc * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
+  }
+  .dossier-doc section {
+    break-inside: avoid;
+  }
+  .dmonth {
+    break-inside: avoid;
+  }
+  .dtable tr {
+    break-inside: avoid;
+  }
+}

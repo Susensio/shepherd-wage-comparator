@@ -23,8 +23,9 @@ import {
   spanOf,
   standingOf,
 } from '../model/accounts.js';
-import { claimSteps } from '../model/claim.js';
+import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
+import { dossierOf } from '../model/dossier.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
 import { missing, todayISO } from '../offer.js';
@@ -32,7 +33,7 @@ import { offers } from '../offers.js';
 import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { recordClaimText } from '../text.js';
 import { copyText } from './dom.js';
-import { closeReview, openReview } from './navigation.js';
+import { closeDossier, closeReview, openDossier, openReview } from './navigation.js';
 
 /**
  * @typedef {object} CalendarContext
@@ -172,6 +173,36 @@ function cardsOf(o, phase, settled, today) {
       }
     : null;
   return start || end ? { start, end } : null;
+}
+
+/**
+ * Everything the «Expediente» holds for an offer, or null where it has no record.
+ * @param {any} o
+ * @param {any} r
+ */
+export function dossierContext(o, r) {
+  const today = todayISO();
+  const phase = recordPhase(o, today);
+  if (!phase) return null;
+  const record = o.mine.record;
+  const settled = settleOffer(o);
+  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.nothingPaid);
+  const marks = o.mine.claim?.steps ?? {};
+  return {
+    today,
+    record,
+    parties: o.mine.parties ?? { employerName: '' },
+    ladder: claimSteps({ today, standing, end: record.end, marks }),
+    deadlines: standing.deadlines,
+    steps: STEP_IDS.filter((id) => marks[id]).map((id) => ({ id, ...marks[id] })),
+    data: dossierOf({ o, netFactor: r.netFactor, settled, standing, record }),
+  };
+}
+
+/** Opens the «Expediente» over the ficha. */
+export function showDossier() {
+  openDossier();
+  callbacks.paint();
 }
 
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
@@ -488,6 +519,21 @@ export const recordActions = {
   /** «Acabó antes», in the menu, or «Cambiar» on the line of the end. */
   endedEarly() {
     ui.end[active().id] = { how: null };
+    callbacks.paint();
+  },
+  openDossier: showDossier,
+  closeDossier() {
+    closeDossier();
+    callbacks.paint();
+  },
+  printDossier: () => window.print(),
+  /** «Añadir apunte»: a dated note, today's date. */
+  addNote() {
+    const field = /** @type {HTMLInputElement} */ ($('#noteText'));
+    if (offers.addEvidence(active(), { date: todayISO(), text: field.value })) callbacks.paint();
+  },
+  removeNote(b) {
+    offers.removeEvidence(active(), Number(b.dataset.index));
     callbacks.paint();
   },
   /** «Copiar» under one of the claim texts. The icon of the button shows a tick for a moment. */

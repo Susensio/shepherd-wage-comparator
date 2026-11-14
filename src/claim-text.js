@@ -6,7 +6,7 @@
  */
 
 import { capitalize, fDate, fE, joinAnd } from './format.js';
-import { cents, fSumE } from './ledger.js';
+import { cents, fSumE, spreadTo } from './ledger.js';
 import { spanOf } from './model/accounts.js';
 import { marksOf } from './model/record.js';
 import { ITEMS } from './model/settle.js';
@@ -29,27 +29,6 @@ export function daysAfter(iso, days) {
 
 /** The pay-by date a request starts with: a fortnight on. */
 export const defaultPayBy = (today) => daysAfter(today, 15);
-
-/**
- * `values` rounded to cents (or to whole euros, with `unit` 1) so that they add up to `total` exactly: running rounding,
- * the difference falls where it cumulates, so a column of rows adds up to the figure of the screen.
- * @param {number[]} values
- * @param {number} total
- * @param {number} [unit] the rounding step, 0.01 by default
- */
-export function spreadTo(values, total, unit = 0.01) {
-  const whole = values.reduce((t, x) => t + x, 0);
-  const scale = whole > 0 ? total / whole : 0;
-  const round = (x) => Math.round(x / unit) * unit;
-  let running = 0;
-  let before = 0;
-  return values.map((x) => {
-    running += x * scale;
-    const row = cents(round(running) - before) + 0;
-    before = round(running);
-    return row;
-  });
-}
 
 /**
  * What is still owed, by month and item, in net, adding up to Falta (`standing.falta`) as the tiles show it.

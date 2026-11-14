@@ -25,6 +25,27 @@ export const fSumE = (total) => {
 };
 
 /**
+ * `values` rounded to cents (or to whole euros, with `unit` 1) so that they add up to `total` exactly: running rounding,
+ * the difference falls where it cumulates, so a column of rows adds up to the figure of the screen.
+ * @param {number[]} values
+ * @param {number} total
+ * @param {number} [unit] the rounding step, 0.01 by default
+ */
+export function spreadTo(values, total, unit = 0.01) {
+  const whole = values.reduce((t, x) => t + x, 0);
+  const scale = whole > 0 ? total / whole : 0;
+  const round = (x) => Math.round(x / unit) * unit;
+  let running = 0;
+  let before = 0;
+  return values.map((x) => {
+    running += x * scale;
+    const row = cents(round(running) - before) + 0;
+    before = round(running);
+    return row;
+  });
+}
+
+/**
  * How days are rounded in a ledger of `basis` days: to tenths below 10, whole above. `half` is the smallest figure
  * that does not show as 0.
  */

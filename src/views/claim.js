@@ -158,6 +158,7 @@ export function claimView(c) {
         : nothing
     }
     ${legalFold(c)}
+    <button type="button" class="sm" data-action="openDossier">Ver el expediente</button>
     <p class="hint disclaimer">${DISCLAIMER}</p>
   </div>`;
 }

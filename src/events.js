@@ -39,7 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { askHowItEnded, onClaimInput, recordActions, recordClaimOf, recordPhase } from './ui/record.js';
+import { askHowItEnded, onClaimInput, recordActions, recordClaimOf, recordPhase, showDossier } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -220,6 +220,10 @@ function runMenuAction(action, id, msg) {
   const o = offerById(id);
   if (action === 'duplicate') return duplicate(o);
   if (action === 'delete') return remove(o);
+  if (action === 'dossier') {
+    openOffer(id);
+    return showDossier();
+  }
   if (action === 'endedEarly') {
     askHowItEnded(id);
     return openOffer(id);

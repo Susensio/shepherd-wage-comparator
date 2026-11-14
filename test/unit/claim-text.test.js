@@ -10,10 +10,9 @@ import {
   inspectionText,
   owedNet,
   paymentRequestText,
-  spreadTo,
 } from '../../src/claim-text.js';
 import { fE } from '../../src/format.js';
-import { fSumE, sum } from '../../src/ledger.js';
+import { fSumE, spreadTo, sum } from '../../src/ledger.js';
 import { standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { settle } from '../../src/model/settle.js';
@@ -148,5 +147,32 @@ describe('«Hechos para la Inspección» and the papeleta’s fields', () => {
     assert.equal(by.amount, fSumE(c.settled.totals.owed));
     assert.match(by.period, /^del 21 jun 2026 al 30 sept 2026$/);
     assert.match(by.concept, /^Cantidades pendientes de pago\./);
+  });
+});
+
+describe('the Expediente’s figures add up to the tiles', () => {
+  test('every sample offer, with a cobro or none: columns equal the totals, rows add up', async () => {
+    const { dossierOf } = await import('../../src/model/dossier.js');
+    for (const o of worked)
+      for (const amount of [0, 300, 9999999]) {
+        const c = contextOf(o, amount || 0);
+        const d = dossierOf({
+          o,
+          netFactor: c.r.netFactor,
+          settled: c.settled,
+          standing: c.standing,
+          record: c.record,
+        });
+        const net = d.totals.net;
+        assert.equal(net.due, c.standing.corresponde);
+        assert.equal(net.owed, c.standing.falta);
+        assert.equal(sum(d.months.map((m) => m.net.due)), net.due, o.mine.name);
+        assert.equal(sum(d.months.map((m) => m.net.owed)), net.owed, o.mine.name);
+        for (const m of d.months)
+          assert.equal(sum([m.net.due], [m.net.owed]), m.net.received, `${o.mine.name} ${m.month}`);
+        assert.equal(sum(d.months.map((m) => m.gross.owed)), d.totals.gross.owed, o.mine.name);
+        assert.equal(sum(d.items.map((x) => x.owed)), d.totals.gross.owed, o.mine.name);
+        assert.equal(sum(d.lines.map((l) => l.due)), net.due, o.mine.name);
+      }
   });
 });

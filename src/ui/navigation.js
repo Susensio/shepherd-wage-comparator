@@ -42,10 +42,15 @@ const hooks = {
   entryDismissed: /** @type {() => void} */ (() => {}),
   /** Back left «Revisar los meses». */
   reviewDismissed: /** @type {() => void} */ (() => {}),
+  /** Back left the «Expediente». */
+  dossierDismissed: /** @type {() => void} */ (() => {}),
 };
 
 /** «Revisar los meses» is open over the ficha: it has a history entry of its own, so Back leaves it for the ficha. */
 const review = { open: false };
+
+/** The «Expediente» is open over everything: its own history entry, so Back leaves it for what was below. */
+const dossier = { open: false };
 
 /** @param {Partial<typeof hooks>} given */
 export function onNavigate(given) {
@@ -59,6 +64,7 @@ export const openPageName = () => where.page;
 export const fichaOpen = () => view.ficha;
 export const entryOpen = () => view.entry;
 export const reviewOpen = () => review.open;
+export const dossierOpen = () => dossier.open;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
@@ -139,7 +145,11 @@ export function closePage() {
 /** Back (or forward) closes what is open on top: the entry, else the page, else the ficha. */
 export function onPopState() {
   const kept = history.state ?? {};
-  if (review.open && !kept.review) {
+  if (dossier.open && !kept.dossier) {
+    dossier.open = false;
+    document.body.classList.remove('on-dossier');
+    hooks.dossierDismissed();
+  } else if (review.open && !kept.review) {
     review.open = false;
     hooks.reviewDismissed();
   } else if (view.entry && !kept.entry) {
@@ -160,6 +170,21 @@ export function closeReview() {
   if (!review.open) return;
   review.open = false;
   if (history.state?.review) history.back();
+}
+
+/** The «Expediente», over the ficha: an entry of its own. */
+export function openDossier() {
+  if (dossier.open) return;
+  dossier.open = true;
+  document.body.classList.add('on-dossier');
+  history.pushState({ ...history.state, dossier: true }, '');
+}
+/** Out of the «Expediente» by its own button: drops its entry. */
+export function closeDossier() {
+  if (!dossier.open) return;
+  dossier.open = false;
+  document.body.classList.remove('on-dossier');
+  if (history.state?.dossier) history.back();
 }
 
 /** Forgets history entries left from before a reload, whose views are gone. */

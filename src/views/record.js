@@ -65,6 +65,17 @@ function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
   </div>`;
 }
 
+/** «Apuntes»: dated notes for the Expediente; today's date goes on each. */
+function apuntesView(c) {
+  const notes = c.record.evidence ?? [];
+  return html`<div class="block apuntes">
+    <div class="bh"><h3>Apuntes</h3></div>
+    ${notes.length ? html`<div class="pay">${notes.map((n, i) => html`<div class="pr"><span class="d">${fWhen(n.date, c.today)}</span><span>${n.text}</span><span></span><button type="button" class="linkbtn rm" data-action="removeNote" data-index=${i}>Quitar</button></div>`)}</div>` : html`<p class="hint">Lo que pasa y conviene recordar: lo que dijo el ganadero, una promesa de pago.</p>`}
+    <label class="fld">Nuevo apunte<input type="text" id="noteText" autocomplete="off" /></label>
+    <button type="button" class="sm" data-action="addNote">Añadir apunte</button>
+  </div>`;
+}
+
 const LABEL = { salary: 'salario mínimo', overnight: 'plus de pernocta (convenio)', vacation: 'vacaciones' };
 const SHORT_LINE = {
   salary: (amount) => `El salario no llega al mínimo: faltan ${amount}`,
@@ -133,7 +144,8 @@ function registro(c) {
       ${s.running ? html`<p class="hint">${capital(monthName(s.running.month))}, el mes en curso, se cuenta hasta hoy.</p>` : nothing}
     </div>
     ${calendarView(c.calendar)}
-    ${cobrosView(c)}`;
+    ${cobrosView(c)}
+    ${apuntesView(c)}`;
 }
 
 /** «Detalle de lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
@@ -184,6 +196,7 @@ function registroFold(c) {
     <div class="tocl">${months.map((m) => html`<button type="button" class="monthrow" data-action="reviewStart" data-key=${m.month}><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><span aria-hidden="true">›</span></button>`)}</div>
     ${c.addable ? html`<button type="button" class="linkbtn addmonth" data-action="reviewStart" data-key=${c.addable}>+ Añadir ${monthName(c.addable)}</button>` : nothing}
     ${cobrosView(c)}
+    ${apuntesView(c)}
   </details>`;
 }
 
