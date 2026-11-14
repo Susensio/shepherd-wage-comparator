@@ -3213,6 +3213,25 @@ details > * {
 .lever .save b {
   font-family: var(--f-num);
   color: var(--c-cash-t);
+  font-size: 22px;
+  line-height: 1.1;
+}
+/* The strata: cash and no contract first, extra days and the minimum second, overtime last */
+.lever[data-stratum="1"] .save b {
+  font-size: 36px;
+}
+.lever[data-stratum="1"] .lever-t {
+  font-size: 17px;
+}
+.lever[data-stratum="2"] .save b {
+  font-size: 24px;
+}
+.lever[data-stratum="3"] .save b {
+  font-size: 16px;
+}
+.lever[data-stratum="3"] .lever-t {
+  font-size: 14px;
+  font-weight: 600;
 }
 .lever .sides small {
   color: var(--muted);
@@ -4551,15 +4570,6 @@ h2.mode.small {
 .sofar b {
   font-size: 13.5px;
   letter-spacing: -0.03em;
-}
-
-.day.away {
-  opacity: 0.45;
-  border-style: dotted;
-  background: transparent;
-}
-.day.away small {
-  font-size: 9px;
 }
 
 .day.away {

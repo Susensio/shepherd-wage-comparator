@@ -111,4 +111,4 @@ The pills may add «Contrato» («Contrato temporal») where the word alone woul
 | Term on screen | Code |
 |---|---|
 | por hora, por día trabajado, al mes, en total | `UNITS` (`units.js`) |
-| palanca (Para negociar) | one thing the ganadero saves at the shepherd's expense, as a row: what the ganadero saves, what it means for the shepherd, and a copy icon for a neutral text to send | `leversOf` (`text.js`) | | exigencia, reclamación (a claim is something else) |
+| palanca (Para negociar) | one thing the ganadero saves at the shepherd's expense, as a row: what the ganadero saves, what it means for the shepherd, and a copy icon for a neutral text to send. The figure is scaled by its stratum: cash and no contract largest, extra days and the minimum owed medium, overtime smallest (`data-stratum`); the order of the rows is kept | `leversOf` (`text.js`) | | exigencia, reclamación (a claim is something else) |

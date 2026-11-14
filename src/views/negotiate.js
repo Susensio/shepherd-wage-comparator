@@ -51,6 +51,13 @@ function costDetails(o, r) {
 }
 
 /**
+ * The strata of what the ganadero saves, as the owner has stated them: what cash or no contract saves matters much more
+ * than what extra days save, and that more than overtime. The minimum owed is wage not paid, like the extra days:
+ * the second stratum. The first has the largest figure, the third the smallest.
+ */
+const STRATUM = { cash: 1, days: 2, minimum: 2, overtime: 3 };
+
+/**
  * What the ganadero saves at the shepherd's expense, lever by lever, with both sides and a neutral text to send:
  * figures put on the table, not claims.
  */
@@ -61,7 +68,7 @@ function leversView(r, money) {
   const total = levers.reduce((sum, lever) => sum + lever.employer, 0);
   const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
   return html`<div class="levers">${levers.map(
-    (lever) => html`<div class="lever" data-lever=${lever.id}>
+    (lever) => html`<div class="lever" data-lever=${lever.id} data-stratum=${STRATUM[lever.id] ?? 3}>
         <p class="lever-t">${lever.title}</p>
         <button type="button" class="copybtn" data-action="copyProposal" data-lever=${lever.id} aria-label="Copiar texto para hablarlo con el ganadero" title="Copiar texto para hablarlo con el ganadero">${COPY_ICON}</button>
         <p class="hint copy-msg" aria-live="polite"></p>
