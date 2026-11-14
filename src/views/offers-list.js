@@ -1,10 +1,10 @@
 /** Your offers as cards, and the templates to start a new one. */
 
 import { html, nothing } from 'lit-html';
-import { fCount, fE } from '../format.js';
+import { fCount, fDate, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
-import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
-import { herdText, PHASE_TEXT } from '../text.js';
+import { datesText, isComplete, parseDate, TEMPLATES, todayISO, workedOffers } from '../offer.js';
+import { CLAIM_STEP_TEXT, herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
 /** The «⋯» of a card (the ficha's is in index.html). */
@@ -18,6 +18,9 @@ const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 
 /** The year an offer starts in, or `UNDECIDED`. */
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
+
+/** The date a job «Para reclamar» is acted on by, to put the most urgent first; later than any date without one. */
+const claimBy = (x) => x.record?.claim?.next?.by ?? '9999';
 
 /**
  * What was worked each year: how many offers, the cobros recorded, what the offers say they pay and the days contributed. Each contract is split by
@@ -68,7 +71,11 @@ export function offersListView(items, activeId) {
   const groups = new Map([[UNDECIDED, []]]);
   // A year only a contract from the year before reaches has its header too, with no cards
   for (const year of Object.keys(totals)) groups.set(year, []);
-  for (const x of items) groups.set(groupOf(x.o), [...(groups.get(groupOf(x.o)) ?? []), x]);
+  const toClaim = items.filter((x) => x.record?.claim?.inWindow).sort((a, b) => claimBy(a).localeCompare(claimBy(b)));
+  for (const x of items) {
+    if (toClaim.includes(x)) continue;
+    groups.set(groupOf(x.o), [...(groups.get(groupOf(x.o)) ?? []), x]);
+  }
   const years = [...groups.keys()]
     .filter((key) => key !== UNDECIDED)
     .sort()
@@ -77,7 +84,7 @@ export function offersListView(items, activeId) {
   const undecided = groups
     .get(UNDECIDED)
     .sort((a, b) => (a.o.terms.start || '9').localeCompare(b.o.terms.start || '9'));
-  return html`${undecided.length ? html`<h3 class="year-head"><b>Por decidir</b></h3>${undecided.map((x) => card(x, activeId))}` : nothing}${years.map(
+  return html`${toClaim.length ? html`<h3 class="year-head"><b>Para reclamar</b></h3>${toClaim.map((x) => card(x, activeId))}` : nothing}${undecided.length ? html`<h3 class="year-head"><b>Por decidir</b></h3>${undecided.map((x) => card(x, activeId))}` : nothing}${years.map(
     (year) => html`${yearHeading(year, totals[year])}${order(groups.get(year)).map((x) => card(x, activeId))}`,
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
@@ -95,7 +102,18 @@ function recordLine(line, phase) {
   }</span>${line.unclosed ? html`<span>${months}</span>` : nothing}</span>`;
 }
 
-/** One offer's card with its «⋯» menu. */
+/** «Siguiente: Petición de pago · hasta el 31 jul 2027», on a card «Para reclamar». */
+function nextStep(claim) {
+  if (!claim?.inWindow || !claim.next) return nothing;
+  const text = CLAIM_STEP_TEXT[claim.next.id];
+  return html`<span class="oc-next"><span>Siguiente: <b>${text}</b>${claim.next.by ? ` · hasta el ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
+}
+
+/**
+ * One offer's card with its «⋯» menu.
+ * @param {{ o: any, r: any, record?: ReturnType<typeof import('../ui/record.js').cardRecord> }} item
+ * @param {string} activeId
+ */
 function card({ o, r, record }, activeId) {
   const unit = offerUnit(r, o.terms);
   const complete = isComplete(o.terms);
@@ -109,7 +127,7 @@ function card({ o, r, record }, activeId) {
     }</span>
     <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.phase}>${PHASE_TEXT[record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
       complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
-    }</span>${recordLine(record?.line, record?.phase)}
+    }</span>${recordLine(record?.line, record?.phase)}${nextStep(record?.claim)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
 }
 

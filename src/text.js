@@ -502,6 +502,18 @@ export function leversOf(r) {
 /** The phases of a worked offer, as the pill says them. */
 export const PHASE_TEXT = { undecided: 'Por decidir', underway: 'En curso', finished: 'Acabada' };
 
+/** The steps of «Pedir lo que falta», as the card and the Expediente name them. */
+export const CLAIM_STEP_TEXT = {
+  dismissal: 'Despido',
+  talk: 'Hablar con el ganadero',
+  request: 'Petición de pago',
+  union: 'Sindicato',
+  conciliation: 'Papeleta de conciliación',
+  inspection: 'Inspección de Trabajo',
+  court: 'Juzgado de lo Social',
+  fogasa: 'FOGASA',
+};
+
 /** What an item of a settled month is called in the claim and on the screens. */
 export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones', cash: 'En negro' };
 

@@ -3941,7 +3941,8 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   font-size: 11.5px;
   padding: 1px 8px;
 }
-.oc-rec {
+.oc-rec,
+.oc-next {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -4949,4 +4950,10 @@ body.reviewing .ficha > .back {
   .dtable tr {
     break-inside: avoid;
   }
+}
+.oc-next {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+  white-space: normal;
 }

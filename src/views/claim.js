@@ -158,7 +158,21 @@ export function claimView(c) {
         : nothing
     }
     ${legalFold(c)}
+    ${
+      c.guest
+        ? html`<p class="hint">Estos apuntes solo están en este navegador, que puede borrarlos. <button type="button" class="linkbtn" data-action="openSettingsPage">Guarda una copia en Ajustes</button>.</p>`
+        : nothing
+    }
     <button type="button" class="sm" data-action="openDossier">Ver el expediente</button>
     <p class="hint disclaimer">${DISCLAIMER}</p>
   </div>`;
 }
+
+/** What to do on leaving the job, whatever is owed: the finiquito, the vida laboral and the paro. A closed fold. */
+export const closingHints =
+  () => html`<details class="plg" data-fold="closing"><summary>Al acabar: finiquito, vida laboral y paro</summary>
+  <div class="stepbody">
+    <p>Si el ganadero ofrece un finiquito que no coincide con estas cuentas, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme». Se puede pedir que esté presente un representante de los trabajadores en la firma (${cite('et', '49.2')}).</p>
+    <p>Pide tu ${link('importass', 'vida laboral')} para comprobar que figuran los días cotizados.</p>
+    <p>Para pedir el paro hace falta el certificado de empresa, que entrega el ganadero.</p>
+  </div></details>`;

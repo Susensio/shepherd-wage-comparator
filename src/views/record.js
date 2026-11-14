@@ -7,7 +7,7 @@ import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
-import { claimView } from './claim.js';
+import { claimView, closingHints } from './claim.js';
 import { ledgerLines, row } from './parts.js';
 import { endLine, endQuestion, startQuestion } from './transitions.js';
 
@@ -269,6 +269,7 @@ function cuentas(c) {
     ${balanceBlock(c)}
     ${lawBlock(c)}
     ${claimView(c.claim)}
+    ${closingHints()}
     ${registroFold(c)}`;
 }
 

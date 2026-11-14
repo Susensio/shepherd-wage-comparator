@@ -226,3 +226,94 @@ test.describe('at 375 px', () => {
     });
   }
 });
+
+test.describe('«Para reclamar» in Ofertas', () => {
+  test.use({ today: '2026-11-12' });
+  const heads = (page) => page.locator('#cards .year-head b').allTextContents();
+  const list = async (page) => {
+    await page.evaluate(() => app.showTab('offers'));
+  };
+
+  test('a finished job with something owed inside its deadline comes first, with its next step and date', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    await list(page);
+    expect((await heads(page))[0]).toBe('Para reclamar');
+    const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
+    await expect(card).toContainText(/Siguiente: Hablar con el ganadero · hasta el \d+ \w+ 2027/);
+    // It is not repeated under its year
+    expect(await page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).count()).toBe(1);
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      for (const id of ['talk', 'request'])
+        offers.markStep(
+          app.state.offers.find((o) => o.mine.name === 'Puerto A, otra cuenta'),
+          id,
+          { done: '2026-11-12' },
+        );
+      app.select(app.active().id);
+    });
+    await expect(card).toContainText('Siguiente: Sindicato');
+  });
+
+  test('nothing owed, or nothing recorded: no group; a dismissal window open: in it', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await list(page);
+    expect(await heads(page)).not.toContain('Para reclamar'); // no cobros: nothing to claim yet
+    await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
+    await list(page);
+    expect(await heads(page)).not.toContain('Para reclamar');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });
+      app.select(app.active().id);
+    });
+    await list(page);
+    expect((await heads(page))[0]).toBe('Para reclamar');
+    await expect(page.locator('#cards .ocwrap').first()).toContainText('Siguiente: Despido · hasta el 4 dic 2026');
+  });
+});
+
+test('Leyes: «Dónde reclamar» is the ladder in brief, with sources; the welcome names the three moments', async ({
+  page,
+}) => {
+  await page.evaluate(() => app.openLawsPage?.());
+  await page.locator('[data-action=openLawsPage]').first().click();
+  const fold = page.locator('#law-claim');
+  await fold.locator(':scope > summary').click();
+  for (const step of [
+    'Hablar con el ganadero',
+    'Un sindicato',
+    'Papeleta de conciliación',
+    'Inspección de Trabajo',
+    'Juzgado de lo Social',
+    'FOGASA',
+  ])
+    await expect(fold).toContainText(step);
+  await expect(fold.locator('a[href*="BOE-A-2011-15936"]').first()).toBeVisible();
+  await expect(fold.locator('a[href*="aragon.es"]')).toBeVisible();
+  await expect(fold).toContainText('20 días hábiles');
+});
+
+test('the welcome names negotiating, keeping a record and settling accounts', async ({ page }) => {
+  await expect(page.locator('#welcome')).toContainText('Negociar');
+  await expect(page.locator('#welcome')).toContainText('Llevar el registro');
+  await expect(page.locator('#welcome')).toContainText('Saldar las cuentas');
+});
+
+test.describe('the hints at the end of a job', () => {
+  test.use({ today: '2026-11-12' });
+  test('finiquito, vida laboral and paro, and the backup nudge for a guest', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    const fold = page.locator('details[data-fold=closing]');
+    await fold.locator(':scope > summary').click();
+    await expect(fold).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
+    await expect(fold).toContainText('Estatuto, art. 49.2');
+    await expect(fold.locator('a[href*="seg-social"]')).toBeVisible();
+    await expect(fold).toContainText('certificado de empresa');
+    await expect(page.locator('.block.ask')).toContainText('solo están en este navegador');
+  });
+});

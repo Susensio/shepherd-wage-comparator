@@ -31,7 +31,9 @@ import { lastWayOf } from '../model/record.js';
 import { missing, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcContext, calcOffer, settleOffer } from '../state.js';
+import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { recordClaimText } from '../text.js';
+import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
 import { closeDossier, closeReview, openDossier, openReview } from './navigation.js';
 
@@ -140,6 +142,7 @@ function claimContext(o, r, settled, standing, today) {
     deadlines: standing.deadlines,
     office: conciliationOffice(o.terms.province),
     canShare: typeof navigator.share === 'function',
+    guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',
     inspection: owed ? inspectionText(base) : '',
@@ -625,13 +628,13 @@ export function askHowItEnded(offerId) {
  * What a card says of a job under way or finished: its phase and, with a record to show, what is owed and how many
  * months are still not closed. Null phase for an offer only offered.
  * @param {any} o
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, line: { hasPayments: boolean, owed: number, unclosed: number } | null }}
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null } | null } | null }}
  */
 export function cardRecord(o, r) {
   const today = todayISO();
   const phase = phaseOf(o, today, o.mine.record);
-  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, line: null };
-  if (!recordPhase(o, today)) return { phase, line: null };
+  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, line: null, claim: null };
+  if (!recordPhase(o, today)) return { phase, line: null, claim: null };
   const settled = settleOffer(o);
   const s = standingOf(
     settled,
@@ -641,8 +644,13 @@ export function cardRecord(o, r) {
     r.netFactor,
     o.mine.record.nothingPaid,
   );
+  const ladder =
+    phase === 'finished'
+      ? claimSteps({ today, standing: s, end: o.mine.record.end, marks: o.mine.claim?.steps ?? {} })
+      : null;
   return {
     phase,
+    claim: ladder && { inWindow: ladder.inWindow, next: ladder.next && { id: ladder.next.id, by: ladder.next.by } },
     line: {
       hasPayments: s.hasPayments,
       owed: s.falta,
