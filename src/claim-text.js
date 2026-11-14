@@ -208,7 +208,6 @@ export function inspectionText({ o, r, settled, record, parties }) {
       agreed: 'al final pactado',
       dismissed: 'despedido por el ganadero',
       quit: 'por decisión del pastor',
-      sick: 'por baja médica o accidente',
     };
     out.push(`El trabajo acabó el ${fIso(record.end.date)}, ${how[record.end.how]}.`);
   }

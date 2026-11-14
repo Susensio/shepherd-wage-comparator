@@ -6,13 +6,14 @@
 
 import {
   conciliationFields,
+  daysAfter,
   defaultPayBy,
   employerSummaryText,
   inspectionText,
   paymentRequestText,
 } from '../claim-text.js';
 import { $ } from '../dom.js';
-import { num } from '../format.js';
+import { fDate, num } from '../format.js';
 import { conciliationOffice } from '../law.js';
 import {
   addableMonth,
@@ -28,7 +29,7 @@ import { lawFromRecord } from '../model/compliance.js';
 import { dossierOf } from '../model/dossier.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
-import { missing, todayISO } from '../offer.js';
+import { isoOf, missing, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
@@ -72,7 +73,7 @@ import { closeDossier, closeReview, openDossier, openReview } from './navigation
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
  * @property {boolean} nothingPaid «No se cobró nada» was said
  * @property {import('../model/settle.js').OfferRecord} record
- * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, date: string, early: boolean } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
+ * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -88,8 +89,10 @@ const ui = {
   fresh: /** @type {string | null} */ (null),
   /** «¿Empezó el trabajo?» asked for another date, by offer. */
   startOther: /** @type {Record<string, boolean>} */ ({}),
-  /** «¿Cómo acabó?» opened by hand («Acabó antes»), by offer, and the way picked before its date. */
-  end: /** @type {Record<string, { how: string | null }>} */ ({}),
+  /** «¿Cómo acabó?» opened by hand («Acabó antes»), by offer, the way picked before its date, and what is wrong with it. */
+  end: /** @type {Record<string, { how: string | null, error?: string }>} */ ({}),
+  /** «¿Se llamó para la campaña?» answered «No», asking the day it was known, by offer. */
+  recall: /** @type {Record<string, { no: boolean, error?: string }>} */ ({}),
   /** «¿Cómo acabó?» put off for this session with «Sigue, se alargó», by offer. */
   endLater: /** @type {Record<string, boolean>} */ ({}),
   /** The date a request asks to pay by, by offer; without one, a fortnight on. */
@@ -165,16 +168,45 @@ function cardsOf(o, phase, settled, today) {
     phase === 'underway' && !record.started && !touched && !asked
       ? { date: o.terms.start, other: Boolean(ui.startOther[o.id]) }
       : null;
-  const open = asked || (phase === 'finished' && !record.end && !ui.endLater[o.id]);
+  const seasonal = o.terms.contract === 'seasonal';
+  // On sick leave the contract is suspended: how it ended is not asked until the leave is closed
+  const onLeave = Boolean(record.sick && !record.sick.to);
+  const open = asked || (phase === 'finished' && !record.end && !onLeave && !ui.endLater[o.id]);
   const end = open
     ? {
         how: asked?.how ?? null,
-        // The day it ended, to start from: the last day of the job, never after today
-        date: [settled.job.to, record.end?.date, today].find((d) => d && d <= today) ?? today,
         early: Boolean(asked),
+        seasonal,
+        /** The first day an end or a leave can have: the job's start. */
+        min: o.terms.start,
+        error: asked?.error ?? '',
+        /** What «Al final pactado» takes: the last day of the job, never after today. */
+        agreedDate: [settled.job.to, today].find((d) => d && d <= today) ?? today,
       }
     : null;
-  return start || end ? { start, end } : null;
+  return start || end || recallOf(o, today) ? { start, end, recall: recallOf(o, today) } : null;
+}
+
+/** The first day of the season after the one worked, for a fijo discontinuo: its start a year on. */
+export function nextSeasonStart(o) {
+  const start = parseDate(o.terms.start);
+  start.setFullYear(start.getFullYear() + 1);
+  return isoOf(start);
+}
+
+/**
+ * «¿Se llamó para la campaña de <año>?»: a fijo discontinuo that ended at the end of its campaign, from the day its next
+ * season is expected to start (the start a year on), until answered.
+ * @param {any} o
+ * @param {string} today
+ */
+function recallOf(o, today) {
+  const record = o.mine.record;
+  if (o.terms.contract !== 'seasonal' || record.end?.how !== 'agreed' || !o.terms.start) return null;
+  const from = nextSeasonStart(o);
+  const year = from.slice(0, 4);
+  if (today < from || record.recall?.[year]) return null;
+  return { year, no: Boolean(ui.recall[o.id]?.no), error: ui.recall[o.id]?.error ?? '', min: record.end.date };
 }
 
 /**
@@ -492,7 +524,7 @@ export const recordActions = {
     const o = active();
     if (b.dataset.how === 'agreed') {
       const end = recordContext(o, calcOffer(o))?.cards?.end;
-      offers.setEnd(o, { how: 'agreed', date: end?.date ?? todayISO() });
+      offers.setEnd(o, { how: 'agreed', date: end?.agreedDate ?? todayISO() });
       delete ui.end[o.id];
     } else ui.end[o.id] = { how: b.dataset.how };
     callbacks.paint();
@@ -500,14 +532,63 @@ export const recordActions = {
   saveEnd(b) {
     const o = active();
     const date = /** @type {HTMLInputElement} */ ($('#endDate')).value;
-    if (!date) return;
+    const error = dateProblem(date, o.terms.start);
+    if (error) {
+      ui.end[o.id] = { how: b.dataset.how, error };
+      return callbacks.paint();
+    }
     offers.setEnd(o, { how: b.dataset.how, date });
     delete ui.end[o.id];
+    callbacks.paint();
+  },
+  /** Sick leave: the job goes on, its days are marked `sick`. */
+  saveSick() {
+    const o = active();
+    const date = /** @type {HTMLInputElement} */ ($('#endDate')).value;
+    const error = dateProblem(date, o.terms.start);
+    if (error) {
+      ui.end[o.id] = { how: 'sick', error };
+      return callbacks.paint();
+    }
+    offers.startSick(o, date);
+    delete ui.end[o.id];
+    callbacks.paint();
+  },
+  /** «Volver al trabajo»: yesterday was the last day of the leave. */
+  sickBack() {
+    offers.endSick(active(), daysAfter(todayISO(), -1));
     callbacks.paint();
   },
   endCancel() {
     delete ui.end[active().id];
     ui.endLater[active().id] = true;
+    callbacks.paint();
+  },
+  recallYes() {
+    const o = active();
+    offers.answerRecall(o, nextSeasonStart(o).slice(0, 4), 'yes');
+    callbacks.paint();
+  },
+  recallNo() {
+    ui.recall[active().id] = { no: true };
+    callbacks.paint();
+  },
+  recallNoCancel() {
+    delete ui.recall[active().id];
+    callbacks.paint();
+  },
+  /** Not called back: a dismissal, counted from the day it was known. */
+  recallNoSave() {
+    const o = active();
+    const date = /** @type {HTMLInputElement} */ ($('#recallDate')).value;
+    const error = dateProblem(date, o.mine.record.end?.date ?? o.terms.start);
+    if (error) {
+      ui.recall[o.id] = { no: true, error };
+      return callbacks.paint();
+    }
+    offers.answerRecall(o, nextSeasonStart(o).slice(0, 4), 'no');
+    offers.setEnd(o, { how: 'dismissed', date });
+    delete ui.recall[o.id];
     callbacks.paint();
   },
   /** «Sigue, se alargó»: the days after the end are marked in the calendar, starting with the next month. */
@@ -586,6 +667,14 @@ export const recordActions = {
     callbacks.paint();
   },
 };
+
+/** What is wrong with a date typed for an end or a leave: empty, before the job started or after today; else ''. */
+function dateProblem(date, min) {
+  const today = todayISO();
+  if (date && date >= min && date <= today) return '';
+  const fIso = (iso) => fDate(parseDate(iso));
+  return date ? `El día tiene que estar entre el ${fIso(min)} y hoy.` : `Escribe el día, entre el ${fIso(min)} y hoy.`;
+}
 
 /** The names typed in the request, and the date to pay by: saved when the field is left. */
 export function onClaimInput(e) {

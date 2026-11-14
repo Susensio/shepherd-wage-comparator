@@ -72,7 +72,8 @@ const withoutLawFigures = (cfg) =>
  * 5: `mine.record`, what happened (days by month, payments received; ADR-0032). The migration of 12 November 2026 gave
  *    every account row an empty one.
  * 6: how and when a job ended (`record.end`), the start confirmed (`record.started`), the parties (`mine.parties`),
- *    `closedAt` on a month, `record.evidence`, `record.nothingPaid` and the claim steps done (`mine.claim`; ADR-0034).
+ *    `closedAt` on a month, `record.evidence`, `record.nothingPaid`, `record.sick` (a leave that does not end the job),
+ *    `record.recall` (called back for a season or not) and the claim steps done (`mine.claim`; ADR-0034).
  *    All optional. The migration of 14 November 2026 gave every account row empty parties and claim.
  */
 export const upgrade = {
@@ -106,7 +107,7 @@ function withClaim(offer) {
 
 const DAY_KINDS = new Set(['work', 'off', 'sick']);
 const PAYMENT_WAYS = new Set(['payroll', 'cash']);
-const END_HOWS = new Set(['agreed', 'dismissed', 'quit', 'sick']);
+const END_HOWS = new Set(['agreed', 'dismissed', 'quit']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 const isIsoDate = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 
@@ -145,6 +146,16 @@ export function normalizeRecord(saved) {
     record.end = { how: saved.end.how, date: saved.end.date };
   if (isObject(saved.started) && isIsoDate(saved.started.date)) record.started = { date: saved.started.date };
   if (saved.nothingPaid === true) record.nothingPaid = true;
+  if (isObject(saved.sick) && isIsoDate(saved.sick.from))
+    record.sick = { from: saved.sick.from, ...(isIsoDate(saved.sick.to) ? { to: saved.sick.to } : {}) };
+  if (isObject(saved.recall)) {
+    const recall = Object.fromEntries(
+      Object.entries(saved.recall).filter(
+        ([year, answer]) => /^\d{4}$/.test(year) && (answer === 'yes' || answer === 'no'),
+      ),
+    );
+    if (Object.keys(recall).length) record.recall = recall;
+  }
   const notes = (Array.isArray(saved.evidence) ? saved.evidence : []).filter(
     (x) => isObject(x) && isIsoDate(x.date) && typeof x.text === 'string' && x.text.trim(),
   );

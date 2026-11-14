@@ -45,6 +45,10 @@ export function lastWorkedDay(record) {
   return last;
 }
 
+/** Whether `date` falls in the sick leave of the record. */
+const onLeave = (record, date) =>
+  Boolean(record?.sick && date >= record.sick.from && (!record.sick.to || date <= record.sick.to));
+
 /**
  * The days of a month as shown: the recorded kind, else the offer's default; days after the offer's end default to libre.
  * @param {{ terms: object }} offer
@@ -62,7 +66,7 @@ export function marksOf(offer, record, span, job) {
   return days.map(([day, date], i) => ({
     day,
     date,
-    kind: recorded[day] ?? (date <= endIso ? kinds[i] : 'off'),
+    kind: recorded[day] ?? (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : 'off'),
     recorded: day in recorded,
     outside: job ? date < job.from || date > job.to : false,
   }));
@@ -233,5 +237,36 @@ export function unmarkStep(offer, id) {
   if (!offer.mine.claim?.steps?.[id]) return false;
   const { [id]: _gone, ...steps } = offer.mine.claim.steps;
   offer.mine.claim = { steps };
+  return true;
+}
+
+/**
+ * Sick leave from `from` (ISO): the contract is suspended, the job does not end. The days up to `today` in months not
+ * closed are recorded as `sick`; the days after it are `sick` by default until the leave is closed.
+ * @param {OfferRecord} record
+ * @param {string} from
+ * @param {string} today
+ */
+export function startSick(record, from, today) {
+  if (!from) return false;
+  record.sick = { from };
+  for (const d = parseDate(from); isoOf(d) <= today; d.setDate(d.getDate() + 1)) {
+    const iso = isoOf(d);
+    if (record.months?.[iso.slice(0, 7)]?.closed) continue;
+    monthOf(record, iso.slice(0, 7)).days[iso.slice(8)] = 'sick';
+  }
+  return true;
+}
+
+/** Back to work: the last day of the leave is `to` (ISO). */
+export function endSick(record, to) {
+  if (!record.sick) return false;
+  record.sick = { from: record.sick.from, to };
+  return true;
+}
+
+/** «¿Se llamó para la campaña de <año>?» of a fijo discontinuo: `answer` is `yes` or `no`. */
+export function answerRecall(record, year, answer) {
+  record.recall = { ...(record.recall ?? {}), [year]: answer };
   return true;
 }

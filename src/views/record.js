@@ -9,7 +9,7 @@ import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { claimView, closingHints } from './claim.js';
 import { ledgerLines, row } from './parts.js';
-import { endLine, endQuestion, startQuestion } from './transitions.js';
+import { endLine, endQuestion, recallQuestion, startQuestion } from './transitions.js';
 
 /** @typedef {import('../ui/record.js').RecordContext} RecordContext */
 
@@ -289,5 +289,5 @@ function realPeriod(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return html`${startQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today, true)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
+  return html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today, true)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
 }

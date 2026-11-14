@@ -9,11 +9,13 @@ import { lawFromRecord } from '../../src/model/compliance.js';
 import {
   addEvidence,
   addPayment,
+  answerRecall,
   clearEnd,
   closeMonth,
   confirmStart,
   countsOf,
   defaultMarks,
+  endSick,
   lastWayOf,
   markStep,
   marksOf,
@@ -23,6 +25,7 @@ import {
   setEnd,
   setNothingPaid,
   setParties,
+  startSick,
   toggleDay,
   unmarkStep,
 } from '../../src/model/record.js';
@@ -800,6 +803,28 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
     assert.deepEqual(record, { months: {}, payments: [], end: { how: 'agreed', date: '2026-09-01' } });
     assert.equal(clearEnd(record), true);
     assert.equal(clearEnd(record), false);
+  });
+
+  test('sick leave marks the days to today sick in months not closed, the rest is sick by default, and it can be closed', () => {
+    const record = emptyRecord();
+    closeMonth(OFFER, record, { key: '2026-06', from: '2026-06-01', to: '2026-06-30' });
+    assert.equal(startSick(record, '2026-06-29', '2026-07-02'), true);
+    assert.deepEqual(record.sick, { from: '2026-06-29' });
+    assert.equal(record.months['2026-07'].days['02'], 'sick');
+    const july = marksOf(OFFER, record, { key: '2026-07', from: '2026-07-01', to: '2026-07-31' });
+    assert.equal(july.find((m) => m.day === '20')?.kind, 'sick', 'the days to come follow the leave');
+    assert.equal(endSick(record, '2026-07-10'), true);
+    const closed = marksOf(OFFER, record, { key: '2026-07', from: '2026-07-01', to: '2026-07-31' });
+    assert.notEqual(closed.find((m) => m.day === '20')?.kind, 'sick');
+    assert.equal(endSick(emptyRecord(), '2026-07-10'), false);
+    assert.equal(startSick(emptyRecord(), '', '2026-07-10'), false);
+  });
+
+  test('a recall answer is kept per year', () => {
+    const record = emptyRecord();
+    answerRecall(record, '2027', 'yes');
+    answerRecall(record, '2028', 'no');
+    assert.deepEqual(record.recall, { 2027: 'yes', 2028: 'no' });
   });
 
   test('«No se cobró nada» is a flag, not a payment, and a cobro clears it', () => {

@@ -398,12 +398,24 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
       months: { '2026-06': { closed: true, closedAt: '2026-07-02', days: {} }, '2026-07': { closedAt: 'hoy' } },
     });
     assert.deepEqual(full.end, { how: 'dismissed', date: '2026-10-03' });
+    assert.deepEqual(
+      record({ sick: { from: '2026-09-20', to: '2026-10-01', x: 1 }, recall: { 2027: 'no', 2028: 'x' } }),
+      {
+        months: {},
+        payments: [],
+        sick: { from: '2026-09-20', to: '2026-10-01' },
+        recall: { 2027: 'no' },
+      },
+    );
     assert.deepEqual(full.started, { date: '2026-06-21' });
     assert.equal(full.nothingPaid, true);
     assert.deepEqual(full.evidence, [{ date: '2026-09-01', text: 'Mensaje del ganadero' }]);
     assert.equal(full.months['2026-06'].closedAt, '2026-07-02');
     assert.equal('closedAt' in full.months['2026-07'], false);
     for (const bad of [
+      { end: { how: 'sick', date: '2026-10-03' } },
+      { sick: { from: 'x' } },
+      { recall: { next: 'yes', 2027: 'maybe' } },
       { end: { how: 'fired', date: '2026-10-03' } },
       { end: { how: 'quit', date: 'x' } },
       { end: 'no' },
