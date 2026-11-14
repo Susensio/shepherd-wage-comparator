@@ -147,7 +147,7 @@ test('a closed month takes its days as given, whatever the offer says', () => {
   assert.equal(january.facts.work, 10);
   assert.equal(january.facts.followingOffer, 0);
   assert.equal(january.items.salary.agreed, 1000); // 10 days at 100, not the 3000 the offer expects
-  assert.equal(february.items.salary.agreed + february.items.overnight.agreed, 3000);
+  assert.equal(february.items.salary.agreed + february.items.overnight.agreed, 2800); // 28 days at 100
   // The legal minimum of a monthly salary does not shrink with the days worked
   assert.equal(january.items.salary.minimum, february.items.salary.minimum);
   assert.equal(january.items.salary.shortfall, cents(january.items.salary.minimum - 1000));
@@ -165,11 +165,11 @@ test('a touched day in an open month is a fact and the rest follows the offer', 
   assert.equal(february.estimate, true);
   assert.equal(february.facts.off, 1);
   near(february.facts.followingOffer, 27 / 28, 'share following the offer', 1e-9);
-  // 30 days a month at 100, 27 of 28 days following the offer, the day off unpaid
-  near(february.items.salary.agreed, 3000 * (27 / 28), 'February pay', 0.01);
+  // 28 days at 100, the day off unpaid
+  near(february.items.salary.agreed, 2700, 'February pay', 0.01);
   // Another day worked instead of off: that one counts in full
   const worked = settleOf(perDay(), { months: { '2026-02': { days: { '03': 'work' } } } }).rows[1];
-  near(worked.items.salary.agreed, 3000 * (27 / 28) + 100, 'February pay with a day worked', 0.01);
+  near(worked.items.salary.agreed, 2800, 'February pay with a day worked', 0.01);
 });
 
 test('days outside the offer’s span and unknown kinds are not facts', () => {
@@ -279,7 +279,7 @@ test('an underway offer with no known end has a row per month from its start to 
     [
       ['2026-01', '2026-01-20', '2026-01-31', true],
       ['2026-02', '2026-02-01', '2026-02-28', true],
-      ['2026-03', '2026-03-01', '2026-03-31', true], // the month in progress, due at its end
+      ['2026-03', '2026-03-01', '2026-03-10', true], // the month in progress, counted up to today
     ],
   );
   // The first month is partial at 1/30 a day: 12 days; the others are whole months of the monthly pay
@@ -401,6 +401,7 @@ test('settle does not change the record or the offer it is given', () => {
 });
 
 // Agreed in cash (en negro): part of the pay the minimum is compared with
+const cashGrossOf = (offer) => calc(offer, ctx).cash.grossEq;
 const withCash = (changes = {}) => offerWith({ cashMode: 'amount', cashAmount: 500, cashUnit: 'month', ...changes });
 
 test('the cash agreed is part of what is due, as the gross that brings it net, and is exposed net per month', () => {
@@ -522,12 +523,12 @@ test('a day worked after the offer’s end extends the job; a wage per day pays 
 });
 
 test('a monthly wage pays one thirtieth of the month for each day of the period, rest days inside it included', () => {
-  const x = settleOf(offerWith(), { months: workOn('2026-04', [1, 10]) });
+  const x = settleOf(offerWith(), { months: workOn('2026-04', [1, 10]) }, '2026-11-12');
   const april = x.rows[3];
   assert.equal(april.to, '2026-04-10');
   near(april.items.salary.agreed + april.items.overnight.agreed, (1424.5 * 10) / 30, 'ten days of the period', 0.01);
   // The last day of the period decides it, not how many days were worked
-  const later = settleOf(offerWith(), { months: workOn('2026-04', [20]) });
+  const later = settleOf(offerWith(), { months: workOn('2026-04', [20]) }, '2026-11-12');
   near(
     later.rows[3].items.salary.agreed + later.rows[3].items.overnight.agreed,
     (1424.5 * 20) / 30,
@@ -537,7 +538,7 @@ test('a monthly wage pays one thirtieth of the month for each day of the period,
 });
 
 test('an extension across two months pays the whole first and the part of the second; the months between are included', () => {
-  const x = settleOf(offerWith(), { months: { ...workOn('2026-04', [3]), ...workOn('2026-06', [5]) } });
+  const x = settleOf(offerWith(), { months: { ...workOn('2026-04', [3]), ...workOn('2026-06', [5]) } }, '2026-11-12');
   assert.deepEqual(
     x.rows.map((row) => row.month),
     ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
@@ -593,4 +594,38 @@ test('the empty-record invariant still holds with the trimming in place: nothing
     x.rows.every((row) => !row.extension),
     true,
   );
+});
+
+// The month in progress counts up to today (Hasta hoy)
+test('a wage per day: the month in progress counts the days worked so far, marked or following the offer', () => {
+  const offer = perDay();
+  const x = settleOf(offer, {}, '2026-02-10');
+  assert.equal(x.rows[1].to, '2026-02-10');
+  assert.equal(x.rows[1].items.salary.agreed + x.rows[1].items.overnight.agreed, 1000); // ten days at 100
+  // A day marked libre in it is one day less; the later days of the month are not counted
+  const free = settleOf(offer, { months: { '2026-02': { days: { '04': 'off' } } } }, '2026-02-10');
+  assert.equal(free.rows[1].items.salary.agreed + free.rows[1].items.overnight.agreed, 900);
+  // The whole month on its last day
+  assert.equal(settleOf(offer, {}, '2026-02-28').rows[1].items.salary.agreed, 2800); // February has 28 days
+  // The months not started are left whole
+  assert.equal(x.rows[2].to, '2026-03-31');
+});
+
+test('a monthly wage: one thirtieth of the month for each elapsed day, and the vacation and the cash in proportion', () => {
+  const offer = withCash({ payAmount: 1424.5, vacation: 'paidAtEnd' });
+  const x = settleOf(offer, {}, '2026-02-10');
+  near(
+    x.rows[1].items.salary.agreed + x.rows[1].items.overnight.agreed,
+    (1424.5 * 10) / 30 + (cashGrossOf(offer) * 10) / (30 * 3),
+    'ten days of February',
+    0.02,
+  );
+  near(x.rows[1].agreedCash, (500 * 10) / 30, 'the cash of ten days', 0.01);
+});
+
+test('with an empty record the figures of a finished job are as before: the running month is whole once it has ended', () => {
+  const full = settleOf(offerWith(), {}, '2026-04-15');
+  const mid = settleOf(offerWith(), {}, '2026-02-10');
+  assert.equal(full.totals.due, settleOf(offerWith(), {}, '2030-01-01').totals.due);
+  assert.ok(mid.rows[1].due < full.rows[1].due);
 });

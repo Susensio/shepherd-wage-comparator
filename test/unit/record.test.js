@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { balanceOf, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
+import { balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { lawFromRecord } from '../../src/model/compliance.js';
 import {
@@ -242,18 +242,23 @@ describe('where an offer stands, in net', () => {
     standingOf(settle(OFFER, record, today, ctx), today, phase, record.payments, NET);
   const net = (gross) => Math.round(gross * NET * 100) / 100;
 
-  test('under way: months that have ended are accrued, the current one and the vacation are aside', () => {
+  test('under way: the months that have ended and the one in progress up to today count, with the vacation in proportion', () => {
     const s = stand(emptyRecord(), '2026-07-15', 'underway');
-    const rows = settle(OFFER, emptyRecord(), '2026-07-15', ctx).rows;
+    const settled = settle(OFFER, emptyRecord(), '2026-07-15', ctx);
+    const rows = settled.rows;
     assert.deepEqual(
       s.ended.map((r) => r.month),
       ['2026-06'],
     );
-    assert.equal(s.corresponde, net(rows[0].items.salary.due + rows[0].items.overnight.due));
-    assert.equal(s.hasPayments, false);
     assert.equal(s.running?.month, '2026-07');
-    assert.ok(s.running.amount > 0 && s.running.amount < net(rows[1].items.salary.due));
-    assert.equal(s.vacation, net(rows[2].items.vacation.due));
+    assert.equal(rows[1].to, '2026-07-15');
+    const salaryAndBonus = (row) => row.items.salary.due + row.items.overnight.due;
+    const sofar = net(salaryAndBonus(rows[0]) + salaryAndBonus(rows[1]));
+    const vacation = s.lines.find((x) => x.key === 'vacation')?.due ?? 0;
+    assert.ok(vacation > 0 && vacation < net(rows[2].items.vacation.due), 'the vacation accrues in proportion');
+    assert.ok(Math.abs(s.corresponde - sofar - vacation) < 0.05);
+    assert.ok(s.corresponde > net(salaryAndBonus(rows[0])), 'more than the months ended: the running month counts');
+    assert.equal(s.hasPayments, false);
     assert.deepEqual(
       s.unclosed.map((r) => r.month),
       ['2026-06'],
@@ -287,7 +292,7 @@ describe('where an offer stands, in net', () => {
       s.corresponde,
     );
     assert.equal(s.running, null);
-    assert.equal(s.vacation, 0);
+    assert.ok((s.lines.find((x) => x.key === 'vacation')?.due ?? 0) > 0);
     assert.equal(s.unclosed.length, 2);
     assert.ok(s.falta > 0 && s.deadlines.length > 0);
     assert.ok(s.deadlines.every((d) => d.owed > 0 && d.daysLeft !== null));
@@ -556,7 +561,8 @@ describe('the agreed cash is a line of its own, inside what corresponds', () => 
 
   test('under way it is part of what has fallen due', () => {
     const s = standingOf(settle(CASH, emptyRecord(), '2026-07-15', ctx), '2026-07-15', 'underway', [], netOf);
-    assert.equal(s.lines.find((x) => x.key === 'cash')?.due, 360);
+    // June whole and July to the 15th: 360 a month, 15 of 31 days in the second
+    assert.ok(Math.abs((s.lines.find((x) => x.key === 'cash')?.due ?? 0) - (360 + (360 * 15) / 30)) < 1);
   });
 
   test('the claim says what was agreed in hand', () => {
@@ -601,4 +607,135 @@ describe('the claim text', () => {
 test('spanOf takes a settled row as the helpers need it', () => {
   const row = settle(OFFER, emptyRecord(), '2026-09-10', ctx, NET).rows[2];
   assert.deepEqual(spanOf(row), { key: '2026-08', from: '2026-08-01', to: '2026-08-31' });
+});
+
+describe('a net total agreed per day: the screens read exactly the agreed amount', () => {
+  // «Molinos»: temporary, 70 € a day net en negro, no night stay, vacation inside, 52 days
+  const MOLINOS = offerOf({
+    id: 'm',
+    name: 'Molinos',
+    start: '2026-09-01',
+    contract: 'temporary',
+    duration: 52,
+    durationUnit: 'days',
+    hoursPerDay: 8,
+    daysOff: 0,
+    daysOffUnit: 'week',
+    holidays: 'no',
+    payrollMin: true,
+    cashMode: 'total',
+    totalAmount: 70,
+    totalUnit: 'day',
+    payType: 'gross',
+    payAmount: '',
+    payUnit: 'day',
+    vacation: 'included',
+    housing: 'no',
+    car: 'noCar',
+    kmHome: 0,
+    overnight: 'no',
+    irpfMode: 'auto',
+  });
+  const r = calc(MOLINOS, ctx);
+  const record = emptyRecord();
+
+  test('Corresponde is 70 € for each day of the job, vacation included', () => {
+    const settled = settle(MOLINOS, record, '2026-12-01', ctx);
+    const s = standingOf(settled, '2026-12-01', 'finished', [], r.netFactor);
+    assert.ok(Math.abs(s.corresponde / r.time.daysWorked - 70) < 0.01, `${s.corresponde / r.time.daysWorked}`);
+    assert.equal(
+      s.lines.some((x) => x.byMinimum),
+      false,
+    );
+  });
+
+  test('each jornada more or less in a month is worth 70 €, as the month panel says it', () => {
+    const rec = emptyRecord();
+    const settled = settle(MOLINOS, rec, '2026-12-01', ctx);
+    toggleDay(MOLINOS, rec, spanOf(settled.rows[1]), '05');
+    const m = monthAccounts(MOLINOS, rec, '2026-10', '2026-12-01', ctx, r.netFactor);
+    assert.equal(m.jornadas, -1);
+    assert.ok(Math.abs(m.delta + 70) < 0.02, `${m.delta}`);
+  });
+
+  test('the month panel: 8 jornadas in the last month read 560 €, and one more jornada +70 €', () => {
+    // 52 days from 18 September: the last month is 1 to 8 November
+    const nov = offerOf({ ...MOLINOS.terms, ...MOLINOS.mine, id: 'n', start: '2026-09-18' });
+    const rn = calc(nov, ctx);
+    const rec = emptyRecord();
+    const today = '2026-11-14';
+    const panel = (record) => monthAccounts(nov, record, '2026-11', today, ctx, rn.netFactor);
+    const m = panel(rec);
+    assert.equal(m.counts.work, 8);
+    assert.ok(Math.abs(m.due - 560) < 0.05, `${m.due}`);
+    const settled = settle(nov, rec, today, ctx);
+    toggleDay(nov, rec, spanOf(settled.rows.at(-1)), '12'); // a day after the end: the job goes on to it
+    const more = panel(rec);
+    assert.equal(more.jornadas, 1);
+    assert.ok(Math.abs(more.delta - 70) < 0.02, `${more.delta}`);
+    assert.ok(Math.abs(more.due - 630) < 0.05, `${more.due}`);
+    // The months before read 70 a jornada too
+    const sept = monthAccounts(nov, emptyRecord(), '2026-09', today, ctx, rn.netFactor);
+    assert.ok(Math.abs(sept.due - 70 * sept.counts.work) < 0.1, `${sept.due} for ${sept.counts.work}`);
+  });
+
+  test('no line about the minimum: it does not exceed the pay agreed', () => {
+    const settled = settle(MOLINOS, record, '2026-12-01', ctx);
+    assert.equal(minimumNote(MOLINOS, settled, r), null);
+  });
+});
+
+describe('why Corresponde is more than the pay agreed', () => {
+  const below = (changes) =>
+    offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'b', payUnit: 'month', payAmount: 900, ...changes });
+  const note = (offer) => minimumNote(offer, settle(offer, emptyRecord(), '2026-11-12', ctx), calc(offer, ctx));
+
+  test('where the minimum exceeds the pay: its components that apply, net, in one unit', () => {
+    const x = note(below({}));
+    assert.ok(x);
+    assert.equal(x.unit, 'mes');
+    assert.ok(x.components.some((c) => c.key === 'salary'));
+    assert.ok(Math.abs(x.total - x.components.reduce((t, c) => t + c.amount, 0)) < 0.011);
+    assert.ok(x.agreed < x.total);
+  });
+
+  test('the overnight bonus appears only with a night stay; per day for a wage per day', () => {
+    assert.equal(
+      note(below({ overnight: 'no' }))?.components.some((c) => c.key === 'overnight'),
+      false,
+    );
+    assert.equal(
+      note(below({ overnight: 'yes' }))?.components.some((c) => c.key === 'overnight'),
+      true,
+    );
+    assert.equal(note(below({ payUnit: 'day', payAmount: 20 }))?.unit, 'día');
+  });
+
+  test('a pay above the minimum has no line', () => {
+    assert.equal(note(below({ payAmount: 5000 })), null);
+  });
+});
+
+describe('days outside the job are not libranzas', () => {
+  const ends = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'e', duration: 75 }); // ends on 14 August
+  const monthOf = (rec) => monthAccounts(ends, rec, '2026-08', '2026-11-12', ctx, calc(ends, ctx).netFactor);
+
+  test('the days after the end are flagged, and neither counted as libranzas nor valued', () => {
+    const m = monthOf(emptyRecord());
+    const outside = m.marks.filter((x) => x.outside);
+    assert.equal(outside.length, 17); // 15 to 31 August
+    assert.ok(outside.every((x) => x.kind === 'off'));
+    assert.equal(m.counts.work + m.counts.off, 14);
+  });
+
+  test('a tap on one marks it jornada and the job goes on to it; the days after stay outside', () => {
+    const rec = emptyRecord();
+    const settled = settle(ends, rec, '2026-11-12', ctx);
+    toggleDay(ends, rec, spanOf(settled.rows.at(-1)), '20');
+    const m = monthOf(rec);
+    assert.equal(m.marks.find((x) => x.day === '20').outside, false);
+    assert.equal(m.marks.find((x) => x.day === '21').outside, true);
+    assert.equal(m.marks.find((x) => x.day === '16').outside, false); // between the end and the day worked: part of the job
+    assert.equal(m.counts.work + m.counts.off, 20);
+  });
 });

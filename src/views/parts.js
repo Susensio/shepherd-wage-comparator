@@ -83,7 +83,9 @@ export function ledgerLines(lines, subs = {}) {
   const shown = lines.filter((x) => x.due > 0);
   return (shown.length ? shown : lines.slice(0, 1)).map((x, i) =>
     row(`${i ? '+ ' : ''}${ITEM_TEXT[x.key]}`, fSumE(x.due), {
-      sub: x.byMinimum ? html`<b>El mínimo legal</b>: lo pactado no llegaba` : subs[x.key],
+      sub: x.byMinimum
+        ? html`<b>${x.key === 'overnight' ? 'El convenio' : 'El mínimo legal'}</b>: lo pactado no llegaba`
+        : subs[x.key],
     }),
   );
 }

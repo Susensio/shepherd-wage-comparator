@@ -514,6 +514,129 @@ test.describe('finished: Cuentas', () => {
   }
 });
 
+test.describe('the month in progress, the days outside the job and what the minimum adds', () => {
+  test.use({ today: '2026-08-12' });
+
+  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+
+  test('Hasta hoy counts the month in progress up to today: Corresponde above 0 from the first days worked', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => {
+      Object.assign(app.active().terms, {
+        start: '2026-08-01',
+        duration: 90,
+        payUnit: 'day',
+        payAmount: 80,
+        cashMode: 'amount',
+        cashAmount: 0,
+      });
+      app.active().mine.record = { months: {}, payments: [] };
+      app.select(app.active().id);
+    });
+    await expect(page.locator('#fichaPhase')).toHaveText('En curso');
+    const sofar = amount(await tile(page, 'Corresponde').textContent());
+    expect(sofar).toBeGreaterThan(0);
+    await expect(page.locator('#result')).toContainText('Agosto, el mes en curso, se cuenta hasta hoy');
+    await expect(page.locator('#result')).not.toContainText('Aparte, aún sin pagar');
+    // A day off marked among the days elapsed is one day less
+    await page.locator('.cal .day.work').first().click();
+    expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(sofar);
+  });
+
+  test('the days after the end are «fuera», not libranzas: out of the counts, and a tap on one extends the job', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => {
+      app.active().terms.duration = 55; // ends on 14 August
+      app.select(app.active().id);
+    });
+    await expect(page.locator('.cal .day.away')).toHaveCount(17); // 15 to 31 August
+    await expect(page.locator('.cal .day.away').first()).toContainText('fuera');
+    await expect(page.locator('.cal .day.away').first()).toHaveAttribute('aria-label', /fuera del trabajo/);
+    const counts = (await page.locator('.cal .counts').textContent()) ?? '';
+    const [jornadas, libranzas] = counts.match(/\d+/g).map(Number);
+    expect(jornadas + libranzas).toBe(14); // 1 to 14 August
+    await expect(page.locator('.real')).toHaveCount(0);
+    await page.locator('.cal .day.away', { hasText: '20' }).first().click();
+    await expect(page.locator('.real')).toContainText('al 20 ago 2026');
+    await expect(page.locator('.cal .day.away')).toHaveCount(11); // 21 to 31 August
+  });
+
+  const MOLINOS = {
+    start: '2026-09-18',
+    contract: 'temporary',
+    duration: 52,
+    durationUnit: 'days',
+    hoursPerDay: 8,
+    daysOff: 0,
+    daysOffUnit: 'week',
+    holidays: 'no',
+    payrollMin: true,
+    cashMode: 'total',
+    totalAmount: 70,
+    totalUnit: 'day',
+    payUnit: 'day',
+    vacation: 'included',
+    overnight: 'no',
+  };
+
+  test('an agreement of 70 € net a day reads 70: the month panel, its difference line, and no word about the minimum', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await at(page, '2026-11-14');
+    await page.evaluate(async (terms) => {
+      const { makeOffer } = await import('./src/offer.js');
+      const o = makeOffer(terms, { name: 'Molinos otoño' });
+      app.state.offers.push(o);
+      app.select(o.id);
+    }, MOLINOS);
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    await page.getByRole('button', { name: 'Revisar los meses' }).click();
+    await page.locator('.review-progress').waitFor();
+    // Walk to November, the last month: 8 jornadas
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await page.getByRole('button', { name: 'Saltar' }).click();
+    await expect(page.locator('.review-progress')).toContainText('Noviembre');
+    await expect(page.locator('.cal .counts')).toContainText('8 jornadas');
+    const panel = page.locator('.cal .row', { hasText: 'Corresponde de noviembre' }).locator(':scope > :last-child');
+    expect(amount(await panel.textContent())).toBeCloseTo(560, 0);
+    await page.locator('.cal .day.away').first().click();
+    await expect(page.locator('.cal')).toContainText('1 jornada más que la oferta');
+    expect(amount(await page.locator('.cal .row.sub > :last-child').textContent())).toBeCloseTo(70, 0);
+    await page.locator('[data-action=reviewEnd]').first().click();
+    await expect(page.locator('#result')).not.toContainText('mínimo exigible');
+    await expect(page.locator('#result')).not.toContainText('El mínimo legal');
+  });
+
+  test('where the minimum exceeds the pay agreed, one line says what it is made of, net, in one unit', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => {
+      Object.assign(app.active().terms, {
+        payUnit: 'month',
+        payAmount: 900,
+        cashMode: 'amount',
+        cashAmount: 0,
+        overnight: 'yes',
+      });
+      app.select(app.active().id);
+    });
+    const line = page.locator('#result .hint', { hasText: 'El mínimo exigible supera lo pactado' }).first();
+    await expect(line).toContainText(/salario mínimo [\d.,]+\s€ \+ plus de pernocta \(convenio\) [\d.,]+\s€/);
+    await expect(line).toContainText(/€\/mes netos; pactado: [\d.,]+\s€\/mes\./);
+    await page.evaluate(() => {
+      app.active().terms.overnight = 'no';
+      app.select(app.active().id);
+    });
+    await expect(page.locator('#result .hint', { hasText: 'plus de pernocta (convenio)' })).toHaveCount(0);
+  });
+});
+
 test.describe('the real period of the work', () => {
   test.use({ today: '2026-11-12' });
 

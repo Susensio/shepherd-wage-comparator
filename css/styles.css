@@ -4552,3 +4552,21 @@ h2.mode.small {
   font-size: 13.5px;
   letter-spacing: -0.03em;
 }
+
+.day.away {
+  opacity: 0.45;
+  border-style: dotted;
+  background: transparent;
+}
+.day.away small {
+  font-size: 9px;
+}
+
+.day.away {
+  opacity: 0.45;
+  border-style: dotted;
+  background: transparent;
+}
+.day.away small {
+  font-size: 9px;
+}

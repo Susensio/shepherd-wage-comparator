@@ -6,7 +6,15 @@
 
 import { $ } from '../dom.js';
 import { num } from '../format.js';
-import { addableMonth, balanceOf, monthAccounts, monthSpan, spanOf, standingOf } from '../model/accounts.js';
+import {
+  addableMonth,
+  balanceOf,
+  minimumNote,
+  monthAccounts,
+  monthSpan,
+  spanOf,
+  standingOf,
+} from '../model/accounts.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
@@ -43,6 +51,7 @@ import { closeReview, openReview } from './navigation.js';
  * @property {string | null} fresh the cobro just added
  * @property {{ type: string, id?: string } | null} ask
  * @property {{ month: string, state: 'closed' | 'due' | 'now' | 'later' | 'add', selected: boolean }[]} strip the months of the job, the one on the calendar marked, and the one that can be added
+ * @property {ReturnType<typeof minimumNote>} minimum where the minimum exceeds the pay agreed: what it is made of
  * @property {string | null} addable the month after the job's last that can be added, «+ Añadir <mes>»
  * @property {ReturnType<typeof settleOffer>['job']} job the period the work really had, and the offer's
  * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
@@ -162,6 +171,7 @@ export function recordContext(o, r) {
     balance: phase === 'finished' ? balanceOf(o, record, settled, standing, r) : null,
     addable,
     job: settled.job,
+    minimum: minimumNote(o, settled, r),
     strip,
     nudge: waiting && phase === 'underway' ? { month: waiting.month } : null,
     calendar: calendarOf(key, 'ficha', index, shown.length),

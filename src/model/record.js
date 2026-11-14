@@ -9,7 +9,7 @@ import { schedule } from './time.js';
 
 /** @typedef {import('./settle.js').OfferRecord} OfferRecord */
 /** @typedef {import('./settle.js').DayKind} DayKind */
-/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean }} Mark `day` is «05» */
+/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean, outside: boolean }} Mark `day` is «05»; `outside`: not a day of the job (after its end or before its start) */
 /** @typedef {{ key: string, from: string, to: string }} Span the days of a month «2026-06» that belong to the offer, ISO dates */
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -50,9 +50,10 @@ export function lastWorkedDay(record) {
  * @param {{ terms: object }} offer
  * @param {OfferRecord | undefined} record
  * @param {Span} span
+ * @param {{ from: string, to: string }} [job] the days of the job in the month: the others are `outside`
  * @returns {Mark[]}
  */
-export function marksOf(offer, record, span) {
+export function marksOf(offer, record, span, job) {
   const days = daysOf(span);
   const end = endOf(offer.terms);
   const endIso = end ? isoOf(end) : '9999-12-31';
@@ -63,6 +64,7 @@ export function marksOf(offer, record, span) {
     date,
     kind: recorded[day] ?? (date <= endIso ? kinds[i] : 'off'),
     recorded: day in recorded,
+    outside: job ? date < job.from || date > job.to : false,
   }));
 }
 

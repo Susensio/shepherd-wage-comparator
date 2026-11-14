@@ -1,7 +1,7 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fDate, fDaysSpoken } from '../format.js';
+import { fDate, fDaysSpoken, fN } from '../format.js';
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
@@ -54,6 +54,13 @@ function cobrosView({ today, payments, fresh, ask }) {
   </div>`;
 }
 
+const LABEL = { salary: 'salario mínimo', overnight: 'plus de pernocta (convenio)', vacation: 'vacaciones' };
+/** Said only where the minimum exceeds the pay agreed: what it is made of, net, in one unit. */
+const minimumLine = (m) =>
+  m
+    ? html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €/${m.unit} netos` : `/${m.unit} netos`}; pactado: ${fN(m.agreed, 2)} €/${m.unit}.</p>`
+    : nothing;
+
 const NET_HINT = html`<p class="hint">Cantidades netas: lo que llega, sin retenciones.</p>`;
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
@@ -85,10 +92,6 @@ function strip(c) {
 /** «Registro»: the months strip, «Hasta hoy» in net, the month open below with its calendar, and the cobros. */
 function registro(c) {
   const { standing: s, today } = c;
-  const aside = [
-    s.running ? `${monthName(s.running.month)} hasta hoy ${money(s.running.amount)}` : '',
-    s.vacation > 0 ? `vacaciones ${money(s.vacation)}, al acabar` : '',
-  ].filter(Boolean);
   return html`<h2 class="mode">Registro<small>Lo que pasa, mes a mes.</small></h2>
     ${strip(c)}
     ${c.nudge ? html`<div class="nudge"><span>${capital(monthName(c.nudge.month))}, por cerrar.</span><button type="button" class="linkbtn" data-action="selectMonth" data-key=${c.nudge.month}>Abrir</button></div>` : nothing}
@@ -97,7 +100,8 @@ function registro(c) {
       ${tiles(s)}
       ${NET_HINT}
       ${notes(s, { over: ' hasta hoy' })}
-      ${aside.length ? html`<p class="hint">Aparte, aún sin pagar: ${aside.join(' · ')}.</p>` : nothing}
+      ${minimumLine(c.minimum)}
+      ${s.running ? html`<p class="hint">${capital(monthName(s.running.month))}, el mes en curso, se cuenta hasta hoy.</p>` : nothing}
     </div>
     ${calendarView(c.calendar)}
     ${cobrosView(c)}`;
@@ -134,6 +138,7 @@ function balanceBlock(c) {
   const cashLine = s.lines.find((x) => x.key === 'cash');
   const unsure = b.firm ? '' : 'estimado: hay meses según la oferta';
   return html`<div class="block"><div class="bh"><h2>Balance del trabajo</h2></div>
+    ${minimumLine(c.minimum)}
     <div class="rows">
       ${row('Corresponde en total', money(b.corresponde), { sub: [unsure || 'con todos los meses cerrados', cashLine && cashLine.due > 0 ? `de ello, en negro ${money(cashLine.due)}` : ''].filter(Boolean).join(' · ') })}
       ${row('Cobrado', money(b.cobrado), { sub: `en nómina ${money(b.cobradoNomina)} · en mano ${money(b.cobradoMano)}` })}

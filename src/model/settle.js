@@ -164,7 +164,8 @@ export function settle(offer, record, today, ctx) {
   const r = calc(offer, ctx);
   const openEnded = !endOf(terms);
   const offerEnd = endOf(terms);
-  const shares = openEnded
+  const offerShares = openEnded ? [] : monthShares(terms);
+  const whole = openEnded
     ? openEndedShares(terms, today).map((x) => ({
         ...x,
         dayWeight: x.weight,
@@ -172,7 +173,17 @@ export function settle(offer, record, today, ctx) {
         calendarFrom: x.from,
         calendarTo: x.to,
       }))
-    : jobShares(monthShares(terms), /** @type {Date} */ (offerEnd), record);
+    : jobShares(offerShares, /** @type {Date} */ (offerEnd), record);
+  // The month in progress counts up to and including today: a wage per day from the days worked so far, a monthly or
+  // total wage one thirtieth per elapsed day (the payslips' partial month), the vacation and the cash in proportion
+  const now = parseDate(today);
+  const shares = whole.map((x) => {
+    const full = { ...x, fullTo: x.to, fullShare: x.share, fullWeight: x.weight };
+    if (!(x.days > 0 && x.from <= now && now < x.to)) return full;
+    const part = shareOf(x.from, now);
+    const scale = x.share > 0 ? part.share / x.share : 0;
+    return { ...full, to: now, ...part, weight: x.weight * scale, dayWeight: x.dayWeight * scale };
+  });
   const labour = !r.selfEmployed; // labour law does not apply to an invoice (ADR-0029)
   const { time, pay, min } = r;
   // The wage as calculated: «solo el mínimo» turns it into a total
@@ -187,6 +198,8 @@ export function settle(offer, record, today, ctx) {
   // Cash as gross, as `calc` credits it: its bisection (`r.cash.grossEq`) shared out over the cash, since the tax is
   // progressive; without a contract, through the net factor, as `calc` does for the debt.
   const cashRatio = r.noContract || !(r.cash.total > 0) ? 1 / r.netFactor : r.cash.grossEq / r.cash.total;
+  const offerDays = offerShares.reduce((t, x) => t + x.days, 0);
+  const workPattern = offerDays > 0 ? time.daysWorked / offerDays : 0;
   const plans = shares.map((share) => {
     const key = isoOf(share.month).slice(0, 7);
     const entry = record?.months?.[key];
@@ -197,7 +210,13 @@ export function settle(offer, record, today, ctx) {
     const open = closed || share.extension || share.days <= 0 ? 0 : (share.days - touched) / share.days;
     const w = share.weight;
     const wDay = share.dayWeight;
-    const worked = counts.work + open * time.daysWorked * w;
+    // The days still following the offer are worked as the offer's pattern says: its days worked over its calendar days,
+    // so a month of 28 days has 28 days' worth, as the calendar shows (the average month of an offer without an end
+    // keeps the share)
+    const followed = openEnded
+      ? open * time.daysWorked * w
+      : (share.days - touched) * (closed || share.extension || share.days <= 0 ? 0 : workPattern);
+    const worked = counts.work + followed;
     // Paid days (docs/model.md): worked, plus vacation taken, plus holidays, which follow the offer even in a closed
     // month. TODO: a holiday worked is counted twice, and sick days are not paid; unblocked by the owner's answer on
     // how a real month pays them.
@@ -245,8 +264,17 @@ export function settle(offer, record, today, ctx) {
   const overnightMinRows = spread(plans.map((x) => (labour ? min.overnightRate * x.minimumSalary : 0)));
 
   // Known end: the vacation falls due with the final settlement. No end: it accrues month by month.
+  // A net total agreed per day with the vacation inside it is that much for each day worked, the vacation too: it
+  // accrues, and its minimum with it, in each month with the days worked there (it reads the agreed amount per day)
+  const vacationByDays = totalPerDay && Boolean(r.split?.included);
   const vacationShareOf = (index) =>
-    openEnded ? plans[index].share.weight : index === shares.length - 1 ? shares.reduce((t, x) => t + x.weight, 0) : 0;
+    vacationByDays
+      ? plans[index].worked / (time.daysWorked || 1)
+      : openEnded
+        ? plans[index].share.weight
+        : index === shares.length - 1
+          ? shares.reduce((t, x) => t + x.fullWeight, 0)
+          : 0;
   const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
   const vacationMinimumOf = (index) => (labour ? cents(vacationMinimum * vacationShareOf(index)) : 0);
   // Cash above what the month's minimum salary and bonus need covers a vacation shortfall, as in `calc`: that much of the
@@ -299,15 +327,21 @@ export function settle(offer, record, today, ctx) {
     // Days worked above the due workdays: valued at the minimum wage, apart. TODO: count them in `owed` once the ficha
     // sets the pay above the minimum against them per month (`paidAbove` in calc.js covers them over the whole contract).
     const extraDays = Math.max(0, worked - r.extra.due * share.weight);
-    const dueDate = share.days > 0 ? share.to : share.calendarTo;
+    const dueDate = share.days > 0 ? share.fullTo : share.calendarTo;
     return {
       month: key,
       closed,
       estimate: !closed,
       from: isoOf(share.from),
       to: isoOf(share.days > 0 ? share.to : share.calendarTo),
+      /** The share of a month counted so far, and whole: they differ only for the month in progress. */
+      share: share.share,
+      fullShare: share.fullShare,
       /** Days of the month inside the job: 0 for a closed month outside it. */
       days: share.days,
+      /** The first and last day of the month that belong to the job, the month in progress counted whole. */
+      jobFrom: isoOf(share.from),
+      jobTo: isoOf(share.fullTo),
       /** The days the calendar shows, whatever the job's own span: the offer's month, or the whole month after it. */
       calendarFrom: isoOf(share.calendarFrom),
       calendarTo: isoOf(share.calendarTo),
@@ -392,13 +426,15 @@ export function settle(offer, record, today, ctx) {
   const live = shares.filter((x) => x.days > 0);
   const job = {
     from: live.length ? isoOf(live[0].from) : terms.start || '',
-    to: openEnded || !live.length ? '' : isoOf(live[live.length - 1].to),
+    to: openEnded || !live.length ? '' : isoOf(live[live.length - 1].fullTo),
     offerFrom: terms.start || '',
     offerTo: offerEnd ? isoOf(offerEnd) : '',
   };
   return {
     rows: rows.map(({ claimDeadlineDate, ...row }) => row),
     totals,
+    /** The vacation accrues with the days worked (a net total agreed per day, vacation inside it). */
+    vacationByDays,
     job: { ...job, differs: !openEnded && (job.from !== job.offerFrom || job.to !== job.offerTo) },
   };
 }

@@ -37,11 +37,14 @@ function grid(cal) {
       cells.push(html`<span class="day out" aria-hidden="true">${d}</span>`);
       continue;
     }
-    const label = `${d} de ${monthName(acc.row.month)}: ${KIND_TEXT[mark.kind]}`;
+    // A day outside the job is not a libranza: faded, said so, and still tappable to mark it jornada
+    const note = mark.outside ? 'fuera' : mark.kind === 'work' ? '' : KIND_TEXT[mark.kind].replace('de ', '');
+    const label = `${d} de ${monthName(acc.row.month)}: ${mark.outside ? 'fuera del trabajo' : KIND_TEXT[mark.kind]}`;
+    const cls = `day ${mark.outside ? 'away' : mark.kind}`;
     cells.push(
       closed
-        ? html`<button type="button" class=${`day ${mark.kind}`} aria-disabled="true" tabindex="-1" aria-label=${label}>${d}<small>${mark.kind === 'work' ? '' : KIND_TEXT[mark.kind].replace('de ', '')}</small></button>`
-        : html`<button type="button" class=${`day ${mark.kind}`} data-action="toggleDay" data-key=${acc.row.month} data-day=${day} aria-label=${label}>${d}<small>${mark.kind === 'work' ? '' : KIND_TEXT[mark.kind].replace('de ', '')}</small></button>`,
+        ? html`<button type="button" class=${cls} aria-disabled="true" tabindex="-1" aria-label=${label}>${d}<small>${note}</small></button>`
+        : html`<button type="button" class=${cls} data-action="toggleDay" data-key=${acc.row.month} data-day=${day} aria-label=${label}>${d}<small>${note}</small></button>`,
     );
   }
   return html`<div class="wd" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="grid">${cells}</div>`;
@@ -52,7 +55,7 @@ function money(cal) {
   const { acc } = cal;
   const { jornadas, delta } = acc;
   return html`<div class="rows">
-    ${row(`Corresponde de ${monthName(acc.row.month)}`, fSumE(acc.due), { sub: acc.row.closed ? nothing : 'estimado' })}
+    ${row(`Corresponde de ${monthName(acc.row.month)}`, fSumE(acc.due), { sub: acc.row.closed ? nothing : cal.current && cal.mode === 'ficha' ? 'estimado, hasta hoy' : 'estimado' })}
     ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
   </div>`;
 }
@@ -82,6 +85,7 @@ function month(cal) {
     ${grid(cal)}
     <div class="counts"><span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
     ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
+    ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Los días «fuera» no son del trabajo. Si se marca uno como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
     ${money(cal)}
     ${actions(cal)}
   </div>`;

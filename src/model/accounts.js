@@ -76,6 +76,8 @@ const stubRow = (key) => {
     to: span.to,
     calendarFrom: span.from,
     calendarTo: span.to,
+    jobFrom: '9999-12-31',
+    jobTo: '0000-01-01',
     extension: true,
     items: { salary: { ...zero }, overnight: { ...zero }, vacation: { ...zero } },
     agreedCash: 0,
@@ -103,8 +105,9 @@ export function monthAccounts(offer, record, key, today, ctx, netFactor) {
     settled.rows.find((x) => x.month === key) ?? (addableMonth(settled, today) === key ? stubRow(key) : undefined);
   if (!row) return null;
   const span = spanOf(row);
-  const marks = marksOf(offer, record, span);
-  const counts = countsOf(marks);
+  // Days outside the job are not libranzas: they stay out of the counts (and of the money, which only counts the job's days)
+  const marks = marksOf(offer, record, span, { from: row.jobFrom ?? row.from, to: row.jobTo ?? row.to });
+  const counts = countsOf(marks.filter((m) => !m.outside));
   const offerCounts = countsOf(defaultMarks(offer, span));
   const jornadas = counts.work - offerCounts.work;
   let delta = null;
@@ -140,9 +143,6 @@ export function monthAccounts(offer, record, key, today, ctx, netFactor) {
   };
 }
 
-/** Salary and overnight bonus of a row, the two that fall due at the month's end. */
-const monthlyDue = (row) => sum([row.items.salary.due, row.items.overnight.due]);
-
 /**
  * Where an offer stands, in net: the owner thinks in what reaches the shepherd, so what `settle` has gross is taken
  * times `netFactor` (the factor it uses to gross the payroll cobros up) and the cobros are as they arrived. The job is
@@ -150,7 +150,7 @@ const monthlyDue = (row) => sum([row.items.salary.due, row.items.overnight.due])
  * - `corresponde`, `cobrado` and `falta` = corresponde − cobrado, never below 0, over the months that have ended (the
  *   whole job once over). `sobra`: what was cobrado beyond it, a note and not a debt (real payslips differ from the
  *   simulated ones).
- * - `running`: the current month so far, and `vacation`: what it comes to; both aside, not yet payable.
+ * - `running`: the month in progress, counted up to today; the vacation accrues with the days counted.
  * - `lines`: `corresponde` as ledger lines (salary, overnight bonus, vacation once over, «En negro»).
  * - `nearest` and `deadlines`: when the claim of what is missing lapses. The payments are assigned oldest first, to date
  *   it and for nothing else; nothing when nothing is missing.
@@ -166,24 +166,31 @@ export function standingOf(settled, today, phase, payments, netFactor) {
   const net = (gross) => cents(gross * netFactor) + 0; // + 0: no -0
   const finished = phase === 'finished';
   const ended = finished ? rows : rows.filter((row) => row.to < today);
-  const current = finished ? undefined : rows.find((row) => row.from <= today && today <= row.to);
-  // What has fallen due: every item once over; salary and overnight bonus of the months ended before (the vacation is aside)
-  const dueItems = (finished ? ITEMS : ITEMS.filter((item) => item !== 'vacation')).map((item) => ({
+  // What counts: the months that have ended and the month in progress up to today (`settle` has counted it so far)
+  const counted = finished ? rows : rows.filter((row) => row.from <= today && row.days > 0);
+  const current = finished ? undefined : rows.find((row) => row.share < row.fullShare);
+  // The vacation falls due at the end but accrues with the days: its share is the share of the job counted so far
+  const fullShare = sum(rows.map((row) => row.fullShare));
+  const accrual =
+    finished || settled.vacationByDays || fullShare <= 0 ? 1 : sum(counted.map((row) => row.share)) / fullShare;
+  const dueItems = ITEMS.map((item) => ({
     item,
-    due: sum(ended.map((row) => row.items[item].due)),
+    due:
+      item === 'vacation'
+        ? sum(rows.map((row) => row.items.vacation.due)) * accrual
+        : sum(counted.map((row) => row.items[item].due)),
     // The minimum is why a line is what it is only where it fell short in the months it covers
-    byMinimum: sum(ended.map((row) => row.items[item].shortfall)) > 0,
+    byMinimum: sum(counted.map((row) => row.items[item].shortfall)) > 0,
   }));
   const lines = linesOf(
     dueItems,
-    sum(ended.map((row) => row.agreedCash)),
-    sum(ended.map((row) => row.agreedCashGross)),
+    sum(counted.map((row) => row.agreedCash)),
+    sum(counted.map((row) => row.agreedCashGross)),
     netFactor,
   );
   const corresponde = sum(lines.map((x) => x.due));
   const cobrado = sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
-  const elapsed = current ? (daysBetween(current.from, today) + 1) / (daysBetween(current.from, current.to) + 1) : 0;
   // Nothing is dated while nothing was said to be paid: with no cobro the debt is only what corresponds
   const claimable = falta > 0 && payments.length > 0;
   const deadlines = claimable
@@ -208,8 +215,8 @@ export function standingOf(settled, today, phase, payments, netFactor) {
     enManoAgreed: sum(ended.map((row) => row.agreedCash)),
     falta,
     sobra: Math.max(0, cents(cobrado - corresponde)),
-    running: current ? { month: current.month, amount: net(monthlyDue(current) * elapsed) } : null,
-    vacation: finished ? 0 : net(sum(rows.map((row) => row.items.vacation.due))),
+    /** The month in progress, counted up to today, or null. */
+    running: current ? { month: current.month } : null,
     lines,
     unclosed: ended.filter((row) => !row.closed),
     /** Every month counted, with its state and, for dating a claim, what the oldest-first assignment leaves open of it. */
@@ -258,5 +265,36 @@ export function balanceOf(offer, record, settled, standing, r) {
     contribDays: r.unemployment.contribDays,
     paroDays: r.unemployment.days,
     paroEuros: r.unemployment.euros,
+  };
+}
+
+/**
+ * Why Corresponde is more than the pay agreed, where it is: the minimum the law and the convenio demand exceeds the
+ * pay agreed (ADR-0004: the greater is owed). In net, one unit (per day, or per month), the components of the minimum
+ * that apply. Null where the minimum does not exceed what was agreed. The figures are the model's own.
+ * @param {{ terms: object }} offer
+ * @param {ReturnType<typeof settle>} settled
+ * @param {{ netFactor: number, time: { daysWorked: number, months: number }, split?: { unit?: string } | null }} r
+ */
+export function minimumNote(offer, settled, r) {
+  const { totals } = settled;
+  if (totals.shortfall < 1) return null;
+  const { terms } = offer;
+  const perDay = (terms.payrollMin ? terms.totalUnit : terms.payUnit) === 'day' || r.split?.unit === 'day';
+  const per = perDay ? r.time.daysWorked : r.time.months;
+  if (!(per > 0)) return null;
+  const each = (gross) => cents((gross * r.netFactor) / per);
+  const items = totals.items;
+  const components = [
+    { key: 'salary', amount: each(items.salary.minimum) },
+    { key: 'overnight', amount: each(items.overnight.minimum) },
+    { key: 'vacation', amount: each(items.vacation.minimum) },
+  ].filter((x) => x.amount > 0);
+  const agreedGross = sum(ITEMS.map((item) => items[item].agreed)) - totals.agreedCashGross;
+  return {
+    unit: perDay ? 'día' : 'mes',
+    components,
+    total: sum(components.map((x) => x.amount)),
+    agreed: cents((agreedGross * r.netFactor + totals.agreedCash) / per),
   };
 }
