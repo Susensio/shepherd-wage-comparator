@@ -50,3 +50,66 @@ test('the arrow of «Condiciones» sits at the card’s edge and is centred on i
   expect(style.conditions.paddingRight).toBe(style.fold.paddingRight);
   expect(style.conditions.alignSelf).toBe('center');
 });
+
+test.describe('the offer cards', () => {
+  const edge = (page, selector) =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((card) => {
+        const s = getComputedStyle(card);
+        return { left: s.borderLeftColor, top: s.borderTopColor, leftStyle: s.borderLeftStyle, shadow: s.boxShadow };
+      });
+
+  test('hover and focus restyle the whole border, the dashed edge of a card not worked included', async ({
+    loaded: page,
+  }) => {
+    await page.evaluate(() => app.showTab('offers'));
+    const card = page.locator('#cards .ocard.offer-only').first();
+    await expect(card).toBeVisible();
+    const before = await edge(page, '#cards .ocard.offer-only');
+    expect(before.leftStyle).toBe('dashed');
+    expect(before.left).toBe(before.top); // one colour for the whole border
+    await card.hover();
+    const hovered = await edge(page, '#cards .ocard.offer-only');
+    expect(hovered.leftStyle).toBe('dashed'); // it keeps its dash
+    expect(hovered.left).toBe(hovered.top);
+    expect(hovered.left).not.toBe(before.left);
+    expect(hovered.shadow).not.toBe('none');
+    // A card that is worked changes the same way
+    await page.mouse.move(0, 0);
+    const worked = page.locator('#cards .ocard:not(.offer-only)').first();
+    const plain = await edge(page, '#cards .ocard:not(.offer-only)');
+    await worked.hover();
+    const plainHovered = await edge(page, '#cards .ocard:not(.offer-only)');
+    expect(plainHovered.left).toBe(hovered.left);
+    expect(plainHovered.left).not.toBe(plain.left);
+  });
+
+  test('keyboard focus does the same', async ({ loaded: page }) => {
+    await page.evaluate(() => app.showTab('offers'));
+    const card = page.locator('#cards .ocard.offer-only').first();
+    const before = await edge(page, '#cards .ocard.offer-only');
+    await card.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    const focused = await edge(page, '#cards .ocard.offer-only');
+    expect(focused.left).not.toBe(before.left);
+    expect(focused.left).toBe(focused.top);
+  });
+
+  test.describe('wide screen', () => {
+    test.use({ viewport: { width: 1280, height: 800 } });
+
+    test('the card shown beside the ficha takes the same emphasis, dashed edge included', async ({ loaded: page }) => {
+      const shown = page.locator('#cards .ocard[aria-current=true]');
+      await expect(shown).toHaveCount(1);
+      const style = await shown.evaluate((card) => {
+        const s = getComputedStyle(card);
+        return { left: s.borderLeftColor, top: s.borderTopColor, shadow: s.boxShadow };
+      });
+      expect(style.left).toBe(style.top);
+      expect(style.shadow).not.toBe('none');
+    });
+  });
+});
