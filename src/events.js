@@ -39,7 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { recordActions, recordClaimOf, recordPhase } from './ui/record.js';
+import { onClaimInput, recordActions, recordClaimOf, recordPhase } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -446,6 +446,7 @@ export function setUpEvents() {
     if (button) ACTIONS[button.dataset.action](button);
   });
   document.addEventListener('change', (e) => {
+    onClaimInput(e);
     const el = /** @type {HTMLInputElement} */ (e.target);
     // The Otros pastores tab's controls set the same preferences as Comparar's
     const name = el.name.startsWith(OTHERS_PREFIX) ? el.name.slice(OTHERS_PREFIX.length) : el.name;

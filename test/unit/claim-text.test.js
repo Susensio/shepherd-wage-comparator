@@ -12,6 +12,7 @@ import {
   paymentRequestText,
   spreadTo,
 } from '../../src/claim-text.js';
+import { fE } from '../../src/format.js';
 import { fSumE, sum } from '../../src/ledger.js';
 import { standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
@@ -67,9 +68,13 @@ describe('what is still owed, in net, equals Falta on the screen', () => {
         const months = owedNet(c.settled, c.standing.falta, c.r.netFactor);
         assert.equal(sum(months.map((m) => m.total)), c.standing.falta, o.mine.name);
         for (const m of months) assert.equal(sum(m.items.map((x) => x.amount)), m.total, `${o.mine.name} ${m.month}`);
+        // The summary speaks in whole euros, as the tiles do, and its months add up to the Falta it says
+        const whole = owedNet(c.settled, Math.round(c.standing.falta), c.r.netFactor, 1);
+        assert.equal(sum(whole.map((m) => m.total)), Math.round(c.standing.falta), o.mine.name);
+        for (const m of whole) assert.equal(sum(m.items.map((x) => x.amount)), m.total, `${o.mine.name} ${m.month}`);
         const text = employerSummaryText(c);
-        assert.ok(text.includes(`Falta: ${fSumE(c.standing.falta)} netos.`), o.mine.name);
-        assert.ok(text.includes(`Corresponde: ${fSumE(c.standing.corresponde)} netos.`), o.mine.name);
+        assert.ok(text.includes(`Falta: ${fE(Math.round(c.standing.falta), 0)} netos.`), o.mine.name);
+        assert.ok(text.includes(`Corresponde: ${fE(c.standing.corresponde, 0)} netos.`), o.mine.name);
       }
     });
   }

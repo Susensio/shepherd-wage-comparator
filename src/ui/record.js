@@ -4,8 +4,16 @@
  * review and the questions that ask twice are only what the page remembers while open.
  */
 
+import {
+  conciliationFields,
+  defaultPayBy,
+  employerSummaryText,
+  inspectionText,
+  paymentRequestText,
+} from '../claim-text.js';
 import { $ } from '../dom.js';
 import { num } from '../format.js';
+import { conciliationOffice } from '../law.js';
 import {
   addableMonth,
   balanceOf,
@@ -15,12 +23,13 @@ import {
   spanOf,
   standingOf,
 } from '../model/accounts.js';
+import { claimSteps } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
 import { missing, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
-import { active, calcContext, settleOffer } from '../state.js';
+import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { recordClaimText } from '../text.js';
 import { copyText } from './dom.js';
 import { closeReview, openReview } from './navigation.js';
@@ -58,6 +67,8 @@ import { closeReview, openReview } from './navigation.js';
  * @property {ReturnType<typeof lawFromRecord> | null} law once the job is over: what the record says of the law
  * @property {ReturnType<typeof balanceOf> | null} balance once the job is over: what it came to
  * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
+ * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
+ * @property {boolean} nothingPaid «No se cobró nada» was said
  * @property {CalendarContext | null} calendar
  * @property {CalendarContext | ReviewDone | null} review
  */
@@ -71,7 +82,8 @@ const ui = {
   /** «Repasar los meses»: the months to go through and where it is. */
   review: /** @type {{ offerId: string, keys: string[], index: number, closed: number } | null} */ (null),
   fresh: /** @type {string | null} */ (null),
-  /** «Cobros» lists every cobro. */
+  /** The date a request asks to pay by, by offer; without one, a fortnight on. */
+  payBy: /** @type {Record<string, string>} */ ({}),
 };
 
 /** What `ui/record.js` asks of the page. */
@@ -92,6 +104,38 @@ export function recordPhase(o, today = todayISO()) {
 /** The claim of a job under way or finished, from its record; null for an offer not worked. */
 export function recordClaimOf(o) {
   return recordPhase(o) ? recordClaimText(o, settleOffer(o), o.mine.record) : null;
+}
+
+/**
+ * The claim ladder of a job finished and the texts it offers, from the record.
+ * @param {any} o
+ * @param {any} r
+ * @param {ReturnType<typeof settleOffer>} settled
+ * @param {ReturnType<typeof standingOf>} standing
+ * @param {string} today
+ */
+function claimContext(o, r, settled, standing, today) {
+  const record = o.mine.record;
+  const parties = o.mine.parties ?? { employerName: '' };
+  const ladder = claimSteps({ today, standing, end: record.end, marks: o.mine.claim?.steps ?? {} });
+  const payBy = ui.payBy[o.id] ?? defaultPayBy(today);
+  const base = { o, r, settled, standing, record, parties, today, payBy, netFactor: r.netFactor };
+  const owed = standing.hasPayments && standing.falta > 0;
+  return {
+    ladder,
+    parties,
+    payBy,
+    today,
+    hasPayments: standing.hasPayments,
+    nearest: standing.nearest,
+    deadlines: standing.deadlines,
+    office: conciliationOffice(o.terms.province),
+    canShare: typeof navigator.share === 'function',
+    summary: owed ? employerSummaryText(base) : '',
+    request: owed ? paymentRequestText(base) : '',
+    inspection: owed ? inspectionText(base) : '',
+    fields: owed ? conciliationFields(base) : [],
+  };
 }
 
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
@@ -174,6 +218,8 @@ export function recordContext(o, r) {
       .map((x) => x.p),
     fresh: ui.fresh,
     ask: ui.ask,
+    claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
+    nothingPaid: Boolean(record.nothingPaid),
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
     balance: phase === 'finished' ? balanceOf(o, record, settled, r) : null,
     addable,
@@ -339,23 +385,73 @@ export const recordActions = {
     closeReview();
     callbacks.paint();
   },
-  /** The copy icon of the accounts: the claim, from what the record shows. */
-  async copyRecordClaim(b) {
-    const o = active();
-    const msg = /** @type {HTMLElement} */ (b.closest('.block').querySelector('.copy-msg'));
-    const copied = await copyText(/** @type {string} */ (recordClaimOf(o)), msg, {
+  /** «Copiar» under one of the claim texts. The icon of the button shows a tick for a moment. */
+  async copyClaimText(b) {
+    const claim = claimOf();
+    const text = claim?.[b.dataset.kind];
+    if (!text) return;
+    const msg = /** @type {HTMLElement} */ (b.closest('.textcard').querySelector('.copy-msg'));
+    const copied = await copyText(text, msg, {
       ok: 'Texto copiado.',
       failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
       rows: 12,
     });
-    if (!copied) return;
-    b.classList.add('copied');
-    setTimeout(() => {
-      b.classList.remove('copied');
-      msg.textContent = '';
-    }, 2000);
+    if (copied)
+      setTimeout(() => {
+        msg.textContent = '';
+      }, 2000);
+  },
+  /** The copy button of one field of the papeleta. */
+  async copyField(b) {
+    const field = claimOf()?.fields.find((f) => f.id === b.dataset.field);
+    if (!field?.value) return;
+    const copied = await navigator.clipboard.writeText(field.value).then(
+      () => true,
+      () => false,
+    );
+    b.classList.toggle('copied', copied);
+    setTimeout(() => b.classList.remove('copied'), 1500);
+  },
+  /** «Compartir»: the phone's share sheet, where there is one. */
+  async shareClaimText(b) {
+    const text = claimOf()?.[b.dataset.kind];
+    if (!text) return;
+    await navigator.share({ text }).catch(() => {}); // cancelling the sheet is not an error
+  },
+  /** «Hecho» on a step of the claim, dated today. */
+  markStep(b) {
+    offers.markStep(active(), b.dataset.step, { done: todayISO() });
+    callbacks.paint();
+  },
+  unmarkStep(b) {
+    offers.unmarkStep(active(), b.dataset.step);
+    callbacks.paint();
+  },
+  /** «No se cobró nada»: said once, and taken back with «Quitar». */
+  nothingPaid(b) {
+    offers.setNothingPaid(active(), b.dataset.off === undefined);
+    callbacks.paint();
   },
 };
+
+/** The names typed in the request, and the date to pay by: saved when the field is left. */
+export function onClaimInput(e) {
+  const el = /** @type {HTMLInputElement} */ (e.target);
+  if (el.dataset.party) {
+    const o = active();
+    offers.setParties(o, { ...o.mine.parties, [el.dataset.party]: el.value });
+    callbacks.paint();
+  } else if (el.matches('[data-pay-by]')) {
+    ui.payBy[active().id] = el.value || defaultPayBy(todayISO());
+    callbacks.paint();
+  }
+}
+
+/** The claim ladder and texts of the active offer as the screen has them, or null. */
+function claimOf() {
+  const o = active();
+  return recordContext(o, calcOffer(o))?.claim ?? null;
+}
 
 /** Back left the review: its history entry is already gone. */
 export const dismissReview = endReview;

@@ -4636,3 +4636,99 @@ body.reviewing .ficha > .back {
   min-height: var(--tap);
   padding: 0 10px 0 0;
 }
+
+/* «Pedir lo que falta»: two open steps, the legal path closed, a dismissal as one plain line */
+.ask details.plg.step,
+.ask details.plg.legalpath {
+  gap: 8px;
+}
+.ask details.plg.legalpath details.plg {
+  border-top: 1px solid var(--line);
+}
+.stepbody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14.5px;
+}
+.stepbody p {
+  margin: 0;
+}
+.claim-text {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.textcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.textcard .actions button {
+  min-height: var(--tap);
+}
+.textcard .actions svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+}
+.donebtn {
+  align-self: flex-start;
+  min-height: var(--tap);
+}
+.donemark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dismissal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 8px 10px;
+  border-left: 3px solid var(--line);
+  font-size: 14px;
+}
+.dismissal.warn {
+  border-left-color: var(--c-cash);
+  color: var(--ink);
+}
+.dismissal p {
+  margin: 0;
+}
+.parties {
+  display: grid;
+  gap: 8px;
+}
+.pfields {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+.pfield {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap);
+  grid-template-areas: "l b" "v b";
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pfield .pl {
+  grid-area: l;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pfield .pv {
+  grid-area: v;
+  overflow-wrap: anywhere;
+}
+.pfield .copybtn {
+  grid-area: b;
+}

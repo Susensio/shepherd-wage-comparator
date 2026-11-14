@@ -5,7 +5,7 @@
  * texts; short enough for a phone and for a message. No DOM.
  */
 
-import { capitalize, fDate, joinAnd } from './format.js';
+import { capitalize, fDate, fE, joinAnd } from './format.js';
 import { cents, fSumE } from './ledger.js';
 import { spanOf } from './model/accounts.js';
 import { marksOf } from './model/record.js';
@@ -31,20 +31,22 @@ export function daysAfter(iso, days) {
 export const defaultPayBy = (today) => daysAfter(today, 15);
 
 /**
- * `values` rounded to cents so that they add up to `total` exactly: running rounding, the difference falls where it
- * cumulates, so a column of rows adds up to the figure of the screen.
+ * `values` rounded to cents (or to whole euros, with `unit` 1) so that they add up to `total` exactly: running rounding,
+ * the difference falls where it cumulates, so a column of rows adds up to the figure of the screen.
  * @param {number[]} values
  * @param {number} total
+ * @param {number} [unit] the rounding step, 0.01 by default
  */
-export function spreadTo(values, total) {
+export function spreadTo(values, total, unit = 0.01) {
   const whole = values.reduce((t, x) => t + x, 0);
   const scale = whole > 0 ? total / whole : 0;
+  const round = (x) => Math.round(x / unit) * unit;
   let running = 0;
   let before = 0;
   return values.map((x) => {
     running += x * scale;
-    const row = cents(running - before) + 0;
-    before = cents(running);
+    const row = cents(round(running) - before) + 0;
+    before = round(running);
     return row;
   });
 }
@@ -54,25 +56,29 @@ export function spreadTo(values, total) {
  * @param {ReturnType<typeof import('./model/settle.js').settle>} settled
  * @param {number} falta `standing.falta`
  * @param {number} netFactor
+ * @param {number} [unit] 1 for whole euros, as the tiles show them; cents by default
  * @returns {{ month: string, total: number, items: { item: 'salary' | 'overnight' | 'vacation', amount: number }[] }[]}
  */
-export function owedNet(settled, falta, netFactor) {
+export function owedNet(settled, falta, netFactor, unit = 0.01) {
   const rows = settled.rows.filter((row) => row.owed > 0);
   const months = spreadTo(
     rows.map((row) => row.owed * netFactor),
     falta,
+    unit,
   );
   return rows.map((row, i) => {
     const owing = ITEMS.filter((item) => row.items[item].owed > 0);
     const amounts = spreadTo(
       owing.map((item) => row.items[item].owed),
       months[i],
+      unit,
     );
     return { month: row.month, total: months[i], items: owing.map((item, j) => ({ item, amount: amounts[j] })) };
   });
 }
 
-const itemsText = (items) => items.map((x) => `${ITEM_TEXT[x.item].toLowerCase()} ${fSumE(x.amount)}`).join(', ');
+const itemsText = (items, show = fSumE) =>
+  items.map((x) => `${ITEM_TEXT[x.item].toLowerCase()} ${show(x.amount)}`).join(', ');
 
 /** The days worked in each month as the calendar has them, and whether the month is closed. */
 function jornadasOf(o, settled, record) {
@@ -116,14 +122,17 @@ export function employerSummaryText({ o, r, settled, standing, record, parties }
       .join(', ')}.`,
   );
   out.push('');
-  out.push(`Corresponde: ${fSumE(standing.corresponde)} netos.`);
+  // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
+  const whole = (x) => fE(x, 0);
+  const falta = Math.round(standing.falta);
+  out.push(`Corresponde: ${whole(standing.corresponde)} netos.`);
   const payments = record.payments ?? [];
   if (payments.length) {
-    out.push(`Cobrado: ${fSumE(standing.cobrado)} netos.`, ...cobrosLines(payments));
+    out.push(`Cobrado: ${whole(standing.cobrado)} netos.`, ...cobrosLines(payments));
   } else out.push('Cobrado: nada hasta ahora.');
-  out.push('', `Falta: ${fSumE(standing.falta)} netos.`);
-  for (const m of owedNet(settled, standing.falta, r.netFactor))
-    out.push(`· ${capitalize(monthName(m.month))}: ${fSumE(m.total)} (${itemsText(m.items)})`);
+  out.push('', `Falta: ${whole(falta)} netos.`);
+  for (const m of owedNet(settled, falta, r.netFactor, 1))
+    out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)} (${itemsText(m.items, whole)})`);
   if (standing.unclosed.length)
     out.push(
       '',

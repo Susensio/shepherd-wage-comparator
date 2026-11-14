@@ -7,7 +7,8 @@ import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
-import { COPY_ICON, ledgerLines, row } from './parts.js';
+import { claimView } from './claim.js';
+import { ledgerLines, row } from './parts.js';
 
 /** @typedef {import('../ui/record.js').RecordContext} RecordContext */
 
@@ -34,7 +35,7 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
 }
 
 /** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
-function cobrosView({ today, payments, fresh, ask }) {
+function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
@@ -53,6 +54,13 @@ function cobrosView({ today, payments, fresh, ask }) {
           : html`<div class="pay">${payments.map(row)}</div>`
     }
     <button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>
+    ${
+      !payments.length
+        ? nothingPaid
+          ? html`<p class="hint">Se apuntó que no se cobró nada. <button type="button" class="linkbtn" data-action="nothingPaid" data-off>Quitar</button></p>`
+          : html`<button type="button" class="linkbtn" data-action="nothingPaid">No se cobró nada</button>`
+        : nothing
+    }
   </div>`;
 }
 
@@ -165,28 +173,6 @@ function balanceBlock(c) {
   </div>`;
 }
 
-/** The claim: the text to copy, the nearest deadline, and the deadline of each month in a closed fold. Only while something is missing. */
-function claim(c) {
-  const { standing: s, today } = c;
-  if (!s.hasPayments || s.falta <= 0) return nothing;
-  const near = s.nearest;
-  const by = (d) =>
-    d.lapsed
-      ? `plazo vencido el ${fWhen(d.deadline, today)}`
-      : `hasta el ${fWhen(d.deadline, today)} · quedan ${d.daysLeft} ${d.daysLeft === 1 ? 'día' : 'días'}`;
-  return html`<div class="block">
-    <div class="bh"><h2>Reclamar</h2><button type="button" class="copybtn" data-action="copyRecordClaim" aria-label="Copiar texto de la reclamación" title="Copiar texto de la reclamación">${COPY_ICON}</button></div>
-    <p class="hint copy-msg" role="status"></p>
-    ${near ? html`<p class=${near.lapsed || near.daysLeft < 120 ? 'due-line near' : 'due-line'}>Plazo más cercano: lo de ${monthName(near.month)}, ${by(near)}.</p>` : nothing}
-    ${
-      s.deadlines.length
-        ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${s.deadlines.map((d) => row(capital(monthName(d.month)), money(d.owed), { sub: html`<span class=${d.lapsed || d.daysLeft < 120 ? 'due-by near' : 'due-by'}>${by(d)}</span>` }))}</div>
-          <p class="hint">Se cuenta un año desde el último día de cada mes; las vacaciones, desde el final del contrato (ET art. 59.2). Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
-        : nothing
-    }
-  </div>`;
-}
-
 /** «Registro del trabajo»: the months and the cobros, open only while something remains to record. */
 function registroFold(c) {
   const { standing: s } = c;
@@ -262,11 +248,12 @@ function lawBlock(c) {
 
 /** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
 function cuentas(c) {
-  return html`<h2 class="mode small">Cuentas</h2>
+  const settled = c.standing.hasPayments && c.standing.falta === 0;
+  return html`<h2 class="mode small">Cuentas${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
-    ${claim(c)}
+    ${claimView(c.claim)}
     ${registroFold(c)}`;
 }
 

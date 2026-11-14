@@ -216,7 +216,7 @@ test.describe('finished: Cuentas', () => {
       '#result .result',
       'h2:Balance del trabajo',
       'h2:¿Se cumplió la ley?',
-      'h2:Reclamar',
+      'h2:Pedir lo que falta',
       'details[data-autofold=registro]',
       'details[data-fold=reference]',
     ];
@@ -277,39 +277,40 @@ test.describe('finished: Cuentas', () => {
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);
     await expect(page.locator('.result .tag .sub')).not.toContainText('debe');
-    await expect(page.getByRole('button', { name: 'Copiar texto de la reclamación' })).toHaveCount(0);
-    await expect(page.locator('#result h2', { hasText: 'Reclamar' })).toHaveCount(0);
+    await expect(page.locator('#result h2', { hasText: 'Pedir lo que falta' })).toHaveCount(0);
+    await expect(page.locator('#result h2.mode small')).toHaveText('Cuentas saldadas');
   });
 
-  test('no cobros: Corresponde and a prompt, no debt, no claim and no deadline', async ({ page }) => {
+  test('no cobros: Corresponde and a prompt, no debt, the first step only and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await expect(page.locator('.result .tag .lbl')).toHaveText('Corresponde');
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
-    await expect(page.locator('#result h2', { hasText: 'Reclamar' })).toHaveCount(0);
+    const ask = page.locator('#result .ask');
+    await expect(ask.locator('details.step')).toHaveCount(1);
+    await expect(ask).toContainText('Apunta lo cobrado');
+    await expect(ask.locator('.claim-text')).toHaveCount(0);
+    await expect(page.locator('.legalpath')).toHaveCount(0);
   });
 
-  test('«Reclamar»: the copy icon, the nearest deadline, and the deadline of each month in a closed fold', async ({
+  test('«Pedir lo que falta»: the two common steps open, the legal path closed with the one-year deadline and the months', async ({
     page,
-    context,
   }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(page.locator('.due-line')).toContainText(
-      /Plazo más cercano: lo de \w+, hasta el \d+ \w+ 2027 · quedan \d+ días/,
-    );
-    const fold = page.locator('details[data-fold=deadlines]');
-    await expect(fold).not.toHaveAttribute('open', '');
-    await fold.locator(':scope > summary').click();
-    await expect(fold.locator('.row').first()).toContainText(/hasta el \d+ \w+ 2027/);
-    await expect(fold).toContainText('ET art. 59.2');
+    await expect(page.locator('#result .ask h2')).toHaveText('Pedir lo que falta');
+    await expect(page.locator('details.step[data-step=talk]')).toHaveAttribute('open', '');
+    await expect(page.locator('details.step[data-step=request]')).toHaveAttribute('open', '');
+    const legal = page.locator('details.legalpath');
+    await expect(legal).not.toHaveAttribute('open', '');
+    await legal.locator(':scope > summary').click();
+    await expect(legal.locator('.due-line')).toContainText(/hasta el \d+ \w+ 2027 · quedan \d+ días/);
+    await expect(legal).toContainText('Estatuto, art. 59.2');
+    const months = legal.locator('details[data-fold=deadlines]');
+    await months.locator(':scope > summary').click();
+    await expect(months.locator('.row').first()).toContainText(/hasta el \d+ \w+ 2027/);
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-    await page.getByRole('button', { name: 'Copiar texto de la reclamación' }).click();
-    await expect(page.locator('#result .copy-msg[role=status]')).toHaveText('Texto copiado.');
-    const text = await page.evaluate(() => navigator.clipboard.readText());
-    expect(text).toMatch(/Cobrado: 1\.000\s€ netos en 1 cobro/);
-    expect(text).toMatch(/Queda por pagar, bruto/);
+    await expect(page.locator('#result .ask .disclaimer')).toContainText('no asesoramiento legal');
   });
 
   test('«Balance del trabajo»: estimated while months follow the offer, firm once all are closed; the paro always from the offer', async ({
@@ -496,8 +497,9 @@ test.describe('finished: Cuentas', () => {
         { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
       ]);
       await closeMonths(page, ['2026-06', '2026-07']);
-      for (const fold of ['how', 'deadlines', 'reference'])
+      for (const fold of ['ask-legal', 'how', 'deadlines', 'reference'])
         await page.locator(`details[data-fold=${fold}] > summary`).click();
+      for (const step of await page.locator('.legalpath details.step > summary').all()) await step.click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
       const wide = await page.evaluate(
         () => [...document.querySelectorAll('#result *')].filter((e) => e.getBoundingClientRect().right > 376).length,
