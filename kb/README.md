@@ -13,7 +13,7 @@ Decided in [ADR-0033](../docs/adr/0033-knowledge-base-for-law-figures.md). Publi
 | text | `text/<id>.md` | plain-text extract with article headings, front matter `id`, `source_url`, `retrieved`, `extract` (says what was cut, if anything) | research agent, by script from the official XML, JSON or PDF |
 | reports | `reports/<topic>/<territory>-<year>.md` | what a coding agent reads: «For the page», facts, what changes in the model, uncertainty, evidence | research agent, status `draft` until the owner verifies |
 | tables | `tables/*.csv` | one fact per row, with source id, article, a verbatim quote and a status | research agent; `checked` is set only where the script finds the quote |
-| code | `scripts/build-law-data.js`, later `src/law-territorial.js` and `data/holidays-<year>-<community>.json` | validates the tables; will generate the page's data (not yet) | main agent |
+| code | `scripts/build-law-data.js`, which generates `src/law-territorial.js` from the verified rows | validates the tables; will generate the page's data (not yet) | main agent |
 
 The main agent writes the ADRs, `docs/BACKLOG.md` and `docs/STATE.md`; the research agent writes only inside `kb/`.
 
@@ -45,5 +45,5 @@ No pull request. For each new or changed figure the main agent shows the owner a
 
 - TODO: originals as release assets (`kb-2026`) once the owner creates the release; until then `storage` is `link-only` and the manifest holds each original's URL and sha256.
 - TODO: a collector (GitHub Action) that fetches, hashes and extracts; until then the texts were extracted by hand-run scripts.
-- TODO: `build-law-data.js` generating `src/law-territorial.js` and `data/holidays-<year>-<community>.json`, and the year-over-year diff.
+- TODO: the year-over-year diff in `build-law-data.js`; a separate data file per community once local holidays outgrow one module.
 - TODO: Decreto 163/2026 (2027) and BOE-A-2026-21254 are in the manifest with their text; their rows are not in the tables yet.
