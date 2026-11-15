@@ -49,10 +49,11 @@ export const defaultPayBy = (today) => daysAfter(today, 15);
  * @param {number} falta `standing.falta`
  * @param {number} netFactor
  * @param {number} [unit] 1 for whole euros, as the tiles show them; cents by default
+ * @param {string[]} [counted] `standing.counted`: only these months are spread; without it, every month with something owed
  * @returns {{ month: string, total: number, items: { item: 'salary' | 'overnight' | 'vacation' | 'severance', amount: number }[] }[]}
  */
-export function owedNet(settled, falta, netFactor, unit = 0.01) {
-  const rows = settled.rows.filter((row) => row.owed > 0);
+export function owedNet(settled, falta, netFactor, unit = 0.01, counted) {
+  const rows = settled.rows.filter((row) => row.owed > 0 && (!counted || counted.includes(row.month)));
   const months = spreadTo(
     rows.map((row) => row.owed * netFactor),
     falta,
@@ -73,9 +74,9 @@ export function owedNet(settled, falta, netFactor, unit = 0.01) {
  * The days of each month as the calendar has them: worked, off, and how many worked above (+) or below (−) the offer's
  * own days; and whether the month is closed.
  */
-function jornadasOf(o, settled, record) {
+function jornadasOf(o, settled, record, counted) {
   return settled.rows
-    .filter((row) => row.days > 0)
+    .filter((row) => row.days > 0 && (!counted || counted.includes(row.month)))
     .map((row) => {
       const span = spanOf(row);
       const counts = countsOf(marksOf(o, record, span, { from: row.jobFrom, to: row.jobTo }).filter((m) => !m.outside));
@@ -120,7 +121,7 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   const out = [to, `Se han repasado las cuentas del trabajo de ${jobName(o)}${when ? ` (${when})` : ''}.`, ''];
   out.push(`Pactado: ${lines.pay}.`);
   out.push('', 'Jornadas por mes:');
-  for (const j of jornadasOf(o, settled, record)) out.push(`· ${capitalize(monthName(j.month))}: ${daysLine(j)}`);
+  for (const j of jornadasOf(o, settled, record, standing.counted)) out.push(`· ${capitalize(monthName(j.month))}: ${daysLine(j)}`);
   out.push('');
   // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
   const whole = (x) => fE(x, 0);
@@ -131,7 +132,7 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
     out.push(`Cobrado: ${whole(standing.cobrado)} netos.`, ...cobrosLines(payments));
   } else out.push('Cobrado: nada hasta ahora.');
   out.push('', `Falta: ${whole(falta)} netos.`);
-  for (const m of owedNet(settled, falta, r.netFactor, 1))
+  for (const m of owedNet(settled, falta, r.netFactor, 1, standing.counted))
     out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)}`);
   if (standing.unclosed.length)
     out.push(

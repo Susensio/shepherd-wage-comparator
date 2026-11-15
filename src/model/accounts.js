@@ -213,6 +213,8 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
   return {
     hasPayments,
     ended,
+    /** The months counted in Corresponde: those that have ended and the one in progress (every one once finished). */
+    counted: counted.map((row) => row.month),
     corresponde,
     cobrado,
     /** Of `cobrado`, what was handed in cash. */

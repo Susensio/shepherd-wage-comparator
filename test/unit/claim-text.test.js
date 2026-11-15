@@ -19,6 +19,7 @@ import { marksOf, toggleDay } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG } from '../../src/offer.js';
 import { ingestSaved } from '../../src/schema.js';
+import { offerOf } from './flat-offer.js';
 
 const data = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
 const { offers, cfg } = ingestSaved(data, { fallbackCfg: DEF_CFG });
@@ -266,5 +267,44 @@ describe('the severance of a temporary contract is claimed with the rest (ET 49.
         .find((f) => f.id === 'amount')
         ?.value.includes(fSumE(c.settled.totals.owed)),
     );
+  });
+});
+
+describe('under way, the message lists only the months counted so far', () => {
+  test('months not yet due take no part of Falta', () => {
+    const o = offerOf({
+      id: 'u',
+      name: 'U',
+      start: '2026-09-01',
+      contract: 'permanent',
+      duration: 180,
+      durationUnit: 'days',
+      hoursPerDay: 8,
+      daysOff: 2,
+      daysOffUnit: 'week',
+      holidays: 'no',
+      payType: 'gross',
+      payAmount: 1500,
+      payUnit: 'month',
+      extraPays: 'included',
+      vacation: 'taken',
+      housing: 'no',
+      car: 'noCar',
+      kmHome: 0,
+      overnight: 'no',
+      irpfMode: 'manual',
+      irpfManual: 10,
+    });
+    const today = '2026-11-15';
+    const record = { months: {}, payments: [], nothingPaid: true };
+    const r = calc(o, ctx);
+    const settled = settle(o, record, today, ctx);
+    const standing = standingOf(settled, today, 'underway', [], r.netFactor, true);
+    const text = employerSummaryText({ o, r, settled, standing, record, parties: PARTIES, until: today });
+    assert.match(text, /Septiembre: /);
+    assert.match(text, /Noviembre: /);
+    assert.doesNotMatch(text, /Diciembre|Enero|Febrero/);
+    const listed = [...text.matchAll(/^· \p{L}+: ([\d.]+)\s€$/gmu)].map((m) => Number(m[1].replace('.', '')));
+    assert.equal(sum(listed), Math.round(standing.falta));
   });
 });
