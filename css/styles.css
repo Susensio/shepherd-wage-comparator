@@ -4759,6 +4759,12 @@ body.reviewing .ficha > .back {
 .dismissal p {
   margin: 0;
 }
+/* The button to «Vía legal» sits on its own line, so its 44 px do not stretch the text's lines */
+.due-line .linkbtn,
+.dismissal p .linkbtn {
+  display: flex;
+  align-items: center;
+}
 .parties {
   display: grid;
   gap: 8px;
