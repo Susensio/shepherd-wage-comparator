@@ -109,7 +109,7 @@ export function pickTemplate(id) {
   entry.createdId = old?.id ?? fresh.id;
   entry.template = id;
   if (old) {
-    Object.assign(old, { terms: fresh.terms, mine: fresh.mine });
+    offers.replaceFields(old, fresh);
     callbacks.select(old.id);
   } else {
     offers.chooseTemplate(fresh);

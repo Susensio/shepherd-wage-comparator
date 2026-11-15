@@ -532,7 +532,7 @@ export const recordActions = {
     const o = active();
     const date = /** @type {HTMLInputElement} */ ($('#startOther')).value;
     if (!date) return;
-    o.terms.start = date;
+    offers.patchTerms(o, { start: date });
     delete ui.startOther[o.id];
     offers.confirmStart(o, date);
     callbacks.paint();
@@ -540,7 +540,7 @@ export const recordActions = {
   /** It was not taken: the offer stays an offer. */
   notTaken() {
     const o = active();
-    o.terms.offerOnly = true;
+    offers.patchTerms(o, { offerOnly: true });
     offers.save();
     callbacks.paint();
   },

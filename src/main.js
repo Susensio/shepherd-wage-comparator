@@ -2,7 +2,6 @@
 
 import { commit, paintAll, paintOthers, restoreStaticFolds, select, setLoadingAccount, showSelected } from './app.js';
 import { setUpEvents } from './events.js';
-import { defaultVacation } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, KEY, load, state, store } from './state.js';
 import { cardText, claimText } from './text.js';
@@ -30,7 +29,7 @@ import { fillSettings } from './views/settings.js';
 accountLoader.preload();
 load();
 offers.start();
-for (const o of state.offers) defaultVacation(o.terms);
+offers.defaultVacations();
 fillLawFigures();
 restoreStaticFolds();
 resetHistory();
@@ -67,7 +66,7 @@ accountState.subscribe((event, detail) => {
   // The offers were replaced: what was open may be gone. An empty account starts like a first visit, with the templates.
   // The offer shown surviving keeps its ficha or step open.
   if (!detail?.activeKept) resetViews();
-  for (const o of state.offers) defaultVacation(o.terms);
+  offers.defaultVacations();
   fillSettings(state.config);
   select(state.activeId);
   if (state.placeholderId) startEntry();

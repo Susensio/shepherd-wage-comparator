@@ -1,9 +1,9 @@
 /** The list of offers: the active one, the first-visit placeholder, and saving them. Callers ask for transitions; none sets these fields itself. */
 
 import * as record from './model/record.js';
-import { makeOffer, todayISO } from './offer.js';
+import { defaultVacation, makeOffer, newId, sideOf, todayISO } from './offer.js';
 import { ingestSaved } from './schema.js';
-import { KEY, notifySaved, offersOf, state, store } from './state.js';
+import { KEY, notifySaved, offersOf, resetFigures, state, store } from './state.js';
 
 /**
  * @param {object} deps
@@ -76,6 +76,48 @@ export function createOffers({ state, store, notify = () => {} }) {
     markStep: (offer, id, mark) => change(() => record.markStep(offer, id, mark)),
     setPromise: (offer, date) => change(() => record.setPromise(offer, date, todayISO())),
     unmarkStep: (offer, id) => change(() => record.unmarkStep(offer, id)),
+  };
+
+  /**
+   * The edits of an offer's own fields (`terms` and `mine`). They do not save: the caller saves with `save` or
+   * `commit`, once its edit is whole. Each forgets the figures worked out for the offers.
+   */
+  const fields = {
+    /** One field, on the side it lives on. */
+    setField(offer, name, value) {
+      sideOf(offer, name)[name] = value;
+      resetFigures();
+    },
+    patchTerms(offer, patch) {
+      Object.assign(offer.terms, patch);
+      resetFigures();
+    },
+    patchMine(offer, patch) {
+      Object.assign(offer.mine, patch);
+      resetFigures();
+    },
+    /** Runs a function that changes the terms in place (the pay answers, the vacation default); returns what it returned. */
+    editTerms(offer, change) {
+      const result = change(offer.terms);
+      resetFigures();
+      return result;
+    },
+    /** The vacation default of every offer, as the page loads or the offers are replaced. */
+    defaultVacations() {
+      for (const offer of state.offers) defaultVacation(offer.terms);
+      resetFigures();
+    },
+    /** Another offer's terms and own figures in its place, keeping its id and place in the list. */
+    replaceFields(offer, fresh) {
+      Object.assign(offer, { terms: fresh.terms, mine: fresh.mine });
+      resetFigures();
+    },
+    /** A copy of an offer as a new one, named after it. */
+    duplicate(offer) {
+      const copy = { ...structuredClone(offer), id: newId(), cmp: true };
+      copy.mine.name = `${offer.mine.name} (copia)`;
+      return copy;
+    },
   };
 
   /** Reads the saved offers (after `state.config`). Nothing saved is a first visit: a placeholder, replaced by the template picked. */
@@ -189,6 +231,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     clearForSignOut,
     remapId,
     ...recording,
+    ...fields,
     mine: myOffers,
   };
 }

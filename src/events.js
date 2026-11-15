@@ -12,9 +12,7 @@ import {
   HERD,
   isoOf,
   missing,
-  newId,
   parseDate,
-  sideOf,
   todayISO,
 } from './offer.js';
 import { offers } from './offers.js';
@@ -55,14 +53,14 @@ import { fillSettings } from './views/settings.js';
  * duration. Returns whether something changed.
  */
 function endDateTyped(value) {
-  const { terms } = active();
+  const o = active();
+  const { terms } = o;
   if (!value) return false;
   const end = parseDate(value);
   if (terms.start) {
     const days = daysInclusive(parseDate(terms.start), end);
     if (days < 1) return false;
-    terms.duration = days;
-    terms.durationUnit = 'days';
+    offers.patchTerms(o, { duration: days, durationUnit: 'days' });
     return true;
   }
   if (num(terms.duration) > 0 && terms.durationUnit !== 'unknown') {
@@ -72,15 +70,15 @@ function endDateTyped(value) {
         : Math.round(num(terms.duration) * DAYS_PER_MONTH);
     const start = new Date(end);
     start.setDate(start.getDate() - days + 1);
-    terms.start = isoOf(start);
+    offers.patchTerms(o, { start: isoOf(start) });
     return true;
   }
   return false;
 }
 
 /** Reads what changed in «Pago» into the terms, through the answers they give. */
-function payAnswerTyped(el, terms) {
-  const answers = answersOf(terms);
+function payAnswerTyped(el, o) {
+  const answers = answersOf(o.terms);
   const amount = el.value.trim() === '' ? '' : num(el.value);
   if (el.dataset.answer === 'amount') answers.amount = amount;
   else if (el.dataset.answer === 'part') answers.part = amount;
@@ -90,7 +88,7 @@ function payAnswerTyped(el, terms) {
     // The part starts empty, as a payslip amount told about everything is not a part of it
     if (answers.payroll === 'part') Object.assign(answers, { part: '', partType: 'net' });
   }
-  writeAnswers(terms, answers);
+  offers.editTerms(o, (terms) => writeAnswers(terms, answers));
 }
 
 function onFormInput(e) {
@@ -98,46 +96,46 @@ function onFormInput(e) {
   const o = active();
   const { terms } = o;
   if (el.dataset.answer) {
-    payAnswerTyped(el, terms);
+    payAnswerTyped(el, o);
 
-    if (defaultVacation(terms)) fillVacation(o);
+    if (offers.editTerms(o, defaultVacation)) fillVacation(o);
     commit({ animate: true });
     return;
   }
   if (el.id === 'end') {
     if (!endDateTyped(el.value)) return;
 
-    defaultVacation(terms);
+    offers.editTerms(o, defaultVacation);
     fillForm(o);
     commit({ animate: true });
     return;
   }
   if (!el.name) return;
-  const side = sideOf(o, el.name);
   if (el.type === 'radio' && el.name === 'durationUnit') {
     // Changing the unit converts the duration: 4 months ↔ 122 days
     if (el.checked && el.value !== terms.durationUnit && el.value !== 'unknown' && terms.durationUnit !== 'unknown') {
       const v = num(terms.duration);
-      terms.duration =
+      const duration =
         el.value === 'days' ? Math.round(v * DAYS_PER_MONTH) : Math.round((v / DAYS_PER_MONTH) * 10) / 10;
-      /** @type {HTMLInputElement} */ ($('#duration')).value = fInputValue(terms.duration, terms.duration % 1 ? 1 : 0);
+      offers.patchTerms(o, { duration });
+      /** @type {HTMLInputElement} */ ($('#duration')).value = fInputValue(duration, duration % 1 ? 1 : 0);
     }
-    if (el.checked) terms.durationUnit = el.value;
+    if (el.checked) offers.patchTerms(o, { durationUnit: el.value });
     // Without a duration «en total» is a month: the only edit that can leave the pay in a shape the questions cannot say
-    toAnswerable(o, { cfg: state.config, offers: myOffers() });
+    offers.editTerms(o, () => toAnswerable(o, { cfg: state.config, offers: myOffers() }));
   } else if (el.type === 'radio') {
-    if (el.checked) side[el.name] = el.value;
-  } else if (el.type === 'checkbox') side[el.name] = el.checked;
-  else if (el.type === 'date') side[el.name] = el.value;
-  else if (el.name === 'name') side.name = el.value;
+    if (el.checked) offers.setField(o, el.name, el.value);
+  } else if (el.type === 'checkbox') offers.setField(o, el.name, el.checked);
+  else if (el.type === 'date') offers.setField(o, el.name, el.value);
+  else if (el.name === 'name') offers.setField(o, 'name', el.value);
   else if (el.name === 'rentValue' && el.value.trim() === '')
-    side.rentValue = ''; // empty: the one in «Datos comunes»
+    offers.setField(o, 'rentValue', ''); // empty: the one in «Datos comunes»
   else if (HERD.some(([field]) => field === el.name) && el.value.trim() === '')
-    side[el.name] = ''; // no head count
-  else side[el.name] = num(el.value);
+    offers.setField(o, el.name, ''); // no head count
+  else offers.setField(o, el.name, num(el.value));
 
-  if (el.name === 'vacation') delete terms.vacationAuto;
-  if (defaultVacation(terms)) fillVacation(o);
+  if (el.name === 'vacation') offers.editTerms(o, (t) => delete t.vacationAuto);
+  if (offers.editTerms(o, defaultVacation)) fillVacation(o);
   if (['start', 'duration', 'durationUnit'].includes(el.name)) paintEnd(terms);
   commit({ animate: true });
 }
@@ -148,7 +146,7 @@ function onFormFocusOut(e) {
   el.closest('.fld')?.classList.add('touched');
   const o = active();
   if (el.name !== 'name' || o.mine.name.trim()) return;
-  o.mine.name = `Oferta ${state.offers.indexOf(o) + 1}`;
+  offers.patchMine(o, { name: `Oferta ${state.offers.indexOf(o) + 1}` });
   el.value = o.mine.name;
   commit();
 }
@@ -199,13 +197,7 @@ let offerMenu;
 const offerById = (id) => state.offers.find((o) => o.id === id);
 
 function duplicate(o) {
-  const copy = {
-    ...structuredClone(o),
-    id: newId(),
-    cmp: true,
-  };
-  copy.mine.name = `${o.mine.name} (copia)`;
-  offers.add(copy, { after: o });
+  offers.add(offers.duplicate(o), { after: o });
   showSelected();
 }
 
@@ -334,13 +326,13 @@ const OFFER_ACTIONS = {
   entryClose: close,
   /** Without an end date the duration is not known. */
   clearEnd() {
-    active().terms.durationUnit = 'unknown';
+    offers.patchTerms(active(), { durationUnit: 'unknown' });
     /** @type {HTMLInputElement} */ ($('#f [name=durationUnit][value=unknown]')).checked = true;
     paintEnd(active().terms);
     commit({ animate: true });
   },
   clearStart() {
-    active().terms.start = '';
+    offers.patchTerms(active(), { start: '' });
     /** @type {HTMLInputElement} */ ($('#start')).value = '';
     paintEnd(active().terms);
     commit({ animate: true });

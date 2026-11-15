@@ -2,6 +2,7 @@
 
 import { html, render } from 'lit-html';
 import { $ } from '../dom.js';
+import { offers } from '../offers.js';
 import { searchPlaces } from '../places.js';
 import { active } from '../state.js';
 import { loadPlaces, onPlacesChange, placesIfLoaded } from '../storage/places.js';
@@ -49,9 +50,7 @@ function close() {
 function pick(i) {
   const place = suggestions[i];
   const o = active();
-  o.terms.place = place.name;
-  o.terms.municipality = place.municipalityCode;
-  o.terms.province = place.provinceCode;
+  offers.patchTerms(o, { place: place.name, municipality: place.municipalityCode, province: place.provinceCode });
   input().value = place.name;
   close();
   commit();
@@ -60,9 +59,7 @@ function pick(i) {
 /** Typing replaces what was picked: the codes go, the text stays as yours. */
 function onInput() {
   const o = active();
-  o.terms.place = input().value;
-  o.terms.municipality = '';
-  o.terms.province = '';
+  offers.patchTerms(o, { place: input().value, municipality: '', province: '' });
   suggest();
   commit();
 }
@@ -88,8 +85,7 @@ function onKeyDown(e) {
 /** «Cambiar»: the codes go, the village stays selected to type over. */
 export function changePlace() {
   const o = active();
-  o.terms.municipality = '';
-  o.terms.province = '';
+  offers.patchTerms(o, { municipality: '', province: '' });
   commit();
   input().focus();
   input().select();

@@ -229,7 +229,10 @@ export function commit({ animate = false } = {}) {
 /** Makes an offer the active one, in the form and in the ficha. */
 export function select(id) {
   forgetRecordUi(id);
-  defaultVacation(state.offers.find((o) => o.id === id).terms);
+  offers.editTerms(
+    state.offers.find((o) => o.id === id),
+    defaultVacation,
+  );
   offers.select(id);
   show();
 }
@@ -239,7 +242,7 @@ export function select(id) {
  * importing): saves again only if the vacation default changed it.
  */
 export function showSelected() {
-  if (defaultVacation(active().terms)) offers.save();
+  if (offers.editTerms(active(), defaultVacation)) offers.save();
   show();
 }
 

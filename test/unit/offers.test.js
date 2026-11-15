@@ -216,3 +216,56 @@ describe('the account', () => {
     assert.equal(state.activeId, 'new');
   });
 });
+
+describe('edits of the fields', () => {
+  test('a field is set on the side it lives on, without saving', () => {
+    startWith(named('A'));
+    const [a] = state.offers;
+    list.setField(a, 'name', 'B');
+    list.setField(a, 'hoursPerDay', 8);
+    assert.equal(a.mine.name, 'B');
+    assert.equal(a.terms.hoursPerDay, 8);
+    assert.equal(saves, 0);
+  });
+
+  test('patching the terms or the own figures changes only what it names', () => {
+    startWith(named('A'));
+    const [a] = state.offers;
+    list.patchTerms(a, { start: '2026-06-01', place: 'Puerto A' });
+    list.patchMine(a, { name: 'C' });
+    assert.deepEqual([a.terms.start, a.terms.place, a.mine.name], ['2026-06-01', 'Puerto A', 'C']);
+  });
+
+  test('a function that edits the terms in place runs through, and its result comes back', () => {
+    startWith(named('A'));
+    const [a] = state.offers;
+    assert.equal(
+      list.editTerms(a, (t) => {
+        t.start = '2026-06-01';
+        return 'done';
+      }),
+      'done',
+    );
+    assert.equal(a.terms.start, '2026-06-01');
+  });
+
+  test('replacing the fields keeps the offer and its id', () => {
+    startWith(named('A'));
+    const [a] = state.offers;
+    const fresh = named('F');
+    list.replaceFields(a, fresh);
+    assert.equal(a.id, state.offers[0].id);
+    assert.equal(a.mine.name, 'F');
+    assert.equal(a.terms, fresh.terms);
+  });
+
+  test('a duplicate is a deep copy with a new id, named after the original', () => {
+    startWith(named('A'));
+    const [a] = state.offers;
+    const copy = list.duplicate(a);
+    assert.notEqual(copy.id, a.id);
+    assert.equal(copy.mine.name, 'A (copia)');
+    assert.equal(a.mine.name, 'A');
+    assert.notEqual(copy.terms, a.terms);
+  });
+});
