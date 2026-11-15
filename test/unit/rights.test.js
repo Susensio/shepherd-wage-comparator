@@ -120,21 +120,14 @@ test('vacation paid instead of taken passes on a casual contract and warns on a 
   assert.equal(verdicts({ vacation: 'paidAtEnd' }).vacation, 'warn');
 });
 
-test('a night stay is judged by province: Huesca cites the agreement, elsewhere nothing is counted', () => {
-  const text = (changes) => {
+test('a night stay is judged by province: Huesca cites the agreement, elsewhere there is no row at all', () => {
+  const right = (changes) => {
     const { o, r } = build(changes);
-    const right = rightsOf(o, r).find((x) => x.id === 'overnight');
-    return { status: right?.status, text: String(right?.text?.strings?.join('') ?? right?.text ?? '') };
+    return rightsOf(o, r).find((x) => x.id === 'overnight');
   };
-  assert.equal(text({ overnight: 'yes', province: 'HU' }).status, false);
-  for (const province of ['Z', '']) {
-    const x = text({ overnight: 'yes', province });
-    assert.equal(x.status, null, 'not a warning');
-    assert.match(x.text, /no se cuenta/);
-    assert.doesNotMatch(x.text, /25/);
-  }
-  assert.match(text({ overnight: 'yes', province: 'Z' }).text, /esta provincia/);
-  assert.match(text({ overnight: 'yes', province: '' }).text, /Sin provincia/);
+  assert.equal(right({ overnight: 'yes', province: 'HU' }).status, false);
+  for (const province of ['Z', ''])
+    assert.equal(right({ overnight: 'yes', province }), undefined, 'si no toca, no toca');
   assert.equal(verdicts({ overnight: 'yes', province: 'Z' }).salary, true);
   assert.equal(failuresOf(...Object.values(build({ overnight: 'yes', province: 'Z' }))).includes('overnight'), false);
 });
@@ -144,6 +137,6 @@ test('the hint under the night stay speaks by province', () => {
     overnightHint({ province: 'HU' }),
     /sube el mínimo un 25\u00a0% \(Convenio colectivo del sector agrícola de la provincia de Huesca/,
   );
-  assert.match(overnightHint({ province: 'Z' }), /Ningún convenio conocido para esta provincia .* no se cuenta/);
-  assert.match(overnightHint({ province: '' }), /Sin provincia, no se conoce ningún convenio .* no se cuenta/);
+  assert.equal(overnightHint({ province: 'Z' }), '', 'no agreement known: no hint');
+  assert.equal(overnightHint({ province: '' }), '');
 });

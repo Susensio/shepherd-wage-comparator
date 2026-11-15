@@ -24,9 +24,8 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   // Puerto A (no province): a night stay, no agreement known
   await loadOffers(page, sample, 0);
   const legal = page.locator('#secLegal');
-  await expect(legal).toContainText(
-    'Sin provincia, no se conoce ningún convenio que dé un plus de pernocta: no se cuenta',
-  );
+  await expect(legal).not.toContainText('ningún convenio');
+  await expect(legal).not.toContainText('no se cuenta');
   await expect(legal).not.toContainText('Convenio colectivo del sector agrícola');
   await expect(legal).not.toContainText('con el plus de pernocta');
   // Puerto A, otra cuenta (Huesca): the agreement, with no link to follow yet
@@ -49,9 +48,8 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
     app.active().terms.province = 'Z';
     app.select(app.active().id);
   });
-  await expect(page.locator('#overnightHint')).toContainText(
-    'Ningún convenio conocido para esta provincia da un plus de pernocta: no se cuenta',
-  );
+  await expect(page.locator('#overnightHint')).toBeEmpty();
+  await expect(page.locator('#overnightHint')).toBeHidden();
   // The Leyes page names the agreement without a link
   await page.evaluate(() => app.openLawsPage());
   const laws = page.locator('[data-panel=laws]');

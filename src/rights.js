@@ -22,22 +22,18 @@ export const LAW_SOURCE = {
   hours: citeOf('rd1561', 5),
   contract: citeOf('et', 8),
 };
-/** What «¿Es legal?» says of a night stay where no agreement known for the province gives a bonus. */
-const overnightNotCounted = (province) =>
-  province
-    ? 'Se duerme en el monte, pero ningún convenio conocido para esta provincia da un plus de pernocta: no se cuenta.'
-    : 'Se duerme en el monte. Sin provincia, no se conoce ningún convenio que dé un plus de pernocta: no se cuenta.';
 /**
- * The hint under «¿Hay pernocta en el monte?» when it is answered yes: what the night stay does to the figures,
- * by province. Only an agreement known for the province gives a bonus.
+ * The hint under «¿Hay pernocta en el monte?» when it is answered yes: what the night stay does to the figures where an
+ * agreement known for the province gives a bonus (only Huesca's), and nothing elsewhere.
  * @param {object} terms
  */
 export const overnightHint = (terms) => {
   const agreement = overnightOf(terms.province);
   return agreement
     ? `En borda o cabaña. No suma dinero: sube el mínimo un ${fN(agreement.pct)}\u00a0% (${agreement.cite}).`
-    : `En borda o cabaña. ${terms.province ? 'Ningún convenio conocido para esta provincia da un plus de pernocta' : 'Sin provincia, no se conoce ningún convenio que dé un plus de pernocta'}: no se cuenta.`;
-}; /** Short names of what is breached, for pills and summaries. */
+    : '';
+};
+/** Short names of what is breached, for pills and summaries. */
 export const LAW_SHORT = {
   contract: 'sin contrato',
   salary: 'salario',
@@ -124,8 +120,7 @@ export function rightsOf(o, r, unit = 'month') {
           title,
           html`Cumple el salario mínimo, pero falta el plus de pernocta: el convenio da un ${pct}\u00a0% más por dormir fuera. Faltan unos ${netWithTip(short)} ${per}.`,
         );
-    } else if (r.min.overnightStay) add('overnight', null, 'Plus de pernocta', overnightNotCounted(o.terms.province));
-    else if (agreement)
+    } else if (agreement)
       add(
         'overnight',
         null,
