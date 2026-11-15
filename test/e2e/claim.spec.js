@@ -503,3 +503,38 @@ test.describe('a promise to pay', () => {
     );
   });
 });
+
+test.describe('an old job: every month past its deadline', () => {
+  test.use({ today: '2028-03-01' });
+
+  test('the line says when it passed, the request is informal only, and the card says «plazo pasado»', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    await expect(page.locator('#result')).toContainText(/Plazo para reclamar: pasó el \d+ \w+ 2027/);
+    await expect(page.locator('#result')).not.toContainText('Plazo para reclamar: hasta el');
+    await expect(page.locator('#result .block.ask').getByRole('button', { name: 'Vía legal' })).toHaveCount(0);
+    await expect(page.locator('details.step[data-step=talk]')).toBeVisible();
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(
+      page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),
+    ).toContainText('Debe el ganadero');
+    await expect(
+      page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),
+    ).toContainText('plazo pasado');
+  });
+});
+
+test.describe('a job still within its deadline', () => {
+  test.use({ today: '2026-11-12' });
+
+  test('the card says until when it can be claimed', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(
+      page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),
+    ).toContainText(/hasta el \d+ \w+ 2027/);
+  });
+});

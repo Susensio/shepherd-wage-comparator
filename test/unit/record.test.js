@@ -1010,6 +1010,12 @@ describe('the status of a job on its card', () => {
     assert.equal(job({ hasPayments: false, owed: 500 })?.tone, 'amber', 'nothing is owed that was not said');
   });
 
+  test('a finished job that owes says until when it can be claimed, or that the deadline passed', () => {
+    const claim = { by: '2027-03-31', lapsed: false };
+    assert.deepEqual(job({ owed: 120, claim }), { tone: 'red', text: 'Debe el ganadero', owed: 120, claim });
+    assert.equal(job({ phase: 'underway', owed: 50, claim })?.claim, undefined);
+  });
+
   test('amber where something remains to record', () => {
     assert.deepEqual(job({ hasPayments: false }), { tone: 'amber', text: 'Sin cobros apuntados' });
     assert.equal(job({ unclosed: 1 })?.text, '1 mes sin cerrar');

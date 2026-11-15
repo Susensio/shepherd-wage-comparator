@@ -874,6 +874,12 @@ export function cardRecord(o, r) {
           owed: s.falta,
           unclosed: s.unclosed.length,
           complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
+          claim: {
+            by: s.deadlines
+              .filter((d) => !d.lapsed)
+              .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
+            lapsed: s.lapsedAll,
+          },
         }),
   };
 }

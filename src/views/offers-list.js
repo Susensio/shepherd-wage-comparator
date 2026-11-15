@@ -1,9 +1,9 @@
 /** Your offers as cards, and the templates to start a new one. */
 
 import { html, nothing } from 'lit-html';
-import { fCount, fE } from '../format.js';
+import { fCount, fDate, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
-import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
+import { datesText, isComplete, parseDate, TEMPLATES, todayISO, workedOffers } from '../offer.js';
 import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
@@ -84,10 +84,17 @@ export function offersListView(items, activeId) {
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
 
+/** «· plazo pasado» or «· hasta el 31 mar 2027»: when what is owed can still be claimed. */
+function claimNote(claim) {
+  if (!claim) return nothing;
+  if (claim.lapsed) return ' · plazo pasado';
+  return claim.by ? ` · hasta el ${fDate(parseDate(claim.by))}` : nothing;
+}
+
 /** The status line of a job worked: red where the ganadero owes, amber where something remains to record. */
 function statusLine(status) {
   if (!status) return nothing;
-  return html`<span class=${status.tone ? `oc-status ${status.tone}` : 'oc-status'}>${status.text}${status.owed ? html` <b>${fE(status.owed, 0)}</b>` : nothing}</span>`;
+  return html`<span class=${status.tone ? `oc-status ${status.tone}` : 'oc-status'}>${status.text}${status.owed ? html` <b>${fE(status.owed, 0)}</b>` : nothing}${claimNote(status.claim)}</span>`;
 }
 
 /**

@@ -200,13 +200,22 @@ export function underwayTalk(talk) {
   )}</div>`;
 }
 
+/**
+ * Under the yellow block of Cuentas, where every month of what is owed is past its deadline: when the last one passed.
+ * @param {ClaimContext | null} c
+ */
+export function lapsedLine(c) {
+  if (!c?.ladder.lapsedAll) return nothing;
+  const last = c.deadlines.reduce((a, d) => (d.deadline > a ? d.deadline : a), '');
+  return html`<p class="due-line">Plazo para reclamar: pasó el <b>${fIso(last)}</b>.</p>`;
+}
+
 /** The one line with the deadline, in Cuentas: the nearest of what is owed, and the way to «Vía legal». */
 function deadlineLine(c, withButton) {
   const { ladder } = c;
-  if (!ladder.steps.some((s) => s.id === 'request')) return nothing;
-  const text = ladder.lapsedAll
-    ? 'El plazo de un año ya pasó para lo que falta.'
-    : html`Plazo para reclamar: hasta el <b>${fIso(/** @type {string} */ (ladder.by))}</b> (quedan ${days(daysUntil(c.today, /** @type {string} */ (ladder.by)))}).`;
+  // Every month past its deadline: nothing legal to push, only an informal request (the line is `lapsedLine`)
+  if (!ladder.steps.some((s) => s.id === 'request') || ladder.lapsedAll) return nothing;
+  const text = html`Plazo para reclamar: hasta el <b>${fIso(/** @type {string} */ (ladder.by))}</b> (quedan ${days(daysUntil(c.today, /** @type {string} */ (ladder.by)))}).`;
   return html`<p class="due-line">${text} ${withButton ? LEGAL_BUTTON : nothing}</p>`;
 }
 

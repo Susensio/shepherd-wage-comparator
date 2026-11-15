@@ -7,7 +7,7 @@ import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
-import { claimView, underwayTalk } from './claim.js';
+import { claimView, lapsedLine, underwayTalk } from './claim.js';
 import { ledgerLines, row } from './parts.js';
 import { endLine, endQuestion, recallQuestion, startQuestion } from './transitions.js';
 
@@ -201,7 +201,7 @@ function result(c) {
     ${tiles(s)}
     ${notes(s, { over: '' })}
     ${recordClosing(c, open)}
-  </div>`;
+  </div>${lapsedLine(c.claim)}`;
 }
 
 /** «Balance del trabajo»: what the job left besides the tiles, from «Final de campaña» without its simulator; what still follows the offer says so. */

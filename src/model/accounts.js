@@ -241,6 +241,8 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
     firstDeadline: rows
       .filter((row) => row.deadline && !row.lapsed)
       .reduce((a, row) => (!a || row.deadline < a ? row.deadline : a), /** @type {string | null} */ (null)),
+    /** Something is owed and every month of it is past its deadline. */
+    lapsedAll: deadlines.length > 0 && deadlines.every((d) => d.lapsed),
     /** The claim that lapses first, or null. */
     nearest: deadlines.length ? deadlines.reduce((a, b) => (b.deadline < a.deadline ? b : a)) : null,
     deadlines,
@@ -252,12 +254,18 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
  * Red where the ganadero owes (a cobro recorded and Falta above 0); amber where something remains to record (no cobro,
  * months not closed, a finished job's record not closed); plain «Todo cobrado» for a finished job settled and closed.
  * A job under way says nothing until a month has ended: there is nothing to record yet.
- * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean }} job `unclosed`: months that have ended and are not closed
- * @returns {{ tone: 'red' | 'amber' | null, text: string, owed?: number } | null}
+ * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean, claim?: { by: string | null, lapsed: boolean } }} job `unclosed`: months that have ended and are not closed; `claim`: the deadline of what is owed (`by`: the nearest not lapsed; `lapsed`: all of it is)
+ * @returns {{ tone: 'red' | 'amber' | null, text: string, owed?: number, claim?: { by: string | null, lapsed: boolean } } | null}
  */
-export function jobStatus({ phase, hasPayments, owed, unclosed, complete }) {
+export function jobStatus({ phase, hasPayments, owed, unclosed, complete, claim }) {
   const finished = phase === 'finished';
-  if (hasPayments && owed > 0) return { tone: 'red', text: finished ? 'Debe el ganadero' : 'Falta', owed };
+  if (hasPayments && owed > 0)
+    return {
+      tone: 'red',
+      text: finished ? 'Debe el ganadero' : 'Falta',
+      owed,
+      ...(finished && claim ? { claim } : {}),
+    };
   if (!finished && unclosed === 0) return null;
   if (!hasPayments) return { tone: 'amber', text: 'Sin cobros apuntados' };
   if (unclosed > 0)
