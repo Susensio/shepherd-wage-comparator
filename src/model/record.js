@@ -6,11 +6,12 @@
 
 import { holidaysOf } from '../law.js';
 import { endOf, isoOf, newId, parseDate } from '../offer.js';
+import { monthFacts, spreadTotal } from './days.js';
 import { schedule } from './time.js';
 
 /** @typedef {import('./settle.js').OfferRecord} OfferRecord */
 /** @typedef {import('./settle.js').DayKind} DayKind */
-/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean, outside: boolean, holiday: string }} Mark `day` is «05»; `outside`: not a day of the job (after its end or before its start); `holiday`: the name of the public holiday of the offer's place that falls on it, or '' (nothing where the place has no verified data) */
+/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean, counted: boolean, outside: boolean, holiday: string }} Mark `day` is «05»; `counted`: the month is kept as counts, so which day is which is laid out (work, then sick, then off) and says nothing of the real days; `outside`: not a day of the job (after its end or before its start); `holiday`: the name of the public holiday of the offer's place that falls on it, or '' (nothing where the place has no verified data) */
 /** @typedef {{ key: string, from: string, to: string }} Span the days of a month «2026-06» that belong to the offer, ISO dates */
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -90,17 +91,35 @@ export function marksOf(offer, record, span, job) {
       ? isoOf(new Date(end.getFullYear(), end.getMonth(), end.getDate() - vacationDays + 1))
       : '9999-12-31',
   );
-  const recorded = record?.months?.[span.key]?.days ?? {};
-  return days.map(([day, date], i) => ({
-    day,
-    date,
-    kind:
-      recorded[day] ??
-      (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : date <= statedEnd ? 'work' : 'off'),
-    recorded: day in recorded,
-    outside: job ? date < job.from || date > job.to : false,
-    holiday: holidays.get(date) ?? '',
-  }));
+  const entry = record?.months?.[span.key];
+  const recorded = entry?.days ?? {};
+  const outside = (date) => (job ? date < job.from || date > job.to : false);
+  // A month kept as counts has no days of its own: the counts are laid over the days of the job, work first
+  const layout = entry?.count
+    ? monthFacts(
+        entry,
+        parseDate(job && job.from > span.from ? job.from : span.from),
+        parseDate(job && job.to < span.to ? job.to : span.to),
+      ).counts
+    : null;
+  const laid = layout ? [...Array(layout.work).fill('work'), ...Array(layout.sick).fill('sick')] : [];
+  return days.map(([day, date], i) => {
+    const kind = layout
+      ? outside(date)
+        ? 'off'
+        : (laid.shift() ?? 'off')
+      : (recorded[day] ??
+        (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : date <= statedEnd ? 'work' : 'off'));
+    return {
+      day,
+      date,
+      kind,
+      recorded: Boolean(layout) || day in recorded,
+      counted: Boolean(layout),
+      outside: outside(date),
+      holiday: holidays.get(date) ?? '',
+    };
+  });
 }
 
 /** @param {{ kind: DayKind }[]} marks */
@@ -143,7 +162,7 @@ function dropIfAsOffer(offer, record, span) {
  * @param {string} day «05»
  */
 export function toggleDay(offer, record, span, day) {
-  if (record.months?.[span.key]?.closed) return false;
+  if (record.months?.[span.key]?.closed || record.months?.[span.key]?.count) return false; // counts have no days to tap
   const shown = marksOf(offer, record, span).find((m) => m.day === day);
   if (!shown) return false;
   const month = freeze(offer, record, span);
@@ -152,10 +171,48 @@ export function toggleDay(offer, record, span, day) {
   return true;
 }
 
+const KIND_COUNTS = ['work', 'off', 'sick'];
+
+/**
+ * The days of a month as counts, instead of one mark each: «22 days worked, 8 off». It replaces the month's marks; a
+ * closed month does not change. Counts are whole numbers from 0 to 31.
+ * @param {OfferRecord} record
+ * @param {string} key «2026-06»
+ * @param {{ work: number, off?: number, sick?: number }} counts
+ */
+export function setMonthCounts(record, key, { work, off = 0, sick = 0 }) {
+  const count = { work, off, sick };
+  if (KIND_COUNTS.some((kind) => !(Number.isInteger(count[kind]) && count[kind] >= 0 && count[kind] <= 31)))
+    return false;
+  if (record.months?.[key]?.closed) return false;
+  record.months ??= {};
+  const { days: _marks, ...month } = record.months[key] ?? {};
+  record.months[key] = { ...month, closed: false, count };
+  return true;
+}
+
+/**
+ * A total of days worked for the whole job, entered once: it is spread over the months of the job as counts
+ * (`spreadTotal`), the rest of each month being days off. Months already closed stay as they are.
+ * @param {OfferRecord} record
+ * @param {{ key: string, days: number }[]} months the days of the job in each month
+ * @param {number} total
+ */
+export function enterTotalDays(record, months, total) {
+  if (!(Number.isInteger(total) && total >= 0)) return false;
+  const worked = spreadTotal(total, months);
+  let changed = false;
+  for (const { key, days } of months) {
+    if (record.months?.[key]?.closed) continue;
+    changed = setMonthCounts(record, key, { work: worked[key], off: days - worked[key] }) || changed;
+  }
+  return changed;
+}
+
 /** Closes a month with every day as shown; `today` (ISO) is when, for the dossier. Returns false if it already was. */
 export function closeMonth(offer, record, span, today) {
   if (record.months?.[span.key]?.closed) return false;
-  const month = freeze(offer, record, span);
+  const month = record.months?.[span.key]?.count ? record.months[span.key] : freeze(offer, record, span);
   month.closed = true;
   if (today) month.closedAt = today;
   return true;
@@ -318,7 +375,8 @@ export function startSick(record, from, today) {
   record.sick = { from };
   for (const d = parseDate(from); isoOf(d) <= today; d.setDate(d.getDate() + 1)) {
     const iso = isoOf(d);
-    if (record.months?.[iso.slice(0, 7)]?.closed) continue;
+    const month = record.months?.[iso.slice(0, 7)];
+    if (month?.closed || month?.count) continue; // a counted month says its sick days in its count
     monthOf(record, iso.slice(0, 7)).days[iso.slice(8)] = 'sick';
   }
   return true;

@@ -6,6 +6,7 @@
 import { LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
 import { daysInclusive, endOf, isoOf, parseDate } from '../offer.js';
+import { monthFacts } from './days.js';
 import { monthShares } from './payslips.js';
 import { jobEnd } from './phase.js';
 import { marksOf } from './record.js';
@@ -14,8 +15,8 @@ import { claimDeadline } from './time.js';
 /**
  * @typedef {'work' | 'off' | 'sick'} DayKind a libranza and a vacation day are the same mark, «off»
  * @typedef {'asAgreed' | 'none'} Paid `asAgreed`: what was agreed was received («Sí, todo»); `none`: nothing was
- * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash', note?: string }} Payment `amount` is net: what arrived, after withholdings on payroll, or as handed in cash. Only `payroll` is declared, on a payslip
- * @typedef {{ closed?: boolean, closedAt?: string, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»; `closedAt` is the ISO date it was closed
+ * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash', note?: string, approx?: boolean }} Payment `approx`: a remembered lump, not an exact figure; `amount` is net: what arrived, after withholdings on payroll, or as handed in cash. Only `payroll` is declared, on a payslip
+ * @typedef {{ closed?: boolean, closedAt?: string, days?: Record<string, DayKind>, count?: { work: number, off: number, sick: number } }} RecordMonth `days` is keyed by the day of the month, «05»; `count` holds the month's days by kind instead of one mark each (read through `monthFacts`, never beside `days`); `closedAt` is the ISO date it was closed
  * @typedef {{ how: 'agreed' | 'dismissed' | 'quit', date: string }} JobEnd how and when the job really ended (ADR-0034); sick leave is not an end
  * @typedef {{ from: string, to?: string }} SickLeave a leave that suspends the contract: its days are `sick` by default; open while `to` is missing
  * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[], end?: JobEnd, started?: { date: string }, paid?: Paid, evidence?: { date: string, text: string }[], sick?: SickLeave, recall?: Record<string, 'yes' | 'no'>, complete?: { date: string } }} OfferRecord months keyed «2026-06»; `complete`: the shepherd said every cobro is recorded, on that date; `started`: the start the shepherd confirmed; `paid`: the answer to «¿Se cobró este trabajo?», said (not a payment; absent: unknown, the cobros speak)
@@ -29,7 +30,6 @@ import { claimDeadline } from './time.js';
 /** The items of a month, in the order a payment covers them: by convention, a payment names no item. `severance` (ET 49.1.c) is due at the real end, the last row. */
 export const ITEMS = /** @type {const} */ (['salary', 'overnight', 'vacation', 'severance']);
 
-const KINDS = ['work', 'off', 'sick'];
 const zeroItem = () => ({
   agreed: 0,
   minimum: 0,
@@ -40,19 +40,6 @@ const zeroItem = () => ({
   declared: 0,
   belowMinimumOnPayroll: 0,
 });
-
-/** The days of the record that lie inside the offer's span of the month, counted by kind. */
-function factsOf(entry, from, to) {
-  const counts = { work: 0, off: 0, sick: 0 };
-  let touched = 0;
-  for (const [day, kind] of Object.entries(entry?.days || {})) {
-    const date = new Date(from.getFullYear(), from.getMonth(), Number(day));
-    if (!KINDS.includes(kind) || date < from || date > to) continue;
-    counts[kind]++;
-    touched++;
-  }
-  return { counts, touched };
-}
 
 /**
  * The months of a dated offer with no known end, from its start up to the month of `today`: the shares of `monthShares`,
@@ -184,7 +171,7 @@ export function settle(offer, record, today, r) {
     const key = isoOf(share.month).slice(0, 7);
     const entry = record?.months?.[key];
     const closed = Boolean(entry?.closed);
-    const { counts, touched } = factsOf(entry, share.from, share.to);
+    const { counts, touched } = monthFacts(entry, share.from, share.to);
     // The part of the month that still follows the offer: none once closed
     // (an extension month has no offer to follow: its days default to libre)
     const open = closed || share.extension || share.days <= 0 ? 0 : (share.days - touched) / share.days;

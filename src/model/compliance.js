@@ -3,7 +3,7 @@
  * only: the facts of the terms (no contract, cash agreed) need no month closed; the weekly rest and the days worked above
  * those due, and the public holidays worked, look at CLOSED months alone (the periods wholly inside them). The overnight bonus and the minimum on payroll
  * are judged only once the shepherd has closed the record (`record.complete`: every cobro is recorded) with every month
- * closed: until then not every cobro is known. Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
+ * closed: until then not every cobro is known. A month kept as counts has no days to judge the rest or the holidays by. Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
  * No DOM.
  */
 
@@ -42,7 +42,8 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   for (let i = 0; i < days.length; i += length) {
     const part = days.slice(i, i + length);
     // (a last period shorter than the weeks it groups over says nothing: a day and a half a week cannot be told from a day)
-    if (part.length < length || !part.every((x) => x.closed)) continue;
+    // (nor one with a month kept as counts: which day was off is not known)
+    if (part.length < length || !part.every((x) => x.closed) || part.some((x) => x.counted)) continue;
     const off = offIn(part);
     const due = Math.ceil((LAW.weeklyRest * part.length) / 7);
     // each 14 days: a day off in each of its weeks, or two days in all
@@ -72,7 +73,7 @@ export function lawFromRecord(offer, record, settled, r, payments) {
     known: closed.length > 0 && places.every((place) => place.known),
     local: places.every((place) => place.local),
     worked: days
-      .filter((x) => x.closed && x.kind === 'work' && x.holiday)
+      .filter((x) => x.closed && x.kind === 'work' && x.holiday && !x.counted)
       .map((x) => ({ date: x.date, name: x.holiday })),
     agreement: holidayWorkOf(offer.terms.province),
   };
@@ -101,7 +102,8 @@ export function lawFromRecord(offer, record, settled, r, payments) {
     facts,
     months: { closed: closed.length, total: inJob.length },
     allClosed,
-    rest: { periods, fails },
+    /** `counted`: months of the job kept as counts, whose rest cannot be judged. */
+    rest: { periods, fails, counted: inJob.filter((row) => record.months?.[row.month]?.count).length },
     days: { worked, due, extra: Math.max(0, worked - due) },
     holidays,
     overnight: {
