@@ -46,7 +46,7 @@ function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
     <div class="bh"><h3>Cobros</h3><span class="n">${money(netTotal(payments))}</span></div>
     ${
       !payments.length
-        ? html`<p class="hint">Todavía no hay ningún cobro apuntado.</p>`
+        ? nothing
         : byMonth.size > 1
           ? html`<div class="pay">${[...byMonth].map(
               ([month, list]) =>
@@ -54,12 +54,15 @@ function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
             )}</div>`
           : html`<div class="pay">${payments.map(row)}</div>`
     }
-    <button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>
     ${
-      !payments.length
-        ? nothingPaid
-          ? html`<p class="hint">Se apuntó que no se cobró nada. <button type="button" class="linkbtn" data-action="nothingPaid" data-off>Quitar</button></p>`
-          : html`<button type="button" class="linkbtn" data-action="nothingPaid">No se cobró nada</button>`
+      // With no cobro and nothing said, the block above asks (button included): not twice
+      !payments.length && !nothingPaid
+        ? nothing
+        : html`<button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>`
+    }
+    ${
+      !payments.length && nothingPaid
+        ? html`<p class="hint">Se apuntó que no se cobró nada. <button type="button" class="linkbtn" data-action="nothingPaid" data-off>Quitar</button></p>`
         : nothing
     }
   </div>`;
@@ -93,7 +96,12 @@ const minimumLine = (m) => {
   return html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €/${m.unit} netos` : `/${m.unit} netos`}; pactado: ${fN(m.agreed, 2)} €/${m.unit}.</p>`;
 };
 
-const NET_HINT = html`<p class="hint">Cantidades netas: lo que llega, sin retenciones.</p>`;
+/** Said once, next to the title of Registro and Cuentas: every amount on them is net. */
+const NET = html` <span class="net">en neto</span>`;
+
+/** No cobro recorded and nothing said: the main state of the block, with the way to leave it. */
+const noCobros = html`<div class="nocobros"><b>Aún no hay cobros apuntados</b><span>Apunta lo cobrado para ver lo que falta.</span>
+  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button><button type="button" class="linkbtn" data-action="nothingPaid">No se cobró nada</button></div></div>`;
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
 function tiles(s) {
@@ -105,8 +113,8 @@ function tiles(s) {
 }
 
 /** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
-function notes(s, { over, saidNoCobros = false }) {
-  return html`${!s.hasPayments && !saidNoCobros ? html`<p class="hint">Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.</p>` : nothing}
+function notes(s, { over }) {
+  return html`${!s.hasPayments ? noCobros : nothing}
     ${s.hasPayments && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${s.sobra >= 1 ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
@@ -132,16 +140,14 @@ const nudgeText = (months) =>
 /** «Registro»: the months strip, «Hasta hoy» in net, the month open below with its calendar, and the cobros. */
 function registro(c) {
   const { standing: s, today } = c;
-  return html`<h2 class="mode">Registro<small>Lo que pasa, mes a mes.</small></h2>
+  return html`<h2 class="mode">Registro${NET}<small>Lo que pasa, mes a mes.</small></h2>
     ${strip(c)}
     ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="selectMonth" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
       ${tiles(s)}
-      ${NET_HINT}
       ${notes(s, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
-      ${s.running ? html`<p class="hint">${capital(monthName(s.running.month))}, el mes en curso, se cuenta hasta hoy.</p>` : nothing}
     </div>
     ${underwayTalk(c.talk)}
     ${calendarView(c.calendar)}
@@ -159,19 +165,19 @@ function result(c) {
   const open = s.unclosed.length;
   // Everything cobrado: calm, neutral, nothing to ask for
   const settled = s.hasPayments && s.falta === 0;
+  const sub = settled
+    ? 'Lo cobrado cubre lo que corresponde.'
+    : !s.hasPayments
+      ? ''
+      : open
+        ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
+        : 'Todos los meses están cerrados.';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
-      settled
-        ? 'Lo cobrado cubre lo que corresponde.'
-        : !s.hasPayments
-          ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
-          : open
-            ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
-            : 'Todos los meses están cerrados.'
-    }</span></div>
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
+      sub ? html`<span class="sub">${sub}</span>` : nothing
+    }</div>
     ${tiles(s)}
-    ${NET_HINT}
-    ${notes(s, { over: '', saidNoCobros: true })}
+    ${notes(s, { over: '' })}
     ${open && !settled ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
   </div>`;
 }
@@ -268,7 +274,7 @@ function lawBlock(c) {
 /** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
 function cuentas(c) {
   const settled = c.standing.hasPayments && c.standing.falta === 0;
-  return html`<h2 class="mode small">Cuentas${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
+  return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
     ${endQuestion(c.cards, c.today, false)}
     ${balanceBlock(c)}

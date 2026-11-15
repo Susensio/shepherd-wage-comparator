@@ -277,7 +277,7 @@ export function balanceOf(offer, record, settled, r) {
  * model's own.
  * @param {{ terms: object }} offer
  * @param {ReturnType<typeof settle>} settled
- * @param {{ netFactor: number, time: { daysWorked: number, months: number }, split?: { unit?: string } | null }} r
+ * @param {{ netFactor: number, noContract?: boolean, time: { daysWorked: number, months: number }, split?: { unit?: string } | null }} r
  */
 export function minimumNote(offer, settled, r) {
   const { totals } = settled;
@@ -296,6 +296,11 @@ export function minimumNote(offer, settled, r) {
   const agreedGross = sum(ITEMS.map((item) => items[item].agreed)) - totals.agreedCashGross;
   const total = sum(components.map((x) => x.amount));
   const agreed = cents((agreedGross * r.netFactor + totals.agreedCash) / per);
+  // Without a contract «las vacaciones no se pagan aparte» says nothing the missing contract has not said
+  const short = ITEMS.map((key) => ({ key, amount: each(items[key].shortfall) })).filter(
+    (x) => x.amount > 0 && !(x.key === 'vacation' && r.noContract),
+  );
+  if (total <= agreed && !short.length) return null;
   return {
     unit: perDay ? 'día' : 'mes',
     components,
@@ -303,6 +308,6 @@ export function minimumNote(offer, settled, r) {
     agreed,
     /** The minimum as a whole is above the pay agreed; else only some items fall short (ADR-0004), listed in `short`. */
     exceeds: total > agreed,
-    short: ITEMS.map((key) => ({ key, amount: each(items[key].shortfall) })).filter((x) => x.amount > 0),
+    short,
   };
 }

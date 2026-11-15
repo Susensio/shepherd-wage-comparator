@@ -688,13 +688,17 @@ describe('why Corresponde is more than the pay agreed', () => {
     assert.equal(note(below({ payUnit: 'day', payAmount: 20 }))?.unit, 'día');
   });
 
-  test('an item short while the pay agreed is above the minimum as a whole: no total sentence, the item says so', () => {
+  test('an item short while the pay agreed is above the minimum as a whole: the item says so, except vacation without a contract', () => {
     const saved = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
-    const d = ingestSaved(saved, { fallbackCfg: { ...DEF_CFG } }).offers.find((o) => o.mine.name === 'Sin contrato D');
-    const x = note(d);
+    const offers = ingestSaved(saved, { fallbackCfg: { ...DEF_CFG } }).offers;
+    const d = offers.find((o) => o.mine.name === 'Sin contrato D');
+    // «Las vacaciones no se pagan aparte» adds nothing where there is no contract: no line
+    assert.equal(note(d), null);
+    // The same figures as if there were a contract: the item that falls short is named
+    const settled = settle(d, emptyRecord(), '2026-11-12', ctx);
+    const x = minimumNote(d, settled, { ...calc(d, ctx), noContract: false });
     assert.ok(x);
     assert.equal(x.exceeds, false);
-    assert.ok(x.total <= x.agreed, `${x.total} vs ${x.agreed}`);
     assert.deepEqual(
       x.short.map((s) => s.key),
       ['vacation'],

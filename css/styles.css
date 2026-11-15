@@ -4417,6 +4417,33 @@ h2.mode {
   font-weight: 800;
   font-stretch: 85%;
 }
+/* «en neto», once, beside the title */
+h2.mode .net {
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 500;
+  font-stretch: 100%;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 6px;
+  color: var(--muted);
+}
+/* The main state of the block while no cobro is recorded */
+.nocobros {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nocobros b {
+  font-size: 17px;
+}
+.nocobros .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 6px;
+}
 h2.mode small {
   display: block;
   font-family: var(--f-body);

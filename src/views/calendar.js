@@ -92,7 +92,7 @@ function month(cal) {
     ${grid(cal)}
     <div class="counts">${now ? html`<span class="upto">hasta hoy</span>` : nothing}<span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
     ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
-    ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Los días «fuera» no son del trabajo. Si se marca uno como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
+    ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Si se marca un día «fuera» como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
     ${money(cal)}
     ${actions(cal)}
   </div>`;

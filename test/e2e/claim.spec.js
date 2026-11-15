@@ -200,7 +200,7 @@ test.describe('without cobros, and when nothing is owed', () => {
   test('«No se cobró nada» makes Falta work, is not a payment, and is taken back', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await expect(tile(page, 'Falta')).toHaveText('—');
-    await page.locator('.ask').getByRole('button', { name: 'No se cobró nada' }).click();
+    await page.locator('.result').getByRole('button', { name: 'No se cobró nada' }).click();
     const corresponde = amount(await tile(page, 'Corresponde').textContent());
     expect(amount(await tile(page, 'Falta').textContent())).toBe(corresponde);
     expect(await page.evaluate(() => app.active().mine.record.payments)).toEqual([]);

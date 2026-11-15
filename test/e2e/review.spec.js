@@ -24,11 +24,12 @@ const captureCopies = (page) =>
 test.describe('figures that must agree', () => {
   test.use({ today: '2026-11-12' });
 
-  test('an item short under a pay above the minimum as a whole names the item, not a total sentence', async ({
+  test('an item short under a pay above the minimum as a whole names the item, not a total sentence; without a contract, not even that', async ({
     page,
   }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
-    await expect(page.locator('#result')).toContainText('Las vacaciones no se pagan aparte: corresponden');
+    // Without a contract «no se pagan aparte» adds nothing to what the missing contract says: no line at all
+    await expect(page.locator('#result')).not.toContainText('Las vacaciones no se pagan aparte');
     await expect(page.locator('#result')).not.toContainText('El mínimo exigible supera lo pactado');
   });
 
@@ -107,6 +108,12 @@ test.describe('Cuentas and Registro', () => {
   test('«Aún no hay cobros apuntados» is said once', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     expect(count(await page.locator('#result').innerText(), 'Aún no hay cobros apuntados')).toBe(1);
+    // It is the main state of the yellow block, with the way out right there
+    const prompt = page.locator('.result .nocobros');
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByRole('button', { name: '+ Apuntar cobro' })).toBeVisible();
+    await expect(prompt.getByRole('button', { name: 'No se cobró nada' })).toBeVisible();
+    await expect(page.locator('[data-action=openPaySheet]')).toHaveCount(1);
   });
 
   test('«¿Se cumplió la ley?» shows the facts of the terms at once and judges neither the minimum nor «estimado»', async ({

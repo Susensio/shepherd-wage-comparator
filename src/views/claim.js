@@ -163,12 +163,6 @@ export function claimView(c) {
     <div class="bh"><h2>Pedir lo que falta</h2></div>
     ${dismissal ? dismissalLine(dismissal) : nothing}
     ${
-      !c.hasPayments
-        ? html`<p class="hint">Apunta lo cobrado, o di que no se cobró nada, para saber lo que falta.</p>
-          <button type="button" class="sm" data-action="nothingPaid">No se cobró nada</button>`
-        : nothing
-    }
-    ${
       talk && c.hasPayments
         ? stepFold(
             talk,

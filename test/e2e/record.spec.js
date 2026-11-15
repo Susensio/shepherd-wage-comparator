@@ -209,13 +209,13 @@ test.describe('finished: Cuentas', () => {
       { date: '2026-08-20', amount: 300, via: 'cash' },
     ]);
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
-    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(page.locator('.conditions')).toBeVisible();
     // The yellow block is the first block after the conditions row, and on the first screen
-    expect(await after(page, '.conditions', '#result .tag')).toBe(true);
+    expect(await after(page, '.conditions', '#result .block.result .tag')).toBe(true);
     const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('result'));
     expect(first).toBe(true);
-    const box = await page.locator('#result .tag').boundingBox();
+    const box = await page.locator('#result .block.result .tag').boundingBox();
     expect(box?.y ?? 9999).toBeLessThan(500);
     // The order of the rest
     const order = [
@@ -251,9 +251,11 @@ test.describe('finished: Cuentas', () => {
     const falta = amount(await tile(page, 'Falta').textContent());
     expect(cobrado).toBe(1000);
     expect(Math.round((corresponde - cobrado) * 100) / 100).toBe(falta);
-    await expect(page.locator('.result .tag .lbl')).toHaveText('Debe el ganadero');
-    expect(amount(await page.locator('.result .tag .big').textContent())).toBe(falta);
-    await expect(page.locator('#result')).toContainText('Cantidades netas: lo que llega, sin retenciones.');
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
+    expect(amount(await page.locator('.block.result .tag .big').textContent())).toBe(falta);
+    // «en neto» once, beside the title, and not repeated in each block
+    await expect(page.locator('#result h2.mode .net')).toHaveText('en neto');
+    await expect(page.locator('#result')).not.toContainText('Cantidades netas');
   });
 
   test('months not closed: one action, «Revisar los meses», and the line that the figure is not firm; none once all are closed', async ({
@@ -262,12 +264,12 @@ test.describe('finished: Cuentas', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(1);
-    await expect(page.locator('.result .tag .sub')).toContainText(
+    await expect(page.locator('.block.result .tag .sub')).toContainText(
       '4 meses según la oferta: la cifra no es firme hasta cerrarlos',
     );
     await closeMonths(page, 'all');
     await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(0);
-    await expect(page.locator('.result .tag .sub')).toHaveText('Todos los meses están cerrados.');
+    await expect(page.locator('.block.result .tag .sub')).toHaveText('Todos los meses están cerrados.');
   });
 
   test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más», and nothing to claim', async ({
@@ -277,9 +279,9 @@ test.describe('finished: Cuentas', () => {
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
     // Calm: a green «Todo cobrado», no yellow «Debe el ganadero», no red tile, no prompt for cash, no «no es firme»
-    await expect(page.locator('.result .tag')).toHaveClass(/saldadas/);
-    await expect(page.locator('.result .tag .lbl')).toHaveText('Todo cobrado');
-    await expect(page.locator('.result .tag .big')).toHaveText('✔');
+    await expect(page.locator('.block.result .tag')).toHaveClass(/saldadas/);
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Todo cobrado');
+    await expect(page.locator('.block.result .tag .big')).toHaveText('✔');
     await expect(page.locator('.sofar .f')).toHaveClass(/ok/);
     await expect(page.locator('#result')).not.toContainText('Sin cobros en mano apuntados');
     await expect(page.locator('#result')).not.toContainText('no es firme');
@@ -288,19 +290,19 @@ test.describe('finished: Cuentas', () => {
     );
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);
-    await expect(page.locator('.result .tag .sub')).not.toContainText('debe');
+    await expect(page.locator('.block.result .tag .sub')).not.toContainText('debe');
     await expect(page.locator('#result h2', { hasText: 'Pedir lo que falta' })).toHaveCount(0);
     await expect(page.locator('#result h2.mode small')).toHaveText('Cuentas saldadas');
   });
 
   test('no cobros: Corresponde and a prompt, no debt, the first step only and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('.result .tag .lbl')).toHaveText('Corresponde');
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Corresponde');
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
     const ask = page.locator('#result .ask');
     await expect(ask.locator('details.step')).toHaveCount(1);
-    await expect(ask).toContainText('Apunta lo cobrado');
+    await expect(page.locator('.result .nocobros')).toContainText('Apunta lo cobrado');
     await expect(ask.locator('.claim-text')).toHaveCount(0);
     await expect(page.locator('.legalpath')).toHaveCount(0);
   });
@@ -336,13 +338,13 @@ test.describe('finished: Cuentas', () => {
     const block = page.locator('#result .block', { hasText: 'Balance del trabajo' });
     // What the tiles say is not repeated here; the yellow block says the figure is not firm
     await expect(block).not.toContainText('Corresponde en total');
-    await expect(page.locator('.result .tag .sub')).toContainText('según la oferta: la cifra no es firme');
+    await expect(page.locator('.block.result .tag .sub')).toContainText('según la oferta: la cifra no es firme');
     await expect(page.locator('.sofar > div', { hasText: 'Cobrado' })).toContainText('de ello, en mano');
     await expect(block.locator('.row', { hasText: 'Jornadas' })).toContainText('0 en meses cerrados');
     await expect(block.locator('.row', { hasText: 'Paro' })).toContainText('según la oferta');
     await expect(block).not.toContainText('Simulador de nóminas');
     await closeMonths(page, 'all');
-    await expect(page.locator('.result .tag .sub')).toContainText('Todos los meses están cerrados');
+    await expect(page.locator('.block.result .tag .sub')).toContainText('Todos los meses están cerrados');
     // How it adds up: a closed fold, with En negro only when cash was agreed
     const fold = block.locator('details[data-fold=how]');
     await expect(fold).not.toHaveAttribute('open', '');
@@ -453,7 +455,7 @@ test.describe('finished: Cuentas', () => {
     expect(await index()).toBe(ficha + 1);
     await page.goBack();
     await expect(page.locator('.review-progress')).toHaveCount(0);
-    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     expect(await index()).toBe(ficha);
     await page.getByRole('button', { name: 'Revisar los meses' }).click();
     await page.getByRole('button', { name: 'Cerrar junio' }).click();
@@ -466,8 +468,8 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#result')).toContainText('2 meses cerrados');
     await expect(page.locator('#result')).toContainText('Siguen según la oferta: julio, septiembre');
     await page.getByRole('button', { name: 'Ver las cuentas' }).click();
-    await expect(page.locator('#result h2.mode')).toHaveText('Cuentas');
-    await expect(page.locator('.result .tag .sub')).toContainText('2 meses según la oferta');
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await expect(page.locator('.block.result .tag .sub')).toContainText('2 meses según la oferta');
     await expect.poll(index).toBe(ficha);
   });
 
@@ -545,7 +547,7 @@ test.describe('the month in progress, the days outside the job and what the mini
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     const sofar = amount(await tile(page, 'Corresponde').textContent());
     expect(sofar).toBeGreaterThan(0);
-    await expect(page.locator('#result')).toContainText('Agosto, el mes en curso, se cuenta hasta hoy');
+    await expect(page.locator('#result')).not.toContainText('el mes en curso, se cuenta hasta hoy');
     await expect(page.locator('#result')).not.toContainText('Aparte, aún sin pagar');
     // A day off marked among the days elapsed is one day less
     await page.locator('.cal .day.work').first().click();
