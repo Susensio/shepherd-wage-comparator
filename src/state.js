@@ -72,18 +72,44 @@ export const active = () => state.offers.find((o) => o.id === state.activeId);
 /** Your offers, without the first-run placeholder. */
 export const offersOf = (s) => s.offers.filter((o) => o.id !== s.placeholderId);
 export const myOffers = () => offersOf(state);
-/** Every figure of an offer, with your settings and your other offers. */
-export const calcOffer = (o) => calc(o, calcContext());
-
 /** What the model needs besides an offer: your settings and your other offers. */
 export const calcContext = () => ({ cfg: state.config, offers: myOffers() });
+
+/** @type {Map<object, { today: string, r?: ReturnType<typeof calc>, settled?: ReturnType<typeof settle> }>} */
+const figures = new Map();
+
+/** Forgets the figures of every offer: after a save and at the start of a paint, so no figure outlives its state. */
+export const resetFigures = () => figures.clear();
+
+/** The memo of an offer for today: its figures are worked out on first read and kept until `resetFigures`. */
+function memoOf(o) {
+  const today = todayISO();
+  const kept = figures.get(o);
+  if (kept?.today === today) return kept;
+  const fresh = { today };
+  figures.set(o, fresh);
+  return fresh;
+}
+
+/** Every figure of an offer, with your settings and your other offers. */
+export function calcOffer(o) {
+  const memo = memoOf(o);
+  memo.r ??= calc(o, calcContext());
+  return memo.r;
+}
+
 /** What an offer's record settles to today (`model/settle.js`). */
-export const settleOffer = (o) => settle(o, o.mine.record, todayISO(), calcOffer(o));
+export function settleOffer(o) {
+  const memo = memoOf(o);
+  memo.settled ??= settle(o, o.mine.record, memo.today, calcOffer(o));
+  return memo.settled;
+}
 
 /** Called after every save of offers or settings (the account sync listens). */
 const listeners = new Set();
 export const onSave = (fn) => listeners.add(fn);
 export const notifySaved = () => {
+  resetFigures();
   for (const fn of listeners) fn();
 };
 
@@ -106,6 +132,7 @@ export function saveCmpUnit() {
 export function load() {
   const { cfg: config } = ingestSaved({ offers: [], cfg: store.get(KEY.cfg, null) }, { fallbackCfg: DEF_CFG });
   const unit = store.get(KEY.cmpUnit, 'day');
+  resetFigures();
   Object.assign(state, {
     config,
     cmpUnit: UNITS[unit] ? unit : 'day',

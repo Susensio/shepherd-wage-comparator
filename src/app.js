@@ -9,7 +9,7 @@ import { calcTermsOnly } from './model/calc.js';
 import { phaseOf, workedOffers } from './model/phase.js';
 import { defaultVacation, missing, todayISO } from './offer.js';
 import { offers } from './offers.js';
-import { active, calcOffer, myOffers, state } from './state.js';
+import { active, calcOffer, myOffers, resetFigures, state } from './state.js';
 import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { PHASE_TEXT, sharedLabels } from './text.js';
@@ -170,6 +170,7 @@ function paintTimeline(all = compared()) {
  * touched, not when switching offers or starting.
  */
 export function paintAll({ animate = false } = {}) {
+  resetFigures();
   const o = active();
   const r = calcOffer(o);
   needPlacesFor(o);
