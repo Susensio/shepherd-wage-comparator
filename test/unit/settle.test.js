@@ -72,8 +72,13 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     // The agreed pay is payroll plus the agreed cash as the gross that brings it net, as `calc` credits it (nothing but
     // cash without a contract, where `calc` brings it to gross through the net factor)
     const agreedSalary = r.noContract ? r.cash.total / r.netFactor : r.pay.salary + r.cash.grossEq;
-    near(T.salary.agreed + T.overnight.agreed, cents(agreedSalary), `${name}: agreed salary`);
-    near(T.vacation.agreed, cents(r.pay.vacationPay), `${name}: agreed vacation`);
+    // (cash above what the minimum needs moves into a vacation valued at the real daily pay, cash included)
+    near(
+      T.salary.agreed + T.overnight.agreed + T.vacation.agreed,
+      cents(agreedSalary + r.pay.vacationPay),
+      `${name}: agreed salary and vacation`,
+      0.01,
+    );
     near(T.salary.minimum, cents(r.min.salary), `${name}: minimum salary`);
     near(T.overnight.minimum, cents(r.min.overnight), `${name}: minimum overnight`);
     // The debt after the cash, as the ficha shows what is owed (`r.debt.owed`), to the cent. By item only where no cash
@@ -631,7 +636,7 @@ test('a wage per day: the month in progress counts the days worked so far, marke
 });
 
 test('a monthly wage: one thirtieth of the month for each elapsed day, and the vacation and the cash in proportion', () => {
-  const offer = withCash({ payAmount: 1424.5, vacation: 'paidAtEnd' });
+  const offer = withCash({ payAmount: 1424.5, vacation: 'taken' }); // (paid at the end, the cash would also move into the vacation)
   const x = settleOf(offer, {}, '2026-02-10');
   near(
     x.rows[1].items.salary.agreed + x.rows[1].items.overnight.agreed,

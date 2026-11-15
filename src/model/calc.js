@@ -120,7 +120,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const se = isSelfEmployed ? selfEmployed(effective, time, ctx) : null;
   const pay = payroll(t, mine, ctx, time);
   const car = travel(t, mine, time, cfg);
-  const min = legalMinimum(t, ctx, time);
+  const min = legalMinimum(t, ctx, time, { realPay: offer.terms.vacation !== 'included' });
   const { months, natDays, daysWorked, hours, noDuration } = time;
 
   // Cash, housing and food, expenses

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { num } from '../../src/format.js';
-import { MIN_WAGE, minWageOf, ssOf } from '../../src/law.js';
+import { LAW, MIN_WAGE, minWageOf, ssOf } from '../../src/law.js';
 import { calc, calcTermsOnly, yearMoney } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
@@ -391,4 +391,29 @@ test('jobs of 2022 and 2023 are checked against their own minimum wage (RD 152/2
     wageYearNote(year(2021)),
     'La página no tiene el salario mínimo de 2021; se compara con el de 2022, más alto.',
   );
+});
+
+test('a vacation day owed or paid is worth the real daily pay, cash included, or the minimum wage’s if higher', () => {
+  const wage = minWageOf(2026);
+  const smiDay = wage.annual / LAW.smiDaysPerYear; // full time
+  // payroll 1.800 a month and 500 en negro: the day is (1.800 + 500) / 30, and the vacation paid at the end is as many of them
+  const mixed = figures({ payAmount: 1800, cashAmount: 500, cashUnit: 'month', vacation: 'paidAtEnd', holidays: 'no' });
+  near(mixed.min.vacationDay, 2300 / 30, 0.01, 'a vacation day with the cash');
+  near(mixed.min.vacation, mixed.time.vacationDays * (2300 / 30), 0.01, 'the vacation owed');
+  // the payslip itself stays the payroll's: the cash cannot move it
+  near(mixed.pay.vacationPay, mixed.time.vacationDays * (1800 / 30), 0.01, 'the vacation on the payslip');
+  // without a contract, the cash is the pay
+  const none = figures({
+    contract: 'none',
+    payAmount: 0,
+    cashAmount: 1500,
+    cashUnit: 'month',
+    duration: 6,
+    durationUnit: 'months',
+  });
+  near(none.min.vacationDay, 1500 / 30, 0.01, 'no contract: the cash day');
+  assert.ok(none.debt.vacation > none.time.vacationDays * smiDay, 'above a day at the minimum wage');
+  // never below the minimum wage's day
+  const low = figures({ payAmount: 400, vacation: 'paidAtEnd', holidays: 'no' });
+  near(low.min.vacationDay, smiDay, 0.01, 'the minimum wage’s day');
 });
