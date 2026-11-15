@@ -269,7 +269,7 @@ test.describe('«Para reclamar» in Ofertas', () => {
     await list(page);
     expect((await heads(page))[0]).toBe('Para reclamar');
     const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
-    await expect(card).toContainText(/Siguiente: Hablar con el ganadero · hasta el \d+ \w+ 2027/);
+    await expect(card).toContainText(/Siguiente: hablar con el ganadero · plazo legal: \d+ \w+ 2027/);
     // It is not repeated under its year
     expect(await page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).count()).toBe(1);
     await page.evaluate(async () => {
@@ -282,24 +282,52 @@ test.describe('«Para reclamar» in Ofertas', () => {
         );
       app.select(app.active().id);
     });
-    await expect(card).toContainText('Siguiente: Sindicato');
+    await expect(card).toContainText('Siguiente: sindicato');
   });
 
-  test('nothing owed, or nothing recorded: no group; a dismissal window open: in it', async ({ page }) => {
+  /** The names of the cards under «Para reclamar». */
+  const grouped = (page) =>
+    page.evaluate(() => {
+      const names = [];
+      let on = false;
+      for (const el of document.querySelectorAll('#cards > .year-head, #cards .ocard')) {
+        if (el.classList.contains('year-head')) on = el.textContent.startsWith('Para reclamar');
+        else if (on) names.push(el.querySelector('.oc-name').textContent);
+      }
+      return names;
+    });
+  const NAME = 'Puerto A, otra cuenta';
+
+  test('nothing owed: not in the group; a dismissal window open: in it', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await list(page);
-    expect(await heads(page)).not.toContain('Para reclamar'); // no cobros: nothing to claim yet
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await list(page);
-    expect(await heads(page)).not.toContain('Para reclamar');
+    expect(await grouped(page)).not.toContain(NAME);
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });
       app.select(app.active().id);
     });
     await list(page);
-    expect((await heads(page))[0]).toBe('Para reclamar');
-    await expect(page.locator('#cards .ocwrap').first()).toContainText('Siguiente: Despido · hasta el 4 dic 2026');
+    expect(await grouped(page)).toContain(NAME);
+    await expect(page.locator('#cards .ocwrap', { hasText: NAME }).first()).toContainText(
+      'Siguiente: presentar la papeleta por despido · plazo legal: 4 dic 2026',
+    );
+  });
+
+  test('a finished job with no cobro said is in the group while a deadline runs, next step: write the cobros down', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await list(page);
+    expect(await grouped(page)).toContain(NAME);
+    const card = page.locator('#cards .ocwrap', { hasText: NAME }).first();
+    await expect(card).toContainText(/Siguiente: apuntar los cobros · plazo legal: \d+ \w+ 2027/);
+    await page.evaluate(() => {
+      app.active().mine.record.nothingPaid = true;
+      app.select(app.active().id);
+    });
+    await expect(card).toContainText('Siguiente: hablar con el ganadero');
   });
 });
 

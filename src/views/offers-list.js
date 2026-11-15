@@ -4,7 +4,7 @@ import { html, nothing } from 'lit-html';
 import { fCount, fDate, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
 import { datesText, isComplete, parseDate, TEMPLATES, todayISO, workedOffers } from '../offer.js';
-import { CLAIM_STEP_TEXT, herdText, PHASE_TEXT } from '../text.js';
+import { CLAIM_NEXT_TEXT, herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
 /** The «⋯» of a card (the ficha's is in index.html). */
@@ -105,8 +105,7 @@ function recordLine(line, phase) {
 /** «Siguiente: Petición de pago · hasta el 31 jul 2027», on a card «Para reclamar». */
 function nextStep(claim) {
   if (!claim?.inWindow || !claim.next) return nothing;
-  const text = CLAIM_STEP_TEXT[claim.next.id];
-  return html`<span class="oc-next"><span>Siguiente: <b>${text}</b>${claim.next.by ? ` · hasta el ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
+  return html`<span class="oc-next"><span>Siguiente: <b>${CLAIM_NEXT_TEXT[claim.next.id]}</b>${claim.next.by ? ` · plazo legal: ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
 }
 
 /**
@@ -125,7 +124,7 @@ function card({ o, r, record }, activeId) {
         ? html`<span class="oc-fig">${fUnit(inUnit(r.earnings.total, r, unit), unit)}${UNITS[unit].suffix}</span>`
         : ''
     }</span>
-    <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.phase}>${PHASE_TEXT[record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
+    <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.pill ?? record.phase}>${PHASE_TEXT[record.pill ?? record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
       complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
     }</span>${recordLine(record?.line, record?.phase)}${nextStep(record?.claim)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;

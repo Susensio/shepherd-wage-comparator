@@ -113,7 +113,7 @@ test.describe('phone', () => {
     await expect(page.locator('[data-panel=laws]')).toBeHidden();
     // From a ficha (the «Dónde reclamar» link), the phone's Back returns to the ficha
     await page.locator('.tabs [data-tab=offers]').click();
-    await page.locator('.ocard').first().click();
+    await page.locator('.ocard', { hasText: 'Temporada F' }).first().click();
     await page.getByText('Lo que dice la ley').first().click(); // the link is inside this fold
     await page.getByRole('button', { name: 'en «Leyes»' }).first().click();
     await expect(page.locator('[data-panel=laws]')).toBeVisible();

@@ -18,7 +18,7 @@ import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } fro
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
 import { dossierOpen, entryOpen, onNavigate, openFicha } from './ui/navigation.js';
-import { cardRecord, dismissReview, dossierContext, forgetRecordUi, recordContext } from './ui/record.js';
+import { cardRecord, dismissReview, dossierContext, forgetRecordUi, pillPhase, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
@@ -193,9 +193,10 @@ export function paintAll({ animate = false } = {}) {
   $('#fichaMenu').dataset.id = o.id;
   // Without a start date an offer counts as «solo oferta», which has no phase
   const phase = o.terms.start ? phaseOf(o, todayISO(), o.mine.record) : 'offerOnly';
-  $('#fichaPhase').hidden = !(phase in PHASE_TEXT);
-  $('#fichaPhase').textContent = PHASE_TEXT[phase] ?? '';
-  $('#fichaPhase').dataset.phase = phase;
+  const pill = pillPhase(o, phase);
+  $('#fichaPhase').hidden = !(pill in PHASE_TEXT);
+  $('#fichaPhase').textContent = PHASE_TEXT[pill] ?? '';
+  $('#fichaPhase').dataset.phase = pill;
   const record = recordContext(o, r);
   // «Revisar los meses» has its own «‹ Cuentas»: the ficha's back link would be a second one
   document.body.classList.toggle('reviewing', !!record?.review);

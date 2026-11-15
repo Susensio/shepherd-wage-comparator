@@ -301,8 +301,9 @@ test.describe('a new offer and Leyes', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('#fichaPhase')).toBeHidden();
+    const id = await page.evaluate(() => app.active().id);
     await page.evaluate(() => app.showTab('offers'));
-    await expect(page.locator('#cards .ocard', { hasText: 'Puerto A' }).first().locator('.phase')).toHaveCount(0);
+    await expect(page.locator(`#cards .ocard[data-id="${id}"] .phase`)).toHaveCount(0);
   });
 
   test('«Si no se sabe, marca…» shows only once the field is left empty', async ({ page }) => {

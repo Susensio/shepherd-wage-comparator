@@ -498,7 +498,12 @@ export function leversOf(r) {
 }
 
 /** The phases of a worked offer, as the pill says them. */
-export const PHASE_TEXT = { undecided: 'Por decidir', underway: 'En curso', finished: 'Acabada' };
+export const PHASE_TEXT = {
+  undecided: 'Por decidir',
+  toStart: 'Por empezar',
+  underway: 'En curso',
+  finished: 'Acabada',
+};
 
 /** The steps of «Pedir lo que falta», as the card and the Expediente name them. */
 export const CLAIM_STEP_TEXT = {
@@ -507,6 +512,19 @@ export const CLAIM_STEP_TEXT = {
   request: 'Petición de pago',
   union: 'Sindicato',
   conciliation: 'Papeleta de conciliación',
+  inspection: 'Inspección de Trabajo',
+  court: 'Juzgado de lo Social',
+  fogasa: 'FOGASA',
+};
+
+/** The next step on a card «Para reclamar», as a sentence: «Siguiente: hablar con el ganadero · plazo legal: …». */
+export const CLAIM_NEXT_TEXT = {
+  dismissal: 'presentar la papeleta por despido',
+  cobros: 'apuntar los cobros',
+  talk: 'hablar con el ganadero',
+  request: 'petición de pago',
+  union: 'sindicato',
+  conciliation: 'papeleta de conciliación',
   inspection: 'Inspección de Trabajo',
   court: 'Juzgado de lo Social',
   fogasa: 'FOGASA',

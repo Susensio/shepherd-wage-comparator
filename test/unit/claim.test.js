@@ -77,11 +77,27 @@ describe('claimSteps', () => {
     assert.equal(l.next, null);
   });
 
-  test('no cobro recorded: only the first step', () => {
-    const l = ladder({ standing: standing([], { hasPayments: false, falta: 800 }) });
+  test('no cobro recorded: only the first step, and the deadline is still running', () => {
+    const l = ladder({ standing: standing([], { hasPayments: false, falta: 800, firstDeadline: '2027-07-31' }) });
     assert.equal(l.mode, 'noCobros');
     assert.deepEqual(ids(l), ['talk']);
+    // A job with no cobro said is «Para reclamar» while a month is not lapsed; what comes first is writing them down
+    assert.equal(l.by, '2027-07-31');
+    assert.equal(l.inWindow, true);
+    assert.deepEqual(l.next, { id: 'cobros', deadline: null, by: '2027-07-31' });
+  });
+
+  test('no cobro recorded and every month lapsed: not «Para reclamar»', () => {
+    const l = ladder({ standing: standing([], { hasPayments: false, falta: 800, firstDeadline: null }) });
     assert.equal(l.inWindow, false);
+  });
+
+  test('no cobro recorded but a dismissal first: the dismissal is the next step', () => {
+    const l = ladder({
+      standing: standing([], { hasPayments: false, falta: 800, firstDeadline: '2027-07-31' }),
+      end: { how: 'dismissed', date: '2026-11-06' },
+    });
+    assert.equal(l.next?.id, 'dismissal');
   });
 
   test('a dismissal comes first, with its conservative date, even when nothing is owed', () => {

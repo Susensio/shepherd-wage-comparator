@@ -188,6 +188,15 @@ function cardsOf(o, phase, settled, today) {
   return start || end || recallOf(o, today) ? { start, end, recall: recallOf(o, today) } : null;
 }
 
+/** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */
+const unconfirmedStart = (o, phase) =>
+  phase === 'underway' &&
+  !o.mine.record.started &&
+  !(o.mine.record.payments.length > 0 || Object.keys(o.mine.record.months).length > 0 || o.mine.record.nothingPaid);
+
+/** What the phase pill says: «Por empezar» until the start is confirmed, else the phase. */
+export const pillPhase = (o, phase) => (unconfirmedStart(o, phase) ? 'toStart' : phase);
+
 /** The first day of the season after the one worked, for a fijo discontinuo: its start a year on. */
 export function nextSeasonStart(o) {
   const start = parseDate(o.terms.start);
@@ -726,7 +735,7 @@ export function askHowItEnded(offerId) {
  * What a card says of a job under way or finished: its phase and, with a record to show, what is owed and how many
  * months are still not closed. Null phase for an offer only offered.
  * @param {any} o
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null } | null } | null }}
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null } | null } | null }}
  */
 export function cardRecord(o, r) {
   const today = todayISO();
@@ -748,6 +757,7 @@ export function cardRecord(o, r) {
       : null;
   return {
     phase,
+    pill: pillPhase(o, /** @type {any} */ (phase)),
     claim: ladder && { inWindow: ladder.inWindow, next: ladder.next && { id: ladder.next.id, by: ladder.next.by } },
     line: {
       hasPayments: s.hasPayments,

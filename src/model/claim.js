@@ -56,7 +56,8 @@ export const STEP_IDS = /** @type {const} */ ([
  *   `owed`, or `dismissed` (the job ended by dismissal, whether or not something is owed).
  * - `by`: the claim deadline, the earliest month not lapsed (ET art. 59.2); `lapsedAll` when none is left.
  * - `inWindow`: something is owed within its deadline, or a dismissal window is open: the job is «Para reclamar».
- * - `next`: the first step ready and not done, with the date it counts against (its own, else `by`).
+ * - `next`: the first step ready and not done, with the date it counts against (its own, else `by`); with no cobro
+ *   said, `cobros` (to write them down) unless a dismissal comes first.
  * @param {object} input
  * @param {string} input.today ISO date
  * @param {ReturnType<typeof import('./accounts.js').standingOf>} input.standing
@@ -68,7 +69,13 @@ export function claimSteps({ today, standing, end, marks }) {
   const dismissed = end?.how === 'dismissed';
   const mode = dismissed ? 'dismissed' : owed ? 'owed' : standing.hasPayments ? 'settled' : 'noCobros';
   const open = standing.deadlines.filter((d) => !d.lapsed);
-  const by = open.length ? open.reduce((a, b) => (b.deadline < a.deadline ? b : a)).deadline : null;
+  const noCobros = !standing.hasPayments;
+  // With no cobro said the deadlines are still running: the earliest month not lapsed
+  const by = noCobros
+    ? (standing.firstDeadline ?? null)
+    : open.length
+      ? open.reduce((a, b) => (b.deadline < a.deadline ? b : a)).deadline
+      : null;
   const lapsedAll = owed && !open.length;
   const make = (id, deadline = null, ready = true) => ({
     id,
@@ -102,7 +109,11 @@ export function claimSteps({ today, standing, end, marks }) {
     steps: mode === 'settled' ? [] : steps,
     by,
     lapsedAll,
-    inWindow: (owed && by !== null) || Boolean(dismissal && !dismissal.lapsed && !dismissal.done),
-    next: next && { ...next, by: next.deadline ?? by },
+    inWindow: ((owed || noCobros) && by !== null) || Boolean(dismissal && !dismissal.lapsed && !dismissal.done),
+    // With no cobro said, what comes first is saying them
+    next:
+      noCobros && !(next?.id === 'dismissal')
+        ? { id: /** @type {const} */ ('cobros'), deadline: null, by }
+        : next && { ...next, by: next.deadline ?? by },
   };
 }

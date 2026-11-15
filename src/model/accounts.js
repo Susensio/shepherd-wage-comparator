@@ -231,6 +231,10 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
       lapsed: row.lapsed,
       daysLeft: claimable && row.deadline ? daysBetween(today, row.deadline) : null,
     })),
+    /** The earliest deadline not lapsed of what is due, with cobros said or not: dates a job with no cobro recorded yet. */
+    firstDeadline: rows
+      .filter((row) => row.deadline && !row.lapsed)
+      .reduce((a, row) => (!a || row.deadline < a ? row.deadline : a), /** @type {string | null} */ (null)),
     /** The claim that lapses first, or null. */
     nearest: deadlines.length ? deadlines.reduce((a, b) => (b.deadline < a.deadline ? b : a)) : null,
     deadlines,

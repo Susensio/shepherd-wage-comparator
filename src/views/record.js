@@ -100,14 +100,14 @@ function tiles(s) {
   return html`<div class="sofar">
     <div><span>Corresponde</span><b>${whole(s.corresponde)}</b></div>
     <div><span>Cobrado</span><b>${whole(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
-    <div class="f"><span>Falta</span><b>${s.hasPayments ? whole(s.falta) : '—'}</b></div>
+    <div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments ? whole(s.falta) : '—'}</b></div>
   </div>`;
 }
 
 /** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
 function notes(s, { over, saidNoCobros = false }) {
   return html`${!s.hasPayments && !saidNoCobros ? html`<p class="hint">Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.</p>` : nothing}
-    ${s.hasPayments && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
+    ${s.hasPayments && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${s.sobra >= 1 ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
 
@@ -156,18 +156,22 @@ const howItAdds = (s) =>
 function result(c) {
   const { standing: s } = c;
   const open = s.unclosed.length;
+  // Everything cobrado: calm, neutral, nothing to ask for
+  const settled = s.hasPayments && s.falta === 0;
   return html`<div class="block result">
-    <div class="tag"><span class="lbl">${s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${whole(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
-      !s.hasPayments
-        ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
-        : open
-          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
-          : 'Todos los meses están cerrados.'
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span><span class="sub">${
+      settled
+        ? 'Lo cobrado cubre lo que corresponde.'
+        : !s.hasPayments
+          ? 'Aún no hay cobros apuntados: apunta lo cobrado para ver lo que falta.'
+          : open
+            ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
+            : 'Todos los meses están cerrados.'
     }</span></div>
     ${tiles(s)}
     ${NET_HINT}
     ${notes(s, { over: '', saidNoCobros: true })}
-    ${open ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
+    ${open && !settled ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
   </div>`;
 }
 

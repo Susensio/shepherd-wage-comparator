@@ -25,6 +25,12 @@ test.describe('under way: Registro', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    // Until the start is confirmed the pill does not say the job is under way
+    await expect(page.locator('#fichaPhase')).toHaveText('Por empezar');
+    await page
+      .getByRole('group', { name: '¿Empezó el trabajo?' })
+      .getByRole('button', { name: 'Sí', exact: true })
+      .click();
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     await expect(page.locator('#result h2.mode')).toContainText('Registro');
     await expect(page.locator('.conditions')).toBeVisible(); // every mode starts with the agreed conditions
@@ -270,7 +276,13 @@ test.describe('finished: Cuentas', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
-    await expect(page.locator('.result .tag .big')).toHaveText(/^0\s€$/);
+    // Calm: a green «Todo cobrado», no yellow «Debe el ganadero», no red tile, no prompt for cash, no «no es firme»
+    await expect(page.locator('.result .tag')).toHaveClass(/saldadas/);
+    await expect(page.locator('.result .tag .lbl')).toHaveText('Todo cobrado');
+    await expect(page.locator('.result .tag .big')).toHaveText('✔');
+    await expect(page.locator('.sofar .f')).toHaveClass(/ok/);
+    await expect(page.locator('#result')).not.toContainText('Sin cobros en mano apuntados');
+    await expect(page.locator('#result')).not.toContainText('no es firme');
     await expect(page.locator('#result')).toContainText(
       'Las retenciones reales de la nómina suelen diferir de las simuladas',
     );
@@ -527,7 +539,7 @@ test.describe('the month in progress, the days outside the job and what the mini
         cashMode: 'amount',
         cashAmount: 0,
       });
-      app.active().mine.record = { months: {}, payments: [] };
+      app.active().mine.record = { months: {}, payments: [], started: { date: '2026-08-01' } };
       app.select(app.active().id);
     });
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
@@ -724,6 +736,8 @@ test.describe('the cards', () => {
   test.use({ today: '2026-11-12' });
 
   const card = (page, name) => page.locator('#cards .ocard', { hasText: name }).first();
+  const named = (page, name) =>
+    page.locator('#cards .ocard', { has: page.locator('.oc-name', { hasText: new RegExp(`^${name}$`) }) });
 
   test('a pill for the phase, none for an offer only offered; a line for a job worked', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -733,8 +747,8 @@ test.describe('the cards', () => {
     await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText('4 meses sin cerrar');
     await expect(card(page, 'Campaña B').locator('.phase')).toHaveText('Acabada');
     await expect(card(page, 'Temporada F').locator('.phase')).toHaveCount(0);
-    await expect(card(page, 'Puerto A').first().locator('.phase')).toHaveCount(0); // solo oferta
-    await expect(card(page, 'Puerto A').first().locator('.oc-rec')).toHaveCount(0);
+    await expect(named(page, 'Puerto A').locator('.phase')).toHaveCount(0); // solo oferta
+    await expect(named(page, 'Puerto A').locator('.oc-rec')).toHaveCount(0);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await page.evaluate(() => app.showTab('offers'));
     await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText(/Debe el ganadero [\d.,]+\s€/);
@@ -744,6 +758,13 @@ test.describe('the cards', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await at(page, '2026-08-12');
     await page.evaluate(() => app.showTab('offers'));
+    // Not known to have started until the question is answered
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Por empezar');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.confirmStart(app.active(), app.active().terms.start);
+      app.showTab('offers');
+    });
     await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('En curso');
     await at(page, '2026-05-01');
     await reselect(page);

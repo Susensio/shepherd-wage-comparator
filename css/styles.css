@@ -4976,3 +4976,16 @@ body.reviewing .ficha > .back {
   font-weight: 700;
   color: var(--muted);
 }
+
+/* Everything cobrado: a calm block, no yellow and no red */
+.tag.saldadas {
+  background: color-mix(in srgb, var(--c-pay) 16%, var(--surface));
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--c-pay) 35%, var(--surface));
+}
+.tag.saldadas .big {
+  color: var(--c-pay);
+}
+.sofar .f.ok b {
+  color: var(--c-pay);
+}
