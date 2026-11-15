@@ -19,14 +19,14 @@ import { toAnswerable } from './pay-answers.js';
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 5;
+export const PAGE_VERSION = 6;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -75,6 +75,8 @@ const withoutLawFigures = (cfg) =>
  *    `closedAt` on a month, `record.evidence`, `record.nothingPaid`, `record.sick` (a leave that does not end the job),
  *    `record.recall` (called back for a season or not) and the claim steps done (`mine.claim`; ADR-0034).
  *    All optional. The migration of 14 November 2026 gave every account row empty parties and claim.
+ * 7: `record.complete = { date }`, the record closed by the shepherd (every cobro recorded). Optional; the upgrader is the
+ *    identity and the version keeps pages that do not know the field from writing (migration of 15 November 2026).
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
@@ -82,6 +84,7 @@ export const upgrade = {
   3: { offer: (offer) => offer },
   4: { offer: withRecord },
   5: { offer: withClaim },
+  6: { offer: (offer) => offer },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
@@ -146,6 +149,7 @@ export function normalizeRecord(saved) {
     record.end = { how: saved.end.how, date: saved.end.date };
   if (isObject(saved.started) && isIsoDate(saved.started.date)) record.started = { date: saved.started.date };
   if (saved.nothingPaid === true) record.nothingPaid = true;
+  if (isObject(saved.complete) && isIsoDate(saved.complete.date)) record.complete = { date: saved.complete.date };
   if (isObject(saved.sick) && isIsoDate(saved.sick.from))
     record.sick = { from: saved.sick.from, ...(isIsoDate(saved.sick.to) ? { to: saved.sick.to } : {}) };
   if (isObject(saved.recall)) {

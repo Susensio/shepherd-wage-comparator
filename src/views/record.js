@@ -159,7 +159,25 @@ function registro(c) {
 const howItAdds = (s) =>
   html`<details class="plg" data-fold="how"><summary>Detalle de lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
 
-/** The yellow block: what the ganadero owes, the three figures, and the one action while months are not closed. */
+/**
+ * The end of the yellow block: «Cerrar el registro» (the months are reviewed first when some are open), the question that
+ * follows, and, once closed, the date and «Reabrir el registro». With no cobro recorded the block above asks for them.
+ */
+function recordClosing(c, open) {
+  const s = c.standing;
+  if (c.complete)
+    return html`<p class="hint closed-record">Registro cerrado el ${fWhen(c.complete.date, c.today)}. <button type="button" class="linkbtn" data-action="reopenRecord">Reabrir el registro</button></p>`;
+  const review = open
+    ? html`<button type="button" class="linkbtn" data-action="reviewStart">Revisar los meses</button>`
+    : nothing;
+  // Nothing to close while no cobro is said: the block above asks for them; the months can be reviewed all the same
+  if (!s.hasPayments) return review;
+  if (c.asking)
+    return html`<div class="confirm"><b>¿Están apuntados todos los cobros?</b><div class="btns"><button type="button" class="pri" data-action="completeYes">Sí, cerrar</button><button type="button" data-action="completeNo">Todavía no</button></div></div>`;
+  return html`<button type="button" class="pri addbtn" data-action="closeRecord">Cerrar el registro</button>${review}`;
+}
+
+/** The yellow block: what the ganadero owes, the three figures, and the way to close the record. */
 function result(c) {
   const { standing: s } = c;
   const open = s.unclosed.length;
@@ -169,16 +187,16 @@ function result(c) {
     ? 'Lo cobrado cubre lo que corresponde.'
     : !s.hasPayments
       ? ''
-      : open
-        ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
-        : 'Todos los meses están cerrados.';
+      : c.complete
+        ? ''
+        : open
+          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
+          : '';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
-      sub ? html`<span class="sub">${sub}</span>` : nothing
-    }</div>
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
     ${tiles(s)}
     ${notes(s, { over: '' })}
-    ${open && !settled ? html`<button type="button" class="pri addbtn" data-action="reviewStart">Revisar los meses</button>` : nothing}
+    ${recordClosing(c, open)}
   </div>`;
 }
 
@@ -259,15 +277,44 @@ function lawBlock(c) {
           'Jornadas de más',
           `${law.days.worked} jornadas, dentro de las unas ${Math.round(law.days.due)} que corresponden.`,
         );
-  const wait = mark(
-    'warn',
-    law.overnight.applicable ? 'Salario mínimo en nómina y plus de pernocta' : 'Salario mínimo en nómina',
-    'Se comprobará cuando estén apuntados todos los cobros.',
-  );
+  // The minimum on payroll and the plus de pernocta need every cobro: they are judged once the record is closed
+  const minimum = law.minimum;
+  const payrollRows = !c.complete
+    ? nothing
+    : html`${
+        minimum.applicable
+          ? minimum.short >= 1
+            ? mark(
+                'bad',
+                'Salario mínimo en nómina',
+                `En nómina se cobraron ${whole(minimum.payroll)} netos y el mínimo son ${whole(minimum.minimumNet)}: faltan unos ${whole(minimum.short)}.`,
+              )
+            : mark(
+                'ok',
+                'Salario mínimo en nómina',
+                `En nómina se cobraron ${whole(minimum.payroll)} netos, sobre el mínimo de ${whole(minimum.minimumNet)}.`,
+              )
+          : nothing
+      }${
+        law.overnight.applicable
+          ? law.overnight.missing >= 1
+            ? mark(
+                'bad',
+                'Plus de pernocta',
+                `Del plus del convenio (${whole(law.overnight.due)} netos) no se cubrieron ${whole(law.overnight.missing)}.`,
+              )
+            : mark('ok', 'Plus de pernocta', 'El plus del convenio está cubierto.')
+          : nothing
+      }`;
+  const later = [
+    minimum.applicable && 'el salario mínimo en nómina',
+    law.overnight.applicable && 'el plus de pernocta',
+  ].filter(Boolean);
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
     ${closedMonths ? html`<p class="hint">Según el registro, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>` : nothing}
-    <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}` : nothing}${wait}</div>
-    ${closedMonths ? html`<p class="hint">No se puede comprobar con lo apuntado: festivos trabajados.</p>` : html`<p class="hint">Cierra los meses para comprobar el descanso semanal y las jornadas.</p>`}
+    <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}` : nothing}${payrollRows}</div>
+    ${!closedMonths ? html`<p class="hint">Cierra los meses para comprobar el descanso semanal y las jornadas.</p>` : nothing}
+    ${!c.complete && later.length ? html`<p class="hint">Al cerrar el registro se comprueba también ${joinAnd(later)}.</p>` : nothing}
   </div>`;
 }
 

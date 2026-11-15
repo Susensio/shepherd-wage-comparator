@@ -12,6 +12,7 @@ import {
   answerRecall,
   clearEnd,
   closeMonth,
+  completeRecord,
   confirmStart,
   countsOf,
   defaultMarks,
@@ -22,6 +23,7 @@ import {
   removeEvidence,
   removePayment,
   reopenMonth,
+  reopenRecord,
   setEnd,
   setNothingPaid,
   setParties,
@@ -433,7 +435,7 @@ describe('the law, from the record: facts only', () => {
     assert.equal(three.days.extra, Math.max(0, three.days.worked - three.days.due));
   });
 
-  test('the overnight bonus and the minimum on payroll wait for every month closed and a payroll cobro', () => {
+  test('the overnight bonus and the minimum on payroll wait for every month closed and the record closed', () => {
     const offer = offerOf({
       ...OFFER.terms,
       ...OFFER.mine,
@@ -451,23 +453,51 @@ describe('the law, from the record: facts only', () => {
     const some = law(record, offer);
     assert.equal(some.overnight.known, false);
     assert.equal(some.minimum.known, false);
+    // Every month closed, the record still open: more cobros may come
     closeMonths(offer, record, ['2026-08']);
+    assert.equal(law(record, offer).overnight.known, false);
+    assert.equal(law(record, offer).minimum.known, false);
+    completeRecord(record, '2026-11-12');
     const all = law(record, offer);
     assert.equal(all.overnight.known, true);
     assert.ok(all.overnight.missing > 0);
     assert.ok(all.minimum.known && all.minimum.short > 0);
-    // All closed but no payroll cobro (cash only): still nothing to judge
+    // The record closed with months still open (a month reopened): nothing to judge
+    reopenMonth(record, '2026-08');
+    assert.equal('complete' in record, false, 'reopening a month reopens the record');
+    // Cash only, the record closed: there is nothing on payroll, and the minimum is short
     const cash = emptyRecord();
     addPayment(cash, { date: '2026-07-05', amount: 100, via: 'cash' });
     closeMonths(offer, cash, ['2026-06', '2026-07', '2026-08']);
-    assert.equal(law(cash, offer).overnight.known, false);
+    completeRecord(cash, '2026-11-12');
+    assert.equal(law(cash, offer).minimum.payroll, 0);
+    assert.ok(law(cash, offer).minimum.short > 0);
     // Plenty on payroll: nothing missing and the minimum met
     const rich = emptyRecord();
     addPayment(rich, { date: '2026-07-05', amount: 99999, via: 'payroll' });
     closeMonths(offer, rich, ['2026-06', '2026-07', '2026-08']);
+    completeRecord(rich, '2026-11-12');
     const full = law(rich, offer);
     assert.equal(full.overnight.missing, 0);
     assert.equal(full.minimum.short, 0);
+    assert.equal(full.minimum.applicable, true);
+  });
+
+  test('without a contract the minimum on payroll does not apply', () => {
+    const none = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'n', contract: 'none' });
+    const record = emptyRecord();
+    assert.equal(law(record, none).minimum.applicable, false);
+  });
+
+  test('«Cerrar el registro» and «Reabrir el registro»: said once, dated, taken back', () => {
+    const record = emptyRecord();
+    assert.equal(completeRecord(record, '2026-11-12'), true);
+    assert.deepEqual(record.complete, { date: '2026-11-12' });
+    assert.equal(completeRecord(record, '2026-11-13'), false, 'already closed: the first date stays');
+    assert.deepEqual(record.complete, { date: '2026-11-12' });
+    assert.equal(reopenRecord(record), true);
+    assert.equal('complete' in record, false);
+    assert.equal(reopenRecord(record), false);
   });
 
   test('the minimum fails only beyond a margin for withholding differences', () => {

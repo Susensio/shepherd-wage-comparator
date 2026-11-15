@@ -2,8 +2,8 @@
  * Whether the law was kept, from what the record holds and not from what the offer promised (ADR-0032), judging facts
  * only: the facts of the terms (no contract, cash agreed) need no month closed; the weekly rest and the days worked above
  * those due look at CLOSED months alone (the periods wholly inside them). The overnight bonus and the minimum on payroll
- * are worked out once every month is closed and a payroll cobro exists, but the screens do not judge them until every
- * cobro is known (a later round). Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
+ * are judged only once the shepherd has closed the record (`record.complete`: every cobro is recorded) with every month
+ * closed: until then not every cobro is known. Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
  * No DOM.
  */
 
@@ -54,8 +54,8 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   const worked = days.filter((x) => x.closed && x.kind === 'work').length;
   const due = jobDays > 0 ? (r.extra.due * closedDays) / jobDays : 0;
 
-  // The overnight bonus and the minimum, once everything is closed and some payroll was cobrado
-  const known = allClosed && payroll > 0;
+  // The overnight bonus and the minimum, once every month is closed and the shepherd said every cobro is recorded
+  const known = allClosed && Boolean(record.complete);
   const overnight = settled.totals.items.overnight;
   // The minimum on payroll, in net: what arrived on payroll against the net equivalent of the minimum (the gross
   // minimum times the net factor). Real withholdings differ from the simulated ones, so it fails only beyond one more
@@ -85,6 +85,7 @@ export function lawFromRecord(offer, record, settled, r, payments) {
       due: cents(overnight.due * r.netFactor),
       missing: cents(overnight.owed * r.netFactor),
     },
-    minimum: { known, minimumNet, payroll, short: cents(Math.max(0, floor - payroll)) },
+    // Without a contract there is no payroll: the facts say it, and the minimum on payroll does not apply
+    minimum: { known, applicable: !r.noContract, minimumNet, payroll, short: cents(Math.max(0, floor - payroll)) },
   };
 }

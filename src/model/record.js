@@ -130,12 +130,27 @@ export function closeMonth(offer, record, span, today) {
   return true;
 }
 
-/** Opens a closed month again, keeping its days. Returns false if it was not closed. */
+/** Opens a closed month again, keeping its days; the record is no longer complete. Returns false if it was not closed. */
 export function reopenMonth(record, key) {
   const month = record.months?.[key];
   if (!month?.closed) return false;
   month.closed = false;
   delete month.closedAt;
+  delete record.complete;
+  return true;
+}
+
+/** «Cerrar el registro»: every cobro is recorded, said on `today` (ISO). Returns false if it already was. */
+export function completeRecord(record, today) {
+  if (record.complete || !today) return false;
+  record.complete = { date: today };
+  return true;
+}
+
+/** «Reabrir el registro»: more cobros may come. Returns false if it was not complete. */
+export function reopenRecord(record) {
+  if (!record.complete) return false;
+  delete record.complete;
   return true;
 }
 

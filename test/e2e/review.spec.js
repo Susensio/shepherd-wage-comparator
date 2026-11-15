@@ -122,7 +122,9 @@ test.describe('Cuentas and Registro', () => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     await expect(block.locator('.lawcheck > div', { hasText: 'Sin contrato' }).locator('.m')).toHaveText('✘');
-    await expect(block).toContainText('Se comprobará cuando estén apuntados todos los cobros');
+    // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
+    await expect(block).not.toContainText('Se comprobará cuando');
+    await expect(block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
     await addPayments(page, [{ date: '2026-03-01', amount: 100, via: 'payroll' }]);
     await expect(block).not.toContainText('estimado');
     await expect(page.locator('#result')).not.toContainText('por debajo del mínimo legal');

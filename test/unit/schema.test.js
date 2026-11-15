@@ -126,8 +126,8 @@ test('the village, its codes, the head counts and whether it was worked are term
   }
 });
 
-test('the account schema is at version 6', () => {
-  assert.equal(SCHEMA_VERSION, 6);
+test('the account schema is at version 7', () => {
+  assert.equal(SCHEMA_VERSION, 7);
 });
 
 describe('upgrade chain', () => {
@@ -481,9 +481,9 @@ describe('fields the page does not know', () => {
   });
 
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v7-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v8-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 7);
+    assert.equal(offer.schema_version, 8);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
@@ -493,14 +493,14 @@ describe('fields the page does not know', () => {
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v7-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v8-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 7);
+    assert.equal(again.offers[0].schema_version, 8);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 7, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 8, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -510,10 +510,44 @@ describe('fields the page does not know', () => {
 
   test('a shared row of the current version keeps them, and its sharer names it', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 6, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 7, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.newTerm, 'x');
     assert.equal(shared?.o.mine.name, 'Ana');
+  });
+});
+
+describe('version 7: the record closed (ADR-0032)', () => {
+  test('upgrade[6] is the identity: a version-6 bundle comes through whole, with no record closed', () => {
+    const [offer] = fixture('v6').offers;
+    assert.deepEqual(upgrade[6].offer(offer), offer);
+    const { offers } = ingestSaved(fixture('v6'), { fallbackCfg });
+    assert.equal('complete' in offers[0].mine.record, false);
+    assert.equal(offers[0].mine.record.end.how, 'agreed');
+    assert.equal(offers[0].mine.record.months['2026-06'].closedAt, '2026-07-02');
+    assert.equal(offers[0].mine.parties.employerName, 'Casa Pérez');
+    assert.equal(offers[0].mine.futureMineField, 7, 'what the page does not know is kept');
+  });
+
+  test('a record closed keeps its date; anything else is dropped', () => {
+    const record = (complete) =>
+      ingestSaved(
+        {
+          schema_version: 7,
+          offers: [{ id: 'a', terms: {}, mine: { record: { months: {}, payments: [], complete } } }],
+        },
+        { fallbackCfg },
+      ).offers[0].mine.record;
+    assert.deepEqual(record({ date: '2026-11-15', extra: 1 }).complete, { date: '2026-11-15' });
+    for (const bad of [true, 'x', { date: 'hoy' }, { date: 5 }, null, []])
+      assert.equal('complete' in record(bad), false, JSON.stringify(bad));
+    // Normalising what is already clean changes nothing
+    const clean = record({ date: '2026-11-15' });
+    assert.deepEqual(
+      ingestSaved({ schema_version: 7, offers: [{ id: 'a', terms: {}, mine: { record: clean } }] }, { fallbackCfg })
+        .offers[0].mine.record,
+      clean,
+    );
   });
 });

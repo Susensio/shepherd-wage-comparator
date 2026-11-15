@@ -274,7 +274,9 @@ test.describe('finished: Cuentas', () => {
     );
     await closeMonths(page, 'all');
     await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(0);
-    await expect(page.locator('.block.result .tag .sub')).toHaveText('Todos los meses están cerrados.');
+    await expect(page.locator('.block.result .tag .sub')).toHaveCount(0);
+    // The months are closed, the record is not: that is what is left to do
+    await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toBeVisible();
   });
 
   test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más», and nothing to claim', async ({
@@ -349,7 +351,7 @@ test.describe('finished: Cuentas', () => {
     await expect(block.locator('.row', { hasText: 'Paro' })).toContainText('según la oferta');
     await expect(block).not.toContainText('Simulador de nóminas');
     await closeMonths(page, 'all');
-    await expect(page.locator('.block.result .tag .sub')).toContainText('Todos los meses están cerrados');
+    await expect(page.locator('.block.result .tag .sub')).toHaveCount(0); // the record, not the months, is what is left
     // How it adds up: a closed fold, with En negro only when cash was agreed
     const fold = block.locator('details[data-fold=how]');
     await expect(fold).not.toHaveAttribute('open', '');
@@ -438,15 +440,74 @@ test.describe('finished: Cuentas', () => {
     const rows = block.locator('.lawcheck > div');
     await expect(rows.filter({ hasText: 'Descanso semanal' })).toContainText('periodos de 4 semanas');
     await expect(rows.filter({ hasText: 'Jornadas de más' })).toBeVisible();
-    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toContainText(
-      'Se comprobará cuando estén apuntados todos los cobros',
-    );
-    await expect(block).toContainText('No se puede comprobar con lo apuntado: festivos trabajados');
+    // Only rows that can be judged: the minimum on payroll waits for the record to be closed, and says so once
+    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
+    await expect(block).toContainText('Al cerrar el registro se comprueba también el salario mínimo en nómina');
+    await expect(block).not.toContainText('festivos trabajados');
+    await expect(block).not.toContainText('Se comprobará cuando');
     await expect(page.locator('#result')).not.toContainText('La nómina declarada está');
-    // Every month closed: still no verdict on the minimum, which waits for every cobro to be known
+    // Every month closed, the record still open: still no verdict, which waits for every cobro to be known
     await closeMonths(page, 'all');
     await expect(block).toContainText('sobre 4 de 4 meses cerrados');
-    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' }).locator('.m')).toHaveText('?');
+    await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
+  });
+
+  test('«Cerrar el registro»: the months are reviewed first, then «¿Están apuntados todos los cobros?»; the figures are firm and the minimum is judged; «Reabrir» undoes it', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    // Nothing to close while no cobro is recorded: the block asks for them
+    await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toHaveCount(0);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
+    // Months open: the review comes first
+    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 4');
+    for (const month of ['junio', 'julio', 'agosto', 'septiembre'])
+      await page.getByRole('button', { name: `Cerrar ${month}` }).click();
+    await expect(page.locator('#result')).toContainText('Revisión hecha');
+    await expect(page.getByText('¿Están apuntados todos los cobros?')).toBeVisible();
+    await page.getByRole('button', { name: 'Sí, cerrar el registro' }).click();
+    // Back in Cuentas: closed with its date, the figures firm, the minimum judged, the card no longer asks for it
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await expect(page.locator('.closed-record')).toContainText('Registro cerrado el 12 nov');
+    await expect(page.locator('.block.result .tag .sub')).toHaveCount(0);
+    await expect(page.locator('#result')).not.toContainText('no es firme');
+    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
+    const minimum = block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' });
+    await expect(minimum).toContainText('En nómina se cobraron');
+    await expect(minimum.locator('.m')).toHaveText(/[✔✘]/);
+    await expect(block).not.toContainText('Al cerrar el registro se comprueba');
+    expect(await page.evaluate(() => app.active().mine.record.complete)).toEqual({ date: '2026-11-12' });
+    // Undone: the minimum waits again
+    await page.getByRole('button', { name: 'Reabrir el registro' }).click();
+    await expect(page.locator('.closed-record')).toHaveCount(0);
+    await expect(minimum).toHaveCount(0);
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+  });
+
+  test('«Cerrar el registro» with every month closed asks in place, and «Todavía no» leaves it open; reopening a month reopens the record', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await closeMonths(page, 'all');
+    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
+    await expect(page.getByText('¿Están apuntados todos los cobros?')).toBeVisible();
+    await page.getByRole('button', { name: 'Todavía no' }).click();
+    await expect(page.getByText('¿Están apuntados todos los cobros?')).toHaveCount(0);
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
+    await page.getByRole('button', { name: 'Sí, cerrar', exact: true }).click();
+    await expect(page.locator('.closed-record')).toBeVisible();
+    // A month reopened makes the figures estimates again, and the record is not closed any more
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.reopenMonth(app.active(), '2026-08');
+      app.select(app.active().id);
+    });
+    await expect(page.locator('.closed-record')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toBeVisible();
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
   });
 
   test('«Revisar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({

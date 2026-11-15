@@ -103,7 +103,11 @@ function month(cal) {
 function reviewDone(cal) {
   const left = cal.left.map(monthName);
   return html`<div class="appbar-review"><button type="button" class="linkbtn" data-action="reviewEnd">‹ Cuentas</button></div>
-    <div class="confirm"><b>Revisión hecha</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span><button type="button" class="pri addbtn" data-action="reviewEnd">Ver las cuentas</button></div>`;
+    <div class="confirm"><b>Revisión hecha</b><span>${plural(cal.closed, 'mes cerrado', 'meses cerrados')}.${left.length ? ` Siguen según la oferta: ${left.join(', ')}.` : ''}</span>${
+      cal.asksComplete
+        ? html`<b>¿Están apuntados todos los cobros?</b><div class="btns"><button type="button" class="pri" data-action="completeYes">Sí, cerrar el registro</button><button type="button" data-action="reviewEnd">Todavía no</button></div>`
+        : html`<button type="button" class="pri addbtn" data-action="reviewEnd">Ver las cuentas</button>`
+    }</div>`;
 }
 
 /**
