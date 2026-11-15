@@ -16,22 +16,23 @@ import {
 import { $ } from '../dom.js';
 import { fDate, num } from '../format.js';
 import { conciliationOffice } from '../law.js';
-import {
-  addableMonth,
-  balanceOf,
-  jobStatus,
-  minimumNote,
-  monthAccounts,
-  spanOf,
-  standingOf,
-} from '../model/accounts.js';
+import { addableMonth, balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
-import { hasFacts, jobStart, phaseOf } from '../model/phase.js';
+import {
+  cardsOf,
+  monthFlags,
+  monthOnCalendar,
+  monthStrip,
+  nextSeasonStart,
+  paymentsNewestFirst,
+  recordPhase,
+} from '../model/job-view.js';
+import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
-import { isoOf, missing, parseDate, todayISO } from '../offer.js';
+import { missing, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
@@ -122,12 +123,6 @@ export function setUpRecord(given) {
   sheet.form.addEventListener('submit', savePayment);
 }
 
-/** The phase of an offer that has a record to show, or null: not decided, only an offer, or not complete. */
-export function recordPhase(o, today = todayISO()) {
-  const phase = phaseOf(o, today, o.mine.record);
-  return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
-}
-
 /**
  * The text «Copiar reclamación» copies for an offer, or null where the entry is hidden: decided by `claimToCopy` from
  * the phase (menu availability and the copy itself both read it).
@@ -182,68 +177,6 @@ function claimContext(o, r, settled, standing, today) {
     inspection: owed ? inspectionText(base) : '',
     fields: owed || record.end?.how === 'dismissed' ? conciliationFields(base) : [],
   };
-}
-
-/**
- * The questions at the turns of a job. «¿Empezó?» only for a job under way with nothing recorded and no answer yet;
- * «¿Cómo acabó?» for a finished job with no answer, or when asked from «Acabó antes».
- * @param {any} o
- * @param {'underway' | 'finished'} phase
- * @param {ReturnType<typeof settleOffer>} settled
- * @param {string} today
- */
-function cardsOf(o, phase, settled, today) {
-  const record = o.mine.record;
-  const asked = ui.end[o.id];
-  const start =
-    phase === 'underway' && !record.started && !hasFacts(record) && !asked
-      ? { date: o.terms.start, other: Boolean(ui.startOther[o.id]) }
-      : null;
-  const seasonal = o.terms.contract === 'seasonal';
-  // On sick leave the contract is suspended: how it ended is not asked until the leave is closed
-  const onLeave = Boolean(record.sick && !record.sick.to);
-  const open = asked || (phase === 'finished' && !record.end && !onLeave && !ui.endLater[o.id]);
-  const end = open
-    ? {
-        how: asked?.how ?? null,
-        early: Boolean(asked),
-        seasonal,
-        /** The first day an end or a leave can have: the job's start. */
-        min: jobStart(o),
-        error: asked?.error ?? '',
-        /** What «Al final pactado» takes: the last day of the job, never after today. */
-        agreedDate: [settled.job.to, today].find((d) => d && d <= today) ?? today,
-      }
-    : null;
-  return start || end || recallOf(o, today) ? { start, end, recall: recallOf(o, today) } : null;
-}
-
-/** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */
-const unconfirmedStart = (o, phase) => phase === 'underway' && !o.mine.record.started && !hasFacts(o.mine.record);
-
-/** What the phase pill says: «Por empezar» until the start is confirmed, else the phase. */
-export const pillPhase = (o, phase) => (unconfirmedStart(o, phase) ? 'toStart' : phase);
-
-/** The first day of the season after the one worked, for a fijo discontinuo: its start a year on. */
-export function nextSeasonStart(o) {
-  const start = parseDate(o.terms.start);
-  start.setFullYear(start.getFullYear() + 1);
-  return isoOf(start);
-}
-
-/**
- * «¿Se llamó para la campaña de <año>?»: a fijo discontinuo that ended at the end of its campaign, from the day its next
- * season is expected to start (the start a year on), until answered.
- * @param {any} o
- * @param {string} today
- */
-function recallOf(o, today) {
-  const record = o.mine.record;
-  if (o.terms.contract !== 'seasonal' || record.end?.how !== 'agreed' || !o.terms.start) return null;
-  const from = nextSeasonStart(o);
-  const year = from.slice(0, 4);
-  if (today < from || record.recall?.[year]) return null;
-  return { year, no: Boolean(ui.recall[o.id]?.no), error: ui.recall[o.id]?.error ?? '', min: record.end.date };
 }
 
 /**
@@ -303,21 +236,6 @@ function talkContext(o, r, settled, standing, today) {
   };
 }
 
-/** Where the calendar starts for an offer: this month under way, the first still open once finished. */
-function defaultMonth(rows, today, phase) {
-  const shown = rows.filter((row) => row.from <= today);
-  if (phase === 'underway') return (shown.at(-1) ?? rows[0]).month;
-  return (shown.find((row) => !row.closed) ?? shown.at(-1)).month;
-}
-
-/** The month the calendar shows: the one picked if it has started, else the default. */
-function monthOnCalendar(o, rows, today, phase, addable) {
-  const picked = ui.months[o.id];
-  return rows.some((row) => row.month === picked && row.from <= today) || picked === addable
-    ? picked
-    : defaultMonth(rows, today, phase);
-}
-
 /**
  * Everything the record's views need for an offer, or null where it has none.
  * @param {any} o
@@ -342,22 +260,14 @@ export function recordContext(o, r) {
     index,
     count,
     // A month not in the job (the one that can be added) has nothing to close, and says how it joins
-    inJob: Boolean(rowOf(key)),
-    current: Boolean(rowOf(key)) && rowOf(key).from <= today && today <= rowOf(key).calendarTo,
+    ...monthFlags(rowOf(key), today),
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
-    canClose: Boolean(rowOf(key)) && rowOf(key).calendarTo < today,
   });
-  const key = monthOnCalendar(o, settled.rows, today, phase, addable);
+  const key = monthOnCalendar(ui.months[o.id], settled.rows, today, phase, addable);
   const picked = ui.opened[o.id];
   const opened = picked && (rowOf(picked) || picked === addable) ? picked : null;
   const index = shown.findIndex((row) => row.month === key);
-  /** @type {RecordContext['strip']} */
-  const strip = settled.rows.map((row) => ({
-    month: row.month,
-    state: row.closed ? 'closed' : row.from > today ? 'later' : row.calendarTo < today ? 'due' : 'now',
-    selected: row.month === key,
-  }));
-  if (addable) strip.push({ month: addable, state: 'add', selected: addable === key });
+  const strip = monthStrip(settled.rows, today, key, addable);
   const waiting = standing.unclosed.filter((row) => row.month !== key).map((row) => row.month);
   /** @type {CalendarContext | ReviewDone | null} */
   let review = null;
@@ -379,10 +289,7 @@ export function recordContext(o, r) {
     today,
     standing,
     settled,
-    payments: [...record.payments]
-      .map((p, i) => ({ p, i }))
-      .sort((a, b) => b.p.date.localeCompare(a.p.date) || b.i - a.i)
-      .map((x) => x.p),
+    payments: paymentsNewestFirst(record.payments),
     fresh: ui.fresh,
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
@@ -392,7 +299,12 @@ export function recordContext(o, r) {
     complete: record.complete && !standing.unclosed.length ? record.complete : null,
     asking: Boolean(ui.completing[o.id]),
     record,
-    cards: cardsOf(o, phase, settled, today),
+    cards: cardsOf(o, phase, settled, today, {
+      asked: ui.end[o.id],
+      startOther: ui.startOther[o.id],
+      endLater: ui.endLater[o.id],
+      recall: ui.recall[o.id],
+    }),
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
     balance: phase === 'finished' ? balanceOf(o, record, settled, r) : null,
     addable,
@@ -836,45 +748,4 @@ export function forgetRecordUi(offerId) {
 /** «Acabó antes» from the menu of an offer: asks how it ended on its ficha. */
 export function askHowItEnded(offerId) {
   ui.end[offerId] = { how: null };
-}
-
-/**
- * What a card says of a job under way or finished: its phase and pill, and its status (`jobStatus`). Null phase for an
- * offer only offered.
- * @param {any} o
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, status: ReturnType<typeof jobStatus> }}
- */
-export function cardRecord(o, r) {
-  const today = todayISO();
-  const phase = phaseOf(o, today, o.mine.record);
-  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, status: null };
-  if (!recordPhase(o, today)) return { phase, status: null };
-  const s = standingOf(
-    settleOffer(o),
-    today,
-    /** @type {'underway' | 'finished'} */ (phase),
-    o.mine.record.payments,
-    r.netFactor,
-    o.mine.record.nothingPaid,
-  );
-  return {
-    phase,
-    pill: pillPhase(o, /** @type {any} */ (phase)),
-    // A job not yet confirmed as started has nothing to record
-    status: unconfirmedStart(o, phase)
-      ? null
-      : jobStatus({
-          phase: /** @type {'underway' | 'finished'} */ (phase),
-          hasPayments: s.hasPayments,
-          owed: s.falta,
-          unclosed: s.unclosed.length,
-          complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
-          claim: {
-            by: s.deadlines
-              .filter((d) => !d.lapsed)
-              .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
-            lapsed: s.lapsedAll,
-          },
-        }),
-  };
 }

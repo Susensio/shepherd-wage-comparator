@@ -6,10 +6,11 @@
 import { render } from 'lit-html';
 import { $ } from './dom.js';
 import { calcTermsOnly } from './model/calc.js';
+import { cardOf, pillPhase } from './model/job-view.js';
 import { phaseOf, workedOffers } from './model/phase.js';
 import { defaultVacation, missing, todayISO } from './offer.js';
 import { offers } from './offers.js';
-import { active, calcOffer, myOffers, resetFigures, state } from './state.js';
+import { active, calcOffer, myOffers, resetFigures, settleOffer, state } from './state.js';
 import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { PHASE_TEXT, sharedLabels } from './text.js';
@@ -18,7 +19,7 @@ import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } fro
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
 import { dossierOpen, entryOpen, legalOpen, onNavigate, openFicha } from './ui/navigation.js';
-import { cardRecord, dismissReview, dossierContext, forgetRecordUi, pillPhase, recordContext } from './ui/record.js';
+import { dismissReview, dossierContext, forgetRecordUi, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { legalPageView } from './views/claim.js';
@@ -181,7 +182,7 @@ export function paintAll({ animate = false } = {}) {
       : offersListView(
           myOffers().map((x) => {
             const r = calcOffer(x);
-            return { o: x, r, record: cardRecord(x, r) };
+            return { o: x, r, record: cardOf(x, r, () => settleOffer(x), todayISO()) };
           }),
           o.id,
         ),

@@ -3,6 +3,7 @@
 import { commit, openOffer, paintAll, show, showSelected, viewShared } from './app.js';
 import { $ } from './dom.js';
 import { fInputValue, num } from './format.js';
+import { recordPhase } from './model/job-view.js';
 import {
   DAYS_PER_MONTH,
   DEF_CFG,
@@ -14,6 +15,7 @@ import {
   newId,
   parseDate,
   sideOf,
+  todayISO,
 } from './offer.js';
 import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
@@ -39,7 +41,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { askHowItEnded, claimCopyOf, onClaimInput, recordActions, recordPhase, showDossier } from './ui/record.js';
+import { askHowItEnded, claimCopyOf, onClaimInput, recordActions, showDossier } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -247,7 +249,7 @@ function menuAvailability(id) {
   return {
     copy: missing(o.terms).length === 0,
     claim: claimCopyOf(o) !== null,
-    ended: !!recordPhase(o),
+    ended: !!recordPhase(o, todayISO()),
   };
 }
 

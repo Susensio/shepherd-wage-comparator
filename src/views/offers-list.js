@@ -61,7 +61,7 @@ function yearHeading(year, totals) {
  * without a start date) is muted with a dashed edge, as in Comparar; one with data missing says so instead of a figure.
  * Cards go by start date, the latest first, under a header per year with that year's figures; those without a start
  * date, or starting later than today, go first, under «Por decidir» (ADR-0030), the soonest first and the undated last.
- * @param {{ o: any, r: any, record?: ReturnType<typeof import('../ui/record.js').cardRecord> }[]} items your offers with their figures and, for a job worked, its phase and what is owed
+ * @param {{ o: any, r: any, record?: ReturnType<typeof import('../model/job-view.js').cardOf> }[]} items your offers with their figures and, for a job worked, its phase and what is owed
  * @param {string} activeId the offer shown on the ficha, marked on wide screens where the list stays beside it
  */
 export function offersListView(items, activeId) {
@@ -100,7 +100,7 @@ function statusLine(status) {
 
 /**
  * One offer's card with its «⋯» menu.
- * @param {{ o: any, r: any, record?: ReturnType<typeof import('../ui/record.js').cardRecord> }} item
+ * @param {{ o: any, r: any, record?: ReturnType<typeof import('../model/job-view.js').cardOf> }} item
  * @param {string} activeId
  */
 function card({ o, r, record }, activeId) {
