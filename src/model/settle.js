@@ -346,6 +346,8 @@ export function settle(offer, record, today, r) {
       calendarTo: isoOf(share.calendarTo),
       /** A month after the offer's last one, in the job because a day was worked in it or after it. */
       extension: share.extension,
+      /** Days worked in the month: those recorded, and the offer's pattern for the days still following it. */
+      worked,
       /** Days of the record, by kind, and the share of the month still following the offer. */
       facts: { ...counts, followingOffer: open },
       /** The cash agreed for the month, net as handed: part of the pay in `items`, shown apart. */
@@ -370,20 +372,32 @@ export function settle(offer, record, today, r) {
 
   // Payments, oldest first, fill the oldest unpaid month first, cash included: it arrived. Cash is also reported apart.
   // What arrived is net; it is grossed up as `calc` credits cash, so it compares with the gross dues.
-  const payments = [...(record?.payments || [])].sort((a, b) => a.date.localeCompare(b.date));
+  // `paid` (ADR-0035) says what the cobros would: `asAgreed`, every item received what the offer agreed for it (so
+  // only a shortfall under the minimum is owed); `none`, nothing was received. Either way the payments are not read.
+  const asAgreed = record?.paid === 'asAgreed';
+  const payments = record?.paid ? [] : [...(record?.payments || [])].sort((a, b) => a.date.localeCompare(b.date));
   // Cash as agreed is grossed up the way the agreement was, so paying it exactly leaves nothing owed
   const grossOf = (list) => sum(list.map((p) => cents(p.amount * (p.via === 'cash' ? cashRatio : 1 / r.netFactor))));
-  const cash = sum(payments.filter((p) => p.via === 'cash').map((p) => p.amount));
+  const cash = asAgreed
+    ? sum(rows.map((row) => row.agreedCash))
+    : sum(payments.filter((p) => p.via === 'cash').map((p) => p.amount));
   let pool = grossOf(payments);
   let declaredPool = grossOf(payments.filter((p) => p.via === 'payroll'));
-  for (const row of rows) {
+  for (const [index, row] of rows.entries()) {
+    // what the agreement pays on payroll, of its pay: the rest was cash
+    const payrollShare = plans[index].wage > 0 ? plans[index].payroll / plans[index].wage : 1;
     for (const item of ITEMS) {
       const x = row.items[item];
-      x.received = Math.min(pool, x.due);
-      pool = cents(pool - x.received);
+      if (asAgreed) {
+        x.received = x.agreed;
+        x.declared = cents(x.agreed * Math.min(1, payrollShare));
+      } else {
+        x.received = Math.min(pool, x.due);
+        pool = cents(pool - x.received);
+        x.declared = Math.min(declaredPool, x.due);
+        declaredPool = cents(declaredPool - x.declared);
+      }
       x.owed = cents(x.due - x.received);
-      x.declared = Math.min(declaredPool, x.due);
-      declaredPool = cents(declaredPool - x.declared);
       x.belowMinimumOnPayroll = cents(Math.max(0, x.minimum - x.declared));
     }
     row.received = sum(ITEMS.map((item) => row.items[item].received));
@@ -393,10 +407,12 @@ export function settle(offer, record, today, r) {
   // The claim (ET 59.2) is dated from the earliest month the cobros dated by its due date did not cover: oldest-first
   // only fills the months, and would date a late-paid October by March. Never later than the real deadline.
   let dueSoFar = 0;
-  const datedFrom = rows.find((row) => {
-    dueSoFar = cents(dueSoFar + row.due);
-    return cents(dueSoFar - grossOf(payments.filter((p) => p.date <= row.dueDate))) > 0;
-  });
+  const datedFrom = asAgreed
+    ? undefined
+    : rows.find((row) => {
+        dueSoFar = cents(dueSoFar + row.due);
+        return cents(dueSoFar - grossOf(payments.filter((p) => p.date <= row.dueDate))) > 0;
+      });
   let first = true;
   for (const row of rows) {
     if (!(row.owed > 0)) continue;

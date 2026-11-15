@@ -138,7 +138,7 @@ export function monthAccounts(offer, record, key, today, settled, r) {
  * Where an offer stands, in net: the owner thinks in what reaches the shepherd, so what `settle` has gross is taken
  * times `netFactor` (the factor it uses to gross the payroll cobros up) and the cobros are as they arrived. The job is
  * worked with its totals, not month by month: months matter only for the days that make `corresponde`.
- * - `corresponde`, `cobrado` and `falta` = corresponde − cobrado, never below 0, over the months that have ended (the
+ * - `corresponde`, `cobrado` (with `paid` `asAgreed`: what the offer agreed, net) and `falta` = corresponde − cobrado, never below 0, over the months that have ended (the
  *   whole job once over). `sobra`: what was cobrado beyond it, a note and not a debt (real payslips differ from the
  *   simulated ones).
  * - `running`: the month in progress, counted up to today; the vacation accrues with the days counted.
@@ -185,7 +185,25 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
     netFactor,
   );
   const corresponde = sum(lines.map((x) => x.due));
-  const cobrado = sum(payments.map((p) => p.amount));
+  // «Sí, todo»: what the offer agreed was received, so what is missing is only what the minimum adds to it (and the
+  // severance, which the offer does not promise); «No se cobró nada», and the payments are not read
+  const shortfall = sum(
+    dueItems.map(({ item }) =>
+      item === 'vacation'
+        ? sum(rows.map((row) => row.items.vacation.shortfall)) * accrual
+        : item === 'severance'
+          ? finished
+            ? sum(rows.map((row) => row.items.severance.shortfall))
+            : 0
+          : sum(counted.map((row) => row.items[item].shortfall)),
+    ),
+  );
+  const cobrado =
+    paid === 'asAgreed'
+      ? Math.max(0, cents(corresponde - net(shortfall)))
+      : paid === 'none'
+        ? 0
+        : sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
   // Nothing is dated while nothing was said to be paid: with no cobro the debt is only what corresponds
   const hasPayments = payments.length > 0 || Boolean(paid);

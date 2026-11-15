@@ -243,14 +243,22 @@ export function reopenRecord(record) {
 }
 
 /**
- * Adds a payment: the amount is net, what arrived. The way is remembered by `lastWayOf`.
+ * Adds a payment: the amount is net, what arrived. The way is remembered by `lastWayOf`. `approx`: a lump remembered, not
+ * an exact figure.
  * @param {OfferRecord} record
- * @param {{ date: string, amount: number, via: 'payroll' | 'cash', note?: string }} payment
+ * @param {{ date: string, amount: number, via: 'payroll' | 'cash', note?: string, approx?: boolean }} payment
  * @returns {import('./settle.js').Payment | null} null when the amount is not a positive figure
  */
-export function addPayment(record, { date, amount, via, note = '' }) {
+export function addPayment(record, { date, amount, via, note = '', approx = false }) {
   if (!(Number.isFinite(amount) && amount > 0) || !date) return null;
-  const payment = { id: newId(), date, amount, via, ...(note.trim() ? { note: note.trim() } : {}) };
+  const payment = {
+    id: newId(),
+    date,
+    amount,
+    via,
+    ...(note.trim() ? { note: note.trim() } : {}),
+    ...(approx ? { approx: true } : {}),
+  };
   record.payments ??= [];
   record.payments.push(payment);
   delete record.paid; // a cobro is more specific than «Sí, todo» or «No se cobró nada»
