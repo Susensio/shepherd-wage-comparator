@@ -66,9 +66,9 @@ function dismissalBlock(step) {
     ? html`El plazo de ${days(LAW.dismissalDays)} hábiles ya pasó (como muy tarde, el ${fIso(/** @type {string} */ (step.deadline))}).`
     : html`Para actuar contra el despido hay hasta el <b>${fIso(/** @type {string} */ (step.deadline))}</b> como muy tarde: quedan ${days(/** @type {number} */ (step.daysLeft))}.`;
   return html`<section class="block"><div class="bh"><h2>Despido</h2></div><div class="dismissal ${step.lapsed || step.done ? '' : 'warn'}">
-    <p>${left} Son ${LAW.dismissalDays} días hábiles desde el día siguiente (${cite('et', '59.3')}); aquí se cuentan de lunes a viernes, contando los festivos como días hábiles, y el plazo real puede acabar un poco después.</p>
+    <p>${left} Son ${LAW.dismissalDays} días hábiles desde el día siguiente (${cite('et', '59.3')}); aquí se cuentan de lunes a viernes, contando los festivos como días hábiles, y el plazo real puede acabar más tarde.</p>
     <p><b>Presenta la papeleta de conciliación por despido antes de esa fecha; un sindicato puede ayudar.</b> Suspende el plazo (${cite('lrjs', '65.1')}).</p>
-    <p>Si ofrecen un finiquito, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme».</p>
+    <p>Si se ofrece un finiquito, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme».</p>
     ${doneRow(step, { button: 'Papeleta presentada', done: 'Papeleta presentada' })}</div></section>`;
 }
 
@@ -100,7 +100,7 @@ const fieldSets = (fields) =>
 /** The papeleta: what it is, the fields prefilled, and where it is filed. */
 function conciliationBody(c) {
   const office = c.office;
-  return html`<p>Es un paso previo obligatorio para ir al juzgado (${cite('lrjs', '63')}). Presentarla interrumpe la prescripción y suspende la caducidad (${cite('lrjs', '65.1')}), y a la cita hay que ir (${cite('lrjs', '66')}). Si pasan ${LAW.conciliationResumeDays} días hábiles sin celebrarse, el plazo sigue contando.</p>
+  return html`<p>Es un paso previo obligatorio para ir al juzgado (${cite('lrjs', '63')}). Presentarla interrumpe la prescripción y suspende la caducidad (${cite('lrjs', '65.1')}), y la asistencia a la cita es obligatoria (${cite('lrjs', '66')}). Si pasan ${LAW.conciliationResumeDays} días hábiles sin celebrarse, el plazo sigue contando.</p>
     <p class="hint">Lleva: el DNI, el nombre y el NIF o CIF del ganadero, el contrato y las nóminas si los hay, y el Expediente.</p>
     ${fieldSets(c.fields)}
     ${
@@ -196,7 +196,7 @@ export function underwayTalk(talk) {
   return html`<div class="block ask">${stepFold(
     talk.step,
     'Hablar con el ganadero',
-    html`<p>Lo más rápido suele ser hablarlo. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto.</p>${textCard('summary', talk.summary, talk.canShare)}`,
+    html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto.</p>${textCard('summary', talk.summary, talk.canShare)}`,
   )}</div>`;
 }
 
@@ -228,14 +228,14 @@ export function claimView(c) {
         ? stepFold(
             talk,
             'Hablar con el ganadero',
-            html`<p>Lo más rápido suele ser hablarlo. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
+            html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
             { open: true },
           )
         : talk
           ? stepFold(
               talk,
               'Hablar con el ganadero',
-              html`<p>Lo más rápido suele ser hablarlo. Con los cobros apuntados, aquí aparece un resumen para llevar.</p>`,
+              html`<p>Se puede empezar hablando con el ganadero. Con los cobros apuntados, aquí aparece un resumen para usar en la conversación.</p>`,
               { open: true, mark: false },
             )
           : nothing
