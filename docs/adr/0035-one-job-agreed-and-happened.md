@@ -38,3 +38,9 @@ Weighed and discarded:
 - Hours are not required in the quick entry (this replaces the design's recommendation): without them, nothing about hours is judged.
 - The value of a vacation day is what a day of the job is worth (cash included), though a legal claim may only reach the payroll's part.
 - Where an agreement's salary is below the minimum wage, the agreement is out of date and the minimum wage is the base (the overnight bonus).
+
+## Notes from phase A (15 November 2026)
+
+- «Computed once per paint» is a memo (`calcOffer`, `settleOffer` in `state.js`) reset on save, on load and at the start of each paint.
+- `model/days.js` holds only what was duplicated (`daysBetween`, `monthDays`, `monthSpan`); the month share and spreading a total arrive with phase B.
+- The claim, talk and dossier contexts stay in `ui/record.js`: they build text from `claim-text.js`, above the model layer.
