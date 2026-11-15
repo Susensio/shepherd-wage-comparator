@@ -218,7 +218,7 @@ export function inspectionText({ o, r, settled, record, parties }) {
   );
   const payments = record.payments ?? [];
   if (payments.length) out.push('Cobros recibidos:', ...cobrosLines(payments));
-  else if (record.nothingPaid) out.push('No se ha cobrado nada.');
+  else if (record.paid === 'none') out.push('No se ha cobrado nada.');
   if (record.end) {
     const how = {
       agreed: 'al final pactado',

@@ -34,11 +34,11 @@ function contextOf(o, amount) {
   const record = {
     months: {},
     payments: amount ? [{ id: 'a', date: '2026-07-01', amount, via: 'payroll' }] : [],
-    ...(amount ? {} : { nothingPaid: true }),
+    ...(amount ? {} : { paid: 'none' }),
   };
   const r = calc(o, ctx);
   const settled = settle(o, record, TODAY, calc(o, ctx));
-  const standing = standingOf(settled, TODAY, 'finished', record.payments, r.netFactor, record.nothingPaid);
+  const standing = standingOf(settled, TODAY, 'finished', record.payments, r.netFactor, record.paid);
   return {
     o,
     r,
@@ -300,10 +300,10 @@ describe('under way, the message lists only the months counted so far', () => {
       irpfManual: 10,
     });
     const today = '2026-11-15';
-    const record = { months: {}, payments: [], nothingPaid: true };
+    const record = { months: {}, payments: [], paid: 'none' };
     const r = calc(o, ctx);
     const settled = settle(o, record, today, calc(o, ctx));
-    const standing = standingOf(settled, today, 'underway', [], r.netFactor, true);
+    const standing = standingOf(settled, today, 'underway', [], r.netFactor, 'none');
     const text = employerSummaryText({ o, r, settled, standing, record, parties: PARTIES, until: today });
     assert.match(text, /Septiembre: /);
     assert.match(text, /Noviembre: /);

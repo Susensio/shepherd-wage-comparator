@@ -151,9 +151,9 @@ export function monthAccounts(offer, record, key, today, settled, r) {
  * @param {'underway' | 'finished'} phase
  * @param {import('./settle.js').Payment[]} payments with none, nothing is owed that the shepherd has not said
  * @param {number} netFactor `r.netFactor`
- * @param {boolean} [nothingPaid] "No se cobró nada" was said: with no cobro, what corresponds is what is owed
+ * @param {import('./settle.js').Paid} [paid] `none`: "No se cobró nada" was said, so with no cobro what corresponds is what is owed
  */
-export function standingOf(settled, today, phase, payments, netFactor, nothingPaid = false) {
+export function standingOf(settled, today, phase, payments, netFactor, paid) {
   const { rows, totals } = settled;
   const net = (gross) => cents(gross * netFactor) + 0; // + 0: no -0
   const finished = phase === 'finished';
@@ -188,7 +188,7 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
   const cobrado = sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
   // Nothing is dated while nothing was said to be paid: with no cobro the debt is only what corresponds
-  const hasPayments = payments.length > 0 || nothingPaid;
+  const hasPayments = payments.length > 0 || Boolean(paid);
   const claimable = falta > 0 && hasPayments;
   const deadlines = claimable
     ? rows

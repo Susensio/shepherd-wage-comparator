@@ -151,14 +151,7 @@ export function cardOf(o, r, settledOf, today) {
   if (phase === 'offerOnly' || !o.terms.start) return { phase: null, status: null };
   if (!recordPhase(o, today)) return { phase, status: null };
   const recordPhaseNow = /** @type {'underway' | 'finished'} */ (phase);
-  const s = standingOf(
-    settledOf(),
-    today,
-    recordPhaseNow,
-    o.mine.record.payments,
-    r.netFactor,
-    o.mine.record.nothingPaid,
-  );
+  const s = standingOf(settledOf(), today, recordPhaseNow, o.mine.record.payments, r.netFactor, o.mine.record.paid);
   return {
     phase,
     pill: pillPhase(o, phase),

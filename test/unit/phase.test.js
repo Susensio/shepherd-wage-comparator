@@ -97,5 +97,6 @@ test('facts: a day, a cobro or «no se cobró nada»', () => {
   assert.equal(hasFacts({ months: {}, payments: [] }), false);
   assert.equal(hasFacts({ months: { '2026-06': {} }, payments: [] }), true);
   assert.equal(hasFacts({ months: {}, payments: [{}] }), true);
-  assert.equal(hasFacts({ months: {}, payments: [], nothingPaid: true }), true);
+  assert.equal(hasFacts({ months: {}, payments: [], paid: 'none' }), true);
+  assert.equal(hasFacts({ months: {}, payments: [], paid: 'asAgreed' }), true);
 });

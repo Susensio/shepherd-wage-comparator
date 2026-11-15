@@ -13,11 +13,12 @@ import { claimDeadline } from './time.js';
 
 /**
  * @typedef {'work' | 'off' | 'sick'} DayKind a libranza and a vacation day are the same mark, «off»
+ * @typedef {'asAgreed' | 'none'} Paid `asAgreed`: what was agreed was received («Sí, todo»); `none`: nothing was
  * @typedef {{ id: string, date: string, amount: number, via: 'payroll' | 'cash', note?: string }} Payment `amount` is net: what arrived, after withholdings on payroll, or as handed in cash. Only `payroll` is declared, on a payslip
  * @typedef {{ closed?: boolean, closedAt?: string, days?: Record<string, DayKind> }} RecordMonth `days` is keyed by the day of the month, «05»; `closedAt` is the ISO date it was closed
  * @typedef {{ how: 'agreed' | 'dismissed' | 'quit', date: string }} JobEnd how and when the job really ended (ADR-0034); sick leave is not an end
  * @typedef {{ from: string, to?: string }} SickLeave a leave that suspends the contract: its days are `sick` by default; open while `to` is missing
- * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[], end?: JobEnd, started?: { date: string }, nothingPaid?: boolean, evidence?: { date: string, text: string }[], sick?: SickLeave, recall?: Record<string, 'yes' | 'no'>, complete?: { date: string } }} OfferRecord months keyed «2026-06»; `complete`: the shepherd said every cobro is recorded, on that date; `started`: the start the shepherd confirmed; `nothingPaid`: no cobro, said so (a flag, not a payment of 0)
+ * @typedef {{ months?: Record<string, RecordMonth>, payments?: Payment[], end?: JobEnd, started?: { date: string }, paid?: Paid, evidence?: { date: string, text: string }[], sick?: SickLeave, recall?: Record<string, 'yes' | 'no'>, complete?: { date: string } }} OfferRecord months keyed «2026-06»; `complete`: the shepherd said every cobro is recorded, on that date; `started`: the start the shepherd confirmed; `paid`: the answer to «¿Se cobró este trabajo?», said (not a payment; absent: unknown, the cobros speak)
  * @typedef {{ agreed: number, minimum: number, due: number, shortfall: number, received: number, owed: number, declared: number, belowMinimumOnPayroll: number }} ItemRow
  * `agreed` is the pay of the offer, payroll and the agreed cash together (as the gross that would bring the cash net): the
  * minimum is compared with total pay, as `calc` does with `coveredByCash`; `row.agreedCash` says how much of it is cash.

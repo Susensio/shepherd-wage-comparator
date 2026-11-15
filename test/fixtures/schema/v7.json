@@ -1,0 +1,59 @@
+{
+  "schema_version": 7,
+  "offers": [
+    {
+      "id": "v7-1",
+      "cmp": true,
+      "schema_version": 7,
+      "terms": {
+        "payAmount": 1785,
+        "payType": "net",
+        "payUnit": "month",
+        "contract": "seasonal",
+        "start": "2026-06-21",
+        "duration": 102,
+        "offerOnly": false,
+        "futureTermsField": "kept"
+      },
+      "mine": {
+        "name": "Puerto A",
+        "car": "own",
+        "futureMineField": 7,
+        "record": {
+          "months": {
+            "2026-06": {
+              "closed": true,
+              "closedAt": "2026-07-02",
+              "days": {
+                "21": "work",
+                "22": "off"
+              }
+            }
+          },
+          "payments": [],
+          "end": {
+            "how": "agreed",
+            "date": "2026-09-30"
+          },
+          "nothingPaid": true,
+          "complete": {
+            "date": "2026-11-15"
+          }
+        },
+        "parties": {
+          "employerName": "Casa Pérez"
+        },
+        "claim": {
+          "steps": {
+            "talk": {
+              "done": "2026-11-01"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "cfg": {
+    "rentValue": 350
+  }
+}

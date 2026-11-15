@@ -19,14 +19,14 @@ import { toAnswerable } from './pay-answers.js';
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 6;
+export const PAGE_VERSION = 7;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -72,11 +72,14 @@ const withoutLawFigures = (cfg) =>
  * 5: `mine.record`, what happened (days by month, payments received; ADR-0032). The migration of 12 November 2026 gave
  *    every account row an empty one.
  * 6: how and when a job ended (`record.end`), the start confirmed (`record.started`), the parties (`mine.parties`),
- *    `closedAt` on a month, `record.evidence`, `record.nothingPaid`, `record.sick` (a leave that does not end the job),
+ *    `closedAt` on a month, `record.evidence`, `record.nothingPaid` (gone in 8), `record.sick` (a leave that does not end the job),
  *    `record.recall` (called back for a season or not) and the claim steps done (`mine.claim`; ADR-0034).
  *    All optional. The migration of 14 November 2026 gave every account row empty parties and claim.
  * 7: `record.complete = { date }`, the record closed by the shepherd (every cobro recorded). Optional; the upgrader is the
  *    identity and the version keeps pages that do not know the field from writing (migration of 15 November 2026).
+ * 8: `record.paid` (`asAgreed` | `none`; absent: unknown) replaces `record.nothingPaid`; a month may hold `count`
+ *    (`{ work, off, sick }`) instead of per-day marks; a cobro may be `approx` (ADR-0035). The migration of 15 November
+ *    2026 rewrote every account row's `nothingPaid`; `normalizeRecord` keeps unknown fields, so `upgrade[7]` deletes it.
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
@@ -85,6 +88,7 @@ export const upgrade = {
   4: { offer: withRecord },
   5: { offer: withClaim },
   6: { offer: (offer) => offer },
+  7: { offer: withPaid },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
@@ -108,27 +112,34 @@ function withClaim(offer) {
   return { ...offer, mine: { ...mine, parties: mine.parties ?? emptyParties(), claim: mine.claim ?? emptyClaim() } };
 }
 
+/** Version 7 to 8: `nothingPaid: true` becomes `paid: 'none'`, and the old field goes whatever it held. */
+function withPaid(offer) {
+  const record = offer.mine?.record;
+  if (!isObject(record) || !('nothingPaid' in record)) return offer;
+  const { nothingPaid, ...rest } = record;
+  return { ...offer, mine: { ...offer.mine, record: { ...rest, ...(nothingPaid === true ? { paid: 'none' } : {}) } } };
+}
+
 const DAY_KINDS = new Set(['work', 'off', 'sick']);
 const PAYMENT_WAYS = new Set(['payroll', 'cash']);
 const END_HOWS = new Set(['agreed', 'dismissed', 'quit']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 const isIsoDate = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 
-const KNOWN_RECORD_KEYS = [
-  'months',
-  'payments',
-  'end',
-  'started',
-  'nothingPaid',
-  'complete',
-  'sick',
-  'recall',
-  'evidence',
-];
+const KNOWN_RECORD_KEYS = ['months', 'payments', 'end', 'started', 'paid', 'complete', 'sick', 'recall', 'evidence'];
 
 /** The fields of `saved` this page does not know, copied: what a newer page wrote there stays when this one writes back. */
 const unknownOf = (saved, known) =>
   structuredClone(Object.fromEntries(Object.entries(saved).filter(([key]) => !known.includes(key))));
+
+/** A month's counts of days by kind, whole numbers from 0 to 31; a missing or bad kind is 0. */
+const countOf = (saved) =>
+  Object.fromEntries(
+    [...DAY_KINDS].map((kind) => [
+      kind,
+      Number.isInteger(saved[kind]) && saved[kind] >= 0 && saved[kind] <= 31 ? saved[kind] : 0,
+    ]),
+  );
 
 /**
  * A saved record, clean: a day whose kind is unknown, a payment with a non-finite amount or an unknown way, and months
@@ -146,7 +157,13 @@ export function normalizeRecord(saved) {
         ([day, kind]) => /^(0[1-9]|[12]\d|3[01])$/.test(day) && DAY_KINDS.has(kind),
       ),
     );
-    record.months[key] = { ...unknownOf(month, ['closed', 'closedAt', 'days']), closed: month.closed === true, days };
+    record.months[key] = {
+      ...unknownOf(month, ['closed', 'closedAt', 'days', 'count']),
+      closed: month.closed === true,
+      days,
+    };
+    // one encoding per month: marks of single days win over counts
+    if (!Object.keys(days).length && isObject(month.count)) record.months[key].count = countOf(month.count);
     if (isIsoDate(month.closedAt)) record.months[key].closedAt = month.closedAt;
   }
   for (const p of Array.isArray(saved.payments) ? saved.payments : []) {
@@ -154,12 +171,13 @@ export function normalizeRecord(saved) {
       continue;
     if (typeof p.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) continue;
     const payment = {
-      ...unknownOf(p, ['id', 'date', 'amount', 'via', 'note']),
+      ...unknownOf(p, ['id', 'date', 'amount', 'via', 'note', 'approx']),
       id: typeof p.id === 'string' && p.id ? p.id : newId(),
       date: p.date,
       amount: p.amount,
       via: p.via,
       ...(typeof p.note === 'string' && p.note ? { note: p.note } : {}),
+      ...(p.approx === true ? { approx: true } : {}),
     };
     record.payments.push(payment);
   }
@@ -167,7 +185,7 @@ export function normalizeRecord(saved) {
     record.end = { ...unknownOf(saved.end, ['how', 'date']), how: saved.end.how, date: saved.end.date };
   if (isObject(saved.started) && isIsoDate(saved.started.date))
     record.started = { ...unknownOf(saved.started, ['date']), date: saved.started.date };
-  if (saved.nothingPaid === true) record.nothingPaid = true;
+  if (saved.paid === 'asAgreed' || saved.paid === 'none') record.paid = saved.paid;
   if (isObject(saved.complete) && isIsoDate(saved.complete.date))
     record.complete = { ...unknownOf(saved.complete, ['date']), date: saved.complete.date };
   if (isObject(saved.sick) && isIsoDate(saved.sick.from))

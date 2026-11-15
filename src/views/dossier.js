@@ -93,7 +93,7 @@ export function dossierView(d, o, r, places) {
       ${
         data.payments.length
           ? html`<table class="dtable"><tr><th>Fecha</th><th>Forma</th><th>Nota</th><th>Cantidad</th></tr>${data.payments.map((p) => html`<tr><td>${fIso(p.date)}</td><td>${WAY[p.via]}</td><td>${p.note ?? ''}</td><td>${money(p.amount)}</td></tr>`)}<tr class="dtot"><td colspan="3">Total cobrado, neto</td><td>${money(net.received)}</td></tr></table>`
-          : html`<p>${record.nothingPaid ? 'No se cobró nada.' : 'No hay cobros apuntados.'}</p>`
+          : html`<p>${record.paid === 'none' ? 'No se cobró nada.' : 'No hay cobros apuntados.'}</p>`
       }
     </section>
 

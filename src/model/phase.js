@@ -26,7 +26,7 @@ export const jobStart = (offer) => offer.terms.start || '';
 /** Whether the shepherd recorded anything of what happened: a day, a cobro, or «no se cobró nada». */
 export const hasFacts = (record) =>
   Boolean(record) &&
-  (record.payments?.length > 0 || Object.keys(record.months ?? {}).length > 0 || Boolean(record.nothingPaid));
+  (record.payments?.length > 0 || Object.keys(record.months ?? {}).length > 0 || Boolean(record.paid));
 
 /**
  * The one end of the job, for the phase and for `settle`: the end the shepherd said, else the offer's, or the last day

@@ -196,7 +196,7 @@ export function addPayment(record, { date, amount, via, note = '' }) {
   const payment = { id: newId(), date, amount, via, ...(note.trim() ? { note: note.trim() } : {}) };
   record.payments ??= [];
   record.payments.push(payment);
-  delete record.nothingPaid; // a cobro says what «No se cobró nada» said
+  delete record.paid; // a cobro is more specific than «Sí, todo» or «No se cobró nada»
   return payment;
 }
 
@@ -237,11 +237,16 @@ export function clearEnd(record) {
   return true;
 }
 
-/** «No se cobró nada»: nothing was received, said once so Falta can be worked out. Not a payment. */
-export function setNothingPaid(record, on) {
-  if (on === Boolean(record.nothingPaid)) return false;
-  if (on) record.nothingPaid = true;
-  else delete record.nothingPaid;
+/**
+ * «¿Se cobró este trabajo?» as one answer, not a payment: `asAgreed` (Sí, todo) or `none` (No se cobró nada); undefined
+ * takes the answer back and the cobros speak again. Returns whether it changed.
+ * @param {OfferRecord} record
+ * @param {'asAgreed' | 'none' | undefined} paid
+ */
+export function setPaid(record, paid) {
+  if (paid === record.paid) return false;
+  if (paid) record.paid = paid;
+  else delete record.paid;
   return true;
 }
 

@@ -251,7 +251,7 @@ test.describe('without cobros, and when nothing is owed', () => {
     const corresponde = amount(await tile(page, 'Corresponde').textContent());
     expect(amount(await tile(page, 'Falta').textContent())).toBe(corresponde);
     expect(await page.evaluate(() => app.active().mine.record.payments)).toEqual([]);
-    expect(await page.evaluate(() => app.active().mine.record.nothingPaid)).toBe(true);
+    expect(await page.evaluate(() => app.active().mine.record.paid)).toBe('none');
     await expect(page.locator('details.step[data-step=talk] .claim-text')).toContainText('Cobrado: nada hasta ahora.');
     await expect(page.locator('.ask .due-line')).toContainText('Plazo para reclamar');
     await expect(page.locator('.cobros')).toContainText('Se apuntó que no se cobró nada');

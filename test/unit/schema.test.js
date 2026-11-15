@@ -126,8 +126,8 @@ test('the village, its codes, the head counts and whether it was worked are term
   }
 });
 
-test('the account schema is at version 7', () => {
-  assert.equal(SCHEMA_VERSION, 7);
+test('the account schema is at version 8', () => {
+  assert.equal(SCHEMA_VERSION, 8);
 });
 
 describe('upgrade chain', () => {
@@ -339,7 +339,7 @@ describe('version 5: mine.record (ADR-0032)', () => {
     assert.equal(record.sick.doctor, 'w');
     assert.equal(record.evidence[0].photo, 'u');
     // What it knows is still judged: an invalid known field is not let through as an unknown one
-    assert.equal('nothingPaid' in normalizeRecord({ nothingPaid: 'yes' }), false);
+    assert.equal('paid' in normalizeRecord({ paid: 'yes' }), false);
     assert.equal('end' in normalizeRecord({ end: { how: 'bad', date: '2026-08-01' } }), false);
     assert.deepEqual(normalizeRecord(record), record);
   });
@@ -403,7 +403,7 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
     assert.deepEqual(shared?.o.mine.claim, { steps: {} });
   });
 
-  test('normalising keeps a valid end, start, notes, closedAt and the nothing-paid flag, and drops the rest', () => {
+  test('normalising keeps a valid end, start, notes, closedAt and the paid answer, and drops the rest', () => {
     const record = (extra) =>
       ingestSaved(
         {
@@ -415,7 +415,7 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
     const full = record({
       end: { how: 'dismissed', date: '2026-10-03', extra: 1 },
       started: { date: '2026-06-21' },
-      nothingPaid: true,
+      paid: 'none',
       evidence: [
         { date: '2026-09-01', text: 'Mensaje del ganadero' },
         { date: 'ayer', text: 'x' },
@@ -435,7 +435,7 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
       },
     );
     assert.deepEqual(full.started, { date: '2026-06-21' });
-    assert.equal(full.nothingPaid, true);
+    assert.equal(full.paid, 'none');
     assert.deepEqual(full.evidence, [{ date: '2026-09-01', text: 'Mensaje del ganadero' }]);
     assert.equal(full.months['2026-06'].closedAt, '2026-07-02');
     assert.equal('closedAt' in full.months['2026-07'], false);
@@ -447,7 +447,8 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
       { end: { how: 'quit', date: 'x' } },
       { end: 'no' },
       { started: { date: 5 } },
-      { nothingPaid: 'yes' },
+      { paid: 'yes' },
+      { paid: true },
       { evidence: 'no' },
     ])
       assert.deepEqual(record(bad), EMPTY_RECORD, JSON.stringify(bad));
@@ -508,9 +509,9 @@ describe('fields the page does not know', () => {
   });
 
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v8-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v9-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 8);
+    assert.equal(offer.schema_version, 9);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
@@ -520,14 +521,14 @@ describe('fields the page does not know', () => {
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v8-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v9-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 8);
+    assert.equal(again.offers[0].schema_version, 9);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 8, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 9, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -537,7 +538,7 @@ describe('fields the page does not know', () => {
 
   test('a shared row of the current version keeps them, and its sharer names it', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 7, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 8, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.newTerm, 'x');
@@ -576,5 +577,72 @@ describe('version 7: the record closed (ADR-0032)', () => {
         .offers[0].mine.record,
       clean,
     );
+  });
+});
+
+describe('version 8: paid, counts of days, approximate cobros (ADR-0035)', () => {
+  const record = (version, saved) =>
+    ingestSaved({ schema_version: version, offers: [{ id: 'a', terms: {}, mine: { record: saved } }] }, { fallbackCfg })
+      .offers[0].mine.record;
+
+  test('upgrade[7] turns nothingPaid true into paid none and deletes the old field either way', () => {
+    const [offer] = fixture('v7').offers;
+    assert.equal(offer.mine.record.nothingPaid, true);
+    const upgraded = upgrade[7].offer(offer).mine.record;
+    assert.equal(upgraded.paid, 'none');
+    assert.equal('nothingPaid' in upgraded, false);
+    assert.deepEqual(upgraded.complete, { date: '2026-11-15' });
+    const falsy = upgrade[7].offer({ id: 'a', mine: { record: { months: {}, payments: [], nothingPaid: false } } });
+    assert.equal('paid' in falsy.mine.record, false);
+    assert.equal('nothingPaid' in falsy.mine.record, false);
+    const { offers } = ingestSaved(fixture('v7'), { fallbackCfg });
+    assert.equal(offers[0].mine.record.paid, 'none');
+    assert.equal('nothingPaid' in offers[0].mine.record, false, 'normalizeRecord would keep it as unknown');
+    assert.equal(offers[0].mine.futureMineField, 7);
+  });
+
+  test('upgrade[7] leaves an offer with no record, or without the flag, as it is', () => {
+    const bare = { id: 'a', terms: {}, mine: { name: 'X' } };
+    assert.equal(upgrade[7].offer(bare), bare);
+    const clean = { id: 'a', terms: {}, mine: { record: { months: {}, payments: [], paid: 'asAgreed' } } };
+    assert.equal(upgrade[7].offer(clean), clean);
+  });
+
+  test('paid is kept when asAgreed or none and dropped otherwise', () => {
+    assert.equal(record(8, { paid: 'asAgreed' }).paid, 'asAgreed');
+    assert.equal(record(8, { paid: 'none' }).paid, 'none');
+    for (const bad of ['yes', true, 1, null, 'ASAGREED']) assert.equal('paid' in record(8, { paid: bad }), false);
+  });
+
+  test('a month of counts keeps whole counts from 0 to 31; per-day marks win over counts', () => {
+    const month = (saved) => record(8, { months: { '2026-07': saved } }).months['2026-07'];
+    assert.deepEqual(month({ closed: true, count: { work: 22, off: 8, sick: 1 } }).count, {
+      work: 22,
+      off: 8,
+      sick: 1,
+    });
+    assert.deepEqual(month({ count: { work: 22.5, off: -1, sick: 40, extra: 3 } }).count, { work: 0, off: 0, sick: 0 });
+    assert.deepEqual(month({ count: { work: 20 } }).count, { work: 20, off: 0, sick: 0 });
+    for (const bad of [5, 'x', [], null]) assert.equal('count' in month({ count: bad }), false);
+    const both = month({ days: { '01': 'work' }, count: { work: 9, off: 0, sick: 0 } });
+    assert.deepEqual(both.days, { '01': 'work' });
+    assert.equal('count' in both, false);
+    assert.deepEqual(month({ count: { work: 1, off: 0, sick: 0 }, note: 'x' }).note, 'x');
+  });
+
+  test('a cobro marked approx keeps the mark; any other value drops it', () => {
+    const cobro = (approx) =>
+      record(8, { payments: [{ id: 'p', date: '2026-07-01', amount: 100, via: 'cash', approx }] }).payments[0];
+    assert.equal(cobro(true).approx, true);
+    for (const bad of [false, 'yes', 1, undefined]) assert.equal('approx' in cobro(bad), false);
+  });
+
+  test('the version-8 fixture comes through whole, and normalising it again changes nothing', () => {
+    const { offers } = ingestSaved(fixture('v8'), { fallbackCfg });
+    const saved = offers[0].mine.record;
+    assert.equal(saved.paid, 'asAgreed');
+    assert.deepEqual(saved.months['2026-07'].count, { work: 22, off: 8, sick: 1 });
+    assert.equal(saved.payments[1].approx, true);
+    assert.deepEqual(ingestSaved({ schema_version: 8, offers }, { fallbackCfg }).offers[0].mine.record, saved);
   });
 });

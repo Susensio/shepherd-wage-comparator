@@ -25,7 +25,7 @@ import {
   reopenMonth,
   reopenRecord,
   setEnd,
-  setNothingPaid,
+  setPaid,
   setParties,
   setPromise,
   startSick,
@@ -259,7 +259,7 @@ describe('a month on its calendar', () => {
 
 describe('where an offer stands, in net', () => {
   const stand = (record, today, phase) =>
-    standingOf(settle(OFFER, record, today, calc(OFFER, ctx)), today, phase, record.payments, NET, record.nothingPaid);
+    standingOf(settle(OFFER, record, today, calc(OFFER, ctx)), today, phase, record.payments, NET, record.paid);
   const net = (gross) => Math.round(gross * NET * 100) / 100;
 
   test('«No se cobró nada» makes the whole of Corresponde what is missing, and dates it, without a payment', () => {
@@ -267,7 +267,7 @@ describe('where an offer stands, in net', () => {
     assert.equal(asked.hasPayments, false);
     assert.equal(asked.deadlines.length, 0);
     const record = emptyRecord();
-    setNothingPaid(record, true);
+    setPaid(record, 'none');
     const s = stand(record, '2026-11-12', 'finished');
     assert.equal(s.hasPayments, true);
     assert.equal(s.cobrado, 0);
@@ -979,14 +979,18 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
     assert.deepEqual(record.recall, { 2027: 'yes', 2028: 'no' });
   });
 
-  test('«No se cobró nada» is a flag, not a payment, and a cobro clears it', () => {
+  test('«¿Se cobró?» is an answer, not a payment, and a cobro clears it', () => {
     const record = emptyRecord();
-    assert.equal(setNothingPaid(record, true), true);
-    assert.equal(setNothingPaid(record, true), false);
+    assert.equal(setPaid(record, 'none'), true);
+    assert.equal(setPaid(record, 'none'), false);
     assert.deepEqual(record.payments, []);
     addPayment(record, { date: '2026-07-05', amount: 100, via: 'cash' });
-    assert.equal('nothingPaid' in record, false);
-    assert.equal(setNothingPaid(record, false), false);
+    assert.equal('paid' in record, false);
+    assert.equal(setPaid(record, undefined), false);
+    assert.equal(setPaid(record, 'asAgreed'), true);
+    assert.equal(record.paid, 'asAgreed');
+    assert.equal(setPaid(record, undefined), true);
+    assert.equal('paid' in record, false);
   });
 
   test('evidence, start, parties and steps', () => {

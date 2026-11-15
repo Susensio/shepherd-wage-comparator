@@ -190,7 +190,7 @@ export function dossierContext(o, r) {
   if (!phase) return null;
   const record = o.mine.record;
   const settled = settleOffer(o);
-  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.nothingPaid);
+  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.paid);
   const marks = o.mine.claim?.steps ?? {};
   return {
     today,
@@ -249,7 +249,7 @@ export function recordContext(o, r) {
   const record = o.mine.record;
   const settled = settleOffer(o);
   if (!settled.rows.length) return null;
-  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.nothingPaid);
+  const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.paid);
   const shown = settled.rows.filter((row) => row.from <= today);
   const addable = addableMonth(settled, today);
   const rowOf = (month) => settled.rows.find((row) => row.month === month);
@@ -294,7 +294,7 @@ export function recordContext(o, r) {
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
-    nothingPaid: Boolean(record.nothingPaid),
+    nothingPaid: record.paid === 'none',
     // Every month closed as well: a month reopened or added after it makes the figures estimates again
     complete: record.complete && !standing.unclosed.length ? record.complete : null,
     asking: Boolean(ui.completing[o.id]),
@@ -697,7 +697,7 @@ export const recordActions = {
   },
   /** «No se cobró nada»: said once, and taken back with «Quitar». */
   nothingPaid(b) {
-    offers.setNothingPaid(active(), b.dataset.off === undefined);
+    offers.setPaid(active(), b.dataset.off === undefined ? 'none' : undefined);
     callbacks.paint();
   },
 };

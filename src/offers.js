@@ -69,7 +69,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     endSick: (offer, to) => edit(offer, (r) => record.endSick(r, to)),
     answerRecall: (offer, year, answer) => edit(offer, (r) => record.answerRecall(r, year, answer)),
     clearEnd: (offer) => edit(offer, (r) => record.clearEnd(r)),
-    setNothingPaid: (offer, on) => edit(offer, (r) => record.setNothingPaid(r, on)),
+    setPaid: (offer, paid) => edit(offer, (r) => record.setPaid(r, paid)),
     addEvidence: (offer, note) => edit(offer, (r) => record.addEvidence(r, note)),
     removeEvidence: (offer, index) => edit(offer, (r) => record.removeEvidence(r, index)),
     setParties: (offer, parties) => change(() => record.setParties(offer, parties)),
