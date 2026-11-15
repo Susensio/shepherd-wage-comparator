@@ -33,7 +33,7 @@ import { hasFacts, jobStart, phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
 import { isoOf, missing, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
-import { active, calcContext, calcOffer, settleOffer } from '../state.js';
+import { active, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { claimText, legalLine } from '../text.js';
 import { accountState } from './account-section.js';
@@ -331,7 +331,6 @@ export function recordContext(o, r) {
   const record = o.mine.record;
   const settled = settleOffer(o);
   if (!settled.rows.length) return null;
-  const ctx = calcContext();
   const standing = standingOf(settled, today, phase, record.payments, r.netFactor, record.nothingPaid);
   const shown = settled.rows.filter((row) => row.from <= today);
   const addable = addableMonth(settled, today);
@@ -339,7 +338,7 @@ export function recordContext(o, r) {
   const calendarOf = (key, mode, index, count) => ({
     mode,
     today,
-    acc: monthAccounts(o, record, key, today, ctx, r.netFactor),
+    acc: monthAccounts(o, record, key, today, settled, r),
     index,
     count,
     // A month not in the job (the one that can be added) has nothing to close, and says how it joins

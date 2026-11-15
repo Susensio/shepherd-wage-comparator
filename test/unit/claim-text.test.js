@@ -37,7 +37,7 @@ function contextOf(o, amount) {
     ...(amount ? {} : { nothingPaid: true }),
   };
   const r = calc(o, ctx);
-  const settled = settle(o, record, TODAY, ctx);
+  const settled = settle(o, record, TODAY, calc(o, ctx));
   const standing = standingOf(settled, TODAY, 'finished', record.payments, r.netFactor, record.nothingPaid);
   return {
     o,
@@ -102,7 +102,10 @@ describe('«Resumen para el ganadero»', () => {
     const span = { key, from: more.settled.rows[1].calendarFrom, to: more.settled.rows[1].calendarTo };
     const off = marksOf(more.o, more.record, span).find((m) => m.kind === 'off' && !m.outside);
     toggleDay(more.o, more.record, span, off.day);
-    const changed = employerSummaryText({ ...more, settled: settle(more.o, more.record, '2030-01-01', ctx) });
+    const changed = employerSummaryText({
+      ...more,
+      settled: settle(more.o, more.record, '2030-01-01', calc(more.o, ctx)),
+    });
     assert.match(changed, /1 más de las pactadas/);
   });
 
@@ -222,7 +225,7 @@ describe('the end said ends the job in every text', () => {
   const ended = (how) => {
     const c = contextOf(o, 300);
     c.record.end = { how, date: '2026-09-18' };
-    c.settled = settle(o, c.record, TODAY, ctx);
+    c.settled = settle(o, c.record, TODAY, calc(o, ctx));
     c.standing = standingOf(c.settled, TODAY, 'finished', c.record.payments, c.r.netFactor);
     return c;
   };
@@ -299,7 +302,7 @@ describe('under way, the message lists only the months counted so far', () => {
     const today = '2026-11-15';
     const record = { months: {}, payments: [], nothingPaid: true };
     const r = calc(o, ctx);
-    const settled = settle(o, record, today, ctx);
+    const settled = settle(o, record, today, calc(o, ctx));
     const standing = standingOf(settled, today, 'underway', [], r.netFactor, true);
     const text = employerSummaryText({ o, r, settled, standing, record, parties: PARTIES, until: today });
     assert.match(text, /Septiembre: /);

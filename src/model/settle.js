@@ -6,7 +6,6 @@
 import { LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
 import { daysInclusive, endOf, isoOf, parseDate } from '../offer.js';
-import { calc } from './calc.js';
 import { monthShares } from './payslips.js';
 import { jobEnd } from './phase.js';
 import { marksOf } from './record.js';
@@ -136,11 +135,10 @@ function jobShares(base, offerEnd, end) {
  * @param {{ id?: string, terms: object, mine: object }} offer
  * @param {OfferRecord | undefined} record empty or missing parts mean nothing happened yet
  * @param {string} today ISO date
- * @param {{ cfg: object, offers?: object[] }} ctx what `calc` needs
+ * @param {ReturnType<typeof import('./calc.js').calc>} r the offer's figures, as `calc` gives them
  */
-export function settle(offer, record, today, ctx) {
+export function settle(offer, record, today, r) {
   const { terms } = offer;
-  const r = calc(offer, ctx);
   const openEnded = !endOf(terms);
   const offerEnd = endOf(terms);
   const offerShares = openEnded ? [] : monthShares(terms);

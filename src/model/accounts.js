@@ -87,11 +87,11 @@ export const spanOf = (row) => ({ key: row.month, from: row.calendarFrom ?? row.
  * @param {import('./settle.js').OfferRecord} record
  * @param {string} key «2026-06»
  * @param {string} today ISO date
- * @param {{ cfg: object, offers?: object[] }} ctx
- * @param {number} netFactor `r.netFactor`: `lines`, `due` and `delta` are in net
+ * @param {ReturnType<typeof settle>} settled the offer settled with `record`
+ * @param {ReturnType<typeof import('./calc.js').calc>} r the offer's figures: `lines`, `due` and `delta` are in net, by `r.netFactor`
  */
-export function monthAccounts(offer, record, key, today, ctx, netFactor) {
-  const settled = settle(offer, record, today, ctx);
+export function monthAccounts(offer, record, key, today, settled, r) {
+  const { netFactor } = r;
   const row =
     settled.rows.find((x) => x.month === key) ?? (addableMonth(settled, today) === key ? stubRow(key) : undefined);
   if (!row) return null;
@@ -112,7 +112,7 @@ export function monthAccounts(offer, record, key, today, ctx, netFactor) {
       },
     };
     // (a month after the offer is not in the job without a day worked: all of it is more than the offer)
-    const base = settle(offer, asOffer, today, ctx).rows.find((x) => x.month === key);
+    const base = settle(offer, asOffer, today, r).rows.find((x) => x.month === key);
     delta = cents(row.due - (base?.due ?? 0)) + 0; // + 0: no -0
   }
   const lines = linesOf(

@@ -78,7 +78,7 @@ export const calcOffer = (o) => calc(o, calcContext());
 /** What the model needs besides an offer: your settings and your other offers. */
 export const calcContext = () => ({ cfg: state.config, offers: myOffers() });
 /** What an offer's record settles to today (`model/settle.js`). */
-export const settleOffer = (o) => settle(o, o.mine.record, todayISO(), calcContext());
+export const settleOffer = (o) => settle(o, o.mine.record, todayISO(), calcOffer(o));
 
 /** Called after every save of offers or settings (the account sync listens). */
 const listeners = new Set();

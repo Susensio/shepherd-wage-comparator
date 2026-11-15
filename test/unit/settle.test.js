@@ -46,7 +46,7 @@ const BASE = {
   irpfManual: 10,
 };
 const offerWith = (changes = {}) => offerOf({ ...BASE, ...changes });
-const settleOf = (offer, record, today = '2026-04-15') => settle(offer, record, today, ctx);
+const settleOf = (offer, record, today = '2026-04-15') => settle(offer, record, today, calc(offer, ctx));
 // Payments are net: `amount` is the gross the payment is worth, taken off by this contract's withholdings
 const NET = calc(offerOf(BASE), ctx).netFactor;
 const payment = (id, date, gross, via = 'payroll') => ({ id, date, amount: gross * NET, via });
@@ -59,7 +59,7 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
   for (const offer of offers) {
     const { terms } = offer;
     const r = calc(offer, { cfg, offers });
-    const x = settle(offer, {}, '2030-01-01', { cfg, offers });
+    const x = settle(offer, {}, '2030-01-01', calc(offer, { cfg, offers }));
     // Self-employed has no debts (ADR-0029). Without a contract everything paid is cash: the agreed pay is the cash as
     // the gross that brings it net, and the vacation is owed whatever the cash.
     if (terms.contract === 'selfEmployed') {
@@ -462,7 +462,7 @@ test('the cash of the sample offers is the cash of the ficha, month by month', (
   for (const offer of offers) {
     const r = calc(offer, { cfg, offers });
     if (!(r.cash.total > 0)) continue;
-    const x = settle(offer, {}, '2030-01-01', { cfg, offers });
+    const x = settle(offer, {}, '2030-01-01', calc(offer, { cfg, offers }));
     near(x.totals.agreedCash, cents(r.cash.total), `${offer.mine.name}: agreed cash`, 0.01);
     seen++;
   }
