@@ -1,8 +1,8 @@
 # State
 
-## One job with two sides: what was agreed and what happened (ADR-0035, proposed)
+## One job with two sides: what was agreed and what happened (ADR-0035, accepted 15 November 2026)
 
-Proposed 15 November 2026 from the owner's idea («una oferta y un registro son la misma cosa: una promesa de futuro y un hecho del pasado») and three reviews. Waiting for the owner's decisions; correctness fixes (round 15) go first and the refactor starts from them.
+Proposed 15 November 2026 from the owner's idea («una oferta y un registro son la misma cosa: una promesa de futuro y un hecho del pasado») and three reviews. Accepted by the owner with all decisions below as recommended, plus: lax entry with few required fields (a past job by its conditions only, by what happened only, or both), hours not required. Correctness fixes (round 15) go first; phase A starts from them.
 
 ### Plan
 - Phase A, structure with no visible change: `model/phase.js` owns worked/start/end/phase/facts; `model/days.js` owns the days of a month and the month share; `settle` takes `r` and never calls `calc`; `monthAccounts` takes `settled`; `figuresOf(o)` memoised per paint; a pure `model/job-view.js` out of `ui/record.js`; every mutation through `offers.js`; `ui/navigation.js` without DOM at import; `normalizeRecord` keeps unknown sub-fields.

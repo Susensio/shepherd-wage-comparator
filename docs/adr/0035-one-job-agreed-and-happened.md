@@ -1,6 +1,6 @@
 # ADR-0035: Treat an offer and what happened as one job with an agreed side and a happened side that defaults to it, instead of a record laid over an offer or two separate objects
 
-Status: Proposed (main agent, 15 November 2026, from the owner's idea and a design agent; the owner decides)
+Status: Accepted (owner, 15 November 2026; implementation details left to the main agent)
 Date: 2026-11-15
 Amends: ADR-0032, ADR-0034, ADR-0030, ADR-0020
 
@@ -30,3 +30,11 @@ Weighed and discarded:
 - Two encodings of days exist; one module reads both.
 - Weekly rest cannot be judged on months kept as counts, and the screen says so.
 - `min_page_version` 7 makes open old tabs reload.
+
+## Owner's decisions (15 November 2026)
+
+- The tab is «Trabajos»; «Sí, todo» means what was agreed was received; days per month as counts besides a total; year headers as one sum marked «≈»; lapsed old jobs grey and «prescrito»; «Año a año» leaves Comparar.
+- Entering data must be lax: few required fields. The uses to support: an offer that is then worked and recorded, compared condition against condition (offered and realised); a past job remembered only by its conditions, taken as they were; a past job remembered only by what happened (days, what was paid in total or per month), with no solid offer behind it. No detailed record of days or cobros is ever required for a past job.
+- Hours are not required in the quick entry (this replaces the design's recommendation): without them, nothing about hours is judged.
+- The value of a vacation day is what a day of the job is worth (cash included), though a legal claim may only reach the payroll's part.
+- Where an agreement's salary is below the minimum wage, the agreement is out of date and the minimum wage is the base (the overnight bonus).
