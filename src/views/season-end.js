@@ -8,6 +8,7 @@ import { capitalize, clamp, fCount, fDate, fE, fN } from '../format.js';
 import { LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
 import { monthlyPayslips } from '../model/payslips.js';
+import { isWorked } from '../model/phase.js';
 import { endOf, parseDate } from '../offer.js';
 import { figureCard } from './parts.js';
 
@@ -119,7 +120,7 @@ function simulator(o, r, months) {
 /** «Final de campaña». */
 export function seasonEndSection(o, r) {
   const end = endOf(o.terms);
-  if (!o.terms.start || o.terms.offerOnly || r.time.noDuration || !end || r.selfEmployed) return nothing;
+  if (!isWorked(o) || r.time.noDuration || !end || r.selfEmployed) return nothing;
   const months = monthlyPayslips(o.terms, r);
   const payroll = months.reduce((sum, x) => sum + x.net, 0);
   const cash = r.cash.total;

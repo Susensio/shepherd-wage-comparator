@@ -6,8 +6,8 @@
 import { render } from 'lit-html';
 import { $ } from './dom.js';
 import { calcTermsOnly } from './model/calc.js';
-import { phaseOf } from './model/phase.js';
-import { defaultVacation, missing, todayISO, workedOffers } from './offer.js';
+import { phaseOf, workedOffers } from './model/phase.js';
+import { defaultVacation, missing, todayISO } from './offer.js';
 import { offers } from './offers.js';
 import { active, calcOffer, myOffers, state } from './state.js';
 import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';

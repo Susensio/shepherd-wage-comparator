@@ -17,9 +17,9 @@ import {
   spanOf,
   termsOnly,
   vacationPaid,
-  workedOffers,
 } from '../offer.js';
 import { effectiveOffer, legalMinimum, payroll, travel } from './pay.js';
+import { workedOffers } from './phase.js';
 import { selfEmployed } from './self-employed.js';
 import { bisect, unemploymentBenefit } from './tax.js';
 import { extraTime, overtimePerWeek, schedule } from './time.js';

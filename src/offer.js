@@ -329,17 +329,3 @@ export function datesText(terms) {
   if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${fDate(end)}`;
   return `${fDate(start, false)} – ${fDate(end)}`;
 }
-
-/** Offers that count as work done or to do: dated and not «just an offer». */
-export const workedOffers = (offers) => offers.filter((o) => o.terms.start && !o.terms.offerOnly);
-
-/** Other worked offers whose dates overlap this one. */
-export function overlapsOf(offer, offers) {
-  if (!offer.terms.start || offer.terms.offerOnly) return [];
-  const [start, end] = spanOf(offer.terms);
-  return workedOffers(offers).filter((p) => {
-    if (p.id === offer.id) return false;
-    const [b, e] = spanOf(p.terms);
-    return b <= end && e >= start;
-  });
-}

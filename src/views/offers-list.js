@@ -3,7 +3,8 @@
 import { html, nothing } from 'lit-html';
 import { fCount, fDate, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
-import { datesText, isComplete, parseDate, TEMPLATES, todayISO, workedOffers } from '../offer.js';
+import { isWorked, workedOffers } from '../model/phase.js';
+import { datesText, isComplete, parseDate, TEMPLATES, todayISO } from '../offer.js';
 import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
@@ -105,7 +106,7 @@ function statusLine(status) {
 function card({ o, r, record }, activeId) {
   const unit = offerUnit(r, o.terms);
   const complete = isComplete(o.terms);
-  const worked = !!o.terms.start && !o.terms.offerOnly;
+  const worked = isWorked(o);
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
   return html`<div class="ocwrap"><button type="button" class=${[worked ? 'ocard' : 'ocard offer-only', record?.status?.tone && `st-${record.status.tone}`].filter(Boolean).join(' ')} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
     <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${

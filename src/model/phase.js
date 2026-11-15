@@ -1,7 +1,32 @@
 /** Phase of an offer, from its dates and what was worked (ADR-0032): never a mode the shepherd picks. */
 
-import { endOf, isoOf } from '../offer.js';
+import { endOf, isoOf, spanOf } from '../offer.js';
 import { lastWorkedDay } from './record.js';
+
+/** A job that was or is being worked: dated and not «just an offer» (ADR-0028). */
+export const isWorked = (offer) => Boolean(offer.terms.start) && !offer.terms.offerOnly;
+
+/** Offers that count as work done or to do. */
+export const workedOffers = (offers) => offers.filter(isWorked);
+
+/** Other worked offers whose dates overlap this one. */
+export function overlapsOf(offer, offers) {
+  if (!isWorked(offer)) return [];
+  const [start, end] = spanOf(offer.terms);
+  return workedOffers(offers).filter((p) => {
+    if (p.id === offer.id) return false;
+    const [b, e] = spanOf(p.terms);
+    return b <= end && e >= start;
+  });
+}
+
+/** The job's first day: the offer's start (ISO), or ''. */
+export const jobStart = (offer) => offer.terms.start || '';
+
+/** Whether the shepherd recorded anything of what happened: a day, a cobro, or «no se cobró nada». */
+export const hasFacts = (record) =>
+  Boolean(record) &&
+  (record.payments?.length > 0 || Object.keys(record.months ?? {}).length > 0 || Boolean(record.nothingPaid));
 
 /**
  * The one end of the job, for the phase and for `settle`: the end the shepherd said, else the offer's, or the last day

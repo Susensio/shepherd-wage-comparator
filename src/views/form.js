@@ -7,6 +7,7 @@ import { html, render } from 'lit-html';
 import { $, $$ } from '../dom.js';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
+import { overlapsOf } from '../model/phase.js';
 import {
   actualYear,
   contractOf,
@@ -16,7 +17,6 @@ import {
   isoOf,
   mealsGiven,
   missing,
-  overlapsOf,
   sideOf,
 } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';

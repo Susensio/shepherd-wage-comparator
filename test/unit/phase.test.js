@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { jobEnd, phaseOf } from '../../src/model/phase.js';
+import { hasFacts, isWorked, jobEnd, jobStart, overlapsOf, phaseOf, workedOffers } from '../../src/model/phase.js';
 
 const days = (start, duration, extra = {}) => ({ terms: { start, duration, durationUnit: 'days', ...extra } });
 
@@ -77,4 +77,25 @@ test('the job’s end is one: an end said after the offer’s extends it, in the
     '2026-06-14',
   );
   assert.equal(jobEnd({ terms: { start: '2026-06-01', durationUnit: 'unknown' } }, {}), '');
+});
+
+test('worked: dated and not «solo oferta»; the overlaps and the start follow it', () => {
+  const a = { id: 'a', ...days('2026-06-01', 30) };
+  const b = { id: 'b', ...days('2026-06-20', 30) };
+  const c = { id: 'c', ...days('2026-06-20', 30, { offerOnly: true }) };
+  const d = { id: 'd', ...days('', 30) };
+  assert.deepEqual([a, b, c, d].map(isWorked), [true, true, false, false]);
+  assert.deepEqual(workedOffers([a, b, c, d]), [a, b]);
+  assert.deepEqual(overlapsOf(a, [a, b, c, d]), [b]);
+  assert.deepEqual(overlapsOf(c, [a, b, c, d]), []);
+  assert.equal(jobStart(a), '2026-06-01');
+  assert.equal(jobStart(d), '');
+});
+
+test('facts: a day, a cobro or «no se cobró nada»', () => {
+  assert.equal(hasFacts(undefined), false);
+  assert.equal(hasFacts({ months: {}, payments: [] }), false);
+  assert.equal(hasFacts({ months: { '2026-06': {} }, payments: [] }), true);
+  assert.equal(hasFacts({ months: {}, payments: [{}] }), true);
+  assert.equal(hasFacts({ months: {}, payments: [], nothingPaid: true }), true);
 });

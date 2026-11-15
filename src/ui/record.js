@@ -29,7 +29,7 @@ import {
 import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { dossierOf } from '../model/dossier.js';
-import { phaseOf } from '../model/phase.js';
+import { hasFacts, jobStart, phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
 import { isoOf, missing, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
@@ -194,10 +194,9 @@ function claimContext(o, r, settled, standing, today) {
  */
 function cardsOf(o, phase, settled, today) {
   const record = o.mine.record;
-  const touched = record.payments.length > 0 || Object.keys(record.months).length > 0 || record.nothingPaid;
   const asked = ui.end[o.id];
   const start =
-    phase === 'underway' && !record.started && !touched && !asked
+    phase === 'underway' && !record.started && !hasFacts(record) && !asked
       ? { date: o.terms.start, other: Boolean(ui.startOther[o.id]) }
       : null;
   const seasonal = o.terms.contract === 'seasonal';
@@ -210,7 +209,7 @@ function cardsOf(o, phase, settled, today) {
         early: Boolean(asked),
         seasonal,
         /** The first day an end or a leave can have: the job's start. */
-        min: o.terms.start,
+        min: jobStart(o),
         error: asked?.error ?? '',
         /** What «Al final pactado» takes: the last day of the job, never after today. */
         agreedDate: [settled.job.to, today].find((d) => d && d <= today) ?? today,
@@ -220,10 +219,7 @@ function cardsOf(o, phase, settled, today) {
 }
 
 /** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */
-const unconfirmedStart = (o, phase) =>
-  phase === 'underway' &&
-  !o.mine.record.started &&
-  !(o.mine.record.payments.length > 0 || Object.keys(o.mine.record.months).length > 0 || o.mine.record.nothingPaid);
+const unconfirmedStart = (o, phase) => phase === 'underway' && !o.mine.record.started && !hasFacts(o.mine.record);
 
 /** What the phase pill says: «Por empezar» until the start is confirmed, else the phase. */
 export const pillPhase = (o, phase) => (unconfirmedStart(o, phase) ? 'toStart' : phase);
