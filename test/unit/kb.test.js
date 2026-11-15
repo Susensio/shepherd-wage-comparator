@@ -42,13 +42,34 @@ test('Aragón 2026: 12 national and regional days, two local days for each pilot
   assert.ok(local.has('mun:22252'), 'Yebra de Basa');
 });
 
-test("the owner's private table and the unfound agreement carry no text, hash or URL", () => {
+test("the owner's private table carries no text, hash or URL; the Huesca 2022-2025 agreement has all three", () => {
   const manifest = JSON.parse(readFileSync(join(KB, 'manifest.json'), 'utf8'));
   const owner = manifest.find((d) => d.id === 'OWNER-convenios-2026-table');
   assert.deepEqual([owner.storage, owner.text, owner.sha256, owner.source_urls], ['owner-private', null, null, []]);
-  const candidate = manifest.find((d) => d.status === 'candidate');
-  assert.deepEqual([candidate.text, candidate.sha256, candidate.source_urls], [null, null, []]);
+  const agreement = manifest.find((d) => d.id === 'BOPH-2024-131-convenio-agricola-2022-2025');
+  assert.equal(agreement.status, 'current');
+  assert.match(agreement.sha256, /^[0-9a-f]{64}$/);
+  assert.ok(agreement.source_urls.some((url) => url.includes('MLKOB=1342050573232')));
+  assert.ok(agreement.text);
   assert.equal(manifest.find((d) => d.id === 'BOPH-2016-058-convenio-agricola-2015-2017').status, 'superseded');
+});
+
+test('Huesca agreement terms: six rows, checked and not verified, with their articles', () => {
+  const rows = parseCsv(readFileSync(join(KB, 'tables', 'agreement_terms.csv'), 'utf8')).slice(1);
+  const byConcept = Object.fromEntries(rows.map((r) => [r[3], r]));
+  const expected = {
+    overnight_pct: ['25', 'art. 28'],
+    overtime_premium_pct: ['75', 'art. 35'],
+    overtime_holiday_premium_pct: ['100', 'art. 35'],
+    annual_hours: ['1760', 'art. 25'],
+    weekly_hours: ['40', 'art. 25'],
+    vacation_days: ['30', 'art. 30'],
+  };
+  assert.equal(rows.length, 6);
+  for (const [concept, [value, article]] of Object.entries(expected)) {
+    const row = byConcept[concept];
+    assert.deepEqual([row[0], row[4], row[8], row[10]], ['prov:22', value, article, 'checked'], concept);
+  }
 });
 
 test('a changed quote is caught', () => {

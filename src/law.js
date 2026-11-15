@@ -31,6 +31,13 @@ export const SOURCES = {
     // Read in a CCOO summary of the agreement, not in the BOP itself (31 October 2026)
     url: 'https://ccoo.app/convenio/convenio-colectivo-campo-de-granada/',
   },
+  huescaAgreement: {
+    cite: 'Convenio colectivo del sector agrícola de la provincia de Huesca',
+    title:
+      'Convenio colectivo del sector agrícola de la provincia de Huesca 2022–2025 (BOPH nº 131, 9 de julio de 2024)',
+    // kb/manifest.json, BOPH-2024-131-convenio-agricola-2022-2025; applies provisionally past 2025 (art. 5)
+    url: 'https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1342050573232',
+  },
   smiDeduction2026: {
     cite: 'Hacienda',
     title: 'Deducción de IRPF para quien cobra el SMI',
@@ -138,6 +145,7 @@ export const RULES = {
     note: 'Aragón: after 30 days without the conciliation being held, the procedure is over (Gobierno de Aragón, conciliation page, SOURCES.aragonConciliation)',
   },
   annualHours: {
+    // TODO: Huesca's agreement (art. 25) gives 1,760: kb/tables/agreement_terms.csv, row prov:22 annual_hours, `checked`; switch Huesca to it once the owner verifies the row
     value: 1826,
     source: 'granada',
     art: '5',
@@ -345,15 +353,13 @@ export const LAW = {
  * Keyed by the province code of the places list (`terms.province`).
  * TODO: the base is the agreement's salary, which is not modelled; the minimum wage stands in for it until the
  * knowledge base (ADR-0033) holds the agreements' pay tables.
- * @type {Record<string, { pct: number, cite: string, url: string | null }>}
+ * @type {Record<string, { pct: number, cite: string, url: string }>}
  */
 const OVERNIGHT_BY_PROVINCE = {
   HU: {
     pct: 25,
-    cite: 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29',
-    // TODO: no text in force found (kb/manifest.json, record BOPH-convenio-agricola-2022-2025-candidate, status candidate); the last
-    // text found is 2015–2017 (BOPH 58/2016, art. 29 holds the 25 % clause); link a text only once labelled as that one
-    url: null,
+    cite: `${SOURCES.huescaAgreement.cite}, art. 28`,
+    url: SOURCES.huescaAgreement.url,
   },
 };
 /** The overnight bonus an agreement gives in a province: `{ pct, cite, url }`, or null where none is known. */

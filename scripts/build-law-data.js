@@ -76,6 +76,7 @@ const TERMS_COLUMNS = [
 const TERM_CONCEPTS = {
   overnight_pct: { units: ['pct_of_salary'], min: 0, max: 200 },
   overtime_premium_pct: { units: ['pct_over_hour'], min: 0, max: 200 },
+  overtime_holiday_premium_pct: { units: ['pct_over_hour'], min: 0, max: 200 },
   overtime_flat_eur: { units: ['eur_per_hour'], min: 0, max: 100 },
   weekly_hours: { units: ['hours'], min: 35, max: 40 },
   annual_hours: { units: ['hours'], min: 1000, max: 2000 },

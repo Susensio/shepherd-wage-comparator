@@ -28,21 +28,22 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   await expect(legal).not.toContainText('no se cuenta');
   await expect(legal).not.toContainText('Convenio colectivo del sector agrícola');
   await expect(legal).not.toContainText('con el plus de pernocta');
-  // Puerto A, otra cuenta (Huesca): the agreement, with no link to follow yet
+  // Puerto A, otra cuenta (Huesca): the agreement, linked to its text
   await loadOffers(page, sample, 1);
   await page.evaluate(() => {
     Object.assign(app.active().terms, { payAmount: 1100, cashAmount: 0 }); // salary reached, bonus short: the right is listed
     app.select(app.active().id);
   });
   await expect(legal).toContainText('Plus de pernocta');
-  await expect(
-    legal.locator('.lawlink', { hasText: 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29' }),
-  ).toHaveCount(1);
-  await expect(legal.locator('a.lawlink', { hasText: 'Convenio colectivo' })).toHaveCount(0);
+  const agreementLink = legal.locator('a.lawlink', {
+    hasText: 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 28',
+  });
+  await expect(agreementLink).toHaveCount(1);
+  await expect(agreementLink).toHaveAttribute('href', /boa\.aragon\.es.*MLKOB=1342050573232/);
   // The hint under the question, by province
   await openCondition(page, 'day');
   await expect(page.locator('#overnightHint')).toContainText(
-    'sube el mínimo un 25\u00a0% (Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29)',
+    'sube el mínimo un 25\u00a0% (Convenio colectivo del sector agrícola de la provincia de Huesca, art. 28)',
   );
   await page.evaluate(() => {
     app.active().terms.province = 'Z';
@@ -50,9 +51,11 @@ test("the overnight bonus is the Huesca agreement's alone: cited there, not coun
   });
   await expect(page.locator('#overnightHint')).toBeEmpty();
   await expect(page.locator('#overnightHint')).toBeHidden();
-  // The Leyes page names the agreement without a link
+  // The Leyes page links the agreement
   await page.evaluate(() => app.openLawsPage());
   const laws = page.locator('[data-panel=laws]');
-  await expect(laws).toContainText('Convenio colectivo del sector agrícola de la provincia de Huesca, art. 29');
-  await expect(laws.locator('a', { hasText: 'Huesca' })).toHaveCount(0);
+  await expect(laws).toContainText('Convenio colectivo del sector agrícola de la provincia de Huesca, art. 28');
+  await expect(
+    laws.locator('a', { hasText: 'Convenio colectivo del sector agrícola de la provincia de Huesca' }),
+  ).not.toHaveCount(0);
 });

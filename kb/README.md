@@ -21,7 +21,7 @@ The main agent writes the ADRs, `docs/BACKLOG.md` and `docs/STATE.md`; the resea
 
 - Document id: the official one where there is one (`BOE-A-2025-21667`), else `<publisher>-<year>-<number>-<slug>` (`BOA-2025-225-fiestas-locales-2026`).
 - Territory: `es`, `ccaa:NN` (INE community code: 02 Aragón, 09 Cataluña…), `prov:NN` (INE province: 22 Huesca), `mun:NNNNN` (INE municipality, as in `data/places-*.json`).
-- Document status: `candidate` (found or expected, not fetched), `current`, `superseded`, `owner-provided`. `supplements` is used instead of `corrected_by` where a later text adds to an earlier one without correcting it.
+- Document status: `candidate` (found or expected, not fetched), `current` (also a collective agreement that keeps applying by its own rules after its term), `superseded`, `owner-provided`. `supplements` is used instead of `corrected_by` where a later text adds to an earlier one without correcting it.
 
 ## Row status
 
