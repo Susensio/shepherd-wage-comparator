@@ -34,21 +34,30 @@ test('«Para negociar»: the figure of what cash saves is the largest, then extr
   if (cash) expect(cash.size).toBeGreaterThanOrEqual(30);
 });
 
-test('the arrow of «Condiciones» sits at the card’s edge and is centred on its row, like the other folds’', async ({
+test('the arrow of «Condiciones» lies inside the card, with the padding of its text, and is centred on its row', async ({
   loaded: page,
 }) => {
-  const style = await page.evaluate(() => {
-    const arrow = (selector) => {
-      const summary = document.querySelector(selector);
-      const s = getComputedStyle(summary, '::after');
-      const c = getComputedStyle(summary);
-      return { marginRight: s.marginRight, alignSelf: s.alignSelf, paddingRight: c.paddingRight };
-    };
-    return { conditions: arrow('details.conditions > summary'), fold: arrow('details.plg > summary') };
-  });
-  expect(style.conditions.marginRight).toBe(style.fold.marginRight);
-  expect(style.conditions.paddingRight).toBe(style.fold.paddingRight);
-  expect(style.conditions.alignSelf).toBe('center');
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const m = await page.evaluate(() => {
+      const card = document.querySelector('details.conditions');
+      const summary = card.querySelector('summary');
+      const arrow = getComputedStyle(summary, '::after');
+      const c = card.getBoundingClientRect();
+      const s = summary.getBoundingClientRect();
+      const arrowWidth = Number.parseFloat(arrow.width) * Math.SQRT2; // rotated square
+      // the arrow is the last flex item: its right edge is the summary's right edge less its padding
+      const right = s.right - Number.parseFloat(getComputedStyle(summary).paddingRight);
+      return {
+        gap: c.right - right,
+        reach: c.right - (right + (arrowWidth - Number.parseFloat(arrow.width)) / 2),
+        padLeft: Number.parseFloat(getComputedStyle(summary).paddingLeft),
+        alignSelf: arrow.alignSelf,
+      };
+    });
+    expect(m.reach, `the arrow lies inside the card at ${width}px`).toBeGreaterThanOrEqual(m.padLeft - 1);
+    expect(m.alignSelf).toBe('center');
+  }
 });
 
 test.describe('the offer cards', () => {

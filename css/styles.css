@@ -1228,10 +1228,10 @@ div.welcome .pri {
   background: var(--surface);
   overflow: hidden;
 }
-/* One row that opens the condition rows inside the same card. The arrow is centred on the row and sits at the card's
-   edge, where the arrow of every other fold sits. */
+/* One row that opens the condition rows inside the same card. The arrow is centred on the row and sits inside the card,
+   with the same inner padding as the text on the left. */
 .conditions > summary {
-  padding: 10px 0 10px 14px;
+  padding: 10px 14px 10px 14px;
   /* The title stays where it is when the line under it goes: anchored at the top, not centred */
   align-items: flex-start;
 }
