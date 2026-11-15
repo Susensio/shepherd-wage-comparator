@@ -54,3 +54,4 @@
 
 - `ui/scroller.js` calls `matchMedia` at import (`wide`), so `ui/navigation.js` cannot be imported in Node for unit tests; making `wide` lazy would allow it.
 - `test/unit/mutations.test.js` cannot see a mutation through a destructured alias (`const { terms } = o; terms.x = …`).
+- Move the month share (`shareOf`, in `model/settle.js`) into `model/days.js`, so ADR-0035's one owner of the month share holds.

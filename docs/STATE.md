@@ -6,7 +6,8 @@ Proposed 15 November 2026 from the owner's idea («una oferta y un registro son 
 
 ### Plan
 - Phase A, done 15 November 2026 (commits 1f6992e…c31e02a on the branch): structure with no visible change: `model/phase.js` owns worked/start/end/phase/facts; `model/days.js` owns the days of a month and the month share; `settle` takes `r` and never calls `calc`; `monthAccounts` takes `settled`; `figuresOf(o)` memoised per paint; a pure `model/job-view.js` out of `ui/record.js`; every mutation through `offers.js`; `ui/navigation.js` without DOM at import; `normalizeRecord` keeps unknown sub-fields.
-- Phase B, the model: saved format 8 (`paid: asAgreed|none` replacing `nothingPaid`; `upgrade[7]` must delete `nothingPaid` itself, since `normalizeRecord` now keeps unknown fields; month `count`, approximate lump cobros), `happenedOf`, `actualFigures`.
+- Phase B, done 15 November 2026 (54d8434, b1eb8d8, 9ea674e on the branch): the model: saved format 8 (`paid: asAgreed|none` replacing `nothingPaid`; `upgrade[7]` must delete `nothingPaid` itself, since `normalizeRecord` now keeps unknown fields; month `count`, approximate lump cobros), `happenedOf`, `actualFigures`.
+- Phase C inherits: relax `recordPhase` (job-view.js) and `missing()` so thin terms and no hours still show a record; label counted months (`rest.counted`, not drawn as real days) and approximate cobros «≈»; a UI for `enterTotalDays`; memoise `happenedOf` in `state.js`.
 - Phase C, the screens: the Registro as a page; the ficha by state with «¿Se cobró este trabajo?» (Sí, todo / No todo / No se cobró nada, the last confirmed); «Trabajo ya hecho»; the list calm (grey «Sin registro» for old jobs, amber only while a deadline runs); Comparar with «real»/«pactado» tags; the message to the ganadero as a closed fold.
 
 ### Owner decisions

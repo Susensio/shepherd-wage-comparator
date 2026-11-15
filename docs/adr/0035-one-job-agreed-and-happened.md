@@ -44,3 +44,10 @@ Weighed and discarded:
 - «Computed once per paint» is a memo (`calcOffer`, `settleOffer` in `state.js`) reset on save, on load and at the start of each paint.
 - `model/days.js` holds only what was duplicated (`daysBetween`, `monthDays`, `monthSpan`); the month share and spreading a total arrive with phase B.
 - The claim, talk and dossier contexts stay in `ui/record.js`: they build text from `claim-text.js`, above the model layer.
+
+## Notes from phase B (15 November 2026)
+
+- Format 8 in `mine.record`: `paid?: 'asAgreed' | 'none'` (absent: the cobros speak), a month holds either `days` or `count: { work, off, sick }`, a cobro may carry `approx: true`. `monthFacts` in `model/days.js` is the one reader of both day encodings.
+- `paid` wins over the cobros, and adding a cobro clears it.
+- A job's figures are real (`actualFigures`) once it is finished and its record is complete; a job entered by totals has counted months nobody closes, so closed months are not required.
+- Under «Sí, todo» what the law requires beyond the agreement (a severance the offer did not mention, pay below the minimum) still shows as Falta, labelled as the legal minimum.
