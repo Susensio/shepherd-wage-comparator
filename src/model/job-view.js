@@ -3,7 +3,7 @@
  * open (ADR-0035). No DOM, no templates: `ui/record.js` supplies what the page remembers and paints the result.
  */
 
-import { isoOf, missing, parseDate } from '../offer.js';
+import { isoOf, parseDate } from '../offer.js';
 import { jobStatus, standingOf } from './accounts.js';
 import { hasFacts, jobStart, phaseOf } from './phase.js';
 
@@ -16,10 +16,10 @@ import { hasFacts, jobStart, phaseOf } from './phase.js';
  * @property {{ no: boolean, error?: string } | undefined} recall the answer to «¿Se llamó para la campaña?», if «No»
  */
 
-/** The phase of an offer that has a record to show, or null: not decided, only an offer, or not complete. */
+/** The phase of an offer that has a record to show, or null: not decided, or only an offer. Thin terms still show it. */
 export function recordPhase(o, today) {
   const phase = phaseOf(o, today, o.mine.record);
-  return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
+  return phase === 'underway' || phase === 'finished' ? phase : null;
 }
 
 /** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */

@@ -5,7 +5,7 @@ import { explanations } from '../explanations.js';
 import { euroDecimals, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { retaPct } from '../model/self-employed.js';
-import { actualYear, contractOf, DAYS_PER_MONTH, missing } from '../offer.js';
+import { actualYear, contractOf, DAYS_PER_MONTH, missing, payKnown } from '../offer.js';
 import { H_MAX, H_ORDINARY, rightsOf } from '../rights.js';
 import { MISSING_TEXT } from '../text.js';
 import {
@@ -222,6 +222,13 @@ export function resultParts(o, r, { readOnly = false } = {}) {
   if (shortfall.length)
     return {
       head: html`<p class="empty">Para ver cuánto se gana falta ${joinAnd(shortfall.map((id) => MISSING_TEXT[id]))}. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="complete">Ponerlo</button>`}</p>`,
+      analysis: null,
+      sections: null,
+    };
+  // A job that began with no pay told (known by what happened): nothing agreed to analyse
+  if (!payKnown(o.terms))
+    return {
+      head: html`<p class="empty">No se apuntó lo que se pagaba. ${readOnly ? nothing : html`<button type="button" class="linkbtn" data-action="editStep" data-step="pay">Apuntarlo</button>`}</p>`,
       analysis: null,
       sections: null,
     };

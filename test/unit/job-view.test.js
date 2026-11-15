@@ -49,6 +49,8 @@ describe('the phase of a record, and the pill', () => {
     assert.equal(recordPhase(jobOf(), '2026-12-01'), 'finished');
     assert.equal(recordPhase(jobOf({ offerOnly: true }), TODAY), null);
     assert.equal(recordPhase(jobOf({ start: '' }), TODAY), null);
+    // thin terms: no hours, no pay, still a record
+    assert.equal(recordPhase(jobOf({ hoursPerDay: '', payAmount: '', vacation: '' }), TODAY), 'underway');
   });
 
   test('«Por empezar» until the start is confirmed or something is recorded', () => {

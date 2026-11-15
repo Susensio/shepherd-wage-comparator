@@ -4,7 +4,7 @@ import { html, nothing } from 'lit-html';
 import { fCount, fDate, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
 import { isWorked, workedOffers } from '../model/phase.js';
-import { datesText, isComplete, parseDate, TEMPLATES, todayISO } from '../offer.js';
+import { datesText, isComplete, missing, parseDate, TEMPLATES, todayISO } from '../offer.js';
 import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
@@ -106,6 +106,7 @@ function statusLine(status) {
 function card({ o, r, record }, activeId) {
   const unit = offerUnit(r, o.terms);
   const complete = isComplete(o.terms);
+  const lacking = missing(o.terms).length > 0; // a job that began with no pay told is not «incomplete»: its record speaks
   const worked = isWorked(o);
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
   return html`<div class="ocwrap"><button type="button" class=${[worked ? 'ocard' : 'ocard offer-only', record?.status?.tone && `st-${record.status.tone}`].filter(Boolean).join(' ')} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
@@ -115,7 +116,7 @@ function card({ o, r, record }, activeId) {
         : ''
     }</span>
     <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.pill ?? record.phase}>${PHASE_TEXT[record.pill ?? record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
-      complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
+      lacking ? html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>` : ''
     }</span>${statusLine(record?.status)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
 }

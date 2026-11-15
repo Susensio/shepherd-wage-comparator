@@ -27,6 +27,27 @@ export async function loadOffers(page, data, show = 1) {
   );
 }
 
+/**
+ * Adds a job to the page and shows its ficha: `terms` over the defaults, `record` over an empty record. Without a name
+ * it is «Trabajo». Returns its id.
+ */
+export async function addJob(page, { terms = {}, record = {}, name = 'Trabajo' } = {}) {
+  return page.evaluate(
+    async ({ terms, record, name }) => {
+      const { makeOffer } = await import('./src/offer.js');
+      const { offers } = await import('./src/offers.js');
+      app.closeEntry();
+      const o = makeOffer(terms, { name });
+      Object.assign(o.mine.record, record);
+      offers.chooseTemplate(o);
+      app.select(o.id);
+      app.openFicha();
+      return o.id;
+    },
+    { terms, record, name },
+  );
+}
+
 /** On a first visit, leaves the welcome for the templates; nothing to do anywhere else. */
 export async function leaveWelcome(page) {
   const start = page.locator('#welcomeStart');

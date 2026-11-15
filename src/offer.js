@@ -223,7 +223,27 @@ export function defaultVacation(terms) {
 /** Every id `missing()` can report. Each map keyed by them (step, field, texts) is checked against this list. */
 export const MISSING_IDS = ['duration', 'hoursPerDay', 'pay', 'agreedTotal', 'cashInHand', 'payrollPart', 'vacation'];
 
-export function missing(terms) {
+/** A job that has begun: dated, not «just an offer», its start today or earlier. */
+const hasBegun = (terms, today) => Boolean(terms.start) && !terms.offerOnly && terms.start <= today;
+
+/** The ids of `missing` that are about the pay. */
+const PAY_IDS = ['pay', 'agreedTotal', 'cashInHand', 'payrollPart'];
+
+/**
+ * What is still missing to weigh an offer. A job that has begun only needs a duration: what it paid and how many hours
+ * it took are told by what happened (ADR-0035), and nothing about hours is judged without them.
+ * @param {object} terms
+ * @param {string} [today] ISO date
+ */
+export function missing(terms, today = todayISO()) {
+  const all = missingAll(terms);
+  return hasBegun(terms, today) ? all.filter((id) => id === 'duration') : all;
+}
+
+/** Whether the terms say what is paid: a job that began without it still has its record, but no agreed figures to show. */
+export const payKnown = (terms) => !missingAll(terms).some((id) => PAY_IDS.includes(id));
+
+function missingAll(terms) {
   const noContract = terms.contract === 'none';
   const pay = noContract
     ? !(num(terms.cashAmount) > 0) && 'cashInHand'
@@ -256,7 +276,7 @@ export function implausible(terms) {
 }
 
 /** Nothing is missing to give figures. */
-export const isComplete = (terms) => missing(terms).length === 0;
+export const isComplete = (terms) => missing(terms).length === 0 && payKnown(terms);
 
 /* --- Dates --- */
 
