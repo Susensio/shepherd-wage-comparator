@@ -738,3 +738,32 @@ test('severance is covered by what is paid after the pay, and stays in Correspon
   const underway = standingOf(settleOf(offer, {}, '2026-02-10'), '2026-02-10', 'underway', [], r.netFactor);
   assert.ok(!underway.lines.some((line) => line.key === 'severance' && line.due > 0));
 });
+
+test('vacation taken is libre on the default calendar, so a record identical to the offer has no days more or less', () => {
+  const offer = offerWith({ contract: 'temporary', payAmount: 1500 });
+  const x = settleOf(offer, {}, '2026-06-01');
+  const days = {};
+  let work = 0;
+  let vacationOff = 0;
+  for (const row of x.rows) {
+    const marks = marksOf(offer, undefined, { key: row.month, from: row.calendarFrom, to: row.calendarTo });
+    days[row.month] = { closed: true, days: Object.fromEntries(marks.map((m) => [m.day, m.kind])) };
+    work += marks.filter((m) => m.kind === 'work').length;
+    if (row.month === '2026-03') vacationOff = marks.filter((m) => m.kind === 'off' && m.day >= '24').length;
+  }
+  const r = calc(offer, ctx);
+  assert.ok(Math.abs(work - r.time.daysWorked) <= 1, `${work} worked days against ${r.time.daysWorked}`);
+  assert.equal(vacationOff, 8); // the last eight days of the offer are the vacation
+  const same = settleOf(offer, { months: days }, '2026-06-01');
+  assert.ok(Math.abs(same.totals.due - x.totals.due) < 30);
+});
+
+test('vacation taken but the job ends before the days: the days accrued and not taken are owed (ET 38.1)', () => {
+  const offer = offerWith({ contract: 'temporary', payAmount: 1500 });
+  const r = calc(offer, ctx);
+  assert.equal(settleOf(offer, {}, '2026-06-01').totals.items.vacation.due, 0); // the whole job: taken, nothing owed
+  const early = settleOf(offer, { end: { how: 'agreed', date: '2026-02-28' } }, '2026-06-01');
+  // two months accrue 5 days; none was taken (the last eight days of the offer lie after the end)
+  near(early.totals.items.vacation.due, 5 * r.min.vacationDay, 'five days at the minimum wage', 0.01);
+  assert.equal(early.rows.at(-1).items.vacation.due, early.totals.items.vacation.due);
+});

@@ -19,8 +19,8 @@ export function legalMinimum(terms, { wage }, time) {
   const salary = casual
     ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours)
     : ((wage.annual * months) / 12) * partTime;
-  const vacation =
-    casual || terms.vacation !== 'taken' ? vacationDays * (wage.annual / LAW.smiDaysPerYear) * partTime : 0;
+  const vacationDay = (wage.annual / LAW.smiDaysPerYear) * partTime;
+  const vacation = casual || terms.vacation !== 'taken' ? vacationDays * vacationDay : 0;
   // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
   const stay = terms.overnight === 'yes';
   const agreement = stay ? overnightOf(terms.province) : null;
@@ -31,6 +31,8 @@ export function legalMinimum(terms, { wage }, time) {
     salary,
     overnight,
     vacation,
+    /** One day of vacation at the minimum wage. */
+    vacationDay,
     total: salary + overnight + vacation,
     overnightRate,
     overnightStay: stay,

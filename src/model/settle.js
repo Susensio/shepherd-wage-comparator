@@ -171,6 +171,7 @@ export function settle(offer, record, today, ctx) {
   const totalPerDay = r.split?.unit === 'day' && time.daysWorked > 0;
   const dayRate = perDay ? pay.base / time.paidDays : 0;
   const vacationMinimum = terms.vacation === 'taken' && !r.noContract ? 0 : min.vacation; // as the ficha's debt
+  const realEnd = jobEnd(offer, record);
   // Vacation taken is paid and follows the offer, like the holidays; the vacation owed comes from the terms, not the days.
   const vacationTaken = time.vacationTaken;
   const holidaysOff = terms.holidays === 'yes' ? (LAW.holidaysPerYear * time.months) / 12 : 0;
@@ -263,7 +264,23 @@ export function settle(offer, record, today, ctx) {
           ? shares.reduce((t, x) => t + x.fullWeight, 0)
           : 0;
   const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
-  const vacationMinimumOf = (index) => (labour ? cents(vacationMinimum * vacationShareOf(index)) : 0);
+  // Vacation taken, but the job ended before the days were: the days accrued and not taken are owed at the end (ET 38.1).
+  // The offer's days taken are its last ones (the calendar lays them out so), so those after the real end were not taken.
+  const endedEarly =
+    !openEnded && terms.vacation === 'taken' && !r.noContract && realEnd < isoOf(/** @type {Date} */ (offerEnd));
+  const untakenDays = () => {
+    const accrued = Math.round(
+      (LAW.vacationDaysPerYear * time.months * shares.reduce((t, x) => t + x.fullWeight, 0)) / 12,
+    );
+    const afterEnd = daysInclusive(parseDate(realEnd), /** @type {Date} */ (offerEnd)) - 1;
+    const taken = time.vacationTaken - Math.min(time.vacationTaken, afterEnd);
+    return Math.max(0, accrued - taken);
+  };
+  const vacationMinimumOf = (index) => {
+    if (!labour) return 0;
+    if (endedEarly) return index === shares.length - 1 ? cents(min.vacationDay * untakenDays()) : 0;
+    return cents(vacationMinimum * vacationShareOf(index));
+  };
   // Cash above what the month's minimum salary and bonus need covers a vacation shortfall, as in `calc`: that much of the
   // cash moves from the salary to the vacation, so the vacation is covered and the total due is the pay agreed
   // (not without a contract: `calc` owes the whole vacation whatever the cash)

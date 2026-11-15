@@ -28,18 +28,21 @@ function daysOf({ key, from, to }) {
  * What a day is before anything is recorded: the offer's days off spread evenly over the span. A default of the
  * calendar, not a rule of the model: it decides nothing until the shepherd touches the month. An offer that takes the
  * holidays off (`terms.holidays`) has the holidays of its place libre, and the days off are spread over the other days.
+ * Vacation taken (`terms.vacation`) is libre too: the last days of the offer, from `vacationFrom` on.
  * @param {object} terms
  * @param {string[]} dates ISO, the days of the job in the span
  * @param {Map<string, string>} holidays name by ISO date, of the offer's place
+ * @param {string} vacationFrom ISO date, or a date past every day
  * @returns {DayKind[]}
  */
-function defaultKinds(terms, dates, holidays) {
+function defaultKinds(terms, dates, holidays, vacationFrom) {
   const off = 1 - schedule(terms).workFrac;
   const before = (i) => Math.floor(i * off + 0.5);
   const holidaysOff = terms.holidays === 'yes';
   let spread = 0;
   return dates.map((date) => {
     if (holidaysOff && holidays.has(date)) return 'off';
+    if (date >= vacationFrom) return 'off';
     const i = spread++;
     return before(i + 1) > before(i) ? 'off' : 'work';
   });
@@ -78,10 +81,14 @@ export function marksOf(offer, record, span, job) {
   const holidays = new Map(
     holidaysOf({ municipality, province, year: Number(span.key.slice(0, 4)) }).days.map((d) => [d.date, d.name]),
   );
+  const vacationDays = end && offer.terms.vacation === 'taken' ? schedule(offer.terms).vacationTaken : 0;
   const kinds = defaultKinds(
     offer.terms,
     days.map(([, date]) => date).filter((date) => date <= endIso),
     holidays,
+    vacationDays > 0
+      ? isoOf(new Date(end.getFullYear(), end.getMonth(), end.getDate() - vacationDays + 1))
+      : '9999-12-31',
   );
   const recorded = record?.months?.[span.key]?.days ?? {};
   return days.map(([day, date], i) => ({
