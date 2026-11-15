@@ -4050,14 +4050,14 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   grid-template-columns: 56px minmax(0, 1fr) auto;
   gap: 0 10px;
   align-items: baseline;
-  min-height: var(--tap);
-  padding: 8px 0;
+  padding: 5px 0;
   border-bottom: 1px dashed var(--line);
   font-size: 14px;
 }
 .pay .pr:has(.rm) {
   grid-template-columns: 56px minmax(0, 1fr) auto auto;
   align-items: center;
+  padding: 0;
 }
 .pay .pr .d {
   font-family: var(--f-num);
@@ -4638,6 +4638,29 @@ h2.mode.small {
   display: inline;
   color: var(--muted);
   font-size: 12px;
+}
+/* The arrow of a month row: down while closed, up while its calendar is open below */
+.monthrow .chev {
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--t) var(--ease);
+}
+.monthrow[aria-expanded="true"] .chev {
+  transform: rotate(225deg) translateY(-1px);
+}
+.addmonth .chev {
+  display: none;
+}
+.monthbody {
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.monthbody .block.days {
+  gap: 8px;
 }
 .sofar b {
   font-size: 13.5px;

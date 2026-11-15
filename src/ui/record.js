@@ -79,7 +79,7 @@ import { closeDossier, closeReview, openDossier, openReview } from './navigation
  * @property {boolean} asking «¿Están apuntados todos los cobros?» waits for its answer
  * @property {import('../model/settle.js').OfferRecord} record
  * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
- * @property {CalendarContext | null} calendar
+ * @property {CalendarContext | null} calendar under way: the month on the calendar; finished: the month open in the registro, if any
  * @property {CalendarContext | ReviewDone | null} review
  */
 
@@ -94,6 +94,8 @@ const ui = {
     /** @type {{ offerId: string, keys: string[], index: number, closed: number, thenComplete: boolean } | null} */ (
       null
     ),
+  /** The month open in the registro of a job finished, by offer: one at a time, its calendar right below its row. */
+  opened: /** @type {Record<string, string | null>} */ ({}),
   /** «Cerrar el registro» asking whether every cobro is recorded, by offer. */
   completing: /** @type {Record<string, boolean>} */ ({}),
   fresh: /** @type {string | null} */ (null),
@@ -331,6 +333,8 @@ export function recordContext(o, r) {
     canClose: Boolean(rowOf(key)) && rowOf(key).calendarTo < today,
   });
   const key = monthOnCalendar(o, settled.rows, today, phase, addable);
+  const picked = ui.opened[o.id];
+  const opened = picked && (rowOf(picked) || picked === addable) ? picked : null;
   const index = shown.findIndex((row) => row.month === key);
   /** @type {RecordContext['strip']} */
   const strip = settled.rows.map((row) => ({
@@ -381,7 +385,18 @@ export function recordContext(o, r) {
     minimum: minimumNote(o, settled, r),
     strip,
     nudge: waiting.length && phase === 'underway' ? { months: waiting } : null,
-    calendar: calendarOf(key, 'ficha', index, shown.length),
+    // A job finished shows a calendar only for the month opened in its registro
+    calendar:
+      phase === 'underway'
+        ? calendarOf(key, 'ficha', index, shown.length)
+        : opened
+          ? calendarOf(
+              opened,
+              'ficha',
+              shown.findIndex((row) => row.month === opened),
+              shown.length,
+            )
+          : null,
     review,
   };
 }
@@ -460,6 +475,7 @@ const spanOfMonth = (key) => {
 /** The calendar stays on a month it was used on, though the month stops being the first still open. */
 const stayOn = (key) => {
   ui.months[active().id] = key;
+  if (ui.opened[active().id]) ui.opened[active().id] = key;
 };
 
 /** Leaves the review. */
@@ -472,6 +488,13 @@ export const recordActions = {
   toggleDay(b) {
     stayOn(b.dataset.key);
     offers.toggleDay(active(), spanOfMonth(b.dataset.key), b.dataset.day);
+    callbacks.paint();
+  },
+  /** A month of the registro of a job finished: its calendar opens in place, and a second tap folds it. */
+  toggleMonth(b) {
+    const id = active().id;
+    ui.opened[id] = ui.opened[id] === b.dataset.key ? null : b.dataset.key;
+    ui.ask = null;
     callbacks.paint();
   },
   /** A month of the strip: it opens below. */

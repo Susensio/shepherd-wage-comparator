@@ -218,15 +218,21 @@ function balanceBlock(c) {
   </div>`;
 }
 
-/** «Registro del trabajo»: the months and the cobros, open only while something remains to record. */
+/** One month of the registro as a row that opens its calendar right below it; one at a time, no jump. */
+const monthRow = (key, opened, label, calendar, cls = 'monthrow') =>
+  html`<button type="button" class=${cls} data-action="toggleMonth" data-key=${key} aria-expanded=${String(opened)}>${label}<span class="chev" aria-hidden="true"></span></button>${opened ? html`<div class="monthbody">${calendarView(calendar)}</div>` : nothing}`;
+
+/** «Registro del trabajo»: the months, each opening its calendar in place, and the cobros, open only while something remains to record. */
 function registroFold(c) {
   const { standing: s } = c;
   const months = c.strip.filter((m) => m.state !== 'add');
-  const open = s.unclosed.length > 0 || c.payments.length === 0;
+  // The calendar of a finished job is only there while a month is open: the fold stays open with it
+  const shown = c.calendar?.acc.row.month ?? null;
+  const open = s.unclosed.length > 0 || c.payments.length === 0 || shown !== null;
   const closed = months.length - s.unclosed.length;
   return html`<details class="plg" data-autofold="registro" ?open=${open}><summary>Registro del trabajo<span class="stat dt">${s.unclosed.length ? `${s.unclosed.length} sin cerrar` : closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`} · ${c.payments.length === 1 ? '1 cobro' : `${c.payments.length} cobros`}</span></summary>
-    <div class="tocl">${months.map((m) => html`<button type="button" class="monthrow" data-action="reviewStart" data-key=${m.month}><span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span><span aria-hidden="true">›</span></button>`)}</div>
-    ${c.addable ? html`<button type="button" class="linkbtn addmonth" data-action="reviewStart" data-key=${c.addable}>+ Añadir ${monthName(c.addable)}</button>` : nothing}
+    <div class="tocl">${months.map((m) => monthRow(m.month, shown === m.month, html`<span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span>`, c.calendar))}</div>
+    ${c.addable ? monthRow(c.addable, shown === c.addable, html`<span>+ Añadir ${monthName(c.addable)}</span>`, c.calendar, 'linkbtn addmonth') : nothing}
     ${cobrosView(c)}
     ${apuntesView(c)}
   </details>`;

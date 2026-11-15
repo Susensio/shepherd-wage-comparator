@@ -573,18 +573,63 @@ test.describe('finished: Cuentas', () => {
       app.active().terms.daysOff = 12;
       app.select(app.active().id);
     });
-    await page.locator('details[data-autofold=registro] .monthrow', { hasText: 'Junio' }).click();
-    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 1');
-    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
-    await expect(page.locator('.cal .counts')).toHaveText(counts ?? '');
-    await expect(page.locator('.cal .day[data-action]')).toHaveCount(0);
+    const junio = page.locator('details[data-autofold=registro] .monthrow', { hasText: 'Junio' });
+    await junio.click();
+    // In place: no separate view, no history entry, the row open and its calendar right below
+    await expect(page.locator('.review-progress')).toHaveCount(0);
+    await expect(junio).toHaveAttribute('aria-expanded', 'true');
+    const body = page.locator('.monthbody');
+    await expect(body.locator('.cal .state')).toHaveText('Cerrado');
+    await expect(body.locator('.cal .counts')).toHaveText(counts ?? '');
+    await expect(body.locator('.cal .day[data-action]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Reabrir' }).click();
-    await expect(page.locator('.cal .confirm')).toContainText('¿Reabrir junio?');
+    await expect(body.locator('.cal .confirm')).toContainText('¿Reabrir junio?');
     await page.locator('[data-action=reopenNo]').click();
-    await expect(page.locator('.cal .state')).toHaveText('Cerrado');
+    await expect(body.locator('.cal .state')).toHaveText('Cerrado');
     await page.getByRole('button', { name: 'Reabrir' }).click();
     await page.locator('[data-action=reopenYes]').click();
-    await expect(page.locator('.cal .state')).toHaveText('Según la oferta');
+    await expect(body.locator('.cal .state')).toHaveText('Según la oferta');
+  });
+
+  test('the registro’s months are rows that open in place, one at a time, with the scroll where it was', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const rows = page.locator('details[data-autofold=registro] .monthrow');
+    await expect(rows).toHaveCount(4);
+    await expect(page.locator('.monthbody')).toHaveCount(0);
+    await rows.first().scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, 120));
+    const before = await page.evaluate(() => window.scrollY);
+    await rows.nth(1).click();
+    await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.monthbody')).toHaveCount(1);
+    await expect(page.locator('.monthbody .cal h3')).toHaveText('Julio 2026');
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - before)).toBeLessThan(2);
+    // Its calendar sits right under its row, and the other month's row stays below it
+    expect(
+      await page.evaluate(() => {
+        const row = document.querySelector('.monthrow[aria-expanded=true]');
+        return row?.nextElementSibling?.classList.contains('monthbody');
+      }),
+    ).toBe(true);
+    // Another month closes the first: one open at a time
+    await rows.nth(2).click();
+    await expect(page.locator('.monthbody')).toHaveCount(1);
+    await expect(page.locator('.monthbody .cal h3')).toHaveText('Agosto 2026');
+    await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    // A day can be changed there, and the month stays open
+    await page.locator('.monthbody .cal .day.work').first().click();
+    await expect(page.locator('.monthbody .cal h3')).toHaveText('Agosto 2026');
+    // A month that has ended closes from its calendar, and the fold does not fold itself shut
+    await rows.first().click();
+    await page.getByRole('button', { name: 'Cerrar junio' }).click();
+    await expect(rows.first()).toContainText('cerrado');
+    await expect(rows.first()).toHaveAttribute('aria-expanded', 'true');
+    // A second tap folds it
+    await rows.first().click();
+    await expect(page.locator('.monthbody')).toHaveCount(0);
   });
 
   for (const scheme of ['light', 'dark']) {
@@ -745,13 +790,12 @@ test.describe('the real period of the work', () => {
     const before = amount(await tile(page, 'Corresponde').textContent());
     await expect(page.locator('.real')).toHaveCount(0);
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
-    await expect(page.locator('.review-progress')).toContainText('Octubre, 1 de 1');
+    await expect(page.locator('.monthbody .cal h3')).toContainText('Octubre 2026');
     await expect(page.locator('.cal')).toContainText('Se suma al trabajo al marcar un día');
     await expect(page.locator('.cal .day.work')).toHaveCount(0); // every day libre
     await expect(page.locator('[data-action=closeMonth], [data-action=reviewClose]')).toHaveCount(0);
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="02"]').click();
-    await page.locator('[data-action=reviewEnd]').first().click();
     await expect(page.locator('.real')).toHaveText(
       /^Trabajo real: del 21 jun 2026 al 2 oct 2026 \(oferta: 30 sept 2026\)\.$/,
     );
@@ -774,7 +818,6 @@ test.describe('the real period of the work', () => {
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="01"]').click(); // marked and unmarked again
-    await page.locator('[data-action=reviewEnd]').first().click();
     await expect(page.locator('.real')).toHaveCount(0);
     await expect(page.locator('.tocl')).not.toContainText('Octubre');
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
