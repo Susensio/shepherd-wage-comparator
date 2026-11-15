@@ -49,3 +49,7 @@ Weighed and discarded:
 - The record works with totals: what matters at the end is Corresponde against Cobrado. Payments are a free list that does not cover months; the oldest-first assignment only dates the claim, and the months remain only for days.
 - The real period of a job follows what is marked in the calendar, not dates kept in the record: a month after the offer's last one joins the job if a day is marked worked in it, and in a closed month the days off before the first or after the last worked day lie outside the job. The saved format does not change.
 - The phase of a job follows its real end, the later of the offer's end and the last worked day.
+
+15 November 2026, after three reviews (round 15). The owner left the call to the main agent («si crees que está mal, cámbialo»):
+- Days off at the edges of a closed month no longer lie outside the job. Inside the offer's dates the job is whole: two libres on 27–28 February leave February whole, since rest days are part of the job, and trimming them made the shepherd owe days. This replaces the trimming in the 13 November amendment.
+- One `jobEnd(offer, record)` in `model/phase.js` decides the end for both the phase and `settle`: an end stated in the record, or a day worked after the offer's end, extends the job; the extension days count as worked unless marked otherwise.
