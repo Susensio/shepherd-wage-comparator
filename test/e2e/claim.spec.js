@@ -1,6 +1,6 @@
-// «Pedir lo que falta» (ADR-0034): asking the ganadero first, the legal path closed, a dismissal as one plain line.
+// «Pedir lo que falta» (ADR-0034): asking the ganadero first and the one line with the deadline; the legal path is the page «Vía legal».
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -56,7 +56,11 @@ test.describe('the ladder', () => {
     expect(await page.evaluate(() => window.shared[0])).toContain('¿Cuándo se puede pagar?');
   });
 
-  test('«Petición de pago»: dated, in gross, with the pay-by date and the names typed there', async ({ page }) => {
+  test('«Petición de pago» is not in the main block: it is the formal letter of «Vía legal», dated, in gross, with the pay-by date and the names typed there', async ({
+    page,
+  }) => {
+    await expect(page.locator('#result .ask details.step[data-step=request]')).toHaveCount(0);
+    await openLegalPage(page);
     const step = page.locator('details.step[data-step=request]');
     await step.locator('[data-party=employerName]').fill('Casa Pérez');
     await step.locator('[data-party=employerName]').blur();
@@ -92,8 +96,8 @@ test.describe('the ladder', () => {
   test('the legal path holds each formal step, the papeleta’s fields copy, and the court waits for the conciliation', async ({
     page,
   }) => {
-    await page.locator('details.legalpath > summary').click();
-    const legal = page.locator('details.legalpath');
+    await openLegalPage(page);
+    const legal = page.locator('#legalPage');
     for (const title of [
       'Sindicato',
       'Papeleta de conciliación',
@@ -138,7 +142,7 @@ test.describe('the ladder', () => {
       offers.setParties(app.active(), { employerName: 'Casa Pérez', employerId: 'B123', workerName: 'Ana Gil' });
       app.select(app.active().id);
     });
-    await page.locator('.dismissal').getByRole('button', { name: 'Ver la papeleta y la oficina' }).click();
+    await page.locator('.dismissal').getByRole('button', { name: 'Vía legal' }).click();
     const papeleta = page.locator('details.step[data-step=conciliation]');
     await expect(papeleta).toHaveAttribute('open', '');
     await expect(papeleta.locator('h4.pgroup')).toHaveText(['Las partes', 'Despido', 'Cantidades']);
@@ -153,7 +157,7 @@ test.describe('the ladder', () => {
       app.active().terms.province = 'HU';
       app.select(app.active().id);
     });
-    await page.locator('details.legalpath > summary').click();
+    await openLegalPage(page);
     const papeleta = page.locator('details.step[data-step=conciliation]');
     await papeleta.locator(':scope > summary').click();
     await expect(papeleta).toContainText('Ricardo del Arco');
@@ -161,7 +165,7 @@ test.describe('the ladder', () => {
     await expect(papeleta.locator('a[href*="aragon.es"]')).toBeVisible();
   });
 
-  test('a dismissal puts its date on one plain line above the steps, and acting on it is a «Hecho»', async ({
+  test('a dismissal puts its date on one short line with «Vía legal»; the rest is in the page, and acting on it is a «Hecho»', async ({
     page,
   }) => {
     await page.evaluate(async () => {
@@ -172,9 +176,10 @@ test.describe('the ladder', () => {
     const line = page.locator('.dismissal');
     await expect(line).toContainText('4 dic 2026 como muy tarde');
     await expect(line).toContainText('quedan 22 días');
-    await expect(line).toContainText('Estatuto, art. 59.3');
+    await expect(line).not.toContainText('Estatuto');
+    await expect(line).not.toContainText('finiquito');
     expect(await page.evaluate(() => document.querySelector('.ask > .dismissal') !== null)).toBe(true);
-    // Above the steps, not in the closed fold
+    // Above the steps
     expect(
       await page.evaluate(
         () =>
@@ -184,13 +189,52 @@ test.describe('the ladder', () => {
           ),
       ),
     ).toBe(true);
-    await expect(line).toContainText(
+    await openLegalPage(page);
+    const full = page.locator('#legalPage .dismissal');
+    await expect(full).toContainText('Estatuto, art. 59.3');
+    await expect(full).toContainText(
       'Presenta la papeleta de conciliación por despido antes de esa fecha; un sindicato puede ayudar',
     );
-    await expect(line).toContainText('contando los festivos como días hábiles');
-    await expect(line).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
-    await line.getByRole('button', { name: 'Papeleta presentada' }).click();
-    await expect(line.locator('.donemark')).toContainText('Papeleta presentada el 12 nov 2026');
+    await expect(full).toContainText('contando los festivos como días hábiles');
+    await expect(full).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
+    await full.getByRole('button', { name: 'Papeleta presentada' }).click();
+    await expect(full.locator('.donemark')).toContainText('Papeleta presentada el 12 nov 2026');
+  });
+
+  test('the block is short: the message, one line with the deadline and «Vía legal»; Back from the page returns to Cuentas', async ({
+    page,
+  }) => {
+    const block = page.locator('#result .ask');
+    await expect(block.locator('details.step')).toHaveCount(1); // only «Hablar con el ganadero»
+    await expect(block.locator('.due-line')).toContainText(
+      /Plazo para reclamar: hasta el \d+ \w+ 2027 \(quedan \d+ días\)/,
+    );
+    await expect(block.getByRole('button', { name: 'Vía legal' })).toHaveCount(1);
+    for (const gone of ['Petición de pago', 'Sindicato', 'Ver el expediente', 'no asesoramiento'])
+      await expect(block).not.toContainText(gone);
+    await expect(page.locator('#legalPage')).toBeHidden();
+    await openLegalPage(page);
+    await expect(page.locator('#legalPage h1')).toHaveText('Vía legal');
+    await expect(page.locator('#legalPage')).toContainText('Plazos');
+    await expect(page.locator('#legalPage')).toContainText('Estatuto, art. 59.2');
+    await expect(page.locator('#legalPage')).toContainText('Información general');
+    await page.goBack();
+    await expect(page.locator('#legalPage')).toBeHidden();
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    await openLegalPage(page);
+    await page.getByRole('button', { name: 'Volver' }).click();
+    await expect(page.locator('#legalPage')).toBeHidden();
+  });
+
+  test('money agreed en negro: said once in the page, as salary that can be claimed, in gross, with general information', async ({
+    page,
+  }) => {
+    await openLegalPage(page);
+    const note = page.locator('#legalPage .block', { hasText: 'Dinero pactado en negro' });
+    await expect(note).toContainText('también es salario');
+    await expect(note).toContainText('mensajes, testigos, pagos anteriores');
+    await expect(note).toContainText('brutas');
+    await expect(note).toContainText('sindicato');
   });
 });
 
@@ -206,7 +250,7 @@ test.describe('without cobros, and when nothing is owed', () => {
     expect(await page.evaluate(() => app.active().mine.record.payments)).toEqual([]);
     expect(await page.evaluate(() => app.active().mine.record.nothingPaid)).toBe(true);
     await expect(page.locator('details.step[data-step=talk] .claim-text')).toContainText('Cobrado: nada hasta ahora.');
-    await expect(page.locator('details.step[data-step=request]')).toBeVisible();
+    await expect(page.locator('.ask .due-line')).toContainText('Plazo para reclamar');
     await expect(page.locator('.cobros')).toContainText('Se apuntó que no se cobró nada');
     await page.locator('.cobros').getByRole('button', { name: 'Quitar' }).click();
     await expect(tile(page, 'Falta')).toHaveText('—');
@@ -222,10 +266,12 @@ test.describe('without cobros, and when nothing is owed', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('.dismissal')).toBeVisible();
-    // The union and the papeleta, and nothing else of the ladder
-    await expect(page.locator('.ask details.step')).toHaveCount(2);
-    await expect(page.locator('.ask details.step[data-step=union]')).toHaveCount(1);
-    await expect(page.locator('.ask details.step[data-step=conciliation]')).toHaveCount(1);
+    // The union and the papeleta, and nothing else of the ladder, in the page
+    await expect(page.locator('.ask details.step')).toHaveCount(0);
+    await openLegalPage(page);
+    await expect(page.locator('#legalPage details.step')).toHaveCount(2);
+    await expect(page.locator('#legalPage details.step[data-step=union]')).toHaveCount(1);
+    await expect(page.locator('#legalPage details.step[data-step=conciliation]')).toHaveCount(1);
   });
 });
 
@@ -242,14 +288,18 @@ test.describe('at 375 px', () => {
         offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });
         app.select(app.active().id);
       });
-      await page.locator('details.legalpath > summary').click();
-      for (const step of await page.locator('.legalpath details.step > summary').all()) await step.click();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-      const wide = await page.evaluate(
-        () => [...document.querySelectorAll('.ask *')].filter((e) => e.getBoundingClientRect().right > 376).length,
-      );
-      expect(wide).toBe(0);
+      const wideIn = (selector) =>
+        page.evaluate(
+          (selector) =>
+            [...document.querySelectorAll(`${selector} *`)].filter((e) => e.getBoundingClientRect().right > 376).length,
+          selector,
+        );
+      expect(await wideIn('.ask')).toBe(0);
       expect(await page.evaluate(ledgerProblems, '.ask')).toEqual([]);
+      await openLegalPage(page);
+      for (const step of await page.locator('#legalPage details.step > summary').all()) await step.click();
+      expect(await wideIn('#legalPage')).toBe(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
       await page.screenshot({ path: `test-results/claim-${scheme}.png`, fullPage: false });
     });
   }
@@ -352,16 +402,19 @@ test('the welcome names negotiating, keeping a record and settling accounts', as
 
 test.describe('the hints at the end of a job', () => {
   test.use({ today: '2026-11-12' });
-  test('finiquito, vida laboral and paro, and the backup nudge for a guest', async ({ page }) => {
+  test('finiquito and vida laboral are in «Vía legal», with no «certificado de empresa»; the backup nudge for a guest stays', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
-    const fold = page.locator('details[data-fold=closing]');
-    await fold.locator(':scope > summary').click();
-    await expect(fold).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
-    await expect(fold).toContainText('Estatuto, art. 49.2');
-    await expect(fold.locator('a[href*="seg-social"]')).toBeVisible();
-    await expect(fold).toContainText('certificado de empresa');
+    await expect(page.locator('details[data-fold=closing]')).toHaveCount(0); // it is in the page of its own
     await expect(page.locator('.block.ask')).toContainText('solo están en este navegador');
+    await openLegalPage(page);
+    const page_ = page.locator('#legalPage');
+    await expect(page_).toContainText('«recibí» o «no conforme», nunca como «recibí y conforme»');
+    await expect(page_).toContainText('Estatuto, art. 49.2');
+    await expect(page_.locator('a[href*="seg-social"]')).toBeVisible();
+    await expect(page_).not.toContainText('certificado de empresa');
   });
 });
 
@@ -394,7 +447,7 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
           !!(
             document.querySelector('.sofar')?.compareDocumentPosition(document.querySelector('details.step')) &
             Node.DOCUMENT_POSITION_FOLLOWING
-          ) && !document.querySelector('.legalpath'),
+          ) && !document.querySelector('#legalPage:not([hidden])'),
       ),
     ).toBe(true);
   });
@@ -444,6 +497,7 @@ test.describe('a promise to pay', () => {
   test('the Petición says that its months are not reviewed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
+    await openLegalPage(page);
     await expect(page.locator('details.step[data-step=request] .claim-text')).toContainText(
       'Cálculo con 4 meses sin revisar',
     );

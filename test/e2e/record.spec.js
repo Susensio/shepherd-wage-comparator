@@ -1,6 +1,6 @@
 // What happened (ADR-0032): the ficha by phase, the calendar, the cobros and the review. The date is set, not the real one.
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -323,27 +323,27 @@ test.describe('finished: Cuentas', () => {
     await expect(ask.locator('details.step')).toHaveCount(1);
     await expect(page.locator('.result .nocobros')).toContainText('Apunta lo cobrado');
     await expect(ask.locator('.claim-text')).toHaveCount(0);
-    await expect(page.locator('.legalpath')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Vía legal' })).toHaveCount(0);
   });
 
-  test('«Pedir lo que falta»: the two common steps open, the legal path closed with the one-year deadline and the months', async ({
+  test('«Pedir lo que falta»: the message open, one line with the deadline and the button to the legal page, which holds the one-year deadline and the months', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('#result .ask h2')).toHaveText('Pedir lo que falta');
     await expect(page.locator('details.step[data-step=talk]')).toHaveAttribute('open', '');
-    await expect(page.locator('details.step[data-step=request]')).toHaveAttribute('open', '');
-    const legal = page.locator('details.legalpath');
-    await expect(legal).not.toHaveAttribute('open', '');
-    await legal.locator(':scope > summary').click();
-    await expect(legal.locator('.due-line')).toContainText(/hasta el \d+ \w+ 2027 · quedan \d+ días/);
+    await expect(page.locator('#result .ask .due-line')).toContainText(/hasta el \d+ \w+ 2027 \(quedan \d+ días\)/);
+    await openLegalPage(page);
+    const legal = page.locator('#legalPage');
+    await expect(legal.locator('details.step[data-step=request]')).toHaveAttribute('open', '');
+    await expect(legal).toContainText(/hasta el \d+ \w+ 2027 · quedan \d+ días/);
     await expect(legal).toContainText('Estatuto, art. 59.2');
     const months = legal.locator('details[data-fold=deadlines]');
     await months.locator(':scope > summary').click();
     await expect(months.locator('.row').first()).toContainText(/hasta el \d+ \w+ 2027/);
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
-    await expect(page.locator('#result .ask .disclaimer')).toContainText('no asesoramiento legal');
+    await expect(legal.locator('.disclaimer')).toContainText('no es asesoramiento legal');
   });
 
   test('«Balance del trabajo»: estimated while months follow the offer, firm once all are closed; the paro always from the offer', async ({
@@ -641,9 +641,7 @@ test.describe('finished: Cuentas', () => {
         { date: '2026-07-05', amount: 1000, via: 'payroll', note: 'una nota bastante larga para ver cómo se parte' },
       ]);
       await closeMonths(page, ['2026-06', '2026-07']);
-      for (const fold of ['ask-legal', 'how', 'deadlines', 'reference'])
-        await page.locator(`details[data-fold=${fold}] > summary`).click();
-      for (const step of await page.locator('.legalpath details.step > summary').all()) await step.click();
+      for (const fold of ['how', 'reference']) await page.locator(`details[data-fold=${fold}] > summary`).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
       const wide = await page.evaluate(
         () => [...document.querySelectorAll('#result *')].filter((e) => e.getBoundingClientRect().right > 376).length,

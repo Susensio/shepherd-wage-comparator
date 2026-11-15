@@ -67,6 +67,12 @@ export async function openStep(page, id) {
   await expect(page.locator(`#entry .step[data-step=${id}]`)).toBeVisible();
 }
 
+/** On the ficha of a job finished, opens the page «Vía legal» (a history entry over Cuentas). */
+export async function openLegalPage(page) {
+  await page.getByRole('button', { name: 'Vía legal' }).first().click();
+  await expect(page.locator('#legalPage')).toBeVisible();
+}
+
 /** Closes the step being edited, keeping what was typed. */
 export const saveStep = (page) => page.locator('#entryNext').click();
 

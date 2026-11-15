@@ -17,10 +17,11 @@ import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } from './ui/entry.js';
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
-import { dossierOpen, entryOpen, onNavigate, openFicha } from './ui/navigation.js';
+import { dossierOpen, entryOpen, legalOpen, onNavigate, openFicha } from './ui/navigation.js';
 import { cardRecord, dismissReview, dossierContext, forgetRecordUi, pillPhase, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
+import { legalPageView } from './views/claim.js';
 import { compareView, trendView, yearlyView } from './views/compare.js';
 import { dossierView } from './views/dossier.js';
 import { fichaView } from './views/ficha.js';
@@ -204,6 +205,8 @@ export function paintAll({ animate = false } = {}) {
   restoreFolds($('#result'));
   $('#dossier').hidden = !dossierOpen();
   render(dossierOpen() ? dossierView(dossierContext(o, r), o, r, placesIfLoaded()) : '', $('#dossierBody'));
+  $('#legalPage').hidden = !legalOpen();
+  render(legalOpen() && record?.claim ? legalPageView(record.claim) : '', $('#legalBody'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
   if (animate) for (const el of appeared) fadeIn(el);
   render(templatesView(chosenTemplate()), $('#tplGrid'));
@@ -269,6 +272,7 @@ onNavigate({
     paintAll();
   },
   dossierDismissed: () => paintAll(),
+  legalDismissed: () => paintAll(),
 });
 
 /** Opens the named collapsibles of the static page as you left them. */

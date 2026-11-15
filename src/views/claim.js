@@ -1,7 +1,8 @@
 /**
  * «Pedir lo que falta» (ADR-0034): the block of Cuentas that leads from asking the ganadero, which is what most shepherds
- * do, to the legal path, closed below. Two steps are open: «Hablar con el ganadero» and «Petición de pago». The formal
- * steps are one closed fold, «Si no paga: la vía legal». A dismissal keeps its short deadline as one plain line above.
+ * do: «Hablar con el ganadero», the one line with the deadline, and the button to «Vía legal». Everything legal is the
+ * page of its own, `legalPageView`: the deadlines, the formal written petition, the union, the papeleta, the
+ * Inspección, the court, FOGASA and what to do on leaving the job. A dismissal keeps its date as one short line.
  */
 
 import { html, nothing } from 'lit-html';
@@ -49,17 +50,30 @@ function textCard(kind, text, canShare) {
     <p class="hint copy-msg" role="status"></p></div>`;
 }
 
-/** The dismissal: a short block above everything, because its deadline is short: the date, what to do and the finiquito. */
+const DAY_MS = 864e5;
+const daysUntil = (today, iso) => Math.round((+parseDate(iso) - +parseDate(today)) / DAY_MS);
+
+/** The dismissal in Cuentas: its date as one short line, and the way to «Vía legal». */
 function dismissalLine(step) {
+  const date = fIso(/** @type {string} */ (step.deadline));
+  return html`<div class="dismissal ${step.lapsed || step.done ? '' : 'warn'}">
+    <p>${step.lapsed ? html`Despido: el plazo de ${LAW.dismissalDays} días hábiles ya pasó (como muy tarde, el ${date}).` : html`Despido: hasta el <b>${date}</b> como muy tarde (quedan ${days(/** @type {number} */ (step.daysLeft))}).`} ${LEGAL_BUTTON}</p></div>`;
+}
+
+/** The dismissal in «Vía legal»: the deadline in full, what to do and the finiquito. */
+function dismissalBlock(step) {
   const left = step.lapsed
     ? html`El plazo de ${days(LAW.dismissalDays)} hábiles ya pasó (como muy tarde, el ${fIso(/** @type {string} */ (step.deadline))}).`
     : html`Para actuar contra el despido hay hasta el <b>${fIso(/** @type {string} */ (step.deadline))}</b> como muy tarde: quedan ${days(/** @type {number} */ (step.daysLeft))}.`;
-  return html`<div class="dismissal ${step.lapsed || step.done ? '' : 'warn'}">
+  return html`<section class="block"><div class="bh"><h2>Despido</h2></div><div class="dismissal ${step.lapsed || step.done ? '' : 'warn'}">
     <p>${left} Son ${LAW.dismissalDays} días hábiles desde el día siguiente (${cite('et', '59.3')}); aquí se cuentan de lunes a viernes, contando los festivos como días hábiles, y el plazo real puede acabar un poco después.</p>
-    <p><b>Presenta la papeleta de conciliación por despido antes de esa fecha; un sindicato puede ayudar.</b> Suspende el plazo (${cite('lrjs', '65.1')}). <button type="button" class="linkbtn tapfull" data-action="goPapeleta">Ver la papeleta y la oficina</button></p>
+    <p><b>Presenta la papeleta de conciliación por despido antes de esa fecha; un sindicato puede ayudar.</b> Suspende el plazo (${cite('lrjs', '65.1')}).</p>
     <p>Si ofrecen un finiquito, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme».</p>
-    ${doneRow(step, { button: 'Papeleta presentada', done: 'Papeleta presentada' })}</div>`;
+    ${doneRow(step, { button: 'Papeleta presentada', done: 'Papeleta presentada' })}</div></section>`;
 }
+
+/** The button to the page of the legal path. */
+const LEGAL_BUTTON = html`<button type="button" class="linkbtn tapfull" data-action="openLegal">Vía legal</button>`;
 
 /** The party fields of the request, typed here and used by the papeleta and the dossier. */
 function partiesFields(c) {
@@ -96,39 +110,80 @@ function conciliationBody(c) {
     }`;
 }
 
-/** The legal path, closed: the one-year deadline, then the formal steps. */
-function legalFold(c) {
+/** What is said once, as general information: money agreed en negro is salary too. */
+const cashNote = html`<section class="block"><div class="bh"><h2>Dinero pactado en negro</h2></div>
+  <p>El dinero pactado en negro también es salario y se puede reclamar si el acuerdo se puede probar: mensajes, testigos, pagos anteriores. En una reclamación legal las cantidades son brutas. Conviene consultarlo con un sindicato.</p></section>`;
+
+/** What to do on leaving the job: the finiquito and the vida laboral. */
+const closingBlock = html`<section class="block"><div class="bh"><h2>Al acabar el trabajo</h2></div>
+  <p>Si el ganadero ofrece un finiquito que no coincide con estas cuentas, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme». Se puede pedir que esté presente un representante de los trabajadores en la firma (${cite('et', '49.2')}).</p>
+  <p>Pide tu ${link('importass', 'vida laboral')} para comprobar que figuran los días cotizados.</p></section>`;
+
+/** The deadlines: one year for each payment, and the months one by one. */
+function deadlinesBlock(c) {
   const { ladder } = c;
-  const step = (id) => ladder.steps.find((s) => s.id === id);
-  if (!step('union')) return nothing;
-  const owed = Boolean(step('request'));
   const by = ladder.by;
   const nearest = c.nearest;
-  const deadline = !owed
-    ? nothing
-    : ladder.lapsedAll
-      ? html`El plazo de un año ya pasó para todo lo que falta (${cite('et', '59.2')}). Un sindicato puede decir si queda alguna vía.`
-      : html`Cada pago se puede reclamar durante ${LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`} desde que era debido (${cite('et', '59.2')}). El más cercano: lo de ${nearest ? monthName(nearest.month) : ''}, hasta el <b>${fIso(/** @type {string} */ (by))}</b>${nearest && !nearest.lapsed ? ` · quedan ${days(nearest.daysLeft)}` : ''}.`;
-  const court = /** @type {import('../model/claim.js').Step} */ (step('court'));
-  return html`<details class="plg legalpath" data-fold="ask-legal"><summary>Si no paga: la vía legal</summary>
-    <div class="stepbody">
-      ${owed ? html`<p class="due-line">${deadline}</p>` : nothing}
-      ${
-        owed && c.deadlines.length
-          ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${c.deadlines.map((d) => row(capital(monthName(d.month)), fSumE(d.owed), { sub: html`<span class=${d.lapsed ? 'due-by near' : 'due-by'}>${d.lapsed ? `plazo vencido el ${fIso(d.deadline)}` : `hasta el ${fIso(d.deadline)} · quedan ${days(d.daysLeft)}`}</span>` }))}</div>
-            <p class="hint">Se cuenta un año desde el último día de cada mes; las vacaciones, desde el final del contrato. Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
-          : nothing
-      }
-      ${stepFold(/** @type {import('../model/claim.js').Step} */ (step('union')), 'Sindicato', html`<p>CCOO, UGT y otros sindicatos asesoran y acompañan, también para valorar estas cuentas antes de seguir. Lleva el Expediente y, si los hay, el contrato, las nóminas y los justificantes de los cobros.</p>`)}
-      ${stepFold(/** @type {import('../model/claim.js').Step} */ (step('conciliation')), 'Papeleta de conciliación', conciliationBody(c))}
+  return html`<section class="block"><div class="bh"><h2>Plazos</h2></div>
+    <p>${
+      ladder.lapsedAll
+        ? html`El plazo de un año ya pasó para todo lo que falta (${cite('et', '59.2')}). Un sindicato puede decir si queda alguna vía.`
+        : html`Cada pago se puede reclamar durante ${LAW.claimYears === 1 ? 'un año' : `${LAW.claimYears} años`} desde que era debido (${cite('et', '59.2')}); lo del final del contrato, como las vacaciones, se cuenta desde que acaba. El más cercano: lo de ${nearest ? monthName(nearest.month) : ''}, hasta el <b>${fIso(/** @type {string} */ (by))}</b>${nearest && !nearest.lapsed ? ` · quedan ${days(nearest.daysLeft)}` : ''}.`
+    }</p>
+    ${
+      c.deadlines.length
+        ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${c.deadlines.map((d) => row(capital(monthName(d.month)), fSumE(d.owed), { sub: html`<span class=${d.lapsed ? 'due-by near' : 'due-by'}>${d.lapsed ? `plazo vencido el ${fIso(d.deadline)}` : `hasta el ${fIso(d.deadline)} · quedan ${days(d.daysLeft)}`}</span>` }))}</div>
+          <p class="hint">Se cuenta un año desde el último día de cada mes. Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
+        : nothing
+    }</section>`;
+}
+
+const DISCLAIMER =
+  'Información general, un cálculo y una guía: no es asesoramiento legal. Antes de firmar nada o de presentar la papeleta, consulta con un sindicato o un graduado social.';
+
+/**
+ * «Vía legal»: the page of its own with everything legal of the job: the deadlines, the formal petition, the union, the
+ * papeleta, the Inspección, the court, FOGASA, the finiquito and what money agreed en negro means.
+ * @param {ClaimContext} c
+ */
+export function legalPageView(c) {
+  const { ladder } = c;
+  const step = (id) => /** @type {import('../model/claim.js').Step} */ (ladder.steps.find((s) => s.id === id));
+  const owed = Boolean(step('request'));
+  const dismissal = step('dismissal');
+  return html`<div class="dossier-doc legal-doc">
+    <h1>Vía legal</h1>
+    <p class="hint disclaimer">${DISCLAIMER}</p>
+    ${dismissal ? dismissalBlock(dismissal) : nothing}
+    ${owed ? deadlinesBlock(c) : nothing}
+    ${
+      owed
+        ? html`<section class="block"><div class="bh"><h2>Petición formal de pago</h2></div>${stepFold(
+            step('request'),
+            'Carta de petición',
+            html`<p>Por escrito y con fecha, para que quede constancia. Guarda la prueba del envío: la captura del mensaje, el correo o el burofax.</p>
+            ${partiesFields(c)}
+            <label class="fld">Pagar antes del<input type="date" data-pay-by .value=${c.payBy} min=${c.today} /></label>
+            ${textCard('request', c.request, c.canShare)}`,
+            { open: true },
+          )}</section>`
+        : nothing
+    }
+    <section class="block"><div class="bh"><h2>Pasos</h2></div>
+      ${stepFold(step('union'), 'Sindicato', html`<p>CCOO, UGT y otros sindicatos asesoran y acompañan, también para valorar estas cuentas antes de seguir. Lleva el Expediente y, si los hay, el contrato, las nóminas y los justificantes de los cobros.</p>`)}
+      ${stepFold(step('conciliation'), 'Papeleta de conciliación', conciliationBody(c), { open: Boolean(dismissal) && !step('conciliation').done })}
       ${
         owed
-          ? html`${stepFold(/** @type {import('../model/claim.js').Step} */ (step('inspection')), 'Inspección de Trabajo', html`<p>Se le puede contar lo ocurrido por su ${link('itss', 'buzón')}: es información, no una denuncia, y no detiene ningún plazo. Estos son los hechos, sin cantidades.</p>${textCard('inspection', c.inspection, c.canShare)}`)}
-      ${stepFold(court, 'Juzgado de lo Social', html`<p>${court.ready ? 'Si la conciliación acaba sin acuerdo, la demanda va al juzgado de lo social.' : 'Después de la conciliación, si acaba sin acuerdo.'} Lleva el acta de la conciliación.</p>`)}
-      ${stepFold(/** @type {import('../model/claim.js').Step} */ (step('fogasa')), 'FOGASA', html`<p>Si el ganadero no puede pagar, el Fondo de Garantía Salarial puede abonar parte de lo debido en determinados casos. Las condiciones están en su ${link('fogasa', 'página')}.</p>`)}`
+          ? html`${stepFold(step('inspection'), 'Inspección de Trabajo', html`<p>Se le puede contar lo ocurrido por su ${link('itss', 'buzón')}: es información, no una denuncia, y no detiene ningún plazo. Estos son los hechos, sin cantidades.</p>${textCard('inspection', c.inspection, c.canShare)}`)}
+      ${stepFold(step('court'), 'Juzgado de lo Social', html`<p>${step('court').ready ? 'Si la conciliación acaba sin acuerdo, la demanda va al juzgado de lo social.' : 'Después de la conciliación, si acaba sin acuerdo.'} Lleva el acta de la conciliación.</p>`)}
+      ${stepFold(step('fogasa'), 'FOGASA', html`<p>Si el ganadero no puede pagar, el Fondo de Garantía Salarial puede abonar parte de lo debido en determinados casos. Las condiciones están en su ${link('fogasa', 'página')}.</p>`)}`
           : nothing
       }
-    </div></details>`;
+    </section>
+    ${c.cash ? cashNote : nothing}
+    ${closingBlock}
+    <button type="button" class="sm" data-action="openDossier">Ver el expediente</button>
+  </div>`;
 }
 
 /**
@@ -145,8 +200,15 @@ export function underwayTalk(talk) {
   )}</div>`;
 }
 
-const DISCLAIMER =
-  'Esto es un cálculo y una guía, no asesoramiento legal. Antes de firmar nada o de presentar la papeleta, consulta con un sindicato o un graduado social.';
+/** The one line with the deadline, in Cuentas: the nearest of what is owed, and the way to «Vía legal». */
+function deadlineLine(c, withButton) {
+  const { ladder } = c;
+  if (!ladder.steps.some((s) => s.id === 'request')) return nothing;
+  const text = ladder.lapsedAll
+    ? 'El plazo de un año ya pasó para lo que falta.'
+    : html`Plazo para reclamar: hasta el <b>${fIso(/** @type {string} */ (ladder.by))}</b> (quedan ${days(daysUntil(c.today, /** @type {string} */ (ladder.by)))}).`;
+  return html`<p class="due-line">${text} ${withButton ? LEGAL_BUTTON : nothing}</p>`;
+}
 
 /**
  * The block, or nothing where nothing is owed and nobody was dismissed.
@@ -158,7 +220,6 @@ export function claimView(c) {
   const step = (id) => ladder.steps.find((s) => s.id === id);
   const dismissal = step('dismissal');
   const talk = step('talk');
-  const request = step('request');
   return html`<div class="block ask">
     <div class="bh"><h2>Pedir lo que falta</h2></div>
     ${dismissal ? dismissalLine(dismissal) : nothing}
@@ -179,35 +240,7 @@ export function claimView(c) {
             )
           : nothing
     }
-    ${
-      request
-        ? stepFold(
-            request,
-            'Petición de pago',
-            html`<p>Por escrito y con fecha, para que quede constancia. Guarda la prueba del envío: la captura del mensaje, el correo o el burofax.</p>
-          ${partiesFields(c)}
-          <label class="fld">Pagar antes del<input type="date" data-pay-by .value=${c.payBy} min=${c.today} /></label>
-          ${textCard('request', c.request, c.canShare)}`,
-            { open: true },
-          )
-        : nothing
-    }
-    ${legalFold(c)}
-    ${
-      c.guest
-        ? html`<p class="hint">Estos datos solo están en este navegador, que puede borrarlos. <button type="button" class="linkbtn tapfull" data-action="openSettingsPage">Guarda una copia en Ajustes</button>.</p>`
-        : nothing
-    }
-    <button type="button" class="sm" data-action="openDossier">Ver el expediente</button>
-    <p class="hint disclaimer">${DISCLAIMER}</p>
+    ${deadlineLine(c, !dismissal)}
+    ${c.guest ? html`<p class="hint">Estos datos solo están en este navegador, que puede borrarlos. <button type="button" class="linkbtn tapfull" data-action="openSettingsPage">Guarda una copia en Ajustes</button>.</p>` : nothing}
   </div>`;
 }
-
-/** What to do on leaving the job, whatever is owed: the finiquito, the vida laboral and the paro. A closed fold. */
-export const closingHints =
-  () => html`<details class="plg" data-fold="closing"><summary>Al acabar: finiquito, vida laboral y paro</summary>
-  <div class="stepbody">
-    <p>Si el ganadero ofrece un finiquito que no coincide con estas cuentas, fírmalo como «recibí» o «no conforme», nunca como «recibí y conforme». Se puede pedir que esté presente un representante de los trabajadores en la firma (${cite('et', '49.2')}).</p>
-    <p>Pide tu ${link('importass', 'vida laboral')} para comprobar que figuran los días cotizados.</p>
-    <p>Para pedir el paro hace falta el certificado de empresa, que entrega el ganadero.</p>
-  </div></details>`;

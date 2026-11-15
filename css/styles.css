@@ -4695,11 +4695,11 @@ body.reviewing .ficha > .back {
 
 /* «Pedir lo que falta»: two open steps, the legal path closed, a dismissal as one plain line */
 .ask details.plg.step,
-.ask details.plg.legalpath {
+.legal-doc details.plg.step {
   gap: 8px;
 }
-.ask details.plg.legalpath details.plg {
-  border-top: 1px solid var(--line);
+.legal-doc .block + .block {
+  margin-top: 6px;
 }
 .stepbody {
   display: flex;
@@ -4834,7 +4834,12 @@ body.reviewing .ficha > .back {
 .dossier[hidden] {
   display: none;
 }
-.dossier-bar {
+/* The «Expediente» opens over «Vía legal» */
+#dossier {
+  z-index: 61;
+}
+.dossier-bar,
+.legal-bar {
   position: sticky;
   top: 0;
   z-index: 2;

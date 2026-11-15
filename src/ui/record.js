@@ -36,8 +36,7 @@ import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
-import { scrollToElement } from './motion.js';
-import { closeDossier, closeReview, openDossier, openReview } from './navigation.js';
+import { closeDossier, closeLegal, closeReview, openDossier, openLegal, openReview } from './navigation.js';
 
 /**
  * @typedef {object} CalendarContext
@@ -157,6 +156,8 @@ function claimContext(o, r, settled, standing, today) {
     deadlines: standing.deadlines,
     office: conciliationOffice(o.terms.province),
     canShare: typeof navigator.share === 'function',
+    // Money agreed en negro, or no contract at all: the page says that it is salary too
+    cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',
@@ -653,14 +654,14 @@ export const recordActions = {
     delete ui.end[o.id];
     callbacks.paint();
   },
-  /** «Ver la papeleta y la oficina», on the dismissal line: opens the legal path at the papeleta. */
-  goPapeleta() {
-    const legal = /** @type {HTMLDetailsElement | null} */ (document.querySelector('details.legalpath'));
-    const step = /** @type {HTMLDetailsElement | null} */ (legal?.querySelector('details[data-step=conciliation]'));
-    if (!legal || !step) return;
-    legal.open = true;
-    step.open = true;
-    scrollToElement(step);
+  /** «Vía legal»: the page of its own, over Cuentas; Back returns. */
+  openLegal() {
+    openLegal();
+    callbacks.paint();
+  },
+  closeLegal() {
+    closeLegal();
+    callbacks.paint();
   },
   /** «Volver al trabajo»: yesterday was the last day of the leave. */
   sickBack() {

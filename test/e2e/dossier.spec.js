@@ -1,6 +1,6 @@
 // The «Expediente» (ADR-0034): a printable page with its own history entry; its totals are the tiles'.
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
 const amount = (text) => Number.parseFloat(text.replace(/[^\d,]/g, '').replace(',', '.'));
@@ -23,18 +23,19 @@ test.describe('the dossier', () => {
     ]);
   });
 
-  test('opens from Pedir lo que falta over the ficha, with a history entry: Back leaves it', async ({ page }) => {
+  test('opens from «Vía legal» over it, with a history entry: Back leaves it', async ({ page }) => {
     await expect(page.locator('#dossier')).toBeHidden();
+    await openLegalPage(page);
     await page.getByRole('button', { name: 'Ver el expediente' }).click();
     await expect(page.locator('#dossier')).toBeVisible();
     await expect(page.locator('#dossier h1')).toHaveText('Expediente');
     await page.goBack();
     await expect(page.locator('#dossier')).toBeHidden();
-    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('#legalPage')).toBeVisible(); // back to what was below
     await page.getByRole('button', { name: 'Ver el expediente' }).click();
-    await page.getByRole('button', { name: 'Volver' }).click();
+    await page.locator('#dossier').getByRole('button', { name: 'Volver' }).click();
     await expect(page.locator('#dossier')).toBeHidden();
-    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('#legalPage')).toBeVisible();
   });
 
   test('opens from the «⋯» menu', async ({ page }) => {
@@ -80,7 +81,8 @@ test.describe('the dossier', () => {
       offers.closeMonth(app.active(), { key: '2026-06', from: '2026-06-01', to: '2026-06-30' });
       app.select(app.active().id);
     });
-    await page.locator('#result [data-action=openDossier]').click();
+    await openLegalPage(page);
+    await page.locator('#legalPage [data-action=openDossier]').click();
     const doc = page.locator('#dossier .dossier-doc');
     for (const heading of [
       'Partes',
@@ -110,7 +112,8 @@ test.describe('the dossier', () => {
     await page.locator('#noteText').fill('El ganadero dijo que pagaba en diciembre');
     await page.getByRole('button', { name: 'Añadir apunte' }).click();
     await expect(page.locator('.apuntes')).toContainText('El ganadero dijo que pagaba en diciembre');
-    await page.locator('#result [data-action=openDossier]').click();
+    await openLegalPage(page);
+    await page.locator('#legalPage [data-action=openDossier]').click();
     await expect(page.locator('#dossier')).toContainText('12 nov 2026: El ganadero dijo que pagaba en diciembre');
   });
 

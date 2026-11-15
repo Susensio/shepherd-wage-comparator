@@ -44,6 +44,8 @@ const hooks = {
   reviewDismissed: /** @type {() => void} */ (() => {}),
   /** Back left the «Expediente». */
   dossierDismissed: /** @type {() => void} */ (() => {}),
+  /** Back left «Vía legal». */
+  legalDismissed: /** @type {() => void} */ (() => {}),
 };
 
 /** «Revisar los meses» is open over the ficha: it has a history entry of its own, so Back leaves it for the ficha. */
@@ -51,6 +53,9 @@ const review = { open: false };
 
 /** The «Expediente» is open over everything: its own history entry, so Back leaves it for what was below. */
 const dossier = { open: false };
+
+/** «Vía legal» is open over the ficha: a page of its own with its history entry, so Back returns to Cuentas. */
+const legal = { open: false };
 
 /** @param {Partial<typeof hooks>} given */
 export function onNavigate(given) {
@@ -65,6 +70,7 @@ export const fichaOpen = () => view.ficha;
 export const entryOpen = () => view.entry;
 export const reviewOpen = () => review.open;
 export const dossierOpen = () => dossier.open;
+export const legalOpen = () => legal.open;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
@@ -145,7 +151,11 @@ export function closePage() {
 /** Back (or forward) closes what is open on top: the entry, else the page, else the ficha. */
 export function onPopState() {
   const kept = history.state ?? {};
-  if (dossier.open && !kept.dossier) {
+  if (legal.open && !kept.legal) {
+    legal.open = false;
+    document.body.classList.remove('on-legal');
+    hooks.legalDismissed();
+  } else if (dossier.open && !kept.dossier) {
     dossier.open = false;
     document.body.classList.remove('on-dossier');
     hooks.dossierDismissed();
@@ -185,6 +195,21 @@ export function closeDossier() {
   dossier.open = false;
   document.body.classList.remove('on-dossier');
   if (history.state?.dossier) history.back();
+}
+
+/** «Vía legal», over the ficha: an entry of its own. */
+export function openLegal() {
+  if (legal.open) return;
+  legal.open = true;
+  document.body.classList.add('on-legal');
+  history.pushState({ ...history.state, legal: true }, '');
+}
+/** Out of «Vía legal» by its own button: drops its entry. */
+export function closeLegal() {
+  if (!legal.open) return;
+  legal.open = false;
+  document.body.classList.remove('on-legal');
+  if (history.state?.legal) history.back();
 }
 
 /** Forgets history entries left from before a reload, whose views are gone. */
