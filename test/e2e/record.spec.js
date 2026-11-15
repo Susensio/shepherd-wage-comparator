@@ -331,6 +331,52 @@ test.describe('finished: Cuentas', () => {
     await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toBeVisible();
   });
 
+  test('a temporary contract owes severance at its end: in Corresponde and Falta, and no «Todo cobrado» until it is paid', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await at(page, '2026-11-14');
+    await page.evaluate(async () => {
+      const { makeOffer } = await import('./src/offer.js');
+      const o = makeOffer(
+        {
+          start: '2026-09-18',
+          contract: 'temporary',
+          duration: 52,
+          durationUnit: 'days',
+          hoursPerDay: 8,
+          daysOff: 2,
+          daysOffUnit: 'week',
+          holidays: 'no',
+          payType: 'gross',
+          payAmount: 1600,
+          payUnit: 'month',
+          vacation: 'taken',
+          overnight: 'no',
+        },
+        { name: 'Temporal' },
+      );
+      app.state.offers.push(o);
+      app.select(o.id);
+    });
+    // Paid exactly what the pay comes to: only the severance is missing
+    const severance = await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      const { settleOffer, calcOffer } = await import('./src/state.js');
+      const o = app.active();
+      const x = settleOffer(o);
+      const net = calcOffer(o).netFactor;
+      const pay = x.totals.due - x.totals.items.severance.due;
+      offers.addPayment(o, { date: '2026-11-01', amount: Math.round(pay * net * 100) / 100, via: 'payroll' });
+      app.select(o.id);
+      return Math.round(x.totals.items.severance.due * net);
+    });
+    expect(severance).toBeGreaterThan(50);
+    expect(amount(await tile(page, 'Falta').textContent())).toBeCloseTo(severance, 0);
+    await expect(page.locator('#result')).toContainText('Indemnización');
+    await expect(page.locator('.block.result .tag .lbl')).not.toHaveText('Todo cobrado');
+  });
+
   test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más», and nothing to claim', async ({
     page,
   }) => {
@@ -778,7 +824,7 @@ test.describe('the month in progress, the days outside the job and what the mini
 
   const MOLINOS = {
     start: '2026-09-18',
-    contract: 'temporary',
+    contract: 'permanent', // no severance on top of the 70 €
     duration: 52,
     durationUnit: 'days',
     hoursPerDay: 8,

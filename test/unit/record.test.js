@@ -699,12 +699,12 @@ test('spanOf takes a settled row as the helpers need it', () => {
 });
 
 describe('a net total agreed per day: the screens read exactly the agreed amount', () => {
-  // «Molinos»: temporary, 70 € a day net en negro, no night stay, vacation inside, 52 days
+  // «Molinos»: 70 € a day net en negro, no night stay, vacation inside, 52 days (a permanent contract: no severance on top)
   const MOLINOS = offerOf({
     id: 'm',
     name: 'Molinos',
     start: '2026-09-01',
-    contract: 'temporary',
+    contract: 'permanent',
     duration: 52,
     durationUnit: 'days',
     hoursPerDay: 8,

@@ -26,8 +26,8 @@ import { claimDeadline } from './time.js';
  * exceeds it by: cash covers `owed` but carry no Social Security.
  */
 
-/** The items of a month, in the order a payment covers them: by convention, a payment names no item. */
-export const ITEMS = /** @type {const} */ (['salary', 'overnight', 'vacation']);
+/** The items of a month, in the order a payment covers them: by convention, a payment names no item. `severance` (ET 49.1.c) is due at the real end, the last row. */
+export const ITEMS = /** @type {const} */ (['salary', 'overnight', 'vacation', 'severance']);
 
 const KINDS = ['work', 'off', 'sick'];
 const zeroItem = () => ({
@@ -282,6 +282,13 @@ export function settle(offer, record, today, ctx) {
     ? moveIn
     : spread(spare.map((x) => (spareTotal > 0 ? (x * (moveIn[last] ?? 0)) / spareTotal : 0)));
 
+  // Severance at the end of a temporary contract (ET 49.1.c): the model's figure for the whole contract, in proportion
+  // to the job as it really was (a job that ends early earns less), due at the end. Not on a voluntary quit.
+  const severance =
+    labour && !r.noContract && record?.end?.how !== 'quit'
+      ? cents(r.employer.severance * shares.reduce((t, x) => t + x.fullWeight, 0))
+      : 0;
+
   const rows = plans.map(({ share, key, closed, counts, open, worked }, index) => {
     // The agreed pay covers the minimum salary first, then the overnight bonus
     const overnightCovered = Math.min(
@@ -292,14 +299,16 @@ export function settle(offer, record, today, ctx) {
       salary: cents(wageRows[index] - overnightCovered - moveOut[index]),
       overnight: overnightCovered,
       vacation: cents(vacationAgreedOf(index) + moveIn[index]),
+      severance: 0, // the offer does not promise it: the law does
     };
     const minimum = {
       salary: salaryMinRows[index],
       overnight: overnightMinRows[index],
       vacation: vacationMinimumOf(index),
+      severance: index === last ? severance : 0,
     };
     /** @type {Record<typeof ITEMS[number], ItemRow>} */
-    const items = { salary: zeroItem(), overnight: zeroItem(), vacation: zeroItem() };
+    const items = { salary: zeroItem(), overnight: zeroItem(), vacation: zeroItem(), severance: zeroItem() };
     for (const item of ITEMS) {
       const due = Math.max(agreed[item], minimum[item]);
       items[item] = {

@@ -518,7 +518,13 @@ export const CLAIM_STEP_TEXT = {
 };
 
 /** What an item of a settled month is called in the claim and on the screens. */
-export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones', cash: 'En negro' };
+export const ITEM_TEXT = {
+  salary: 'Salario',
+  overnight: 'Plus de pernocta',
+  vacation: 'Vacaciones',
+  severance: 'Indemnización',
+  cash: 'En negro',
+};
 
 const MONTH_NAMES = [
   'enero',

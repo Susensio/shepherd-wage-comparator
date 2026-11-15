@@ -14,11 +14,11 @@ const DAY_MS = 864e5;
  * The lines of a ledger, in net. The cash agreed (`cashGross`, as it counts inside the dues) is taken out of the items,
  * salary first, and shown as a line of its own, «En negro», as handed (`cash`); what is left of each item is taken
  * times `netFactor`. The lines add up to the items.
- * @param {{ item: 'salary' | 'overnight' | 'vacation', due: number, byMinimum?: boolean }[]} grossItems dues in gross
+ * @param {{ item: 'salary' | 'overnight' | 'vacation' | 'severance', due: number, byMinimum?: boolean }[]} grossItems dues in gross
  * @param {number} cash agreed cash, net as handed
  * @param {number} cashGross the same cash as the gross that brings it net
  * @param {number} netFactor
- * @returns {{ key: 'salary' | 'overnight' | 'vacation' | 'cash', due: number, byMinimum: boolean }[]}
+ * @returns {{ key: 'salary' | 'overnight' | 'vacation' | 'severance' | 'cash', due: number, byMinimum: boolean }[]}
  */
 export function linesOf(grossItems, cash, cashGross, netFactor) {
   let left = cashGross;
@@ -79,7 +79,7 @@ const stubRow = (key) => {
     jobFrom: '9999-12-31',
     jobTo: '0000-01-01',
     extension: true,
-    items: { salary: { ...zero }, overnight: { ...zero }, vacation: { ...zero } },
+    items: { salary: { ...zero }, overnight: { ...zero }, vacation: { ...zero }, severance: { ...zero } },
     agreedCash: 0,
     agreedCashGross: 0,
     due: 0,
@@ -179,9 +179,13 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
     due:
       item === 'vacation'
         ? sum(rows.map((row) => row.items.vacation.due)) * accrual
-        : sum(counted.map((row) => row.items[item].due)),
+        : item === 'severance'
+          ? finished
+            ? sum(rows.map((row) => row.items.severance.due))
+            : 0 // falls due with the end
+          : sum(counted.map((row) => row.items[item].due)),
     // The minimum is why a line is what it is only where it fell short in the months it covers
-    byMinimum: sum(counted.map((row) => row.items[item].shortfall)) > 0,
+    byMinimum: item !== 'severance' && sum(counted.map((row) => row.items[item].shortfall)) > 0,
   }));
   const lines = linesOf(
     dueItems,
@@ -312,13 +316,15 @@ export function minimumNote(offer, settled, r) {
     { key: 'overnight', amount: each(items.overnight.minimum) },
     { key: 'vacation', amount: each(items.vacation.minimum) },
   ].filter((x) => x.amount > 0);
-  const agreedGross = sum(ITEMS.map((item) => items[item].agreed)) - totals.agreedCashGross;
+  // The pay's items only: the severance is the law's, not a shortfall of what was agreed
+  const payItems = ITEMS.filter((item) => item !== 'severance');
+  const agreedGross = sum(payItems.map((item) => items[item].agreed)) - totals.agreedCashGross;
   const total = sum(components.map((x) => x.amount));
   const agreed = cents((agreedGross * r.netFactor + totals.agreedCash) / per);
   // Without a contract «las vacaciones no se pagan aparte» says nothing the missing contract has not said
-  const short = ITEMS.map((key) => ({ key, amount: each(items[key].shortfall) })).filter(
-    (x) => x.amount > 0 && !(x.key === 'vacation' && r.noContract),
-  );
+  const short = payItems
+    .map((key) => ({ key, amount: each(items[key].shortfall) }))
+    .filter((x) => x.amount > 0 && !(x.key === 'vacation' && r.noContract));
   if (total <= agreed && !short.length) return null;
   return {
     unit: perDay ? 'día' : 'mes',

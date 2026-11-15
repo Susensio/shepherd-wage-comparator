@@ -83,7 +83,9 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
       near(T.overnight.shortfall, cents(r.debt.parts.overnight), `${name}: overnight debt`);
       near(T.vacation.shortfall, cents(r.debt.parts.vacation), `${name}: vacation debt`);
     }
-    near(x.totals.shortfall, cents(r.debt.owed), `${name}: debt after cash`, 0.01);
+    // (the ficha's debt is the pay's; the severance at the end of a temporary contract is due on top, ET 49.1.c)
+    near(x.totals.shortfall - T.severance.shortfall, cents(r.debt.owed), `${name}: debt after cash`, 0.01);
+    near(T.severance.due, r.noContract ? 0 : cents(r.employer.severance), `${name}: severance`);
     // With nothing received, everything due is owed
     near(x.totals.owed, x.totals.due, `${name}: owed`);
     checked++;
@@ -690,4 +692,49 @@ test('the claim dates from the earliest month the cobros dated by its due date d
     onTime.rows.filter((row) => row.owed > 0).map((row) => [row.month, row.deadline]),
     [['2026-03', '2027-03-31']],
   );
+});
+
+test('a temporary contract owes severance at its real end (ET 49.1.c), in proportion when the job ends early', () => {
+  const offer = offerWith({ contract: 'temporary', payAmount: 1500 });
+  const r = calc(offer, ctx);
+  assert.ok(r.employer.severance > 100);
+  const x = settleOf(offer, {});
+  near(x.totals.items.severance.due, r.employer.severance, 'the model’s figure, whole contract', 0.01);
+  assert.deepEqual(
+    x.rows.map((row) => row.items.severance.due > 0),
+    [false, false, true],
+  );
+  assert.equal(x.rows[2].items.severance.agreed, 0);
+  assert.equal(
+    x.totals.due,
+    cents(x.totals.items.salary.due + x.totals.items.vacation.due + x.totals.items.severance.due),
+  );
+  // the job ends at the end of February: two thirds of the contract
+  const early = settleOf(offer, { end: { how: 'agreed', date: '2026-02-28' } }, '2026-06-01');
+  near(early.totals.items.severance.due, (r.employer.severance * 2) / 3, 'two months of three', 0.01);
+  assert.equal(early.rows.at(-1).items.severance.due, early.totals.items.severance.due); // at the real end
+  // a quit earns none; a permanent contract has none
+  assert.equal(
+    settleOf(offer, { end: { how: 'quit', date: '2026-02-28' } }, '2026-06-01').totals.items.severance.due,
+    0,
+  );
+  assert.equal(settleOf(offerWith({ payAmount: 1500 }), {}).totals.items.severance.due, 0);
+});
+
+test('severance is covered by what is paid after the pay, and stays in Corresponde and Falta until it is', () => {
+  const offer = offerWith({ contract: 'temporary', payAmount: 1500 });
+  const r = calc(offer, ctx);
+  const done = settleOf(offer, {});
+  const pay = (gross) => ({ id: 'a', date: '2026-03-31', amount: gross * r.netFactor, via: 'payroll' });
+  const salaryOnly = done.totals.due - done.totals.items.severance.due;
+  const unpaid = settleOf(offer, { payments: [pay(salaryOnly)] });
+  near(unpaid.totals.owed, r.employer.severance, 'only the severance is owed', 0.02);
+  const standing = standingOf(unpaid, '2026-04-15', 'finished', [pay(salaryOnly)], r.netFactor);
+  assert.ok(standing.falta > 0);
+  assert.ok(standing.lines.some((line) => line.key === 'severance' && line.due > 0));
+  const all = settleOf(offer, { payments: [pay(done.totals.due)] });
+  assert.equal(all.totals.owed, 0);
+  // under way the contract has not ended: nothing for it yet
+  const underway = standingOf(settleOf(offer, {}, '2026-02-10'), '2026-02-10', 'underway', [], r.netFactor);
+  assert.ok(!underway.lines.some((line) => line.key === 'severance' && line.due > 0));
 });

@@ -74,7 +74,10 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   // The minimum on payroll, in net: what arrived on payroll against the net equivalent of the minimum (the gross
   // minimum times the net factor). Real withholdings differ from the simulated ones, so it fails only beyond one more
   // simulated IRPF's worth of the minimum.
-  const minimumGross = sum(ITEMS.map((item) => settled.totals.items[item].minimum));
+  // (the pay's minimum: the severance at the end of a temporary contract is not part of the monthly pay)
+  const minimumGross = sum(
+    ITEMS.filter((item) => item !== 'severance').map((item) => settled.totals.items[item].minimum),
+  );
   const minimumNet = cents(minimumGross * r.netFactor);
   const floor = cents(minimumGross * Math.max(0, r.netFactor - r.pay.irpfPct));
   // Facts of the terms, known before any month is closed: no contract means no alta in Social Security, and cash

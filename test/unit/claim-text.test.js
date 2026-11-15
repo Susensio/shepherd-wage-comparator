@@ -249,3 +249,22 @@ describe('the end said ends the job in every text', () => {
     assert.equal(d.job.to, '2026-09-18');
   });
 });
+
+describe('the severance of a temporary contract is claimed with the rest (ET 49.1.c)', () => {
+  const temporary = worked.find((o) => o.terms.contract === 'temporary' && calc(o, ctx).employer.severance > 1);
+  test('it is in the message, the letter, the papeleta and the Expediente', () => {
+    assert.ok(temporary, 'a sample temporary offer with a severance');
+    const c = contextOf(temporary, 300);
+    assert.ok(c.settled.totals.items.severance.owed > 0);
+    const rows = owedNet(c.settled, Math.round(c.standing.falta), c.r.netFactor, 1);
+    assert.ok(rows.some((m) => m.items.some((x) => x.item === 'severance')));
+    assert.match(paymentRequestText(c), /indemnización/);
+    const concept = conciliationFields(c).find((f) => f.id === 'concept');
+    assert.match(concept?.value ?? '', /indemnización/);
+    assert.ok(
+      conciliationFields(c)
+        .find((f) => f.id === 'amount')
+        ?.value.includes(fSumE(c.settled.totals.owed)),
+    );
+  });
+});

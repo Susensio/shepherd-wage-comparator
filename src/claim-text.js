@@ -49,7 +49,7 @@ export const defaultPayBy = (today) => daysAfter(today, 15);
  * @param {number} falta `standing.falta`
  * @param {number} netFactor
  * @param {number} [unit] 1 for whole euros, as the tiles show them; cents by default
- * @returns {{ month: string, total: number, items: { item: 'salary' | 'overnight' | 'vacation', amount: number }[] }[]}
+ * @returns {{ month: string, total: number, items: { item: 'salary' | 'overnight' | 'vacation' | 'severance', amount: number }[] }[]}
  */
 export function owedNet(settled, falta, netFactor, unit = 0.01) {
   const rows = settled.rows.filter((row) => row.owed > 0);
