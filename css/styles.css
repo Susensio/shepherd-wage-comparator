@@ -3772,23 +3772,18 @@ details.plg > summary .stat.dt b {
   }
 }
 
-/* Wide screens: the account tooltip floats under its button instead of pushing the page down */
+/* Wide screens: the account tooltip is one row, right-aligned under its button. It takes its own height in the flow
+   instead of floating: a floating one overlapped the ficha's header (its «⋯») wherever the fonts made it wrap. */
 @media (min-width: 1024px) {
   .tip-slot {
-    position: relative;
-    height: 0;
-    margin-bottom: 0;
-    z-index: 20;
+    display: flex;
+    justify-content: flex-end;
   }
-  /* One row, so it stays within the line of the intro and never reaches the ficha's header with its «⋯» */
   .tip-slot .tip {
-    position: absolute;
-    top: 0;
-    right: 0;
     flex-direction: row;
     align-items: center;
     gap: 14px;
-    max-width: 460px;
+    max-width: 560px;
   }
   .tip-slot .tip p {
     margin: 0;
