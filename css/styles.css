@@ -3250,6 +3250,10 @@ details > * {
 .lever .sides small {
   color: var(--muted);
 }
+/* The time unit under the figure, so it does not wrap beside it */
+.lever .save small {
+  display: block;
+}
 .lever .cost {
   display: block;
 }

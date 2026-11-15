@@ -73,7 +73,7 @@ function leversView(r, money) {
         <button type="button" class="copybtn" data-action="copyProposal" data-lever=${lever.id} aria-label="Copiar texto para hablarlo con el ganadero" title="Copiar texto para hablarlo con el ganadero">${COPY_ICON}</button>
         <p class="hint copy-msg" aria-live="polite"></p>
         <dl class="sides">
-          <dt>El ganadero se ahorra</dt><dd class="save"><b>${fE(lever.employer)}</b>${lever.estimate ? html` <small>estimado</small>` : nothing}</dd>
+          <dt>El ganadero se ahorra</dt><dd class="save"><b>${fE(lever.employer)}</b> <small>${over}${lever.estimate ? ' · estimado' : ''}</small></dd>
           <dt>Para el pastor</dt><dd>${lever.shepherd.map(([label, text]) => html`<span class="cost"><small>${label}</small> ${text}</span>`)}</dd>
         </dl>
       </div>`,

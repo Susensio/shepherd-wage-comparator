@@ -31,6 +31,7 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(cash.locator('.lever-t')).toHaveText('En negro');
   await expect(cash.locator('.save')).toContainText(/[\d.]+\s€/); // what the ganadero saves
+  await expect(cash.locator('.save small')).toHaveText('en todo el contrato'); // over what time
   await expect(cash).toContainText('no cuenta para la jubilación ni la baja'); // the paro is already at its maximum
 
   await loadOffers(page, sample, OFFER.campanaB);
@@ -38,7 +39,18 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
 
   await loadOffers(page, sample, OFFER.sinContratoD);
   await expect(cash.locator('.lever-t')).toHaveText('Sin contrato');
+  await expect(cash.locator('.save small')).toContainText('en todo el contrato'); // no contract: the same wording
   await expect(cash).toContainText(/Paro unos 552\s€ menos/);
+});
+
+test('«Para negociar»: with no duration, what the ganadero saves is said per month', async ({ page }) => {
+  await loadOffers(page, sample, OFFER.puertoA);
+  await page.evaluate(() => {
+    app.active().terms.duration = '';
+    app.active().terms.durationUnit = 'unknown';
+    app.select(app.active().id);
+  });
+  await expect(page.locator('#secEmployer .lever .save small').first()).toContainText('al mes');
 });
 
 test('The copy icon of a lever copies the neutral text of a lever, impersonal', async ({ page, context }) => {
