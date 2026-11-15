@@ -356,7 +356,8 @@ test('Leyes: «Dónde reclamar» is the ladder in brief, with sources; the welco
 test('the welcome names negotiating, keeping a record and settling accounts', async ({ page }) => {
   await expect(page.locator('#welcome')).toContainText('Negociar');
   await expect(page.locator('#welcome')).toContainText('Llevar el registro');
-  await expect(page.locator('#welcome')).toContainText('Saldar las cuentas');
+  await expect(page.locator('#welcome li', { hasText: 'Cuentas:' })).toContainText('lo que falta por pagar');
+  await expect(page.locator('#welcome')).not.toContainText('Saldar las cuentas');
 });
 
 test.describe('the hints at the end of a job', () => {

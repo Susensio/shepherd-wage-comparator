@@ -3,7 +3,7 @@
  * corresponds, was cobrado and is missing, in net and in gross, adding up to the Cuentas tiles. No DOM.
  */
 
-import { cents, spreadTo, sum } from '../ledger.js';
+import { spreadTo, sum } from '../ledger.js';
 import { spanOf } from './accounts.js';
 import { marksOf } from './record.js';
 import { ITEMS } from './settle.js';
@@ -18,23 +18,26 @@ import { ITEMS } from './settle.js';
  */
 export function dossierOf({ o, netFactor, settled, standing, record }) {
   const rows = settled.rows.filter((row) => row.days > 0);
-  // Net per month: what was received and what is missing are spread to the totals under the tiles, and Corresponde is
-  // their sum, so every row and every column adds up (a month never shows less than nothing received)
-  const covered = cents(standing.corresponde - standing.falta);
-  const received = spreadTo(
-    rows.map((row) => row.received * netFactor),
-    covered,
+  // Net, in whole euros as the tiles show them: Corresponde and Falta are spread over the months to add up to the
+  // figures of the tiles, and what was received is what is left of each month, so every row and column adds up
+  const dueTotal = Math.round(standing.corresponde);
+  const owedTotal = Math.round(standing.falta);
+  const due = spreadTo(
+    rows.map((row) => row.due * netFactor),
+    dueTotal,
+    1,
   );
   const owed = spreadTo(
     rows.map((row) => row.owed * netFactor),
-    standing.falta,
+    owedTotal,
+    1,
   );
   const months = rows.map((row, i) => ({
     month: row.month,
     closed: row.closed,
     closedAt: record.months?.[row.month]?.closedAt ?? null,
     marks: marksOf(o, record, spanOf(row), { from: row.jobFrom, to: row.jobTo }),
-    net: { due: cents(received[i] + owed[i]), received: received[i], owed: owed[i] },
+    net: { due: due[i], received: due[i] - owed[i], owed: owed[i] },
     gross: { due: row.due, received: row.received, owed: row.owed },
   }));
   return {
@@ -42,16 +45,23 @@ export function dossierOf({ o, netFactor, settled, standing, record }) {
     months,
     totals: {
       net: {
-        due: standing.corresponde,
-        received: standing.cobrado,
-        owed: standing.falta,
-        /** Cobrado beyond what corresponds: rows show only what covers it. */
-        extra: standing.sobra,
+        due: dueTotal,
+        received: dueTotal - owedTotal,
+        owed: owedTotal,
+        /** Cobrado beyond what corresponds, whole: rows show only what covers it. */
+        extra: Math.round(standing.sobra),
       },
       gross: { due: settled.totals.due, received: settled.totals.received, owed: settled.totals.owed },
     },
     /** Corresponde by item in net (with «En negro» as its own), adding up to the tile. */
-    lines: standing.lines,
+    lines: standing.lines.map((l, i) => ({
+      ...l,
+      due: spreadTo(
+        standing.lines.map((x) => x.due),
+        dueTotal,
+        1,
+      )[i],
+    })),
     /** The items in gross, as `settle` has them. */
     items: ITEMS.map((item) => ({ item, ...pick(settled.totals.items[item]) })),
     payments: [...(record.payments ?? [])].sort((a, b) => a.date.localeCompare(b.date)),

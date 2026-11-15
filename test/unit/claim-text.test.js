@@ -184,8 +184,9 @@ describe('the Expediente’s figures add up to the tiles', () => {
           record: c.record,
         });
         const net = d.totals.net;
-        assert.equal(net.due, c.standing.corresponde);
-        assert.equal(net.owed, c.standing.falta);
+        // Whole euros, as the tiles
+        assert.equal(net.due, Math.round(c.standing.corresponde));
+        assert.equal(net.owed, Math.round(c.standing.falta));
         assert.equal(sum(d.months.map((m) => m.net.due)), net.due, o.mine.name);
         assert.equal(sum(d.months.map((m) => m.net.owed)), net.owed, o.mine.name);
         for (const m of d.months)
@@ -193,6 +194,8 @@ describe('the Expediente’s figures add up to the tiles', () => {
         assert.equal(sum(d.months.map((m) => m.gross.owed)), d.totals.gross.owed, o.mine.name);
         assert.equal(sum(d.items.map((x) => x.owed)), d.totals.gross.owed, o.mine.name);
         assert.equal(sum(d.lines.map((l) => l.due)), net.due, o.mine.name);
+        for (const m of d.months) assert.equal(m.net.due - m.net.owed, m.net.received);
+        assert.equal(sum(d.months.map((m) => m.net.received)), net.received, o.mine.name);
       }
   });
 });

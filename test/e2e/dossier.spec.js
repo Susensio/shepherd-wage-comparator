@@ -99,6 +99,7 @@ test.describe('the dossier', () => {
     await expect(doc.locator('.dmonth', { hasText: 'Junio 2026' })).toContainText('cerrado el 12 nov 2026');
     await expect(doc.locator('.dmonth', { hasText: 'Julio 2026' })).toContainText('sin cerrar');
     await expect(doc.locator('.dmonth .dd b').first()).toHaveText(/^[JLB·]$/);
+    await expect(doc.locator('.dcount', { hasText: ' 1 libre' }).first()).not.toContainText('1 libres');
     await expect(doc.locator('h2', { hasText: 'Cobros' }).locator('+ table')).toContainText('adelanto');
     await expect(doc).toContainText('Hablar con el ganadero: 10 nov 2026');
     await expect(doc).toContainText('Meses sin cerrar');

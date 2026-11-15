@@ -201,7 +201,7 @@ export function claimView(c) {
     ${legalFold(c)}
     ${
       c.guest
-        ? html`<p class="hint">Estos apuntes solo están en este navegador, que puede borrarlos. <button type="button" class="linkbtn tapfull" data-action="openSettingsPage">Guarda una copia en Ajustes</button>.</p>`
+        ? html`<p class="hint">Estos datos solo están en este navegador, que puede borrarlos. <button type="button" class="linkbtn tapfull" data-action="openSettingsPage">Guarda una copia en Ajustes</button>.</p>`
         : nothing
     }
     <button type="button" class="sm" data-action="openDossier">Ver el expediente</button>

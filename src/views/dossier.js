@@ -48,13 +48,13 @@ function monthGrid(m) {
   const sick = m.marks.filter((x) => !x.outside && x.kind === 'sick').length;
   return html`<div class="dmonth"><h4>${capital(monthName(m.month))} ${y} <small>${m.closed ? `cerrado${m.closedAt ? ` el ${fIso(m.closedAt)}` : ''}` : 'sin cerrar: según lo pactado'}</small></h4>
     <div class="dgrid"><span class="dw">L</span><span class="dw">M</span><span class="dw">X</span><span class="dw">J</span><span class="dw">V</span><span class="dw">S</span><span class="dw">D</span>${cells}</div>
-    <p class="dcount">${work} jornadas · ${off} libres${sick ? ` · ${sick} de baja` : ''}</p></div>`;
+    <p class="dcount">${work} ${work === 1 ? 'jornada' : 'jornadas'} · ${off} ${off === 1 ? 'libre' : 'libres'}${sick ? ` · ${sick} de baja` : ''}</p></div>`;
 }
 
 const money = (x) => fSumE(x);
 
-/** The three columns of a table of what corresponds. */
-const figures = (f) => html`<td>${money(f.due)}</td><td>${money(f.received)}</td><td>${money(f.owed)}</td>`;
+/** The three columns of a table of what corresponds, in cents (gross) or whole euros (net, as the tiles). */
+const figures = (f, show = money) => html`<td>${show(f.due)}</td><td>${show(f.received)}</td><td>${show(f.owed)}</td>`;
 const HEAD = html`<tr><th></th><th>Corresponde</th><th>Cobrado</th><th>Falta</th></tr>`;
 
 /**
@@ -79,7 +79,7 @@ export function dossierView(d, o, r, places) {
     </section>
 
     <section><h2>Condiciones</h2>
-      <ul class="dlist">${[jobDates(data.job) || lines.when, lines.pay, lines.workday, lines.housing, o.terms.place || o.terms.municipality ? lines.place : ''].filter(Boolean).map((x) => html`<li>${x}</li>`)}</ul>
+      <ul class="dlist">${[jobDates(data.job) || lines.when, lines.pay, lines.workday, lines.housing.split(' · ').map(capital).join(' · '), o.terms.place || o.terms.municipality ? lines.place : ''].filter(Boolean).map((x) => html`<li>${x}</li>`)}</ul>
       ${record.end ? html`<p>Acabó el ${fIso(record.end.date)}: ${END_TEXT[record.end.how]}.</p>` : nothing}
     </section>
 
@@ -103,11 +103,11 @@ export function dossierView(d, o, r, places) {
         <div><span>Falta</span><b>${whole(net.owed)}</b></div>
       </div>
       <h3>En neto, por meses</h3>
-      <table class="dtable">${HEAD}${data.months.map((m) => html`<tr><th>${capital(monthName(m.month))}</th>${figures(m.net)}</tr>`)}
-        ${net.extra >= 0.01 ? html`<tr><th>Cobrado por encima de lo calculado</th><td></td><td>${money(net.extra)}</td><td></td></tr>` : nothing}
-        <tr class="dtot"><th>Total</th><td>${money(net.due)}</td><td>${money(net.received)}</td><td>${money(net.owed)}</td></tr></table>
+      <table class="dtable">${HEAD}${data.months.map((m) => html`<tr><th>${capital(monthName(m.month))}</th>${figures(m.net, whole)}</tr>`)}
+        ${net.extra >= 1 ? html`<tr><th>Cobrado por encima de lo calculado</th><td></td><td>${whole(net.extra)}</td><td></td></tr>` : nothing}
+        <tr class="dtot"><th>Total</th><td>${whole(net.due)}</td><td>${whole(net.received)}</td><td>${whole(net.owed)}</td></tr></table>
       <h3>En neto, lo que corresponde por conceptos</h3>
-      <table class="dtable">${data.lines.map((l) => html`<tr><th>${ITEM_TEXT[l.key]}</th><td>${money(l.due)}</td></tr>`)}<tr class="dtot"><th>Corresponde</th><td>${money(net.due)}</td></tr></table>
+      <table class="dtable">${data.lines.map((l) => html`<tr><th>${ITEM_TEXT[l.key]}</th><td>${whole(l.due)}</td></tr>`)}<tr class="dtot"><th>Corresponde</th><td>${whole(net.due)}</td></tr></table>
       <h3>En bruto, por meses</h3>
       <table class="dtable">${HEAD}${data.months.map((m) => html`<tr><th>${capital(monthName(m.month))}</th>${figures(m.gross)}</tr>`)}
         <tr class="dtot"><th>Total</th><td>${money(gross.due)}</td><td>${money(gross.received)}</td><td>${money(gross.owed)}</td></tr></table>
