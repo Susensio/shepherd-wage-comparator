@@ -114,10 +114,27 @@ const END_HOWS = new Set(['agreed', 'dismissed', 'quit']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 const isIsoDate = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 
+const KNOWN_RECORD_KEYS = [
+  'months',
+  'payments',
+  'end',
+  'started',
+  'nothingPaid',
+  'complete',
+  'sick',
+  'recall',
+  'evidence',
+];
+
+/** The fields of `saved` this page does not know, copied: what a newer page wrote there stays when this one writes back. */
+const unknownOf = (saved, known) =>
+  structuredClone(Object.fromEntries(Object.entries(saved).filter(([key]) => !known.includes(key))));
+
 /**
  * A saved record, clean: a day whose kind is unknown, a payment with a non-finite amount or an unknown way, and months
- * that are not `YYYY-MM` are dropped; a payment without an id gets one. Anything else is not the page's to judge.
- * Always a new object, never the input's or the default.
+ * that are not `YYYY-MM` are dropped; a payment without an id gets one. Fields this page does not know are kept, in the
+ * record and in its months, payments, end, start, completion, leave and notes, for a newer page's data to survive a
+ * write from this one. Always a new object, never the input's or the default.
  */
 export function normalizeRecord(saved) {
   const record = emptyRecord();
@@ -129,7 +146,7 @@ export function normalizeRecord(saved) {
         ([day, kind]) => /^(0[1-9]|[12]\d|3[01])$/.test(day) && DAY_KINDS.has(kind),
       ),
     );
-    record.months[key] = { closed: month.closed === true, days };
+    record.months[key] = { ...unknownOf(month, ['closed', 'closedAt', 'days']), closed: month.closed === true, days };
     if (isIsoDate(month.closedAt)) record.months[key].closedAt = month.closedAt;
   }
   for (const p of Array.isArray(saved.payments) ? saved.payments : []) {
@@ -137,21 +154,28 @@ export function normalizeRecord(saved) {
       continue;
     if (typeof p.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) continue;
     const payment = {
+      ...unknownOf(p, ['id', 'date', 'amount', 'via', 'note']),
       id: typeof p.id === 'string' && p.id ? p.id : newId(),
       date: p.date,
       amount: p.amount,
       via: p.via,
+      ...(typeof p.note === 'string' && p.note ? { note: p.note } : {}),
     };
-    if (typeof p.note === 'string' && p.note) payment.note = p.note;
     record.payments.push(payment);
   }
   if (isObject(saved.end) && END_HOWS.has(saved.end.how) && isIsoDate(saved.end.date))
-    record.end = { how: saved.end.how, date: saved.end.date };
-  if (isObject(saved.started) && isIsoDate(saved.started.date)) record.started = { date: saved.started.date };
+    record.end = { ...unknownOf(saved.end, ['how', 'date']), how: saved.end.how, date: saved.end.date };
+  if (isObject(saved.started) && isIsoDate(saved.started.date))
+    record.started = { ...unknownOf(saved.started, ['date']), date: saved.started.date };
   if (saved.nothingPaid === true) record.nothingPaid = true;
-  if (isObject(saved.complete) && isIsoDate(saved.complete.date)) record.complete = { date: saved.complete.date };
+  if (isObject(saved.complete) && isIsoDate(saved.complete.date))
+    record.complete = { ...unknownOf(saved.complete, ['date']), date: saved.complete.date };
   if (isObject(saved.sick) && isIsoDate(saved.sick.from))
-    record.sick = { from: saved.sick.from, ...(isIsoDate(saved.sick.to) ? { to: saved.sick.to } : {}) };
+    record.sick = {
+      ...unknownOf(saved.sick, ['from', 'to']),
+      from: saved.sick.from,
+      ...(isIsoDate(saved.sick.to) ? { to: saved.sick.to } : {}),
+    };
   if (isObject(saved.recall)) {
     const recall = Object.fromEntries(
       Object.entries(saved.recall).filter(
@@ -163,8 +187,9 @@ export function normalizeRecord(saved) {
   const notes = (Array.isArray(saved.evidence) ? saved.evidence : []).filter(
     (x) => isObject(x) && isIsoDate(x.date) && typeof x.text === 'string' && x.text.trim(),
   );
-  if (notes.length) record.evidence = notes.map((x) => ({ date: x.date, text: x.text }));
-  return record;
+  if (notes.length)
+    record.evidence = notes.map((x) => ({ ...unknownOf(x, ['date', 'text']), date: x.date, text: x.text }));
+  return { ...unknownOf(saved, KNOWN_RECORD_KEYS), ...record };
 }
 
 /** Saved parties, clean: strings only; the tax id and the pastor's name only when they hold something. */

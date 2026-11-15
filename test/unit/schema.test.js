@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import { DEF_CFG, DEF_MINE, DEF_TERMS, emptyRecord } from '../../src/offer.js';
-import { ingestSaved, ingestShared, SCHEMA_VERSION, upgrade } from '../../src/schema.js';
+import { ingestSaved, ingestShared, normalizeRecord, SCHEMA_VERSION, upgrade } from '../../src/schema.js';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`../fixtures/schema/${name}.json`, import.meta.url), 'utf8'));
 const current = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
@@ -317,6 +317,33 @@ describe('version 5: mine.record (ADR-0032)', () => {
     );
   });
 
+  test('fields this page does not know survive in the record and its parts, as copies', () => {
+    const saved = {
+      future: { a: 1 },
+      months: { '2026-06': { closed: true, days: {}, mood: 'good' } },
+      payments: [{ id: 'p', date: '2026-06-30', amount: 5, via: 'cash', receipt: 'r1' }],
+      end: { how: 'quit', date: '2026-08-01', reason: 'x' },
+      started: { date: '2026-06-01', by: 'y' },
+      complete: { date: '2026-09-01', by: 'z' },
+      sick: { from: '2026-07-01', doctor: 'w' },
+      evidence: [{ date: '2026-07-02', text: 't', photo: 'u' }],
+    };
+    const record = normalizeRecord(saved);
+    assert.deepEqual(record.future, { a: 1 });
+    assert.notEqual(record.future, saved.future);
+    assert.equal(record.months['2026-06'].mood, 'good');
+    assert.equal(record.payments[0].receipt, 'r1');
+    assert.equal(record.end.reason, 'x');
+    assert.equal(record.started.by, 'y');
+    assert.equal(record.complete.by, 'z');
+    assert.equal(record.sick.doctor, 'w');
+    assert.equal(record.evidence[0].photo, 'u');
+    // What it knows is still judged: an invalid known field is not let through as an unknown one
+    assert.equal('nothingPaid' in normalizeRecord({ nothingPaid: 'yes' }), false);
+    assert.equal('end' in normalizeRecord({ end: { how: 'bad', date: '2026-08-01' } }), false);
+    assert.deepEqual(normalizeRecord(record), record);
+  });
+
   test('a record that is not an object becomes an empty one', () => {
     for (const bad of [null, 'x', 5, [], { months: [], payments: 'no' }]) {
       const { offers } = ingestSaved(
@@ -397,13 +424,13 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
       ],
       months: { '2026-06': { closed: true, closedAt: '2026-07-02', days: {} }, '2026-07': { closedAt: 'hoy' } },
     });
-    assert.deepEqual(full.end, { how: 'dismissed', date: '2026-10-03' });
+    assert.deepEqual(full.end, { how: 'dismissed', date: '2026-10-03', extra: 1 }); // unknown sub-fields are kept
     assert.deepEqual(
       record({ sick: { from: '2026-09-20', to: '2026-10-01', x: 1 }, recall: { 2027: 'no', 2028: 'x' } }),
       {
         months: {},
         payments: [],
-        sick: { from: '2026-09-20', to: '2026-10-01' },
+        sick: { from: '2026-09-20', to: '2026-10-01', x: 1 },
         recall: { 2027: 'no' },
       },
     );
@@ -530,7 +557,7 @@ describe('version 7: the record closed (ADR-0032)', () => {
     assert.equal(offers[0].mine.futureMineField, 7, 'what the page does not know is kept');
   });
 
-  test('a record closed keeps its date; anything else is dropped', () => {
+  test('a record closed keeps its date and its unknown fields; anything else is dropped', () => {
     const record = (complete) =>
       ingestSaved(
         {
@@ -539,7 +566,7 @@ describe('version 7: the record closed (ADR-0032)', () => {
         },
         { fallbackCfg },
       ).offers[0].mine.record;
-    assert.deepEqual(record({ date: '2026-11-15', extra: 1 }).complete, { date: '2026-11-15' });
+    assert.deepEqual(record({ date: '2026-11-15', extra: 1 }).complete, { date: '2026-11-15', extra: 1 });
     for (const bad of [true, 'x', { date: 'hoy' }, { date: 5 }, null, []])
       assert.equal('complete' in record(bad), false, JSON.stringify(bad));
     // Normalising what is already clean changes nothing
