@@ -6,6 +6,8 @@
  * the unemployment limits and the IRPF scale, and run the tests. The Leyes tab is filled in from here.
  */
 
+import { HOLIDAY_DATA } from './law-territorial.js';
+
 /** Where the rules come from. `cite` is how the page names the source next to a figure. */
 export const SOURCES = {
   et: {
@@ -395,4 +397,21 @@ const WAGE_YEARS = Object.keys(MIN_WAGE).map(Number);
 export const minWageOf = (year) => {
   const y = Math.min(WAGE_YEARS.at(-1), Math.max(WAGE_YEARS[0], year));
   return { year: y, ...MIN_WAGE[y] };
+};
+
+/**
+ * The public holidays of a year at a place, from the verified rows of the knowledge base (kb/tables, ADR-0033):
+ * the national and regional days of the province's community, plus the municipality's two local days where it has
+ * them. `local` says whether the local days are in `days`; `known` is false (and `days` empty) when the province or
+ * the year has no verified data. `cite` names the source: `{ id, label, url }`.
+ * @param {{ municipality?: string | null, province?: string | null, year: number }} place `municipality` is the INE code
+ * @returns {{ days: { date: string, name: string, scope: string, cite: { id: string, label: string, url: string | null } }[], local: boolean, known: boolean }}
+ */
+export const holidaysOf = ({ municipality, province, year }) => {
+  const community = HOLIDAY_DATA.provinces[province ?? ''];
+  const regional = HOLIDAY_DATA.regional[community]?.[year];
+  if (!regional) return { days: [], local: false, known: false };
+  const local = HOLIDAY_DATA.local[municipality ?? '']?.[year] ?? [];
+  const days = [...regional, ...local].sort((a, b) => a.date.localeCompare(b.date));
+  return { days, local: local.length > 0, known: true };
 };

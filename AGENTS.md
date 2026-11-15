@@ -32,6 +32,7 @@ Notes for anyone (person or agent) changing this code. The README says what the 
 ## Legal figures
 
 - Every legal or tax figure lives in `src/law.js`, with its source: minimum wage per year, working time, rest, vacation, severance, the overnight bonus, Social Security rates, unemployment benefit and IRPF. Code and texts read it from there (`LAW`, `minWageOf`, `ssOf`, `citeOf`); do not hard-code a legal figure anywhere else.
+- Territorial figures (public holidays, later agreement terms) are not typed into `law.js`: they come from the verified rows of `kb/tables` through `npm run law-data` into a generated module (`src/law-territorial.js`, never edited by hand, checked by a unit test), which is read only through `law.js` lookups such as `holidaysOf` (ADR-0033).
 - Law figures are not settings: the user cannot change them in Ajustes, and `ingestSaved` drops saved values for them (ADR-0014). Ajustes holds only what differs between shepherds.
 - Figures inside the HTML text are `<span data-law="key">` placeholders filled by `views/law-figures.js`; links to sources are `<a data-source="et" data-art="38">`.
 - Each January, add the new minimum wage to `MIN_WAGE` and review the rest of `law.js`. `test/unit/law.test.js` fails once the current year is missing.
