@@ -3996,6 +3996,11 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
 .block .rows + .rows {
   margin-top: 6px;
 }
+/* The fold that splits Corresponde sits right under the rows of the balance, with no rule between them */
+.block details.plg[data-fold="how"] {
+  border-top: 0;
+  padding-top: 0;
+}
 .row.sub {
   padding-left: 12px;
   color: var(--muted);

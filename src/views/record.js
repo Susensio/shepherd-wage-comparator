@@ -193,7 +193,10 @@ function result(c) {
           ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
           : '';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
+      // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
+      s.hasPayments && !settled ? html`<span class="stamp">Pendiente</span>` : nothing
+    }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
     ${tiles(s)}
     ${notes(s, { over: '' })}
     ${recordClosing(c, open)}
@@ -209,7 +212,7 @@ function balanceBlock(c) {
     <div class="rows">
       ${row('Jornadas', String(b.worked), { sub: b.firm ? 'de los meses cerrados' : `${b.workedClosed} en meses cerrados; el resto, según la oferta` })}
       ${b.contribDays > 0 ? row('Días cotizados', String(Math.round(b.contribDays)), { sub: `según la oferta (la nómina real no se apunta)${vacation >= 1 ? `; incluye ${vacation} ${vacation === 1 ? 'día' : 'días'} de vacaciones pagadas` : ''}` }) : nothing}
-      ${b.paroDays >= 1 ? row('Paro', `unos ${Math.round(b.paroDays)} días`, { sub: `unos ${whole(b.paroEuros)}, según la oferta; se cobran más adelante` }) : nothing}
+      ${b.paroDays >= 1 ? row('Paro', `${Math.round(b.paroDays)} días · ${whole(b.paroEuros)}`, { sub: 'según la oferta; se cobran más adelante' }) : nothing}
     </div>
     ${howItAdds(s)}
   </div>`;

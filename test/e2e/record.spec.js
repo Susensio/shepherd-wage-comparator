@@ -248,6 +248,18 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#secEmployer')).toHaveCount(0);
   });
 
+  test('«Debe el ganadero» carries a stamp «Pendiente», like the offer’s «Ilegal»; no stamp without a debt', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await expect(page.locator('.block.result .stamp')).toHaveCount(0); // no cobro yet: only Corresponde
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
+    await expect(page.locator('.block.result .tag .stamp')).toHaveText('Pendiente');
+    await addPayments(page, [{ date: '2026-07-06', amount: 50000, via: 'payroll' }]);
+    await expect(page.locator('.block.result .stamp')).toHaveCount(0); // all cobrado: calm
+  });
+
   test('Corresponde − Cobrado = Falta, in net, and the headline «Debe el ganadero» is Falta', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
@@ -349,6 +361,11 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('.sofar > div', { hasText: 'Cobrado' })).toContainText('de ello, en mano');
     await expect(block.locator('.row', { hasText: 'Jornadas' })).toContainText('0 en meses cerrados');
     await expect(block.locator('.row', { hasText: 'Paro' })).toContainText('según la oferta');
+    // «37 días · 1.427 €»: no «unos», the line already says it follows the offer
+    await expect(block.locator('.row', { hasText: 'Paro' })).toContainText(/\d+ días · [\d.]+\s€/);
+    await expect(block.locator('.row', { hasText: 'Paro' })).not.toContainText('unos');
+    // No rule between the rows of the balance and the fold that splits Corresponde
+    await expect(block.locator('details[data-fold=how]')).toHaveCSS('border-top-width', '0px');
     await expect(block).not.toContainText('Simulador de nóminas');
     await closeMonths(page, 'all');
     await expect(page.locator('.block.result .tag .sub')).toHaveCount(0); // the record, not the months, is what is left
