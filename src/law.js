@@ -366,6 +366,18 @@ const OVERNIGHT_BY_PROVINCE = {
 export const overnightOf = (province) => OVERNIGHT_BY_PROVINCE[province ?? ''] ?? null;
 
 /**
+ * Collective agreements that regulate working a public holiday, by province code of the places list: the article to
+ * cite. No figure: the premium of the kb row (kb/tables/agreement_terms.csv, overtime_holiday_premium_pct) reaches the
+ * page once the owner verifies it. Elsewhere none is known.
+ * @type {Record<string, { cite: string, url: string }>}
+ */
+const HOLIDAY_WORK_BY_PROVINCE = {
+  HU: { cite: `${SOURCES.huescaAgreement.cite}, art. 35`, url: SOURCES.huescaAgreement.url },
+};
+/** The agreement article on working a holiday in a province: `{ cite, url }`, or null where none is known. */
+export const holidayWorkOf = (province) => HOLIDAY_WORK_BY_PROVINCE[province ?? ''] ?? null;
+
+/**
  * The offices where the prior conciliation is held, by province code of the places list: only Aragón's three, from the
  * Gobierno de Aragón's procedure page (SOURCES.aragonConciliation). Elsewhere none is known and the page says «el
  * servicio de mediación de la comunidad» without an address.

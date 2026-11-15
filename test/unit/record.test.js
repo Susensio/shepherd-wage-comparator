@@ -571,6 +571,40 @@ describe('the public holidays of the offer’s place on the calendar', () => {
     assert.equal(acc?.delta, null);
     assert.equal(acc?.jornadas, 0);
   });
+
+  describe('«Festivos trabajados» in the law row', () => {
+    const settledOf = (offer, record) => settle(offer, record, '2026-11-12', ctx);
+    const lawOf = (offer, months) => {
+      const record = emptyRecord();
+      for (const row of settledOf(offer, record).rows)
+        if (months.includes(row.month)) closeMonth(offer, record, spanOf(row));
+      return lawFromRecord(offer, record, settledOf(offer, record), calc(offer, ctx), record.payments).holidays;
+    };
+
+    test('known place: the holidays worked in closed months, with the agreement where there is one', () => {
+      const june = lawOf(at({ ...YEBRA, holidays: 'no' }), ['2026-06']);
+      assert.deepEqual([june.known, june.local], [true, true]);
+      assert.deepEqual(june.worked, [{ date: '2026-06-25', name: 'Santa Orosia' }]);
+      assert.match(june.agreement?.cite ?? '', /provincia de Huesca, art\. 35$/);
+      assert.deepEqual(lawOf(at({ ...YEBRA, holidays: 'no' }), ['2026-07']).worked, []);
+      assert.deepEqual(lawOf(at({ ...YEBRA, holidays: 'yes' }), ['2026-06']).worked, [], 'taken off: not worked');
+    });
+
+    test('Zaragoza has the community’s days only, and no agreement article', () => {
+      const x = lawOf(at({ province: 'Z', holidays: 'no' }), ['2026-06', '2026-07', '2026-08']);
+      assert.deepEqual([x.known, x.local, x.agreement], [true, false, null]);
+      assert.deepEqual(
+        x.worked.map((d) => d.date),
+        ['2026-08-15'],
+      );
+    });
+
+    test('no row where there is nothing to judge: unknown place, no closed month, a year without data', () => {
+      assert.equal(lawOf(at({ province: 'M' }), ['2026-06']).known, false);
+      assert.equal(lawOf(at({}), ['2026-06']).known, false);
+      assert.equal(lawOf(at(YEBRA), []).known, false, 'no month closed');
+    });
+  });
 });
 
 describe('what the job left', () => {

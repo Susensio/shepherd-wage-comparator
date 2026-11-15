@@ -509,6 +509,40 @@ test.describe('finished: Cuentas', () => {
     await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
   });
 
+  test('«Festivos trabajados» only where the place has holidays: its closed months, the dates and the agreement; no row elsewhere', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const place = (terms) =>
+      page.evaluate((terms) => {
+        Object.assign(app.active().terms, terms);
+        app.select(app.active().id);
+      }, terms);
+    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
+    const row = block.locator('.lawcheck > div', { hasText: 'Festivos trabajados' });
+    await place({ municipality: '22252', province: 'HU' });
+    // Nothing closed, nothing to judge
+    await expect(row).toHaveCount(0);
+    await closeMonths(page, ['2026-07']);
+    await expect(row.locator('.m')).toHaveText('✔');
+    await expect(row).toContainText('Ningún festivo trabajado en los meses cerrados');
+    // Yebra de Basa: 25 Jun, 10 Aug and 15 Aug fall in the job, all worked as the offer says
+    await closeMonths(page, 'all');
+    await expect(row.locator('.m')).toHaveText('?');
+    await expect(row).toContainText('3 festivos trabajados en meses cerrados: 25 jun, 10 ago, 15 ago');
+    await expect(row).toContainText('retribuidos y no recuperables (Estatuto, art. 37.2)');
+    await expect(row).toContainText('Convenio colectivo del sector agrícola de la provincia de Huesca, art. 35');
+    await expect(row).not.toContainText('Faltan los festivos locales');
+    // Another community's agreement is not known: no article. A province with no data: no row at all
+    await place({ municipality: '', province: 'Z' });
+    await expect(row).toContainText('1 festivo trabajado en meses cerrados: 15 ago');
+    await expect(row).not.toContainText('Convenio');
+    await expect(row).toContainText('Faltan los festivos locales del municipio, que no constan');
+    await place({ municipality: '', province: 'M' });
+    await expect(row).toHaveCount(0);
+    await expect(block).toContainText('Descanso semanal');
+  });
+
   test('«Cerrar el registro»: the months are reviewed first, then «¿Están apuntados todos los cobros?»; the figures are firm and the minimum is judged; «Reabrir» undoes it', async ({
     page,
   }) => {

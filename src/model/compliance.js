@@ -1,13 +1,13 @@
 /**
  * Whether the law was kept, from what the record holds and not from what the offer promised (ADR-0032), judging facts
  * only: the facts of the terms (no contract, cash agreed) need no month closed; the weekly rest and the days worked above
- * those due look at CLOSED months alone (the periods wholly inside them). The overnight bonus and the minimum on payroll
+ * those due, and the public holidays worked, look at CLOSED months alone (the periods wholly inside them). The overnight bonus and the minimum on payroll
  * are judged only once the shepherd has closed the record (`record.complete`: every cobro is recorded) with every month
  * closed: until then not every cobro is known. Only the model's own definitions and `law.js` figures. What the record cannot support is said, not guessed.
  * No DOM.
  */
 
-import { LAW } from '../law.js';
+import { holidaysOf, holidayWorkOf, LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
 import { marksOf } from './record.js';
 import { ITEMS } from './settle.js';
@@ -54,6 +54,20 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   const worked = days.filter((x) => x.closed && x.kind === 'work').length;
   const due = jobDays > 0 ? (r.extra.due * closedDays) / jobDays : 0;
 
+  // Public holidays worked in closed months: judged only where every closed month's year has verified data for the
+  // place (otherwise the count would be partial and silent about it). `local`: the municipality's two local days are in.
+  const places = [...new Set(closed.map((row) => Number(row.month.slice(0, 4))))].map((year) =>
+    holidaysOf({ municipality: offer.terms.municipality, province: offer.terms.province, year }),
+  );
+  const holidays = {
+    known: closed.length > 0 && places.every((place) => place.known),
+    local: places.every((place) => place.local),
+    worked: days
+      .filter((x) => x.closed && x.kind === 'work' && x.holiday)
+      .map((x) => ({ date: x.date, name: x.holiday })),
+    agreement: holidayWorkOf(offer.terms.province),
+  };
+
   // The overnight bonus and the minimum, once every month is closed and the shepherd said every cobro is recorded
   const known = allClosed && Boolean(record.complete);
   const overnight = settled.totals.items.overnight;
@@ -77,6 +91,7 @@ export function lawFromRecord(offer, record, settled, r, payments) {
     allClosed,
     rest: { periods, fails },
     days: { worked, due, extra: Math.max(0, worked - due) },
+    holidays,
     overnight: {
       applicable: r.min.overnight > 0,
       pct: r.min.overnightAgreement?.pct ?? 0,

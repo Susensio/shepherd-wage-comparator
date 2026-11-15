@@ -24,6 +24,7 @@ const fWhen = (iso, today) => {
 };
 const netTotal = (payments) => payments.reduce((total, p) => total + p.amount, 0);
 
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const WAY = { payroll: 'Nómina', cash: 'En mano' };
 
 /** One cobro as a flat row. `remove`: its «Quitar» button, with the second tap that confirms. */
@@ -286,6 +287,18 @@ function lawBlock(c) {
           'Jornadas de más',
           `${law.days.worked} jornadas, dentro de las unas ${Math.round(law.days.due)} que corresponden.`,
         );
+  // Only where the place has verified holidays for every closed month's year; nothing otherwise
+  const fests = law.holidays;
+  const missingLocal = fests.local ? '' : ' Faltan los festivos locales del municipio, que no constan.';
+  const festivos = !fests.known
+    ? nothing
+    : fests.worked.length
+      ? mark(
+          'warn',
+          'Festivos trabajados',
+          `${plural(fests.worked.length, 'festivo trabajado', 'festivos trabajados')} en meses cerrados: ${fests.worked.map((x) => fWhen(x.date, c.today)).join(', ')}. Los festivos son retribuidos y no recuperables (Estatuto, art. 37.2): trabajar uno se paga aparte o se compensa con descanso.${fests.agreement ? ` El convenio regula el recargo de las horas extra en festivo (${fests.agreement.cite}).` : ''}${missingLocal}`,
+        )
+      : mark('ok', 'Festivos trabajados', `Ningún festivo trabajado en los meses cerrados.${missingLocal}`);
   // The minimum on payroll and the plus de pernocta need every cobro: they are judged once the record is closed
   const minimum = law.minimum;
   const payrollRows = !c.complete
@@ -321,7 +334,7 @@ function lawBlock(c) {
   ].filter(Boolean);
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
     ${closedMonths ? html`<p class="hint">Según el registro, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>` : nothing}
-    <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}` : nothing}${payrollRows}</div>
+    <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}${festivos}` : nothing}${payrollRows}</div>
     ${!closedMonths ? html`<p class="hint">Cierra los meses para comprobar el descanso semanal y las jornadas.</p>` : nothing}
     ${!c.complete && later.length ? html`<p class="hint">Al cerrar el registro se comprueba también ${joinAnd(later)}.</p>` : nothing}
   </div>`;
