@@ -311,7 +311,7 @@ const COMPARE_ACTIONS = {
   },
 };
 
-/** Ofertas: the list, the ficha with its result, and the entry. */
+/** Trabajos: the list, the ficha with its result, and the entry. */
 const OFFER_ACTIONS = {
   changePlace,
   openOffer: (b) => openOffer(b.dataset.id),

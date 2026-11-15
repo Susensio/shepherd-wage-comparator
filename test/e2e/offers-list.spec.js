@@ -1,4 +1,4 @@
-// The Ofertas list: by date, latest first, grouped by year with that year's figures, «Por decidir» first (ADR-0030).
+// The Trabajos list: by date, latest first, grouped by year with that year's figures, «Por decidir» first (ADR-0030).
 
 import { expect, loadOffers, sample, test } from './fixtures.js';
 

@@ -20,3 +20,17 @@ test.describe('thin terms', () => {
     await expect(page.locator('#result .empty')).toContainText('las horas por día');
   });
 });
+
+test.describe('the tab', () => {
+  test.use({ today: '2026-05-01' });
+
+  test('the first tab and the ficha’s way back are «Trabajos»; an offer not started waits under «Por decidir»', async ({
+    loaded: page,
+  }) => {
+    await expect(page.locator('.tabs [data-tab=offers]')).toHaveText('Trabajos');
+    await expect(page.locator('[data-action=closeFicha]')).toHaveText('Trabajos');
+    await page.click('[data-action=closeFicha]');
+    await expect(page.locator('#offersList')).toHaveAttribute('aria-label', 'Los trabajos');
+    await expect(page.locator('#cards .year-head').first()).toContainText('Por decidir');
+  });
+});

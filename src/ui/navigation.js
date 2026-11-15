@@ -1,6 +1,6 @@
 /**
  * Where the reader is: the tab shown, the page (account, settings, laws) open over it, and the way back from a page. Over
- * the Ofertas tab, the list shows an offer's ficha, and the guided entry covers the whole screen. Each page, ficha
+ * the Trabajos tab, the list shows an offer's ficha, and the guided entry covers the whole screen. Each page, ficha
  * and entry pushes a history entry, so the phone's Back goes one level up. On wide screens the list and the ficha
  * are side by side (ADR-0021): the ficha is always open there and pushes nothing.
  */
@@ -27,7 +27,7 @@ const where = {
   scrollBeforePage: 0,
 };
 
-/** Over the Ofertas tab. `ficha`: an offer's ficha, instead of the list. `entry`: the guided entry, over either. */
+/** Over the Trabajos tab. `ficha`: an offer's ficha, instead of the list. `entry`: the guided entry, over either. */
 const view = { ficha: false, entry: false };
 /** Where the list and the ficha were scrolled when something opened over them. */
 const scrolls = { list: 0, ficha: 0 };
@@ -109,7 +109,7 @@ function showPanel(shown) {
 
 /** Shows a tab. With `scrollUp`, the page goes back to the top. */
 export function showTab(tab, scrollUp) {
-  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the pages opens Ofertas
+  const shown = TABS.includes(tab) ? tab : 'offers'; // a stored «settings» from before the pages opens Trabajos
   showPanel(shown);
   where.tab = shown;
   for (const t of TABS) $(`.tabs [data-tab=${t}]`).setAttribute('aria-selected', String(t === shown));
@@ -220,7 +220,7 @@ export function closeLegal() {
 export const resetHistory = () => history.replaceState(null, '');
 
 /**
- * Changes what shows over the Ofertas tab, with its history entry: `push` a new one, `replace` this one, `back` to
+ * Changes what shows over the Trabajos tab, with its history entry: `push` a new one, `replace` this one, `back` to
  * drop the one that was pushed (the popstate that follows finds nothing left to close), or `none` when Back did it.
  * @param {{ ficha: boolean, entry: boolean }} next
  * @param {'push' | 'replace' | 'back' | 'none'} how
@@ -246,7 +246,7 @@ export function openFicha() {
   showTab('offers');
   if (!view.ficha) go({ ficha: true, entry: false }, 'push');
 }
-/** «Ofertas», on the ficha: back to the list. */
+/** «Trabajos», on the ficha: back to the list. */
 export function closeFicha() {
   if (!wide.matches) go({ ficha: false, entry: false }, 'back');
 }

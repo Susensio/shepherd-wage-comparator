@@ -308,7 +308,7 @@ test.describe('at 375 px', () => {
   }
 });
 
-test.describe('the status of a card in Ofertas', () => {
+test.describe('the status of a card in Trabajos', () => {
   test.use({ today: '2026-11-12' });
   const NAME = 'Puerto A, otra cuenta';
   const card = (page) => page.locator('#cards .ocard', { hasText: NAME }).first();

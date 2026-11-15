@@ -267,7 +267,7 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
 }
 
 /**
- * The status of a worked job on its card in Ofertas: a colour and one short line, or null where nothing is said.
+ * The status of a worked job on its card in Trabajos: a colour and one short line, or null where nothing is said.
  * Red where the ganadero owes (a cobro recorded and Falta above 0); amber where something remains to record (no cobro,
  * months not closed, a finished job's record not closed); plain «Todo cobrado» for a finished job settled and closed.
  * A job under way says nothing until a month has ended: there is nothing to record yet.

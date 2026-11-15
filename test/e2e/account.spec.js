@@ -171,7 +171,7 @@ test.describe('the account button', () => {
     await expect(page.locator('[data-panel=account]')).toBeHidden();
   });
 
-  test('the app bar is on the welcome too, and a stored «settings» tab opens Ofertas', async ({ openApp }) => {
+  test('the app bar is on the welcome too, and a stored «settings» tab opens Trabajos', async ({ openApp }) => {
     const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
     await expect(page.locator('#welcome')).toBeVisible();
     await expect(page.locator('.appbar h1')).toHaveText('Zurrón sindical');
@@ -186,7 +186,7 @@ test.describe('the account button', () => {
 });
 
 test.describe('the tooltip', () => {
-  /** The page on Ofertas, signed out, with offers in the browser (a first visit has the welcome instead). */
+  /** The page on Trabajos, signed out, with offers in the browser (a first visit has the welcome instead). */
   const openGuest = (openApp, options = {}) =>
     openApp({
       init: installFake,
@@ -200,7 +200,7 @@ test.describe('the tooltip', () => {
     });
   const tip = (page) => page.locator('#accountTip .tip');
 
-  test('shows on Ofertas, Otros pastores and Ajustes, each with its own message; not on Comparar, Leyes or the account page', async ({
+  test('shows on Trabajos, Otros pastores and Ajustes, each with its own message; not on Comparar, Leyes or the account page', async ({
     openApp,
   }) => {
     const page = await openGuest(openApp);
@@ -446,7 +446,7 @@ test('an empty account opens the welcome and then the templates, like a first vi
   await expect(page.locator('#tplGrid button').first()).toBeVisible();
 });
 
-test('a failed first upload: a tooltip on Ofertas that leads to it, and cannot be sent away', async ({ openApp }) => {
+test('a failed first upload: a tooltip on Trabajos that leads to it, and cannot be sent away', async ({ openApp }) => {
   const page = await openApp({
     init: installFake,
     arg: { tables: { profiles: [{ ...PROFILE }], ...accountRows() }, localOffers: sample.offers, failUpload: true },

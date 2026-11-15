@@ -244,7 +244,7 @@ test('the phone Back button goes from the step to the ficha to the list, and res
   await expect(page.locator('#cards')).toBeVisible();
 });
 
-test('the «Ofertas» link and the page Back stay in step', async ({ loaded: page }) => {
+test('the «Trabajos» link and the page Back stay in step', async ({ loaded: page }) => {
   await page.click('[data-action=closeFicha]');
   await page.locator('#cards .ocard').first().click();
   await page.click('[data-action=closeFicha]');

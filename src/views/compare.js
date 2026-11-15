@@ -322,7 +322,7 @@ export function compareView({
         all.length < 2
           ? scope === 'others'
             ? 'Para compararlas hacen falta al menos dos ofertas completas.'
-            : 'Para compararlas, añade otra oferta con «+ Nueva oferta», en Ofertas.'
+            : 'Para compararlas, añade otra oferta con «+ Nueva oferta», en Trabajos.'
           : `Para compararlas hacen falta dos ofertas completas. ${incomplete.map((x) => `A «${nameOf(x) || 'Oferta'}» le falta ${joinAnd(missing(x.o.terms).map((id) => MISSING_TEXT[id]))}.`).join(' ')}`
       }</p>${controls}`,
       more: nothing,

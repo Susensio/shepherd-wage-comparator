@@ -11,7 +11,7 @@ export const GUEST_TIPS = {
   settings: { title: 'Guarda los ajustes en una cuenta.', text: 'Así están en cualquier dispositivo.' },
 };
 
-/** What a signed-in user sees on Ofertas while the browser's offers wait for a decision. */
+/** What a signed-in user sees on Trabajos while the browser's offers wait for a decision. */
 export const PENDING_TIP = {
   title: 'No se pudieron subir las ofertas a la cuenta.',
   go: 'Revisar',

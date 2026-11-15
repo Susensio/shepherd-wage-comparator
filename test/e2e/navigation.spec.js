@@ -80,7 +80,7 @@ test.describe('phone', () => {
     await expect(page.locator('.tabs')).toBeVisible();
   });
 
-  test('the list is the Ofertas tab; a card opens the ficha, with a history entry', async ({ loaded: page }) => {
+  test('the list is the Trabajos tab; a card opens the ficha, with a history entry', async ({ loaded: page }) => {
     await page.locator('.tabs [data-tab=compare]').click();
     await page.locator('.tabs [data-tab=offers]').click();
     await expect(page.locator('#offersList')).toBeVisible();
@@ -122,7 +122,7 @@ test.describe('phone', () => {
     await expect(page.locator('#ficha')).toBeVisible();
   });
 
-  test('a stored «laws» tab from before opens Ofertas', async ({ loaded: page }) => {
+  test('a stored «laws» tab from before opens Trabajos', async ({ loaded: page }) => {
     await page.evaluate(() => localStorage.setItem('cj.tab', 'laws'));
     await page.reload();
     await page.waitForFunction(() => window.app);
@@ -163,7 +163,7 @@ test.describe('wide screen', () => {
     await expect(page.locator('.appbar .kicker')).toHaveText('Por un pastoreo digno');
   });
 
-  test('Ofertas: list and ficha side by side; a card switches the ficha without a history entry', async ({
+  test('Trabajos: list and ficha side by side; a card switches the ficha without a history entry', async ({
     loaded: page,
   }) => {
     await expect(page.locator('#offersList')).toBeVisible();
@@ -191,7 +191,7 @@ test.describe('wide screen', () => {
     expect(add.y).toBeLessThan(card.y);
   });
 
-  test('opening Ofertas again shows a ficha; a step opens centred and Back returns to list and ficha', async ({
+  test('opening Trabajos again shows a ficha; a step opens centred and Back returns to list and ficha', async ({
     loaded: page,
   }) => {
     await page.locator('.tabs [data-tab=compare]').click();
