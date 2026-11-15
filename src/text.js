@@ -517,20 +517,6 @@ export const CLAIM_STEP_TEXT = {
   fogasa: 'FOGASA',
 };
 
-/** The next step on a card «Para reclamar», as a sentence: «Siguiente: hablar con el ganadero · plazo legal: …». */
-export const CLAIM_NEXT_TEXT = {
-  dismissal: 'presentar la papeleta por despido',
-  promise: 'esperar el pago prometido',
-  cobros: 'apuntar los cobros',
-  talk: 'hablar con el ganadero',
-  request: 'petición de pago',
-  union: 'sindicato',
-  conciliation: 'papeleta de conciliación',
-  inspection: 'Inspección de Trabajo',
-  court: 'Juzgado de lo Social',
-  fogasa: 'FOGASA',
-};
-
 /** What an item of a settled month is called in the claim and on the screens. */
 export const ITEM_TEXT = { salary: 'Salario', overnight: 'Plus de pernocta', vacation: 'Vacaciones', cash: 'En negro' };
 

@@ -18,6 +18,7 @@ import { conciliationOffice } from '../law.js';
 import {
   addableMonth,
   balanceOf,
+  jobStatus,
   minimumNote,
   monthAccounts,
   monthSpan,
@@ -824,44 +825,36 @@ export function askHowItEnded(offerId) {
 }
 
 /**
- * What a card says of a job under way or finished: its phase and, with a record to show, what is owed and how many
- * months are still not closed. Null phase for an offer only offered.
+ * What a card says of a job under way or finished: its phase and pill, and its status (`jobStatus`). Null phase for an
+ * offer only offered.
  * @param {any} o
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null, promise: string | null } | null } | null }}
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, status: ReturnType<typeof jobStatus> }}
  */
 export function cardRecord(o, r) {
   const today = todayISO();
   const phase = phaseOf(o, today, o.mine.record);
-  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, line: null, claim: null };
-  if (!recordPhase(o, today)) return { phase, line: null, claim: null };
-  const settled = settleOffer(o);
+  if (phase === 'offerOnly' || !o.terms.start) return { phase: null, status: null };
+  if (!recordPhase(o, today)) return { phase, status: null };
   const s = standingOf(
-    settled,
+    settleOffer(o),
     today,
     /** @type {'underway' | 'finished'} */ (phase),
     o.mine.record.payments,
     r.netFactor,
     o.mine.record.nothingPaid,
   );
-  const ladder =
-    phase === 'finished'
-      ? claimSteps({ today, standing: s, end: o.mine.record.end, marks: o.mine.claim?.steps ?? {} })
-      : null;
   return {
     phase,
     pill: pillPhase(o, /** @type {any} */ (phase)),
-    claim: ladder && {
-      inWindow: ladder.inWindow,
-      next: ladder.next && {
-        id: ladder.next.id,
-        by: ladder.next.by,
-        promise: 'promise' in ladder.next ? ladder.next.promise : null,
-      },
-    },
-    line: {
-      hasPayments: s.hasPayments,
-      owed: s.falta,
-      unclosed: s.unclosed.length,
-    },
+    // A job not yet confirmed as started has nothing to record
+    status: unconfirmedStart(o, phase)
+      ? null
+      : jobStatus({
+          phase: /** @type {'underway' | 'finished'} */ (phase),
+          hasPayments: s.hasPayments,
+          owed: s.falta,
+          unclosed: s.unclosed.length,
+          complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
+        }),
   };
 }

@@ -873,15 +873,16 @@ test.describe('the cards', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await page.evaluate(() => app.showTab('offers'));
     await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Acabada');
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText('Sin cobros apuntados');
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText('4 meses sin cerrar');
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toHaveText('Sin cobros apuntados');
     await expect(card(page, 'Campaña B').locator('.phase')).toHaveText('Acabada');
     await expect(card(page, 'Temporada F').locator('.phase')).toHaveCount(0);
     await expect(named(page, 'Puerto A').locator('.phase')).toHaveCount(0); // solo oferta
-    await expect(named(page, 'Puerto A').locator('.oc-rec')).toHaveCount(0);
+    await expect(named(page, 'Puerto A').locator('.oc-status')).toHaveCount(0);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await page.evaluate(() => app.showTab('offers'));
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toContainText(/Debe el ganadero [\d.,]+\s€/);
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toContainText(
+      /Debe el ganadero [\d.,]+\s€/,
+    );
   });
 
   test('a job under way, and one not decided yet', async ({ page }) => {
@@ -900,6 +901,6 @@ test.describe('the cards', () => {
     await reselect(page);
     await page.evaluate(() => app.showTab('offers'));
     await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Por decidir');
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-rec')).toHaveCount(0);
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toHaveCount(0);
   });
 });

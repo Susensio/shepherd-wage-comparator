@@ -242,6 +242,25 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
 }
 
 /**
+ * The status of a worked job on its card in Ofertas: a colour and one short line, or null where nothing is said.
+ * Red where the ganadero owes (a cobro recorded and Falta above 0); amber where something remains to record (no cobro,
+ * months not closed, a finished job's record not closed); plain «Todo cobrado» for a finished job settled and closed.
+ * A job under way says nothing until a month has ended: there is nothing to record yet.
+ * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean }} job `unclosed`: months that have ended and are not closed
+ * @returns {{ tone: 'red' | 'amber' | null, text: string, owed?: number } | null}
+ */
+export function jobStatus({ phase, hasPayments, owed, unclosed, complete }) {
+  const finished = phase === 'finished';
+  if (hasPayments && owed > 0) return { tone: 'red', text: finished ? 'Debe el ganadero' : 'Falta', owed };
+  if (!finished && unclosed === 0) return null;
+  if (!hasPayments) return { tone: 'amber', text: 'Sin cobros apuntados' };
+  if (unclosed > 0)
+    return { tone: 'amber', text: unclosed === 1 ? '1 mes sin cerrar' : `${unclosed} meses sin cerrar` };
+  if (finished && !complete) return { tone: 'amber', text: 'Registro sin cerrar' };
+  return finished ? { tone: null, text: 'Todo cobrado' } : null;
+}
+
+/**
  * What the job left besides the figures of the tiles, for «Balance del trabajo» (ADR-0032): the days worked, and the days
  * contributed and the paro the offer generates. `firm` is whether every month is closed: until then Corresponde and the
  * days worked partly follow the offer. The contributions and the paro always follow the

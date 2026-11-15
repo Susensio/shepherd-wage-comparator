@@ -207,8 +207,8 @@ test.describe('under way', () => {
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
     await page.evaluate(() => app.showTab('offers'));
     const card = page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' });
-    await expect(card.locator('.oc-rec')).toContainText(/Falta [\d.]+\s€/);
-    await expect(card.locator('.oc-rec')).not.toContainText('Debe el ganadero');
+    await expect(card.locator('.oc-status')).toContainText(/Falta [\d.]+\s€/);
+    await expect(card.locator('.oc-status')).not.toContainText('Debe el ganadero');
     for (const phase of await page.locator('#cards .phase').all())
       expect(await phase.evaluate((e) => e.parentElement.className)).toBe('oc-detail');
   });

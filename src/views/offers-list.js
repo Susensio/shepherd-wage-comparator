@@ -1,10 +1,10 @@
 /** Your offers as cards, and the templates to start a new one. */
 
 import { html, nothing } from 'lit-html';
-import { fCount, fDate, fE } from '../format.js';
+import { fCount, fE } from '../format.js';
 import { yearMoney, yearShares } from '../model/calc.js';
-import { datesText, isComplete, parseDate, TEMPLATES, todayISO, workedOffers } from '../offer.js';
-import { CLAIM_NEXT_TEXT, herdText, PHASE_TEXT } from '../text.js';
+import { datesText, isComplete, TEMPLATES, todayISO, workedOffers } from '../offer.js';
+import { herdText, PHASE_TEXT } from '../text.js';
 import { fUnit, inUnit, offerUnit, UNITS } from '../units.js';
 
 /** The «⋯» of a card (the ficha's is in index.html). */
@@ -18,9 +18,6 @@ const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 
 /** The year an offer starts in, or `UNDECIDED`. */
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
-
-/** The date a job «Para reclamar» is acted on by, to put the most urgent first; later than any date without one. */
-const claimBy = (x) => x.record?.claim?.next?.by ?? '9999';
 
 /**
  * What was worked each year: how many offers, the cobros recorded, what the offers say they pay and the days contributed. Each contract is split by
@@ -71,9 +68,7 @@ export function offersListView(items, activeId) {
   const groups = new Map([[UNDECIDED, []]]);
   // A year only a contract from the year before reaches has its header too, with no cards
   for (const year of Object.keys(totals)) groups.set(year, []);
-  const toClaim = items.filter((x) => x.record?.claim?.inWindow).sort((a, b) => claimBy(a).localeCompare(claimBy(b)));
   for (const x of items) {
-    if (toClaim.includes(x)) continue;
     groups.set(groupOf(x.o), [...(groups.get(groupOf(x.o)) ?? []), x]);
   }
   const years = [...groups.keys()]
@@ -84,30 +79,15 @@ export function offersListView(items, activeId) {
   const undecided = groups
     .get(UNDECIDED)
     .sort((a, b) => (a.o.terms.start || '9').localeCompare(b.o.terms.start || '9'));
-  return html`${toClaim.length ? html`<h3 class="year-head"><b>Para reclamar</b></h3>${toClaim.map((x) => card(x, activeId))}` : nothing}${undecided.length ? html`<h3 class="year-head"><b>Por decidir</b></h3>${undecided.map((x) => card(x, activeId))}` : nothing}${years.map(
+  return html`${undecided.length ? html`<h3 class="year-head"><b>Por decidir</b></h3>${undecided.map((x) => card(x, activeId))}` : nothing}${years.map(
     (year) => html`${yearHeading(year, totals[year])}${order(groups.get(year)).map((x) => card(x, activeId))}`,
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
 
-/** The extra line of a job under way or finished: what is missing (what the ganadero owes, once over), and the months still to close. */
-function recordLine(line, phase) {
-  if (!line) return nothing;
-  const months = line.unclosed === 1 ? '1 mes sin cerrar' : `${line.unclosed} meses sin cerrar`;
-  return html`<span class="oc-rec"><span>${
-    !line.hasPayments
-      ? 'Sin cobros apuntados'
-      : line.owed > 0
-        ? html`${phase === 'finished' ? 'Debe el ganadero' : 'Falta'} <b>${fE(line.owed, 0)}</b>`
-        : 'Sin deuda'
-  }</span>${line.unclosed ? html`<span>${months}</span>` : nothing}</span>`;
-}
-
-/** «Siguiente: Petición de pago · hasta el 31 jul 2027», on a card «Para reclamar». */
-function nextStep(claim) {
-  if (!claim?.inWindow || !claim.next) return nothing;
-  if (claim.next.promise)
-    return html`<span class="oc-next"><span>Prometió pagar el <b>${fDate(parseDate(claim.next.promise))}</b>${claim.next.by ? ` · plazo legal: ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
-  return html`<span class="oc-next"><span>Siguiente: <b>${CLAIM_NEXT_TEXT[claim.next.id]}</b>${claim.next.by ? ` · plazo legal: ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
+/** The status line of a job worked: red where the ganadero owes, amber where something remains to record. */
+function statusLine(status) {
+  if (!status) return nothing;
+  return html`<span class=${status.tone ? `oc-status ${status.tone}` : 'oc-status'}>${status.text}${status.owed ? html` <b>${fE(status.owed, 0)}</b>` : nothing}</span>`;
 }
 
 /**
@@ -120,7 +100,7 @@ function card({ o, r, record }, activeId) {
   const complete = isComplete(o.terms);
   const worked = !!o.terms.start && !o.terms.offerOnly;
   const detail = [datesText(o.terms), herdText(o.terms)].filter(Boolean).join(' · ');
-  return html`<div class="ocwrap"><button type="button" class=${worked ? 'ocard' : 'ocard offer-only'} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
+  return html`<div class="ocwrap"><button type="button" class=${[worked ? 'ocard' : 'ocard offer-only', record?.status?.tone && `st-${record.status.tone}`].filter(Boolean).join(' ')} aria-current=${o.id === activeId ? 'true' : nothing} data-action="openOffer" data-id=${o.id}>
     <span class="oc-top"><b class="oc-name">${o.mine.name || 'Sin nombre'}</b>${
       complete
         ? html`<span class="oc-fig">${fUnit(inUnit(r.earnings.total, r, unit), unit)}${UNITS[unit].suffix}</span>`
@@ -128,7 +108,7 @@ function card({ o, r, record }, activeId) {
     }</span>
     <span class="oc-detail">${record?.phase ? html`<span class="phase" data-phase=${record.pill ?? record.phase}>${PHASE_TEXT[record.pill ?? record.phase]}</span> ` : nothing}${detail}${detail && !worked ? ' · ' : ''}${worked ? '' : html`<span class="offer-only-tag">solo oferta</span>`}${
       complete ? '' : html`${detail || !worked ? ' · ' : ''}<span class="warn">Faltan datos</span>`
-    }</span>${recordLine(record?.line, record?.phase)}${nextStep(record?.claim)}
+    }</span>${statusLine(record?.status)}
   </button><button type="button" class="omenu" data-action="offerMenu" data-id=${o.id} aria-label="Más acciones" aria-haspopup="menu" aria-expanded="false" aria-controls="offerMenu">${DOTS}</button></div>`;
 }
 

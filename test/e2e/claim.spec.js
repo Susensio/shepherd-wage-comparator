@@ -255,80 +255,70 @@ test.describe('at 375 px', () => {
   }
 });
 
-test.describe('«Para reclamar» in Ofertas', () => {
+test.describe('the status of a card in Ofertas', () => {
   test.use({ today: '2026-11-12' });
-  const heads = (page) => page.locator('#cards .year-head b').allTextContents();
-  const list = async (page) => {
-    await page.evaluate(() => app.showTab('offers'));
-  };
+  const NAME = 'Puerto A, otra cuenta';
+  const card = (page) => page.locator('#cards .ocard', { hasText: NAME }).first();
+  const list = (page) => page.evaluate(() => app.showTab('offers'));
 
-  test('a finished job with something owed inside its deadline comes first, with its next step and date', async ({
+  test('there is no «Para reclamar» group: the card stays in its year, marked red where the ganadero owes', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
     await list(page);
-    expect((await heads(page))[0]).toBe('Para reclamar');
-    const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
-    await expect(card).toContainText(/Siguiente: hablar con el ganadero · plazo legal: \d+ \w+ 2027/);
-    // It is not repeated under its year
-    expect(await page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).count()).toBe(1);
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      for (const id of ['talk', 'request'])
-        offers.markStep(
-          app.state.offers.find((o) => o.mine.name === 'Puerto A, otra cuenta'),
-          id,
-          { done: '2026-11-12' },
-        );
-      app.select(app.active().id);
-    });
-    await expect(card).toContainText('Siguiente: sindicato');
+    expect(await page.locator('#cards .year-head b').allTextContents()).not.toContain('Para reclamar');
+    await expect(card(page)).toHaveClass(/st-red/);
+    await expect(card(page).locator('.oc-status')).toContainText(/Debe el ganadero [\d.]+\s€/);
+    // The long «Siguiente: … · plazo legal» line is gone: the deadline lives in the ficha
+    await expect(card(page)).not.toContainText('Siguiente');
+    await expect(card(page)).not.toContainText('plazo legal');
+    expect(await page.locator('#cards .ocwrap', { hasText: NAME }).count()).toBe(1);
+    const year = await page.evaluate((name) => {
+      const el = [...document.querySelectorAll('#cards > .year-head, #cards .ocard')];
+      const at = el.findIndex((x) => x.textContent.includes(name));
+      return el
+        .slice(0, at)
+        .reverse()
+        .find((x) => x.matches('.year-head'))?.textContent;
+    }, NAME);
+    expect(year).toMatch(/^2026/);
   });
 
-  /** The names of the cards under «Para reclamar». */
-  const grouped = (page) =>
-    page.evaluate(() => {
-      const names = [];
-      let on = false;
-      for (const el of document.querySelectorAll('#cards > .year-head, #cards .ocard')) {
-        if (el.classList.contains('year-head')) on = el.textContent.startsWith('Para reclamar');
-        else if (on) names.push(el.querySelector('.oc-name').textContent);
-      }
-      return names;
-    });
-  const NAME = 'Puerto A, otra cuenta';
-
-  test('nothing owed: not in the group; a dismissal window open: in it', async ({ page }) => {
-    await loadOffers(page, sample, PUERTO_A_OTRA);
-    await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
-    await list(page);
-    expect(await grouped(page)).not.toContain(NAME);
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });
-      app.select(app.active().id);
-    });
-    await list(page);
-    expect(await grouped(page)).toContain(NAME);
-    await expect(page.locator('#cards .ocwrap', { hasText: NAME }).first()).toContainText(
-      'Siguiente: presentar la papeleta por despido · plazo legal: 4 dic 2026',
-    );
-  });
-
-  test('a finished job with no cobro said is in the group while a deadline runs, next step: write the cobros down', async ({
+  test('amber with nothing recorded, then with the months or the record not closed; nothing once settled and closed', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await list(page);
-    expect(await grouped(page)).toContain(NAME);
-    const card = page.locator('#cards .ocwrap', { hasText: NAME }).first();
-    await expect(card).toContainText(/Siguiente: apuntar los cobros · plazo legal: \d+ \w+ 2027/);
-    await page.evaluate(() => {
-      app.active().mine.record.nothingPaid = true;
-      app.select(app.active().id);
+    await expect(card(page)).toHaveClass(/st-amber/);
+    await expect(card(page).locator('.oc-status')).toContainText('Sin cobros apuntados');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.addPayment(app.active(), { date: '2026-07-05', amount: 50000, via: 'payroll' });
     });
-    await expect(card).toContainText('Siguiente: hablar con el ganadero');
+    await list(page);
+    await expect(card(page).locator('.oc-status')).toContainText('4 meses sin cerrar');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      const { settleOffer } = await import('./src/state.js');
+      for (const row of settleOffer(app.active()).rows)
+        offers.closeMonth(app.active(), { key: row.month, from: row.calendarFrom, to: row.calendarTo });
+    });
+    await list(page);
+    await expect(card(page).locator('.oc-status')).toContainText('Registro sin cerrar');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.completeRecord(app.active());
+    });
+    await list(page);
+    await expect(card(page)).not.toHaveClass(/st-(red|amber)/);
+    await expect(card(page).locator('.oc-status')).toHaveText('Todo cobrado');
+  });
+
+  test('a job not worked has no status', async ({ page }) => {
+    await loadOffers(page, sample, 0);
+    await list(page);
+    await expect(page.locator('#cards .ocard.offer-only .oc-status')).toHaveCount(0);
   });
 });
 
@@ -432,9 +422,7 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
 test.describe('a promise to pay', () => {
   test.use({ today: '2026-11-12' });
 
-  test('typed after the conversation, the card says it; once the date passes the next step is the Petición', async ({
-    page,
-  }) => {
+  test('typed after the conversation, it is kept on the step; the card carries no long line', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
     const step = page.locator('details.step[data-step=talk]');
@@ -446,12 +434,11 @@ test.describe('a promise to pay', () => {
       promise: '2026-11-20',
     });
     await page.evaluate(() => app.showTab('offers'));
+    // The card keeps its colour and no long line: the promise lives in the ficha
     const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
-    await expect(card).toContainText(/Prometió pagar el 20 nov 2026 · plazo legal: \d+ \w+ 2027/);
-    await page.clock.setFixedTime(new Date('2026-11-21T12:00:00'));
-    await page.evaluate(() => app.select(app.active().id));
-    await page.evaluate(() => app.showTab('offers'));
-    await expect(card).toContainText('Siguiente: petición de pago');
+    await expect(card).toHaveClass(/./);
+    await expect(card).not.toContainText('Prometió');
+    await expect(card.locator('.oc-status')).toContainText('Debe el ganadero');
   });
 
   test('the Petición says that its months are not reviewed', async ({ page }) => {

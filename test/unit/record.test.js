@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
-import { balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
+import { balanceOf, jobStatus, minimumNote, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { lawFromRecord } from '../../src/model/compliance.js';
 import {
@@ -897,5 +897,30 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
     assert.equal(unmarkStep(offer, 'talk'), true);
     assert.equal(unmarkStep(offer, 'talk'), false);
     assert.deepEqual(Object.keys(offer.mine.claim.steps), ['request']);
+  });
+});
+
+describe('the status of a job on its card', () => {
+  const job = (changes) =>
+    jobStatus({ phase: 'finished', hasPayments: true, owed: 0, unclosed: 0, complete: true, ...changes });
+
+  test('red where the ganadero owes, in a finished job and under way', () => {
+    assert.deepEqual(job({ owed: 120 }), { tone: 'red', text: 'Debe el ganadero', owed: 120 });
+    assert.equal(job({ phase: 'underway', owed: 50 })?.text, 'Falta');
+    assert.equal(job({ hasPayments: false, owed: 500 })?.tone, 'amber', 'nothing is owed that was not said');
+  });
+
+  test('amber where something remains to record', () => {
+    assert.deepEqual(job({ hasPayments: false }), { tone: 'amber', text: 'Sin cobros apuntados' });
+    assert.equal(job({ unclosed: 1 })?.text, '1 mes sin cerrar');
+    assert.equal(job({ unclosed: 3 })?.text, '3 meses sin cerrar');
+    assert.deepEqual(job({ complete: false }), { tone: 'amber', text: 'Registro sin cerrar' });
+  });
+
+  test('nothing coloured for a job settled and closed, and nothing for one under way with nothing to record', () => {
+    assert.deepEqual(job({}), { tone: null, text: 'Todo cobrado' });
+    assert.equal(job({ phase: 'underway', hasPayments: false }), null);
+    assert.equal(job({ phase: 'underway' }), null);
+    assert.equal(job({ phase: 'underway', unclosed: 2 })?.text, '2 meses sin cerrar');
   });
 });

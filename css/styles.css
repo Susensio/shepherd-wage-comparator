@@ -3940,27 +3940,28 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   font-size: 11.5px;
   padding: 1px 8px;
 }
-.oc-rec,
-.oc-next {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13.5px;
-  padding-top: 4px;
-  margin-top: 2px;
-  border-top: 1px dashed var(--line);
+.oc-status {
+  font-size: 13px;
+  padding-top: 2px;
+  color: var(--muted);
 }
-.oc-rec > span:first-child {
-  white-space: nowrap;
-}
-.oc-rec b {
+.oc-status b {
   font-family: var(--f-num);
   font-weight: 600;
-  color: var(--neg);
 }
-.oc-rec span:last-child {
-  color: var(--muted);
-  font-size: 12.5px;
+.ocard.st-red {
+  box-shadow: inset 4px 0 0 var(--neg);
+}
+.ocard.st-amber {
+  box-shadow: inset 4px 0 0 var(--c-cash);
+}
+.oc-status.red {
+  color: var(--neg);
+  font-weight: 600;
+}
+.oc-status.amber {
+  color: var(--c-cash-t);
+  font-weight: 600;
 }
 .block {
   display: flex;
@@ -5004,12 +5005,6 @@ body.reviewing .ficha > .back {
   .dtable tr {
     break-inside: avoid;
   }
-}
-.oc-next {
-  border-top: 0;
-  margin-top: 0;
-  padding-top: 0;
-  white-space: normal;
 }
 
 /* Links that are the way to an action: a tap area of 44 px without changing the line */
