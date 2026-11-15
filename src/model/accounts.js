@@ -4,11 +4,9 @@
  */
 
 import { cents, spreadTo, sum } from '../ledger.js';
-import { parseDate } from '../offer.js';
+import { daysBetween, monthSpan } from './days.js';
 import { countsOf, defaultMarks, marksOf } from './record.js';
 import { ITEMS, settle } from './settle.js';
-
-const DAY_MS = 864e5;
 
 /**
  * The lines of a ledger, in net. The cash agreed (`cashGross`, as it counts inside the dues) is taken out of the items,
@@ -32,14 +30,7 @@ export function linesOf(grossItems, cash, cashGross, netFactor) {
   return [...lines, { key: /** @type {const} */ ('cash'), due: shown, byMinimum: false }];
 }
 
-const daysBetween = (from, to) => Math.round((+parseDate(to) - +parseDate(from)) / DAY_MS);
-
 const pad2 = (n) => String(n).padStart(2, '0');
-/** The span of a whole calendar month «2026-10», as the record's helpers take it. */
-export function monthSpan(key) {
-  const [y, m] = key.split('-').map(Number);
-  return { key, from: `${key}-01`, to: `${key}-${pad2(new Date(y, m, 0).getDate())}` };
-}
 
 /**
  * The month after the job's last, when it has started and can be added: «+ Añadir <mes>». It is not part of the job

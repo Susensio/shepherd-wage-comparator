@@ -9,6 +9,7 @@ import { html, nothing } from 'lit-html';
 import { jobDates } from '../claim-text.js';
 import { fDate, fE } from '../format.js';
 import { fSumE } from '../ledger.js';
+import { monthDays } from '../model/days.js';
 import { parseDate } from '../offer.js';
 import { ITEM_TEXT, monthName, summaries } from '../text.js';
 import { END_TEXT } from './transitions.js';
@@ -35,7 +36,7 @@ const STEP_TITLE = {
 function monthGrid(m) {
   const [y, mo] = m.month.split('-').map(Number);
   const lead = (new Date(y, mo - 1, 1).getDay() + 6) % 7;
-  const days = new Date(y, mo, 0).getDate();
+  const days = monthDays(y, mo);
   const byDay = new Map(m.marks.map((x) => [x.day, x]));
   const cells = [...Array.from({ length: lead }, () => html`<span class="dd pad"></span>`)];
   for (let d = 1; d <= days; d++) {

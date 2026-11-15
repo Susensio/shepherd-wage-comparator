@@ -22,12 +22,12 @@ import {
   jobStatus,
   minimumNote,
   monthAccounts,
-  monthSpan,
   spanOf,
   standingOf,
 } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
+import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
 import { hasFacts, jobStart, phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';

@@ -6,8 +6,7 @@
 
 import { LAW } from '../law.js';
 import { isoOf, parseDate } from '../offer.js';
-
-const DAY_MS = 864e5;
+import { daysBetween } from './days.js';
 
 /**
  * The last day to act against a dismissal, counted conservatively: `LAW.dismissalDays` weekdays (Monday to Friday)
@@ -24,8 +23,6 @@ export function dismissalDeadline(date) {
   }
   return isoOf(day);
 }
-
-const daysBetween = (from, to) => Math.round((+parseDate(to) - +parseDate(from)) / DAY_MS);
 
 /** The steps in order, the dismissal first where it applies. */
 export const STEP_IDS = /** @type {const} */ ([

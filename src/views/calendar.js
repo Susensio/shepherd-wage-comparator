@@ -2,6 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { fE } from '../format.js';
+import { monthDays } from '../model/days.js';
 import { countsOf } from '../model/record.js';
 import { monthName } from '../text.js';
 import { row } from './parts.js';
@@ -28,7 +29,7 @@ function grid(cal) {
   const [y, m] = acc.row.month.split('-').map(Number);
   const first = (new Date(y, m - 1, 1).getDay() + 6) % 7;
   const inSpan = new Map(acc.marks.map((mark) => [mark.day, mark]));
-  const days = new Date(y, m, 0).getDate();
+  const days = monthDays(y, m);
   const cells = [];
   for (let i = 0; i < first; i++) cells.push(html`<span class="day pad"></span>`);
   for (let d = 1; d <= days; d++) {

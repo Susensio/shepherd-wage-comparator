@@ -175,7 +175,7 @@ test.describe('Cuentas and Registro', () => {
     await expect(page.locator('[data-autofold=registro] > summary .stat')).toHaveText('4 sin cerrar · 0 cobros');
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
-      const { monthSpan } = await import('./src/model/accounts.js');
+      const { monthSpan } = await import('./src/model/days.js');
       for (const m of ['2026-06', '2026-07', '2026-08', '2026-09']) offers.closeMonth(app.active(), monthSpan(m));
       app.select(app.active().id);
     });

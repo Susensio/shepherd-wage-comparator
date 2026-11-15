@@ -8,6 +8,7 @@
 import { html, nothing } from 'lit-html';
 import { fDate, fE } from '../format.js';
 import { citeOf, LAW, SOURCES } from '../law.js';
+import { daysBetween } from '../model/days.js';
 import { parseDate } from '../offer.js';
 import { monthName } from '../text.js';
 import { COPY_ICON, row } from './parts.js';
@@ -48,9 +49,6 @@ function textCard(kind, text, canShare) {
     <div class="actions"><button type="button" class="pri sm" data-action="copyClaimText" data-kind=${kind}>${COPY_ICON} Copiar</button>${canShare ? html`<button type="button" class="sm" data-action="shareClaimText" data-kind=${kind}>Compartir</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p></div>`;
 }
-
-const DAY_MS = 864e5;
-const daysUntil = (today, iso) => Math.round((+parseDate(iso) - +parseDate(today)) / DAY_MS);
 
 /** The dismissal in Cuentas: its date as one short line, and the way to «Vía legal». */
 function dismissalLine(step) {
@@ -214,7 +212,7 @@ function deadlineLine(c, withButton) {
   const { ladder } = c;
   // Every month past its deadline: nothing legal to push, only an informal request (the line is `lapsedLine`)
   if (!ladder.steps.some((s) => s.id === 'request') || ladder.lapsedAll) return nothing;
-  const text = html`Plazo para reclamar: hasta el <b>${fIso(/** @type {string} */ (ladder.by))}</b> (quedan ${days(daysUntil(c.today, /** @type {string} */ (ladder.by)))}).`;
+  const text = html`Plazo para reclamar: hasta el <b>${fIso(/** @type {string} */ (ladder.by))}</b> (quedan ${days(daysBetween(c.today, /** @type {string} */ (ladder.by)))}).`;
   return html`<p class="due-line">${text} ${withButton ? LEGAL_BUTTON : nothing}</p>`;
 }
 
