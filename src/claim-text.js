@@ -282,3 +282,31 @@ export function conciliationFields({ o, settled, record, parties }) {
       : []),
   ];
 }
+
+/**
+ * The one text «Copiar reclamación» copies, from the phase of the offer; null where there is nothing to claim and the
+ * entry stays hidden. Offer only or undecided: the offer's own claim. Under way: the talk summary, when something is
+ * owed. Finished: the formal letter when something is owed; a dismissal: the papeleta's fields.
+ * @param {object} c
+ * @param {'offerOnly' | 'undecided' | 'underway' | 'finished'} c.phase
+ * @param {boolean} c.dismissed the job ended by dismissal
+ * @param {string} c.offerClaim the offer's claim, '' where it has none
+ * @param {string} c.summary the talk summary, '' unless owed
+ * @param {string} c.request the formal letter, '' unless owed
+ * @param {{ label: string, value: string }[]} c.fields the papeleta
+ * @returns {string | null}
+ */
+export function claimToCopy({ phase, dismissed, offerClaim, summary, request, fields }) {
+  if (phase === 'underway') return summary || null;
+  if (phase === 'finished') {
+    if (dismissed)
+      return (
+        fields
+          .filter((f) => f.value)
+          .map((f) => `${f.label}: ${f.value}`)
+          .join('\n') || null
+      );
+    return request || null;
+  }
+  return offerClaim || null;
+}

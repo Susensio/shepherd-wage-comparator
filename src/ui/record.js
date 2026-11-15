@@ -5,6 +5,7 @@
  */
 
 import {
+  claimToCopy,
   conciliationFields,
   daysAfter,
   defaultPayBy,
@@ -34,6 +35,7 @@ import { isoOf, missing, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcContext, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
+import { claimText, legalLine } from '../text.js';
 import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
 import { closeDossier, closeLegal, closeReview, openDossier, openLegal, openReview } from './navigation.js';
@@ -126,9 +128,25 @@ export function recordPhase(o, today = todayISO()) {
   return (phase === 'underway' || phase === 'finished') && !missing(o.terms).length ? phase : null;
 }
 
-/** The claim of a job worked is its Petición de pago (one claim text); null for an offer not worked or with nothing owed. */
-export function recordClaimOf(o) {
-  return (recordPhase(o) && recordContext(o, calcOffer(o))?.claim?.request) || null;
+/**
+ * The text «Copiar reclamación» copies for an offer, or null where the entry is hidden: decided by `claimToCopy` from
+ * the phase (menu availability and the copy itself both read it).
+ * @param {any} o
+ */
+export function claimCopyOf(o) {
+  if (missing(o.terms).length) return null;
+  const r = calcOffer(o);
+  if (r.selfEmployed) return null; // no labour claim: the warning is about the kind of contract itself
+  const phase = phaseOf(o, todayISO(), o.mine.record);
+  const worked = phase === 'underway' || phase === 'finished' ? recordContext(o, r) : null;
+  return claimToCopy({
+    phase,
+    dismissed: o.mine.record.end?.how === 'dismissed',
+    offerClaim: legalLine(o, r) ? claimText(o, r) : '',
+    summary: worked?.talk?.summary ?? '',
+    request: worked?.claim?.request ?? '',
+    fields: worked?.claim?.fields ?? [],
+  });
 }
 
 /**

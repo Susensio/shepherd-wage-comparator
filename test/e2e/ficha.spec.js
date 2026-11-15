@@ -162,6 +162,7 @@ test.describe('the «⋯» menu on each card', () => {
 
   test('copies are only offered for an offer that is complete', async ({ page }) => {
     await loadOffers(page, sample, OFFER.temporadaF);
+    await page.clock.setFixedTime(new Date('2020-01-01T12:00:00')); // offers still to decide: their own claim
     await page.evaluate(() => {
       app.state.offers[6].terms.hoursPerDay = '';
       app.closeEntry();

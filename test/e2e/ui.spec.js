@@ -243,6 +243,9 @@ test('a ficha with data missing marks its row and opens that step', async ({ pag
 });
 
 test('copy the claim, from the menu', async ({ loaded: page }) => {
+  // an offer still to decide: its own claim (a job worked copies its letter only when something is owed)
+  await page.clock.setFixedTime(new Date('2020-01-01T12:00:00'));
+  await page.evaluate(() => app.select(app.active().id));
   await page.locator('#fichaMenu').click();
   await page.locator(`${MENU} [data-menu=copyClaim]`).click();
   await expect(page.locator(`${MENU} .menu-msg`)).not.toBeEmpty();

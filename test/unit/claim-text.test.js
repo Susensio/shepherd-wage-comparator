@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import {
+  claimToCopy,
   conciliationFields,
   defaultPayBy,
   employerSummaryText,
@@ -306,5 +307,32 @@ describe('under way, the message lists only the months counted so far', () => {
     assert.doesNotMatch(text, /Diciembre|Enero|Febrero/);
     const listed = [...text.matchAll(/^· \p{L}+: ([\d.]+)\s€$/gmu)].map((m) => Number(m[1].replace('.', '')));
     assert.equal(sum(listed), Math.round(standing.falta));
+  });
+});
+
+describe('«Copiar reclamación»: one function decides what it copies, from the phase', () => {
+  const base = { dismissed: false, offerClaim: 'oferta', summary: '', request: '', fields: [] };
+  test('the offer, while it is not a job worked', () => {
+    assert.equal(claimToCopy({ ...base, phase: 'offerOnly' }), 'oferta');
+    assert.equal(claimToCopy({ ...base, phase: 'undecided' }), 'oferta');
+    assert.equal(claimToCopy({ ...base, phase: 'undecided', offerClaim: '' }), null);
+  });
+  test('under way: the talk summary when something is owed, else hidden (never the offer’s claim)', () => {
+    assert.equal(claimToCopy({ ...base, phase: 'underway', summary: 'resumen' }), 'resumen');
+    assert.equal(claimToCopy({ ...base, phase: 'underway' }), null);
+  });
+  test('finished: the letter when owed; settled or with no cobros, hidden', () => {
+    assert.equal(claimToCopy({ ...base, phase: 'finished', request: 'carta' }), 'carta');
+    assert.equal(claimToCopy({ ...base, phase: 'finished' }), null);
+  });
+  test('a dismissal: the papeleta', () => {
+    const fields = [
+      { label: 'Fecha del despido', value: '5 jun 2026' },
+      { label: 'Vacío', value: '' },
+    ];
+    assert.equal(
+      claimToCopy({ ...base, phase: 'finished', dismissed: true, request: 'carta', fields }),
+      'Fecha del despido: 5 jun 2026',
+    );
   });
 });

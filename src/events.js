@@ -19,7 +19,7 @@ import { offers } from './offers.js';
 import { answersOf, toAnswerable, writeAnswers } from './pay-answers.js';
 import { active, calcOffer, myOffers, saveCmpUnit, saveConfig, state } from './state.js';
 import { snoozeReminder } from './storage/bundle.js';
-import { cardText, claimText, legalLine, leversOf } from './text.js';
+import { cardText, leversOf } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { copyText } from './ui/dom.js';
@@ -39,7 +39,7 @@ import {
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { changePlace } from './ui/place-field.js';
-import { askHowItEnded, onClaimInput, recordActions, recordClaimOf, recordPhase, showDossier } from './ui/record.js';
+import { askHowItEnded, claimCopyOf, onClaimInput, recordActions, recordPhase, showDossier } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -234,8 +234,7 @@ function runMenuAction(action, id, msg) {
       failMsg: 'No se pudo copiar. Aquí está para seleccionarla:',
       rows: 7,
     });
-  // A job worked copies its record's claim, which is what its ficha shows; the offer's own claim is for one not worked
-  return copyText(recordClaimOf(o) ?? claimText(o, calcOffer(o)), msg, {
+  return copyText(claimCopyOf(o) ?? '', msg, {
     ok: 'Texto copiado.',
     failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
     rows: 12,
@@ -245,12 +244,9 @@ function runMenuAction(action, id, msg) {
 /** Copying needs the whole result, and the claim something to claim. */
 function menuAvailability(id) {
   const o = offerById(id);
-  const copy = missing(o.terms).length === 0;
-  const r = copy ? calcOffer(o) : null;
-  // Self-employed there is no labour claim to copy: the warning is about the kind of contract itself
   return {
-    copy,
-    claim: !!r && !r.selfEmployed && (!!recordClaimOf(o) || !!legalLine(o, r)),
+    copy: missing(o.terms).length === 0,
+    claim: claimCopyOf(o) !== null,
     ended: !!recordPhase(o),
   };
 }

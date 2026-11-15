@@ -54,6 +54,20 @@ test.describe('figures that must agree', () => {
     expect(await page.evaluate(() => window.copied[1])).toContain('SALARIO');
   });
 
+  test('«Copiar reclamación» is hidden for a job finished with nothing owed, and under way with nothing owed', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]); // more than corresponds
+    await page.locator('#fichaMenu').click();
+    await expect(page.locator('#offerMenu [data-menu=copyClaim]')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await page.clock.setFixedTime(new Date('2026-08-01T12:00:00'));
+    await page.evaluate(() => app.select(app.active().id));
+    await page.locator('#fichaMenu').click();
+    await expect(page.locator('#offerMenu [data-menu=copyClaim]')).toBeHidden();
+  });
+
   test('the year headers and «Año a año» keep what was cobrado apart from what the offers say', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await page.evaluate(() => app.showTab('offers'));
