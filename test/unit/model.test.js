@@ -9,7 +9,7 @@ import { calc, calcTermsOnly, yearMoney } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
-import { DEF_CFG, DEF_MINE, parseDate } from '../../src/offer.js';
+import { DEF_CFG, DEF_MINE, missing, parseDate } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/schema.js';
 import { wageYearNote } from '../../src/text.js';
 import { incomeOf } from '../../src/units.js';
@@ -416,4 +416,18 @@ test('a vacation day owed or paid is worth the real daily pay, cash included, or
   // never below the minimum wage's day
   const low = figures({ payAmount: 400, vacation: 'paidAtEnd', holidays: 'no' });
   near(low.min.vacationDay, smiDay, 0.01, 'the minimum wage’s day');
+});
+
+test('without a duration an offer is counted as one month, as step 2 says', () => {
+  const r = figures({
+    durationUnit: 'unknown',
+    duration: '',
+    payAmount: 1500,
+    extraPays: 'included',
+    vacation: 'taken',
+  });
+  assert.equal(r.time.noDuration, true);
+  assert.equal(r.time.months, 1);
+  near(r.pay.base, 1500, 0.01, 'one month of pay');
+  assert.deepEqual(missing(offerOf({ ...BASE, durationUnit: 'unknown', duration: '' }).terms), []);
 });

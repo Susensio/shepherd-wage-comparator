@@ -155,6 +155,10 @@ function vacationHint(o, r) {
 /** An amount typed in the form, as an input shows it. */
 const inputValue = (value) => (value === '' || value == null ? '' : fInputValue(num(value), 0, 2));
 
+/** A wage per day split into payroll and cash needs the days worked, which step 4 gives: no figure before it is answered. */
+const NEEDS_DAYS = 'Se calcula con las horas y los días (paso 4).';
+const awaitsDays = (o, a) => a.unit === 'day' && missing(o.terms).includes('hoursPerDay');
+
 /** The offer told back as answered. The figures are the model's, rounded as the result shows them. */
 function payTold(o, r, a) {
   const amount = num(a.amount);
@@ -169,8 +173,13 @@ function payTold(o, r, a) {
     else if (num(a.part) > 0)
       parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}${per} en nómina`);
     else parts.push('una parte en nómina');
-    if (r.split?.cash > 0.5 && (a.payroll === 'min' || num(a.part) > 0))
+    if (r.split?.cash > 0.5 && (a.payroll === 'min' || num(a.part) > 0) && !awaitsDays(o, a)) {
       parts.push(`unos ${fE(r.split.cash)} en negro`);
+      // Vacation inside the total: what is left of it, so the parts add up to the amount
+      const rest = amount - num(a.part) - Math.round(r.split.cash);
+      if (r.split.included && a.partType !== 'gross' && a.payroll !== 'min' && rest >= 1)
+        parts.push(`unos ${fE(rest)} de vacaciones dentro`);
+    }
     parts.push(`contrato ${contractOf(o.terms).phrase}`);
     if (askExtraPays(o.terms) && o.terms.extraPays === 'separate') parts.push('dos pagas extra aparte');
     parts.push(VACATION_SAYS[o.terms.vacation] || 'vacaciones sin poner');
@@ -179,11 +188,12 @@ function payTold(o, r, a) {
 }
 
 /** What goes en negro, said under the question about the payslip; null while there is nothing to say. */
-function cashLine(r, a) {
+function cashLine(o, r, a) {
   const amount = num(a.amount);
   if (!(amount > 0) || a.payroll === 'all' || (a.payroll === 'part' && !(num(a.part) > 0))) return null;
   const per = UNIT_PER[a.unit];
   if (a.payroll === 'none') return `Todo en negro: ${fEntered(amount)} ${per}.`;
+  if (awaitsDays(o, a)) return NEEDS_DAYS;
   if (r.split?.shortfall) return 'Lo que va en nómina supera el pago: no queda nada en negro.';
   return r.split?.cash > 0.5 ? `Unos ${fE(r.split.cash)} ${per} van en negro.` : 'Nada en negro.';
 }
@@ -204,7 +214,7 @@ function paintAnswers(o, r) {
   set('#payPart', inputValue(a.part));
   text('#payPartPer', UNIT_PER[a.unit]);
   render(payTold(o, r, a), $('#payTold'));
-  const line = cashLine(r, a);
+  const line = cashLine(o, r, a);
   $('#payCash').hidden = line === null;
   text('#payCash', line ?? '');
 }

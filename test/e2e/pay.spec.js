@@ -45,6 +45,23 @@ test('«El mínimo»: the amount is the agreed total and en negro is worked out'
   await expect(page.locator('[data-show=payPart]').first()).toBeHidden();
 });
 
+test('a wage per day split before step 4 gives no en negro figure; it appears once the hours are answered', async ({
+  page,
+}) => {
+  await startOffer(page, 'offer');
+  await page.fill('#duration', '4');
+  await goStep(page, 'pay');
+  await page.fill('#payTotal', '60');
+  await answer(page, 'payPer', 'day');
+  await answer(page, 'payroll', 'min');
+  await expect(page.locator('#payCash')).toHaveText('Se calcula con las horas y los días (paso 4).');
+  await expect(page.locator('#payTold')).not.toContainText('en negro');
+  await goStep(page, 'day');
+  await page.fill('#hoursPerDay', '9');
+  await goStep(page, 'pay');
+  await expect(page.locator('#payCash')).toContainText(/^Unos [\d.]+\s€ al día van en negro\.$/);
+});
+
 for (const [type, label] of [
   ['net', 'neto, lo que llega'],
   ['gross', 'bruto, como en la nómina'],
@@ -192,6 +209,20 @@ test('«Una parte» without the part is missing, and the mark points at it', asy
   await page.locator('#result .empty [data-action=complete]').click();
   await expect(page.locator('.fld.missing')).toContainText('Sin la parte en nómina no se puede calcular');
   await expect(page.locator('.fld.missing')).toContainText('¿Cuánto va en nómina?');
+});
+
+test('with the vacation inside the total, the sentence says what is left so the parts add up', async ({ page }) => {
+  await newOffer(page);
+  await page.fill('#payTotal', '1800');
+  await answer(page, 'payroll', 'part');
+  await page.fill('#payPart', '1200');
+  await page.check('input[name=vacation][value=included]');
+  const told = (await page.locator('#payTold').textContent()) ?? '';
+  const figure = (re) => Number.parseFloat(told.match(re)?.[1].replace('.', '') ?? 'NaN');
+  const part = figure(/([\d.]+)\s€ al mes en nómina/);
+  const cash = figure(/unos ([\d.]+)\s€ en negro/);
+  const rest = figure(/unos ([\d.]+)\s€ de vacaciones dentro/);
+  expect(part + cash + rest).toBe(1800);
 });
 
 test('the sentence tells the part as typed', async ({ page }) => {
