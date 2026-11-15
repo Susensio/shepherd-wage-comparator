@@ -423,6 +423,24 @@ describe('the law, from the record: facts only', () => {
     assert.ok(bad.rest.fails[0].due >= 5);
   });
 
+  test('only the half day accumulates: 21 days worked in a row and 7 libres at the end do not pass', () => {
+    const record = emptyRecord();
+    const days = {};
+    for (let d = 1; d <= 30; d++) days[String(d).padStart(2, '0')] = d <= 21 ? 'work' : 'off';
+    record.months['2026-06'] = { closed: true, days };
+    const x = law(record, restful);
+    assert.equal(x.rest.fails.length, 1);
+    assert.equal(x.rest.fails[0].off, 7); // 7 of 6 due on average, but not a day each week
+    assert.equal(x.rest.fails[0].weekly, true);
+    // two libres per 14 days, in any place, do pass
+    const spread = {};
+    for (let d = 1; d <= 30; d++)
+      spread[String(d).padStart(2, '0')] = [3, 4, 10, 11, 17, 18, 24, 25].includes(d) ? 'off' : 'work';
+    const ok = emptyRecord();
+    ok.months['2026-06'] = { closed: true, days: spread };
+    assert.deepEqual(law(ok, restful).rest.fails, []);
+  });
+
   test('days worked against those due count closed months alone, in their share of the job', () => {
     const record = emptyRecord();
     closeMonths(OFFER, record, ['2026-06', '2026-07']);

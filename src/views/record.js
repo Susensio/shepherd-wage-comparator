@@ -259,7 +259,12 @@ function lawBlock(c) {
   const facts = law.facts.map((f) =>
     mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
   );
-  const range = (f) => `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${f.off} de ${f.due}`;
+  const range = (f) =>
+    `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${
+      f.off < f.due
+        ? `${f.off} libres de ${f.due}; faltan ${f.due - f.off}`
+        : `${f.off} libres, pero sin un día entero libre cada semana`
+    }`;
   const closedMonths = law.months.closed > 0;
   const rest = !law.rest.periods
     ? mark('warn', 'Descanso semanal', `Aún no hay un periodo de ${weeks} semanas entero en meses cerrados.`)
@@ -272,7 +277,7 @@ function lawBlock(c) {
       : mark(
           'ok',
           'Descanso semanal',
-          `Se libra al menos ${fDaysSpoken(LAW.weeklyRest)} por semana en todos los periodos de ${weeks} semanas.`,
+          `Se libra un día entero por semana (o dos cada 14 días) y ${fDaysSpoken(LAW.weeklyRest)} por semana de media en todos los periodos de ${weeks} semanas.`,
         );
   const extra = Math.round(law.days.extra);
   const days =

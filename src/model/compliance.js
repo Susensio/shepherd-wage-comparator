@@ -31,20 +31,29 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   const allClosed = inJob.length > 0 && closed.length === inJob.length;
   const payroll = sum(payments.filter((p) => p.via === 'payroll').map((p) => p.amount));
 
-  // Rest: at least LAW.weeklyRest days a week, which can be grouped over LAW.restPeriodWeeks weeks; only the periods
-  // that lie wholly inside closed months are judged
+  // Rest (ET 37.1, RD 1561/1995 art. 5.3): a full day off each week, or two per 14 days; only the half day accumulates,
+  // over LAW.restPeriodWeeks weeks, so LAW.weeklyRest a week on average over the period. Only the periods wholly inside
+  // closed months are judged
   const length = LAW.restPeriodWeeks * 7;
-  /** @type {{ from: string, to: string, off: number, due: number }[]} */
+  /** @type {{ from: string, to: string, off: number, due: number, weekly: boolean }[]} `weekly`: short of full days, whatever the total */
   const fails = [];
   let periods = 0;
+  const offIn = (part) => part.filter((x) => x.kind === 'off').length;
   for (let i = 0; i < days.length; i += length) {
     const part = days.slice(i, i + length);
     // (a last period shorter than the weeks it groups over says nothing: a day and a half a week cannot be told from a day)
     if (part.length < length || !part.every((x) => x.closed)) continue;
-    const off = part.filter((x) => x.kind === 'off').length;
+    const off = offIn(part);
     const due = Math.ceil((LAW.weeklyRest * part.length) / 7);
+    // each 14 days: a day off in each of its weeks, or two days in all
+    let fullDays = true;
+    for (let k = 0; k < part.length; k += 14) {
+      const window = part.slice(k, k + 14);
+      const weeks = [window.slice(0, 7), window.slice(7)].filter((w) => w.length);
+      if (!weeks.every((w) => offIn(w) >= 1) && offIn(window) < 2) fullDays = false;
+    }
     periods++;
-    if (off < due) fails.push({ from: part[0].date, to: part.at(-1).date, off, due });
+    if (off < due || !fullDays) fails.push({ from: part[0].date, to: part.at(-1).date, off, due, weekly: !fullDays });
   }
 
   // Days worked against those due once rest, holidays and vacation taken are off (the model's `extra.due`, over the

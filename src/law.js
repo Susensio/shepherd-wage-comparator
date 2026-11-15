@@ -106,7 +106,7 @@ export const RULES = {
     value: 4,
     source: 'rd1561',
     art: '5',
-    note: 'livestock: weekly rest can be grouped over this many weeks',
+    note: 'livestock: only the half day of the weekly rest can accumulate, over up to this many weeks; the full day stays weekly (or two days per 14, ET 37.1)',
   },
   holidaysPerYear: {
     value: 14,

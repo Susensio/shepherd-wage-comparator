@@ -121,7 +121,8 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   const out = [to, `Se han repasado las cuentas del trabajo de ${jobName(o)}${when ? ` (${when})` : ''}.`, ''];
   out.push(`Pactado: ${lines.pay}.`);
   out.push('', 'Jornadas por mes:');
-  for (const j of jornadasOf(o, settled, record, standing.counted)) out.push(`· ${capitalize(monthName(j.month))}: ${daysLine(j)}`);
+  for (const j of jornadasOf(o, settled, record, standing.counted))
+    out.push(`· ${capitalize(monthName(j.month))}: ${daysLine(j)}`);
   out.push('');
   // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
   const whole = (x) => fE(x, 0);
