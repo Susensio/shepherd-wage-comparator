@@ -25,13 +25,13 @@ function missingBySteps(terms) {
 /** The conditions in one line: when, pay and hours. It is cut short by the width, not here. */
 const oneLine = (lines) => [lines.when, lines.pay, lines.workday].filter(Boolean).join(' · ');
 
-/** What was worked out before the job, closed under the record of a job under way. */
-const closedAnalysis = (sections) =>
-  html`<details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${sections.breakdown}${sections.legal}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
+/** What was worked out before the job, closed under the record of a job under way: the headline card first, as in «Por decidir». */
+const closedAnalysis = (head, sections) =>
+  html`<details class="plg" data-fold="analysis"><summary>Análisis de la oferta</summary>${head}${sections.breakdown}${sections.legal}${sections.negotiation}${sections.seasonEnd}${sections.workings}</details>`;
 
 /** What the offer said before the job, for comparing promise and reality: not «Para negociar», and not part of the result. */
-const referenceFold = (sections) =>
-  html`<details class="plg" data-fold="reference"><summary>Oferta original</summary>${sections.breakdown}${sections.legal}${sections.seasonEnd}${sections.workings}</details>`;
+const referenceFold = (head, sections) =>
+  html`<details class="plg" data-fold="reference"><summary>Oferta original</summary>${head}${sections.breakdown}${sections.legal}${sections.seasonEnd}${sections.workings}</details>`;
 
 /**
  * @param {object} o
@@ -61,5 +61,5 @@ export function fichaView(o, r, places, record = null) {
       )}</div>
     </details>
     ${record ? recordView(record) : head}
-    ${record?.phase === 'finished' && sections ? referenceFold(sections) : record && sections ? closedAnalysis(sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    ${record?.phase === 'finished' && sections ? referenceFold(head, sections) : record && sections ? closedAnalysis(head, sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
 }

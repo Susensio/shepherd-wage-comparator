@@ -156,6 +156,11 @@ test.describe('under way: Registro', () => {
     await expect(fold.locator(':scope > summary')).toHaveText('Análisis de la oferta');
     await expect(fold.locator('#secEmployer')).toHaveCount(1);
     await expect(page.locator('#result .analysis-title')).toHaveCount(0);
+    // The headline card, with its pills, opens the fold, as in «Por decidir»
+    await fold.locator(':scope > summary').click();
+    await expect(fold.locator(':scope > .tag .lbl')).toContainText('Se gana');
+    await expect(fold.locator(':scope > .pills .pill').first()).toBeVisible();
+    expect(await fold.evaluate((d) => d.querySelector('summary').nextElementSibling.matches('.q'))).toBe(true);
   });
 
   test('every cobro is listed in Cobros and removable with two taps, with no «ver todos» to open', async ({ page }) => {
@@ -391,6 +396,8 @@ test.describe('finished: Cuentas', () => {
     const fold = page.locator('details[data-fold=reference]');
     await expect(fold).not.toHaveAttribute('open', '');
     await expect(fold.locator(':scope > summary')).toHaveText('Oferta original');
+    await fold.locator(':scope > summary').click();
+    await expect(fold.locator(':scope > .tag .lbl')).toContainText('Se gana');
     await expect(fold.locator('[data-fold=breakdown2]')).toHaveCount(1);
     await expect(fold.locator('#secLegal')).toHaveCount(1);
     await expect(fold.locator('[data-fold=payslips]')).toHaveCount(1);
