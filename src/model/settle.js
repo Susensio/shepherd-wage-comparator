@@ -405,10 +405,21 @@ export function settle(offer, record, today, ctx) {
     row.received = sum(ITEMS.map((item) => row.items[item].received));
     row.owed = sum(ITEMS.map((item) => row.items[item].owed));
     row.belowMinimumOnPayroll = sum(ITEMS.map((item) => row.items[item].belowMinimumOnPayroll));
-    if (row.owed > 0) {
-      row.deadline = isoOf(row.claimDeadlineDate);
-      row.lapsed = row.deadline < today;
-    }
+  }
+  // The claim (ET 59.2) is dated from the earliest month the cobros dated by its due date did not cover: oldest-first
+  // only fills the months, and would date a late-paid October by March. Never later than the real deadline.
+  let dueSoFar = 0;
+  const datedFrom = rows.find((row) => {
+    dueSoFar = cents(dueSoFar + row.due);
+    return cents(dueSoFar - grossOf(payments.filter((p) => p.date <= row.dueDate))) > 0;
+  });
+  let first = true;
+  for (const row of rows) {
+    if (!(row.owed > 0)) continue;
+    const from = first && datedFrom && datedFrom.dueDate < row.dueDate ? datedFrom : row;
+    first = false;
+    row.deadline = isoOf(from.claimDeadlineDate);
+    row.lapsed = row.deadline < today;
   }
 
   const column = (field) => sum(rows.map((row) => row[field]));
