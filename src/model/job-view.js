@@ -12,6 +12,7 @@ import { hasFacts, jobStart, phaseOf } from './phase.js';
  * @typedef {object} Pending
  * @property {{ how: string | null, error?: string } | undefined} asked «¿Cómo acabó?» opened by hand
  * @property {boolean | undefined} startOther «¿Empezó el trabajo?» asked for another date
+ * @property {boolean | undefined} recording «No todo» answered to «¿Se cobró este trabajo?»: the record is being made
  * @property {boolean | undefined} endLater «¿Cómo acabó?» put off for this session
  * @property {{ no: boolean, error?: string } | undefined} recall the answer to «¿Se llamó para la campaña?», if «No»
  */
@@ -21,6 +22,12 @@ export function recordPhase(o, today) {
   const phase = phaseOf(o, today, o.mine.record);
   return phase === 'underway' || phase === 'finished' ? phase : null;
 }
+
+/**
+ * A job finished with nothing recorded of it and no «No todo» said: its ficha leads with the analysis and asks only
+ * «¿Se cobró este trabajo?». `recording`: «No todo» was tapped on this page.
+ */
+export const isBare = (o, phase, recording) => phase === 'finished' && !hasFacts(o.mine.record) && !recording;
 
 /** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */
 export const unconfirmedStart = (o, phase) =>
@@ -70,7 +77,9 @@ export function cardsOf(o, phase, settled, today, pending) {
       : null;
   // On sick leave the contract is suspended: how it ended is not asked until the leave is closed
   const onLeave = Boolean(record.sick && !record.sick.to);
-  const open = asked || (phase === 'finished' && !record.end && !onLeave && !pending.endLater);
+  // A finished job with nothing recorded is not asked how it ended: that is for one with a record to close
+  const recorded = hasFacts(record) || Boolean(pending.recording);
+  const open = asked || (phase === 'finished' && recorded && !record.end && !onLeave && !pending.endLater);
   const end = open
     ? {
         how: asked?.how ?? null,

@@ -23,6 +23,7 @@ import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
 import {
   cardsOf,
+  isBare,
   monthFlags,
   monthOnCalendar,
   monthStrip,
@@ -77,7 +78,9 @@ import { closeDossier, closeLegal, closeReview, openDossier, openLegal, openRevi
  * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
  * @property {ReturnType<typeof talkContext> | null} talk under way with something unpaid: the summary to talk to the ganadero
- * @property {boolean} nothingPaid «No se cobró nada» was said
+ * @property {import('../model/settle.js').Paid | undefined} paid «Sí, todo» or «No se cobró nada» was said
+ * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
+ * @property {boolean} recording «No todo» was answered: the cobros are being recorded
  * @property {{ date: string } | null} complete the record closed with every month closed: the figures are firm
  * @property {boolean} asking «¿Están apuntados todos los cobros?» waits for its answer
  * @property {import('../model/settle.js').OfferRecord} record
@@ -110,6 +113,8 @@ const ui = {
   recall: /** @type {Record<string, { no: boolean, error?: string }>} */ ({}),
   /** «¿Cómo acabó?» put off for this session with «Sigue, se alargó», by offer. */
   endLater: /** @type {Record<string, boolean>} */ ({}),
+  /** «No todo» answered to «¿Se cobró este trabajo?»: the accounts open to record the cobros, by offer. */
+  recording: /** @type {Record<string, boolean>} */ ({}),
   /** The date a request asks to pay by, by offer; without one, a fortnight on. */
   payBy: /** @type {Record<string, string>} */ ({}),
 };
@@ -294,7 +299,9 @@ export function recordContext(o, r) {
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
-    nothingPaid: record.paid === 'none',
+    paid: record.paid,
+    bare: isBare(o, phase, ui.recording[o.id]),
+    recording: Boolean(ui.recording[o.id]),
     // Every month closed as well: a month reopened or added after it makes the figures estimates again
     complete: record.complete && !standing.unclosed.length ? record.complete : null,
     asking: Boolean(ui.completing[o.id]),
@@ -303,6 +310,7 @@ export function recordContext(o, r) {
       asked: ui.end[o.id],
       startOther: ui.startOther[o.id],
       endLater: ui.endLater[o.id],
+      recording: ui.recording[o.id],
       recall: ui.recall[o.id],
     }),
     law: phase === 'finished' ? lawFromRecord(o, record, settled, r, record.payments) : null,
@@ -695,9 +703,41 @@ export const recordActions = {
     offers.unmarkStep(active(), b.dataset.step);
     callbacks.paint();
   },
-  /** «No se cobró nada»: said once, and taken back with «Quitar». */
+  /** «No se cobró nada» of a job under way: said once, and taken back with «Quitar». */
   nothingPaid(b) {
     offers.setPaid(active(), b.dataset.off === undefined ? 'none' : undefined);
+    callbacks.paint();
+  },
+  /** «Sí, todo»: what was agreed was received. */
+  paidAll() {
+    ui.ask = null;
+    offers.setPaid(active(), 'asAgreed');
+    callbacks.paint();
+  },
+  /** «No todo»: the accounts open, to record what was received. */
+  paidSome() {
+    ui.recording[active().id] = true;
+    ui.ask = null;
+    callbacks.paint();
+  },
+  /** «No se cobró nada» of a job finished asks first: it makes everything that corresponds a debt. */
+  paidNoneAsk() {
+    ui.ask = { type: 'paidNone' };
+    callbacks.paint();
+  },
+  paidNone() {
+    ui.ask = null;
+    offers.setPaid(active(), 'none');
+    callbacks.paint();
+  },
+  paidNoneCancel() {
+    ui.ask = null;
+    callbacks.paint();
+  },
+  /** «Quitar» under «Sí, todo» or «No se cobró nada»: the question again. */
+  paidClear() {
+    delete ui.recording[active().id];
+    offers.setPaid(active(), undefined);
     callbacks.paint();
   },
 };

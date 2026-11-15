@@ -152,8 +152,9 @@ test('the list shows each offer as a card, and a card opens its ficha', async ({
   await card.click();
   await expect(page.locator('#fichaName')).toHaveText('Puerto A, otra cuenta');
   await expect(page.locator('.crow')).toHaveCount(4);
-  // The job is over by now: Cuentas, not the offer's analysis (the modes are tested in record.spec.js)
-  await expect(page.locator('#result h2.mode')).toHaveText(/Cuentas/);
+  // The job is over by now and nothing is recorded of it: the analysis and the question of whether it was paid
+  // (the modes are tested in record.spec.js and jobs.spec.js)
+  await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
 });
 
 test('a row of the ficha opens only its step, and «Guardar» keeps the change', async ({ loaded: page }) => {

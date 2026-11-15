@@ -5,8 +5,9 @@ import { joinAnd } from '../format.js';
 import { missing } from '../offer.js';
 import { CONDITION_STEPS, STEP_OF_MISSING } from '../steps.js';
 import { MISSING_TEXT, summaries } from '../text.js';
-import { recordView } from './record.js';
+import { paidQuestion, realPeriod, recordView } from './record.js';
 import { resultParts } from './result.js';
+import { endLine, endQuestion } from './transitions.js';
 
 const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
 
@@ -45,7 +46,7 @@ export function fichaView(o, r, places, record = null) {
   const lacking = missingBySteps(o.terms);
   const keys = Object.keys(lacking);
   if (record?.review) return recordView(record);
-  return html`<details class="conditions" data-fold="conditions">
+  const conditions = html`<details class="conditions" data-fold="conditions">
       <summary><span class="cinfo"><b>Condiciones</b><span class=${keys.length ? 'cs missing' : 'cs'}>${keys.length ? `Falta ${joinAnd(Object.values(lacking))}` : oneLine(lines)}</span></span></summary>
       <div class="crows">${CONDITION_STEPS.map(
         (step) =>
@@ -59,7 +60,12 @@ export function fichaView(o, r, places, record = null) {
               )}${lacking[step.id] ? html` <b class="miss">Falta ${lacking[step.id]}</b>` : nothing}</span>${CHEVRON}
           </button>`,
       )}</div>
-    </details>
+    </details>`;
+  const analysisTitle = analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing;
+  // A job finished with nothing recorded leads with what the offer said, and asks only whether it was paid
+  if (record?.bare)
+    return html`${conditions}${endQuestion(record.cards, record.today, true)}${endLine(record.record)}${realPeriod(record)}${paidQuestion(record)}${head}${analysisTitle}`;
+  return html`${conditions}
     ${record ? recordView(record) : head}
-    ${record?.phase === 'finished' && sections ? referenceFold(head, sections) : record && sections ? closedAnalysis(head, sections) : analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing}`;
+    ${record?.phase === 'finished' && sections ? referenceFold(head, sections) : record && sections ? closedAnalysis(head, sections) : analysisTitle}`;
 }

@@ -1,6 +1,6 @@
 // The questions at the turns of a job (ADR-0034): «¿Empezó el trabajo?» and «¿Cómo acabó?».
 
-import { expect, loadOffers, sample, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, sample, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
 const SOLO_OFERTA = 0;
@@ -62,6 +62,7 @@ test.describe('«¿Cómo acabó?»', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await expect(card(page).locator('h3')).toHaveText('¿Cómo acabó?');
     for (const way of [
       'Fin de campaña',
@@ -79,6 +80,7 @@ test.describe('«¿Cómo acabó?»', () => {
 
   test('a dismissal asks the day, and the ladder shows its date', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await card(page).getByRole('button', { name: 'Despido, o el ganadero lo acabó antes' }).click();
     await expect(card(page).locator('h3')).toContainText('¿Qué día acabó?');
     // The day starts empty and is required, between the job's start and today
@@ -97,6 +99,7 @@ test.describe('«¿Cómo acabó?»', () => {
 
   test('«Sigue, se alargó» goes to the next month’s calendar and the card is put off', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await card(page).getByRole('button', { name: 'Sigue, se alargó' }).click();
     await expect(page.locator('.cal h3')).toHaveText('Octubre 2026');
     expect((await record(page)).end).toBeUndefined();
@@ -144,6 +147,7 @@ test.describe('baja médica: a status, not an end', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await card(page).getByRole('button', { name: 'Baja médica o accidente' }).click();
     await card(page).locator('#endDate').fill('2026-09-20');
     await card(page).getByRole('button', { name: 'Guardar' }).click();
@@ -169,6 +173,7 @@ test.describe('fijo discontinuo: called back for the next season', () => {
 
   test.beforeEach(async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await page.getByRole('group', { name: '¿Cómo acabó?' }).getByRole('button', { name: 'Fin de campaña' }).click();
   });
 

@@ -48,6 +48,12 @@ export async function addJob(page, { terms = {}, record = {}, name = 'Trabajo' }
   );
 }
 
+/** On the ficha of a job finished with nothing recorded, answers «No todo» to «¿Se cobró este trabajo?»: the accounts open. */
+export async function openAccounts(page) {
+  const some = page.getByRole('button', { name: 'No todo' });
+  if (await some.isVisible()) await some.click();
+}
+
 /** On a first visit, leaves the welcome for the templates; nothing to do anywhere else. */
 export async function leaveWelcome(page) {
   const start = page.locator('#welcomeStart');

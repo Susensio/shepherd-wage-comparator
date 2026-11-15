@@ -1,6 +1,6 @@
 // «Pedir lo que falta» (ADR-0034): asking the ganadero first and the one line with the deadline; the legal path is the page «Vía legal».
 
-import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, openLegalPage, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -246,8 +246,15 @@ test.describe('without cobros, and when nothing is owed', () => {
 
   test('«No se cobró nada» makes Falta work, is not a payment, and is taken back', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await expect(tile(page, 'Falta')).toHaveText('—');
     await page.locator('.result').getByRole('button', { name: 'No se cobró nada' }).click();
+    // It asks first: nothing is said until it is confirmed
+    expect(await page.evaluate(() => app.active().mine.record.paid)).toBeUndefined();
+    await page.getByRole('button', { name: 'Volver' }).click();
+    await expect(tile(page, 'Falta')).toHaveText('—');
+    await page.locator('.result').getByRole('button', { name: 'No se cobró nada' }).click();
+    await page.getByRole('button', { name: 'Sí, nada' }).click();
     const corresponde = amount(await tile(page, 'Corresponde').textContent());
     expect(amount(await tile(page, 'Falta').textContent())).toBe(corresponde);
     expect(await page.evaluate(() => app.active().mine.record.payments)).toEqual([]);
@@ -256,7 +263,8 @@ test.describe('without cobros, and when nothing is owed', () => {
     await expect(page.locator('.ask .due-line')).toContainText('Plazo para reclamar');
     await expect(page.locator('.cobros')).toContainText('Se apuntó que no se cobró nada');
     await page.locator('.cobros').getByRole('button', { name: 'Quitar' }).click();
-    await expect(tile(page, 'Falta')).toHaveText('—');
+    // Taken back: the job is as it was, finished with nothing recorded, and the question returns
+    await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
   });
 
   test('a dismissal with nothing owed still shows its line, and no steps', async ({ page }) => {
@@ -469,6 +477,7 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
   test('with no cobros the step has no «Hecho»: there is nothing to have done yet', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-11-12T12:00:00'));
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const step = page.locator('details.step[data-step=talk]');
     await expect(step).toBeVisible();
     await expect(step.getByRole('button', { name: 'Hecho' })).toHaveCount(0);

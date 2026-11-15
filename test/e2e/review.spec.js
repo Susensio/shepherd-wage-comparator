@@ -1,6 +1,6 @@
 // Fixes from the UI review of 14 November 2026: figures that contradicted each other, wording, tap targets, layout.
 
-import { expect, loadOffers, sample, startOffer, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, sample, startOffer, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026, 17 h of overtime a week
 const SIN_CONTRATO_D = 4; // 30 January to 12 March 2026
@@ -129,6 +129,7 @@ test.describe('Cuentas and Registro', () => {
 
   test('«Aún no hay cobros apuntados» is said once', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     expect(count(await page.locator('#result').innerText(), 'Aún no hay cobros apuntados')).toBe(1);
     // It is the main state of the yellow block, with the way out right there
     const prompt = page.locator('.result .nocobros');
@@ -142,6 +143,7 @@ test.describe('Cuentas and Registro', () => {
     page,
   }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
+    await openAccounts(page);
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     await expect(block.locator('.lawcheck > div', { hasText: 'Sin contrato' }).locator('.m')).toHaveText('✘');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
@@ -151,6 +153,7 @@ test.describe('Cuentas and Registro', () => {
     await expect(block).not.toContainText('estimado');
     await expect(page.locator('#result')).not.toContainText('por debajo del mínimo legal');
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await expect(block.locator('.lawcheck > div', { hasText: 'Parte en negro' }).locator('.m')).toHaveText('✘');
   });
 
@@ -158,6 +161,7 @@ test.describe('Cuentas and Registro', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const balance = page.locator('#result .block', { hasText: 'Balance del trabajo' });
     await expect(balance).not.toContainText('Corresponde en total');
     await expect(balance.locator('.rows > .row', { hasText: /^Cobrado/ })).toHaveCount(0);
@@ -172,6 +176,7 @@ test.describe('Cuentas and Registro', () => {
 
   test('the registro fold counts the months closed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await expect(page.locator('[data-autofold=registro] > summary .stat')).toHaveText('4 sin cerrar · 0 cobros');
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
@@ -184,6 +189,7 @@ test.describe('Cuentas and Registro', () => {
 
   test('«Revisar los meses» has one way back, and the days outside the job say «fuera»', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await page.locator('[data-action=reviewStart]').first().click();
     const backs = await page
       .locator('.back, .appbar-review button')
@@ -194,6 +200,7 @@ test.describe('Cuentas and Registro', () => {
 
   test('the fold summaries share one style, and «Cobros» inside the registro is a small heading', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const styles = await page.evaluate(() =>
       ['reference', 'registro'].map((name) => {
         const s = document.querySelector(`[data-fold=${name}] > summary, [data-autofold=${name}] > summary`);

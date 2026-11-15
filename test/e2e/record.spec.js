@@ -1,6 +1,6 @@
 // What happened (ADR-0032): the ficha by phase, the calendar, the cobros and the review. The date is set, not the real one.
 
-import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, openLegalPage, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -404,6 +404,7 @@ test.describe('finished: Cuentas', () => {
 
   test('no cobros: Corresponde and a prompt, no debt, the first step only and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Corresponde');
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
@@ -438,6 +439,7 @@ test.describe('finished: Cuentas', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await addPayments(page, [
       { date: '2026-07-05', amount: 1000, via: 'payroll' },
       { date: '2026-08-20', amount: 300, via: 'cash' },
@@ -470,6 +472,7 @@ test.describe('finished: Cuentas', () => {
     ]);
     expect(await page.evaluate(ledgerProblems, '#result')).toEqual([]);
     await loadOffers(page, sample, 3); // Invernada C: no cash
+    await openAccounts(page);
     await page.locator('details[data-fold=how] > summary').click();
     await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
   });
@@ -478,6 +481,7 @@ test.describe('finished: Cuentas', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const fold = page.locator('details[data-autofold=registro]');
     await expect(fold).toHaveAttribute('open', ''); // months not closed, and no cobros
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
@@ -500,6 +504,7 @@ test.describe('finished: Cuentas', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const fold = page.locator('details[data-fold=reference]');
     await expect(fold).not.toHaveAttribute('open', '');
     await expect(fold.locator(':scope > summary')).toHaveText('Oferta original');
@@ -527,6 +532,7 @@ test.describe('finished: Cuentas', () => {
 
   test('«¿Se cumplió la ley?» judges facts only: nothing to say with no month closed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     await expect(block).toContainText('Cierra los meses para comprobar el descanso semanal');
     await expect(block).not.toContainText('Descanso semanal');
@@ -684,6 +690,7 @@ test.describe('finished: Cuentas', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await page.getByRole('button', { name: 'Revisar los meses' }).click();
     const counts = await page.locator('.cal .counts').textContent();
     await page.getByRole('button', { name: 'Cerrar junio' }).click();
@@ -846,6 +853,7 @@ test.describe('the month in progress, the days outside the job and what the mini
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await at(page, '2026-11-14');
     await page.evaluate(async (terms) => {
       const { makeOffer } = await import('./src/offer.js');
@@ -853,6 +861,7 @@ test.describe('the month in progress, the days outside the job and what the mini
       app.state.offers.push(o);
       app.select(o.id);
     }, MOLINOS);
+    await openAccounts(page);
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     await page.getByRole('button', { name: 'Revisar los meses' }).click();
     await page.locator('.review-progress').waitFor();
@@ -935,6 +944,7 @@ test.describe('the real period of the work', () => {
 
   test('a month added and left with nothing marked is not part of the job', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="01"]').click(); // marked and unmarked again

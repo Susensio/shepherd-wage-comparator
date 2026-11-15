@@ -37,7 +37,7 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
 }
 
 /** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
-function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
+function cobrosView({ today, payments, fresh, ask, paid }) {
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
@@ -57,15 +57,37 @@ function cobrosView({ today, payments, fresh, ask, nothingPaid }) {
     }
     ${
       // With no cobro and nothing said, the block above asks (button included): not twice
-      !payments.length && !nothingPaid
+      !payments.length && !paid
         ? nothing
         : html`<button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>`
     }
     ${
-      !payments.length && nothingPaid
-        ? html`<p class="hint">Se apuntó que no se cobró nada. <button type="button" class="linkbtn" data-action="nothingPaid" data-off>Quitar</button></p>`
+      !payments.length && paid
+        ? html`<p class="hint">${PAID_TEXT[paid]} <button type="button" class="linkbtn" data-action="paidClear">Quitar</button></p>`
         : nothing
     }
+  </div>`;
+}
+
+/** What is said of an answer to «¿Se cobró este trabajo?». */
+const PAID_TEXT = { asAgreed: 'Se apuntó que se cobró todo lo pactado.', none: 'Se apuntó que no se cobró nada.' };
+
+/**
+ * «¿Se cobró este trabajo?»: asked of a job finished with no cobro recorded and nothing said. «No se cobró nada» asks
+ * first, since it turns everything that corresponds into a debt.
+ * @param {RecordContext} c
+ */
+export function paidQuestion(c) {
+  if (c.ask?.type === 'paidNone')
+    return html`<div class="tcard-q" role="group" aria-label="¿Se cobró este trabajo?">
+      <h3>¿No se cobró nada?</h3>
+      <p class="hint">Falta pasa a ser todo lo que corresponde: ${whole(c.standing.corresponde)}.</p>
+      <div class="actions"><button type="button" class="pri sm" data-action="paidNone">Sí, nada</button><button type="button" class="sm" data-action="paidNoneCancel">Volver</button></div>
+    </div>`;
+  return html`<div class="tcard-q" role="group" aria-label="¿Se cobró este trabajo?">
+    <h3>¿Se cobró este trabajo?</h3>
+    <p class="hint">«Sí, todo» da por cobrado lo pactado.</p>
+    <div class="choices"><button type="button" class="pri" data-action="paidAll">Sí, todo</button><button type="button" data-action="paidSome">No todo</button><button type="button" data-action="paidNoneAsk">No se cobró nada</button></div>
   </div>`;
 }
 
@@ -101,8 +123,12 @@ const minimumLine = (m) => {
 const NET = html` <span class="net">en neto</span>`;
 
 /** No cobro recorded and nothing said: the main state of the block, with the way to leave it. */
-const noCobros = html`<div class="nocobros"><b>Aún no hay cobros apuntados</b><span>Apunta lo cobrado para ver lo que falta.</span>
-  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button><button type="button" class="linkbtn" data-action="nothingPaid">No se cobró nada</button></div></div>`;
+const noCobros = (c) => {
+  if (c.phase === 'finished' && !c.recording) return paidQuestion(c);
+  if (c.ask?.type === 'paidNone') return paidQuestion(c);
+  return html`<div class="nocobros"><b>Aún no hay cobros apuntados</b><span>Apunta lo cobrado para ver lo que falta.</span>
+  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button><button type="button" class="linkbtn" data-action=${c.phase === 'finished' ? 'paidNoneAsk' : 'nothingPaid'}>No se cobró nada</button></div></div>`;
+};
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
 function tiles(s) {
@@ -114,8 +140,10 @@ function tiles(s) {
 }
 
 /** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
-function notes(s, { over }) {
-  return html`${!s.hasPayments ? noCobros : nothing}
+function notes(c, { over }) {
+  const s = c.standing;
+  return html`${!s.hasPayments ? noCobros(c) : nothing}
+    ${c.paid === 'asAgreed' && s.falta > 0 ? html`<p class="hint">Se cobró todo lo pactado. Falta lo que la ley exige y no se pactó: el mínimo legal.</p>` : nothing}
     ${s.hasPayments && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${s.sobra >= 1 ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
@@ -147,7 +175,7 @@ function registro(c) {
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
       ${tiles(s)}
-      ${notes(s, { over: ' hasta hoy' })}
+      ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
     ${underwayTalk(c.talk)}
@@ -194,12 +222,12 @@ function result(c) {
           ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
           : '';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : c.paid === 'asAgreed' ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
       // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
       s.hasPayments && !settled ? html`<span class="stamp">Falta</span>` : nothing
     }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
     ${tiles(s)}
-    ${notes(s, { over: '' })}
+    ${notes(c, { over: '' })}
     ${recordClosing(c, open)}
   </div>${lapsedLine(c.claim)}`;
 }
@@ -358,7 +386,7 @@ function cuentas(c) {
 }
 
 /** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */
-function realPeriod(c) {
+export function realPeriod(c) {
   const { job } = c;
   if (!job.differs) return nothing;
   const date = (iso) => fDate(parseDate(iso));

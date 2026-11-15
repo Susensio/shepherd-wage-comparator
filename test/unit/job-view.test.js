@@ -6,6 +6,7 @@ import { calc } from '../../src/model/calc.js';
 import {
   cardOf,
   cardsOf,
+  isBare,
   monthFlags,
   monthOnCalendar,
   monthStrip,
@@ -16,6 +17,7 @@ import {
   recordPhase,
   unconfirmedStart,
 } from '../../src/model/job-view.js';
+import { addPayment } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
 import { offerOf } from './flat-offer.js';
@@ -76,11 +78,25 @@ describe('the questions at the turns of a job', () => {
     const o = jobOf();
     const day = '2026-12-01';
     const settled = settledOf(o, day);
-    const end = cardsOf(o, 'finished', settled, day, {}).end;
+    // Nothing recorded: not asked, unless by hand or once «No todo» opens the record
+    assert.equal(cardsOf(o, 'finished', settled, day, {}), null);
+    const end = cardsOf(o, 'finished', settled, day, { recording: true }).end;
     assert.equal(end.min, '2026-06-01');
     assert.ok(end.agreedDate <= day);
-    assert.equal(cardsOf(o, 'finished', settled, day, { endLater: true }), null);
+    assert.equal(cardsOf(o, 'finished', settled, day, { recording: true, endLater: true }), null);
     assert.equal(cardsOf(o, 'finished', settled, day, { endLater: true, asked: { how: 'quit' } }).end.how, 'quit');
+    // Something recorded: asked on its own
+    addPayment(o.mine.record, { date: '2026-09-01', amount: 100, via: 'cash' });
+    assert.equal(cardsOf(o, 'finished', settled, day, {}).end.how, null);
+  });
+
+  test('a job finished with nothing recorded is bare, until «No todo» is answered', () => {
+    const o = jobOf();
+    assert.equal(isBare(o, 'finished', false), true);
+    assert.equal(isBare(o, 'finished', true), false);
+    assert.equal(isBare(o, 'underway', false), false);
+    o.mine.record.paid = 'asAgreed';
+    assert.equal(isBare(o, 'finished', false), false);
   });
 
   test('a fijo discontinuo that ended at its campaign is asked about the next one, from a year on', () => {
