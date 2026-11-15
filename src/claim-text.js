@@ -101,8 +101,9 @@ const cobrosLines = (payments) =>
  * @param {ReturnType<typeof import('./model/accounts.js').standingOf>} c.standing
  * @param {import('./model/settle.js').OfferRecord} c.record
  * @param {Parties} c.parties
+ * @param {string} [c.until] ISO date: the job is not over, the figures count up to it
  */
-export function employerSummaryText({ o, r, settled, standing, record, parties }) {
+export function employerSummaryText({ o, r, settled, standing, record, parties, until }) {
   const lines = summaries(o, r);
   const when = jobDates(settled.job);
   const to = parties.employerName ? `Hola, ${parties.employerName}.` : 'Hola.';
@@ -117,7 +118,7 @@ export function employerSummaryText({ o, r, settled, standing, record, parties }
   // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
   const whole = (x) => fE(x, 0);
   const falta = Math.round(standing.falta);
-  out.push(`Corresponde: ${whole(standing.corresponde)} netos.`);
+  out.push(`Corresponde${until ? ` hasta el ${fIso(until)}` : ''}: ${whole(standing.corresponde)} netos.`);
   const payments = record.payments ?? [];
   if (payments.length) {
     out.push(`Cobrado: ${whole(standing.cobrado)} netos.`, ...cobrosLines(payments));

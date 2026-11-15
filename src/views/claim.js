@@ -32,9 +32,10 @@ function doneRow(step, { button = 'Hecho', done = 'Hecho' } = {}) {
 }
 
 /** A step as a fold; `open` only the two that are the common way. */
-function stepFold(step, title, body, { open = false } = {}) {
-  return html`<details class="plg step" ?open=${open} data-step=${step.id}><summary>${title}${step.done ? html`<span class="stat dt ok">hecho</span>` : nothing}</summary>
-    <div class="stepbody">${body}${doneRow(step)}</div></details>`;
+function stepFold(step, title, body, { open = false, mark = true } = {}) {
+  // A step done folds itself away; its summary line says so
+  return html`<details class="plg step" ?open=${open && !step.done} data-step=${step.id}><summary>${title}${step.done ? html`<span class="stat dt ok">hecho</span>` : nothing}</summary>
+    <div class="stepbody">${body}${mark ? doneRow(step) : nothing}</div></details>`;
 }
 
 /** A text to read, copy and share. */
@@ -126,6 +127,20 @@ function legalFold(c) {
     </div></details>`;
 }
 
+/**
+ * «Hablar con el ganadero» under «Hasta hoy», for a job under way with months already unpaid: a closed fold with the
+ * same summary.
+ * @param {{ step: import('../model/claim.js').Step, summary: string, canShare: boolean } | null} talk
+ */
+export function underwayTalk(talk) {
+  if (!talk) return nothing;
+  return html`<div class="block ask">${stepFold(
+    talk.step,
+    'Hablar con el ganadero',
+    html`<p>Lo más rápido suele ser hablarlo. Este resumen dice lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto, mes a mes.</p>${textCard('summary', talk.summary, talk.canShare)}`,
+  )}</div>`;
+}
+
 const DISCLAIMER =
   'Esto es un cálculo y una guía, no asesoramiento legal. Antes de firmar nada o de presentar la papeleta, consulta con un sindicato o un graduado social.';
 
@@ -162,7 +177,7 @@ export function claimView(c) {
               talk,
               'Hablar con el ganadero',
               html`<p>Lo más rápido suele ser hablarlo. Con los cobros apuntados, aquí aparece un resumen para llevar.</p>`,
-              { open: true },
+              { open: true, mark: false },
             )
           : nothing
     }

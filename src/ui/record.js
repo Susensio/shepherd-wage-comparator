@@ -72,6 +72,7 @@ import { closeDossier, closeReview, openDossier, openReview } from './navigation
  * @property {ReturnType<typeof balanceOf> | null} balance once the job is over: what it came to
  * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
+ * @property {ReturnType<typeof talkContext> | null} talk under way with something unpaid: the summary to talk to the ganadero
  * @property {boolean} nothingPaid «No se cobró nada» was said
  * @property {import('../model/settle.js').OfferRecord} record
  * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
@@ -249,6 +250,33 @@ export function showDossier() {
   callbacks.paint();
 }
 
+/**
+ * «Hablar con el ganadero» for a job under way that already has something unpaid: the summary up to today.
+ * @param {any} o
+ * @param {any} r
+ * @param {ReturnType<typeof settleOffer>} settled
+ * @param {ReturnType<typeof standingOf>} standing
+ * @param {string} today
+ */
+function talkContext(o, r, settled, standing, today) {
+  if (!(standing.hasPayments && standing.falta > 0)) return null;
+  const record = o.mine.record;
+  const parties = o.mine.parties ?? { employerName: '' };
+  const step = {
+    id: /** @type {const} */ ('talk'),
+    deadline: null,
+    daysLeft: null,
+    lapsed: false,
+    ready: true,
+    done: o.mine.claim?.steps?.talk ?? null,
+  };
+  return {
+    step,
+    canShare: typeof navigator.share === 'function',
+    summary: employerSummaryText({ o, r, settled, standing, record, parties, until: today }),
+  };
+}
+
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
 function defaultMonth(rows, today, phase) {
   const shown = rows.filter((row) => row.from <= today);
@@ -330,6 +358,7 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
+    talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
     nothingPaid: Boolean(record.nothingPaid),
     record,
     cards: cardsOf(o, phase, settled, today),
@@ -711,7 +740,8 @@ export function onClaimInput(e) {
 /** The claim ladder and texts of the active offer as the screen has them, or null. */
 function claimOf() {
   const o = active();
-  return recordContext(o, calcOffer(o))?.claim ?? null;
+  const c = recordContext(o, calcOffer(o));
+  return c?.claim ?? c?.talk ?? null;
 }
 
 /** Back left the review: its history entry is already gone. */

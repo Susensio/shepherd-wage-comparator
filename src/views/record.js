@@ -7,7 +7,7 @@ import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
-import { claimView, closingHints } from './claim.js';
+import { claimView, closingHints, underwayTalk } from './claim.js';
 import { ledgerLines, row } from './parts.js';
 import { endLine, endQuestion, recallQuestion, startQuestion } from './transitions.js';
 
@@ -143,6 +143,7 @@ function registro(c) {
       ${minimumLine(c.minimum)}
       ${s.running ? html`<p class="hint">${capital(monthName(s.running.month))}, el mes en curso, se cuenta hasta hoy.</p>` : nothing}
     </div>
+    ${underwayTalk(c.talk)}
     ${calendarView(c.calendar)}
     ${cobrosView(c)}
     ${apuntesView(c)}`;
