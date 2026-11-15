@@ -351,8 +351,8 @@ export const LAW = {
  * sleep away from home to watch the flock gets on top of the agreement's salary. Spain has no general rule for it, so
  * where no agreement is known for the province the page counts and claims nothing (ADR-0033, owner's rule).
  * Keyed by the province code of the places list (`terms.province`).
- * TODO: the base is the agreement's salary, which is not modelled; the minimum wage stands in for it until the
- * knowledge base (ADR-0033) holds the agreements' pay tables.
+ * The base is the minimum wage: where an agreement's salary is below it the agreement is out of date and the minimum
+ * wage governs (owner's rule, 15 November 2026; the provisional 2025 pastor salary equals the 2025 minimum wage).
  * @type {Record<string, { pct: number, cite: string, url: string }>}
  */
 const OVERNIGHT_BY_PROVINCE = {
