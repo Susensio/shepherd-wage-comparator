@@ -81,8 +81,6 @@ function applyView() {
   document.body.classList.toggle('on-entry', view.entry);
   document.body.classList.toggle('in-ficha', view.ficha && !wide.matches);
 }
-if (wide.matches) view.ficha = true;
-applyView();
 
 /** The tabs sit in the app bar on wide screens; on phones, the HTML puts them outside #scroller, so its stretch does not move them. */
 function placeTabs() {
@@ -90,11 +88,17 @@ function placeTabs() {
   if (wide.matches) $('.appbar').insertBefore(tabs, $('.bar-actions'));
   else document.body.append(tabs); // back from the app bar on resize
 }
-placeTabs();
-wide.addEventListener('change', () => {
+
+/** Shows the view as the screen's width says and follows the width from then on. Called once, by `main.js`, with the page loaded. */
+export function setUpNavigation() {
+  if (wide.matches) view.ficha = true;
+  applyView();
   placeTabs();
-  go({ ficha: wide.matches, entry: view.entry }, 'none');
-});
+  wide.addEventListener('change', () => {
+    placeTabs();
+    go({ ficha: wide.matches, entry: view.entry }, 'none');
+  });
+}
 
 /** Hides every panel but `shown`; a page also hides the tabs and the intro (body.on-page, in the CSS). */
 function showPanel(shown) {

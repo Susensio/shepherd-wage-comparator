@@ -15,6 +15,7 @@ import {
   resetHistory,
   resetViews,
   returnAfterSignIn,
+  setUpNavigation,
   showTab,
 } from './ui/navigation.js';
 import { setUpPlaceField } from './ui/place-field.js';
@@ -25,6 +26,7 @@ import { fillForm } from './views/form.js';
 import { fillLawFigures } from './views/law-figures.js';
 import { fillSettings } from './views/settings.js';
 
+setUpNavigation();
 // Before the first paint: the bundle is 218 KB and the account cannot connect without it
 accountLoader.preload();
 load();
