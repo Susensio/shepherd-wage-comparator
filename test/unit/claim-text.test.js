@@ -336,3 +336,18 @@ describe('«Copiar reclamación»: one function decides what it copies, from the
     );
   });
 });
+
+describe('the months of «Plazos» are in whole euros that add up to Falta, as the tiles show it', () => {
+  test('every sample offer, with one cobro', () => {
+    let checked = 0;
+    for (const o of worked) {
+      const c = contextOf(o, 333.33);
+      if (!(c.standing.falta > 0) || !c.standing.deadlines.length) continue;
+      const shown = c.standing.deadlines.map((d) => d.owedWhole);
+      assert.ok(shown.every(Number.isInteger), o.mine.name);
+      assert.equal(sum(shown), Math.round(c.standing.falta), o.mine.name);
+      checked++;
+    }
+    assert.ok(checked > 0);
+  });
+});

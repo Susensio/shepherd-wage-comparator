@@ -6,9 +6,8 @@
  */
 
 import { html, nothing } from 'lit-html';
-import { fDate } from '../format.js';
+import { fDate, fE } from '../format.js';
 import { citeOf, LAW, SOURCES } from '../law.js';
-import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { monthName } from '../text.js';
 import { COPY_ICON, row } from './parts.js';
@@ -132,7 +131,7 @@ function deadlinesBlock(c) {
     }</p>
     ${
       c.deadlines.length
-        ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${c.deadlines.map((d) => row(capital(monthName(d.month)), fSumE(d.owed), { sub: html`<span class=${d.lapsed ? 'due-by near' : 'due-by'}>${d.lapsed ? `plazo vencido el ${fIso(d.deadline)}` : `hasta el ${fIso(d.deadline)} · quedan ${days(d.daysLeft)}`}</span>` }))}</div>
+        ? html`<details class="plg" data-fold="deadlines"><summary>Plazos por mes</summary><div class="rows">${c.deadlines.map((d) => row(capital(monthName(d.month)), fE(d.owedWhole, 0), { sub: html`<span class=${d.lapsed ? 'due-by near' : 'due-by'}>${d.lapsed ? `plazo vencido el ${fIso(d.deadline)}` : `hasta el ${fIso(d.deadline)} · quedan ${days(d.daysLeft)}`}</span>` }))}</div>
           <p class="hint">Se cuenta un año desde el último día de cada mes. Los cobros se asignan al mes más antiguo solo para fechar la reclamación.</p></details>`
         : nothing
     }</section>`;

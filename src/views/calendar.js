@@ -1,7 +1,7 @@
 /** The calendar of a month (ADR-0032): its days as shown, the counts, what the month corresponds to and the button that closes it. */
 
 import { html, nothing } from 'lit-html';
-import { fSumE } from '../ledger.js';
+import { fE } from '../format.js';
 import { countsOf } from '../model/record.js';
 import { monthName } from '../text.js';
 import { row } from './parts.js';
@@ -67,8 +67,8 @@ function money(cal) {
   const { acc } = cal;
   const { jornadas, delta } = acc;
   return html`<div class="rows">
-    ${row(`Corresponde de ${monthName(acc.row.month)}`, fSumE(acc.due), { sub: acc.row.closed ? nothing : cal.current && cal.mode === 'ficha' ? 'estimado, hasta hoy' : 'estimado' })}
-    ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fSumE(Math.abs(delta))}`, { cls: 'sub' })}
+    ${row(`Corresponde de ${monthName(acc.row.month)}`, fE(acc.due, 0), { sub: acc.row.closed ? nothing : cal.current && cal.mode === 'ficha' ? 'estimado, hasta hoy' : 'estimado' })}
+    ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fE(Math.abs(delta), 0)}`, { cls: 'sub' })}
   </div>`;
 }
 

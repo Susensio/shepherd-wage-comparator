@@ -3,7 +3,7 @@
  * Built from `settle` and the record; nothing is calculated again. Amounts are gross, as `settle` has them. No DOM.
  */
 
-import { cents, sum } from '../ledger.js';
+import { cents, spreadTo, sum } from '../ledger.js';
 import { parseDate } from '../offer.js';
 import { countsOf, defaultMarks, marksOf } from './record.js';
 import { ITEMS, settle } from './settle.js';
@@ -210,6 +210,14 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
           daysLeft: daysBetween(today, /** @type {string} */ (row.deadline)),
         }))
     : [];
+  // The same months in whole euros, as the tiles show them, adding up to Falta (the ledger rule: `spreadTo`)
+  const owedSum = sum(deadlines.map((d) => d.owed));
+  const whole = spreadTo(
+    deadlines.map((d) => d.owed),
+    Math.abs(owedSum - falta) < 1 ? Math.round(falta) : Math.round(owedSum),
+    1,
+  );
+  const shown = deadlines.map((d, i) => ({ ...d, owedWhole: whole[i] }));
   return {
     hasPayments,
     ended,
@@ -245,7 +253,7 @@ export function standingOf(settled, today, phase, payments, netFactor, nothingPa
     lapsedAll: deadlines.length > 0 && deadlines.every((d) => d.lapsed),
     /** The claim that lapses first, or null. */
     nearest: deadlines.length ? deadlines.reduce((a, b) => (b.deadline < a.deadline ? b : a)) : null,
-    deadlines,
+    deadlines: shown,
   };
 }
 
