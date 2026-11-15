@@ -525,6 +525,54 @@ describe('the law, from the record: facts only', () => {
   });
 });
 
+describe('the public holidays of the offer’s place on the calendar', () => {
+  const at = (fields) => offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'h', ...fields });
+  const YEBRA = { municipality: '22252', province: 'HU' };
+  const JULY = { key: '2026-07', from: '2026-07-01', to: '2026-07-31' };
+  const names = (marks) => marks.filter((m) => m.holiday).map((m) => [m.date, m.holiday]);
+
+  test('the days carry the holiday of the place; nowhere without verified data', () => {
+    assert.deepEqual(names(defaultMarks(at(YEBRA), JUNE)), [['2026-06-25', 'Santa Orosia']]);
+    assert.deepEqual(names(defaultMarks(at({ province: 'M' }), JUNE)), []);
+    assert.deepEqual(names(defaultMarks(at({}), JUNE)), []);
+    const y2027 = { key: '2027-06', from: '2027-06-01', to: '2027-06-30' };
+    assert.deepEqual(names(defaultMarks(at({ ...YEBRA, start: '2027-06-01' }), y2027)), [], 'no data for 2027');
+  });
+
+  test('holidays taken off: the dates come libre and the days off are spread over the others', () => {
+    const marks = defaultMarks(at({ ...YEBRA, holidays: 'yes' }), JUNE);
+    assert.equal(marks.find((m) => m.date === '2026-06-25')?.kind, 'off');
+    assert.equal(countsOf(marks).off, 5, 'four days off a month and the holiday');
+    assert.ok(marks.every((m) => !m.recorded));
+  });
+
+  test('holidays not taken off: still jornada, only marked; the counts are the offer’s', () => {
+    const marks = defaultMarks(at({ ...YEBRA, holidays: 'no' }), JUNE);
+    assert.equal(marks.find((m) => m.date === '2026-06-25')?.kind, 'work');
+    assert.deepEqual(
+      marks.map((m) => m.kind),
+      defaultMarks(at({ holidays: 'no' }), JUNE).map((m) => m.kind),
+      'same days as an offer without a place',
+    );
+  });
+
+  test('a closed month is frozen as shown, whatever the offer says afterwards', () => {
+    const offer = at({ ...YEBRA, holidays: 'no' });
+    const record = emptyRecord();
+    closeMonth(offer, record, JUNE);
+    offer.terms.holidays = 'yes';
+    assert.equal(marksOf(offer, record, JUNE).find((m) => m.date === '2026-06-25')?.kind, 'work');
+    assert.equal(marksOf(offer, record, JULY).filter((m) => m.holiday).length, 0, 'July has none');
+  });
+
+  test('an untouched offer shows no difference: the offer and the marks follow the same days', () => {
+    const offer = at({ ...YEBRA, holidays: 'yes' });
+    const acc = monthAccounts(offer, emptyRecord(), '2026-06', '2026-11-12', ctx, NET);
+    assert.equal(acc?.delta, null);
+    assert.equal(acc?.jornadas, 0);
+  });
+});
+
 describe('what the job left', () => {
   test('firm only with every month closed; the days real in closed months; vacation days among those contributed', () => {
     const record = emptyRecord();

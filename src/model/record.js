@@ -4,12 +4,13 @@
  * is the caller's. No DOM.
  */
 
+import { holidaysOf } from '../law.js';
 import { endOf, isoOf, newId, parseDate } from '../offer.js';
 import { schedule } from './time.js';
 
 /** @typedef {import('./settle.js').OfferRecord} OfferRecord */
 /** @typedef {import('./settle.js').DayKind} DayKind */
-/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean, outside: boolean }} Mark `day` is «05»; `outside`: not a day of the job (after its end or before its start) */
+/** @typedef {{ day: string, date: string, kind: DayKind, recorded: boolean, outside: boolean, holiday: string }} Mark `day` is «05»; `outside`: not a day of the job (after its end or before its start); `holiday`: the name of the public holiday of the offer's place that falls on it, or '' (nothing where the place has no verified data) */
 /** @typedef {{ key: string, from: string, to: string }} Span the days of a month «2026-06» that belong to the offer, ISO dates */
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -25,13 +26,23 @@ function daysOf({ key, from, to }) {
 
 /**
  * What a day is before anything is recorded: the offer's days off spread evenly over the span. A default of the
- * calendar, not a rule of the model: it decides nothing until the shepherd touches the month.
+ * calendar, not a rule of the model: it decides nothing until the shepherd touches the month. An offer that takes the
+ * holidays off (`terms.holidays`) has the holidays of its place libre, and the days off are spread over the other days.
+ * @param {object} terms
+ * @param {string[]} dates ISO, the days of the job in the span
+ * @param {Map<string, string>} holidays name by ISO date, of the offer's place
  * @returns {DayKind[]}
  */
-function defaultKinds(terms, count) {
+function defaultKinds(terms, dates, holidays) {
   const off = 1 - schedule(terms).workFrac;
   const before = (i) => Math.floor(i * off + 0.5);
-  return Array.from({ length: count }, (_, i) => (before(i + 1) > before(i) ? 'off' : 'work'));
+  const holidaysOff = terms.holidays === 'yes';
+  let spread = 0;
+  return dates.map((date) => {
+    if (holidaysOff && holidays.has(date)) return 'off';
+    const i = spread++;
+    return before(i + 1) > before(i) ? 'off' : 'work';
+  });
 }
 
 /** The last day marked as worked anywhere in the record, as an ISO date, or '' (months without a worked day count for nothing). */
@@ -61,7 +72,15 @@ export function marksOf(offer, record, span, job) {
   const days = daysOf(span);
   const end = endOf(offer.terms);
   const endIso = end ? isoOf(end) : '9999-12-31';
-  const kinds = defaultKinds(offer.terms, days.filter(([, date]) => date <= endIso).length);
+  const { municipality, province } = offer.terms;
+  const holidays = new Map(
+    holidaysOf({ municipality, province, year: Number(span.key.slice(0, 4)) }).days.map((d) => [d.date, d.name]),
+  );
+  const kinds = defaultKinds(
+    offer.terms,
+    days.map(([, date]) => date).filter((date) => date <= endIso),
+    holidays,
+  );
   const recorded = record?.months?.[span.key]?.days ?? {};
   return days.map(([day, date], i) => ({
     day,
@@ -69,6 +88,7 @@ export function marksOf(offer, record, span, job) {
     kind: recorded[day] ?? (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : 'off'),
     recorded: day in recorded,
     outside: job ? date < job.from || date > job.to : false,
+    holiday: holidays.get(date) ?? '',
   }));
 }
 

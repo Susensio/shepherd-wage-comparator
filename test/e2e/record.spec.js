@@ -71,6 +71,46 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('.days')).toContainText('Se podrá cerrar cuando acabe el mes');
   });
 
+  test('the calendar marks the holidays of the offer’s place, with their names; nothing elsewhere', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const place = (terms) =>
+      page.evaluate((terms) => {
+        Object.assign(app.active().terms, terms);
+        app.select(app.active().id);
+      }, terms);
+    await place({ municipality: '22252', province: 'HU' });
+    await expect(page.locator('.days h3')).toHaveText('Agosto 2026');
+    const fests = page.locator('.days .day.fest');
+    await expect(fests).toHaveCount(2);
+    await expect(fests.first()).toHaveAttribute('title', 'San Lorenzo');
+    await expect(fests.first()).toHaveAttribute('aria-label', /^10 de agosto: .*; festivo: San Lorenzo$/);
+    await expect(page.locator('.days .fests')).toHaveText('Festivos: 10 (San Lorenzo), 15 (Asunción de la Virgen).');
+    await strip(page, '2026-06').click();
+    await expect(page.locator('.days .day.fest')).toHaveCount(1);
+    await expect(page.locator('.days .fests')).toContainText('25 (Santa Orosia)');
+    // A holiday is only marked: the day is still a jornada, a tap still turns it libre
+    const day = page.locator('.days .day.fest');
+    await expect(day).toHaveClass(/work/);
+    // Without data for the province nothing is marked
+    await place({ municipality: '', province: 'M' });
+    await expect(page.locator('.days .day.fest')).toHaveCount(0);
+    await expect(page.locator('.days .fests')).toHaveCount(0);
+  });
+
+  test('an offer that takes the holidays off has them libre on the calendar', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(() => {
+      Object.assign(app.active().terms, { municipality: '22252', province: 'HU', holidays: 'yes' });
+      app.select(app.active().id);
+    });
+    const fests = page.locator('.days .day.fest');
+    await expect(fests).toHaveCount(2);
+    await expect(fests.first()).toHaveClass(/off/);
+    await expect(fests.first()).toHaveAttribute('aria-label', /libre; festivo: San Lorenzo/);
+  });
+
   test('with no cobros nothing is claimed: Corresponde and a prompt, no Falta and no accusation', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await expect(tile(page, 'Falta')).toHaveText('—');

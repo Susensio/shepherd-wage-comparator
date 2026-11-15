@@ -40,18 +40,26 @@ function grid(cal) {
     }
     // A day outside the job is not a libranza: faded, said so, and still tappable to mark it jornada
     const note = mark.outside ? 'fuera' : mark.kind === 'work' ? '' : KIND_TEXT[mark.kind].replace('de ', '');
-    const label = `${d} de ${monthName(acc.row.month)}: ${mark.outside ? 'fuera del trabajo' : KIND_TEXT[mark.kind]}`;
+    const label = `${d} de ${monthName(acc.row.month)}: ${mark.outside ? 'fuera del trabajo' : KIND_TEXT[mark.kind]}${mark.holiday ? `; festivo: ${mark.holiday}` : ''}`;
     // The month in progress: today is ringed, the days still to come are faded (they follow the offer until they happen)
     const date = `${acc.row.month}-${day}`;
     const inProgress = cal.mode === 'ficha' && cal.current;
-    const cls = `day ${mark.outside ? 'away' : mark.kind}${inProgress && date === cal.today ? ' today' : ''}${inProgress && date > cal.today ? ' ahead' : ''}`;
+    const cls = `day ${mark.outside ? 'away' : mark.kind}${inProgress && date === cal.today ? ' today' : ''}${inProgress && date > cal.today ? ' ahead' : ''}${mark.holiday ? ' fest' : ''}`;
     cells.push(
       closed
-        ? html`<button type="button" class=${cls} aria-disabled="true" tabindex="-1" aria-label=${label}>${d}<small>${note}</small></button>`
-        : html`<button type="button" class=${cls} data-action="toggleDay" data-key=${acc.row.month} data-day=${day} aria-label=${label}>${d}<small>${note}</small></button>`,
+        ? html`<button type="button" class=${cls} aria-disabled="true" tabindex="-1" aria-label=${label} title=${mark.holiday || nothing}>${d}<small>${note}</small></button>`
+        : html`<button type="button" class=${cls} data-action="toggleDay" data-key=${acc.row.month} data-day=${day} aria-label=${label} title=${mark.holiday || nothing}>${d}<small>${note}</small></button>`,
     );
   }
   return html`<div class="wd" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="grid">${cells}</div>`;
+}
+
+/** «Festivos: 25 (Santa Orosia), 10 (San Lorenzo)»: the names the dots on the grid stand for; nothing where the month has none. */
+function holidays(cal) {
+  const list = cal.acc.marks.filter((m) => m.holiday);
+  return list.length
+    ? html`<p class="hint fests"><i class="festdot" aria-hidden="true"></i>Festivos: ${list.map((m) => `${Number(m.day)} (${m.holiday})`).join(', ')}.</p>`
+    : nothing;
 }
 
 /** What the month corresponds to, and one line more when the jornadas differ from the offer's. */
@@ -90,6 +98,7 @@ function month(cal) {
   return html`<div class=${acc.row.closed ? 'cal closed' : 'cal'}>
     <div class="mh"><h3>${capital(monthName(acc.row.month))} ${y}</h3>${stateOf(acc, now)}</div>
     ${grid(cal)}
+    ${holidays(cal)}
     <div class="counts">${now ? html`<span class="upto">hasta hoy</span>` : nothing}<span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
     ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
     ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Si se marca un día «fuera» como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
