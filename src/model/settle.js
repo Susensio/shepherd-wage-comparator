@@ -8,7 +8,8 @@ import { cents, sum } from '../ledger.js';
 import { daysInclusive, endOf, isoOf, parseDate } from '../offer.js';
 import { calc } from './calc.js';
 import { monthShares } from './payslips.js';
-import { lastWorkedDay } from './record.js';
+import { jobEnd } from './phase.js';
+import { marksOf } from './record.js';
 import { claimDeadline } from './time.js';
 
 /**
@@ -86,41 +87,25 @@ function shareOf(from, to) {
 }
 
 /**
- * The months of the job as it really was, from the offer's and the record's days (ADR-0032). A month after the offer's
- * last one enters only if it holds a day worked, and the job then goes on to the last day worked, the months between
- * included; each day of that period is paid 1/30 of a month's pay. In a closed month the days libre before the first day
- * worked of the first month, or after the last one worked of the last, lie outside the job (the calendar cannot tell
- * libre because the contract ended from libre as the last rest); open months follow the offer.
- * `weight` is the pay's share of the contract, over the offer's own shares; `dayWeight` the same before trimming (a wage
- * per day does not change); `calendarFrom` and `calendarTo` the days the calendar shows.
+ * The months of the job as it really was, from the offer's months and `jobEnd` (ADR-0032): the end ends the job there
+ * (the months after it leave, the last one stops that day), or extends it past the offer's last month, the months
+ * between included, each day of the extension paid 1/30 of a month's pay. Nothing is trimmed from the calendar: libre
+ * days inside the offer's dates are part of the job, only the end the shepherd said or a day worked after it moves it.
+ * `weight` is the pay's share of the contract, over the offer's own shares; `calendarFrom` and `calendarTo` the days
+ * the calendar shows.
  * @param {ReturnType<typeof monthShares>} base the offer's months
  * @param {Date} offerEnd
- * @param {OfferRecord | undefined} record
+ * @param {string} end ISO, `jobEnd`
  */
-function jobShares(base, offerEnd, record) {
+function jobShares(base, offerEnd, end) {
   const baseTotal = base.reduce((t, x) => t + x.share, 0) || 1;
-  const entryOf = (x) => record?.months?.[isoOf(x.month).slice(0, 7)];
-  const workDays = (x) =>
-    Object.entries(entryOf(x)?.days ?? {})
-      .filter(([, kind]) => kind === 'work')
-      .map(([day]) => Number(day))
-      .sort((a, b) => a - b);
   let list = base.map((x) => ({ ...x, extension: false, calendarFrom: x.from, calendarTo: monthLast(x.month) }));
-  // An end the shepherd said, before the offer's, ends the job there (unless days were marked worked after it): the
-  // months after it are not part of the job and the last one stops on that day
-  const said = record?.end?.date ?? '';
-  if (said && said < isoOf(offerEnd)) {
-    const cut = lastWorkedDay(record) > said ? lastWorkedDay(record) : said;
-    if (cut < isoOf(offerEnd)) {
-      list = list.filter((x) => isoOf(x.from) <= cut);
-      const tail = list.at(-1);
-      if (tail && cut < isoOf(tail.to)) tail.to = parseDate(cut);
-    }
-  }
-  // Extension: through the last day worked after the offer's end
-  const lastWork = lastWorkedDay(record);
-  if (list.length && lastWork > isoOf(offerEnd)) {
-    const until = parseDate(lastWork);
+  if (end < isoOf(offerEnd)) {
+    list = list.filter((x) => isoOf(x.from) <= end);
+    const tail = list.at(-1);
+    if (tail && end < isoOf(tail.to)) tail.to = parseDate(end);
+  } else if (list.length && end > isoOf(offerEnd)) {
+    const until = parseDate(end);
     const tail = list.at(-1);
     const sameMonth = tail.month.getFullYear() === until.getFullYear() && tail.month.getMonth() === until.getMonth();
     tail.to = sameMonth ? until : monthLast(tail.month);
@@ -141,28 +126,9 @@ function jobShares(base, offerEnd, record) {
       });
     }
   }
-  list = list.map((x) => ({ ...x, ...shareOf(x.from, x.to) }));
-  const dayShare = list.map((x) => x.share);
-  // Trimming, in closed months only
-  const first = list[0];
-  if (first && entryOf(first)?.closed) {
-    const [day] = workDays(first);
-    if (day)
-      first.from = new Date(first.month.getFullYear(), first.month.getMonth(), Math.max(day, first.from.getDate()));
-  }
-  // An open month follows the offer, so the job still goes on in it; only closed months can end it
-  const lastIndex = list.findLastIndex((x) => !entryOf(x)?.closed || workDays(x).length > 0);
-  if (lastIndex >= 0) {
-    list.forEach((x, i) => {
-      if (!entryOf(x)?.closed) return;
-      if (i > lastIndex) x.to = new Date(x.from.getFullYear(), x.from.getMonth(), x.from.getDate() - 1);
-      else if (i === lastIndex)
-        x.to = new Date(x.month.getFullYear(), x.month.getMonth(), Math.min(x.to.getDate(), workDays(x).at(-1)));
-    });
-  }
-  return list.map((x, i) => {
-    const trimmed = shareOf(x.from, x.to);
-    return { ...x, ...trimmed, weight: trimmed.share / baseTotal, dayWeight: dayShare[i] / baseTotal };
+  return list.map((x) => {
+    const part = shareOf(x.from, x.to);
+    return { ...x, ...part, weight: part.share / baseTotal };
   });
 }
 
@@ -183,12 +149,11 @@ export function settle(offer, record, today, ctx) {
   const whole = openEnded
     ? openEndedShares(terms, countedTo).map((x) => ({
         ...x,
-        dayWeight: x.weight,
         extension: false,
         calendarFrom: x.from,
         calendarTo: x.to,
       }))
-    : jobShares(offerShares, /** @type {Date} */ (offerEnd), record);
+    : jobShares(offerShares, /** @type {Date} */ (offerEnd), jobEnd(offer, record));
   // The month in progress counts up to and including today: a wage per day from the days worked so far, a monthly or
   // total wage one thirtieth per elapsed day (the payslips' partial month), the vacation and the cash in proportion
   const now = parseDate(today);
@@ -197,7 +162,7 @@ export function settle(offer, record, today, ctx) {
     if (!(x.days > 0 && x.from <= now && now < x.to)) return full;
     const part = shareOf(x.from, now);
     const scale = x.share > 0 ? part.share / x.share : 0;
-    return { ...full, to: now, ...part, weight: x.weight * scale, dayWeight: x.dayWeight * scale };
+    return { ...full, to: now, ...part, weight: x.weight * scale };
   });
   const labour = !r.selfEmployed; // labour law does not apply to an invoice (ADR-0029)
   const { time, pay, min } = r;
@@ -224,18 +189,25 @@ export function settle(offer, record, today, ctx) {
     // (an extension month has no offer to follow: its days default to libre)
     const open = closed || share.extension || share.days <= 0 ? 0 : (share.days - touched) / share.days;
     const w = share.weight;
-    const wDay = share.dayWeight;
     // The days still following the offer are worked as the offer's pattern says: its days worked over its calendar days,
     // so a month of 28 days has 28 days' worth, as the calendar shows (the average month of an offer without an end
     // keeps the share)
     const followed = openEnded
       ? open * time.daysWorked * w
       : (share.days - touched) * (closed || share.extension || share.days <= 0 ? 0 : workPattern);
-    const worked = counts.work + followed;
+    // Days after the offer's end up to an end said later are worked unless marked otherwise (as the calendar shows them)
+    const offerEndIso = offerEnd ? isoOf(offerEnd) : '';
+    const statedWork =
+      !openEnded && share.days > 0 && (record?.end?.date ?? '') > offerEndIso
+        ? marksOf(offer, record, { key, from: isoOf(share.from), to: isoOf(share.to) }).filter(
+            (m) => !m.recorded && m.kind === 'work' && m.date > offerEndIso,
+          ).length
+        : 0;
+    const worked = counts.work + followed + statedWork;
     // Paid days (docs/model.md): worked, plus vacation taken, plus holidays, which follow the offer even in a closed
     // month. TODO: a holiday worked is counted twice, and sick days are not paid; unblocked by the owner's answer on
     // how a real month pays them.
-    const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * wDay;
+    const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * w;
 
     // The agreed cash of the month, net as handed: per day worked it follows the days (the facts of a closed month
     // included), else it is the month's share like the pay

@@ -7,6 +7,7 @@ import { cents } from '../../src/ledger.js';
 import { standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { claimSteps } from '../../src/model/claim.js';
+import { marksOf } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/schema.js';
@@ -561,32 +562,46 @@ test('the offer’s own last month, worked beyond its end, goes on to the day wo
   assert.ok(x.rows[2].items.salary.agreed > plain.rows[2].items.salary.agreed);
 });
 
-test('a closed month: libre days before the first day worked, or after the last, lie outside the job; a wage per day does not change', () => {
-  const closed = { ...workOn('2026-01', range(10, 31), true), ...workOn('2026-03', range(1, 20), true) };
-  const x = settleOf(offerWith(), { months: closed });
+test('libre days at the start or the end of a closed month inside the offer’s dates do not cut the pay', () => {
   const pay = (row) => row.items.salary.agreed + row.items.overnight.agreed;
-  near(pay(x.rows[0]), (1424.5 * 22) / 30, 'January from the 10th: 22 days', 0.01);
-  near(pay(x.rows[1]), 1424.5, 'February follows the offer', 0.01);
-  near(pay(x.rows[2]), (1424.5 * 20) / 30, 'March to the 20th: 20 days', 0.01);
-  assert.deepEqual([x.job.from, x.job.to], ['2026-01-10', '2026-03-20']);
-  // The same days with a wage per day: the days decide, nothing is trimmed
-  const perDayPlain = settleOf(perDay(), { months: { '2026-01': { closed: true, days: closed['2026-01'].days } } });
-  assert.equal(perDayPlain.rows[0].items.salary.agreed, 2200);
+  const February = Object.fromEntries(range(1, 28).map((d) => [String(d).padStart(2, '0'), d >= 27 ? 'off' : 'work']));
+  const x = settleOf(offerWith(), { months: { '2026-02': { closed: true, days: February } } });
+  near(pay(x.rows[1]), 1424.5, 'two libres on 27–28 Feb leave the month whole', 0.01);
+  // The first month starting with rests, and a closed month with no day worked after the last open one: all whole
+  const closed = { ...workOn('2026-01', range(10, 31), true), ...workOn('2026-03', range(1, 20), true) };
+  const y = settleOf(offerWith(), { months: closed });
+  assert.deepEqual(y.rows.map(pay), [1424.5, 1424.5, 1424.5]);
+  assert.deepEqual([y.job.from, y.job.to, y.job.differs], ['2026-01-01', '2026-03-31', false]);
 });
 
-test('a job that ends early: closed months after the last worked one are outside it, open ones follow the offer', () => {
+test('a job ends early only by the end the shepherd said: closed months without a day worked stay in it', () => {
   const closedAll = {
     ...workOn('2026-01', range(1, 31), true),
     ...workOn('2026-02', range(1, 10), true),
     '2026-03': { closed: true, days: {} },
   };
-  const x = settleOf(offerWith(), { months: closedAll });
   const pay = (row) => row.items.salary.agreed + row.items.overnight.agreed;
-  near(pay(x.rows[1]), (1424.5 * 10) / 30, 'February to the 10th', 0.01);
-  assert.equal(pay(x.rows[2]), 0);
-  // Not closed: the offer is followed
-  const open = settleOf(offerWith(), { months: { '2026-03': { days: { '05': 'off' } } } });
-  near(pay(open.rows[2]), 1424.5, 'an open month is whole', 0.01);
+  const x = settleOf(offerWith(), { months: closedAll });
+  assert.deepEqual(x.rows.map(pay), [1424.5, 1424.5, 1424.5]);
+  const said = settleOf(offerWith(), { months: closedAll, end: { how: 'agreed', date: '2026-02-10' } });
+  assert.equal(said.rows.length, 2);
+  near(pay(said.rows[1]), (1424.5 * 10) / 30, 'February to the 10th', 0.01);
+});
+
+test('an end said after the offer’s end extends the job: the days to it are worked unless marked otherwise', () => {
+  const offer = perDay(); // 1 Jan – 31 Mar, 100 € a day, no days off
+  const record = { end: { how: 'agreed', date: '2026-04-10' } };
+  const x = settleOf(offer, record, '2026-11-12');
+  assert.equal(x.rows.length, 4);
+  assert.equal(x.rows[3].to, '2026-04-10');
+  assert.equal(x.rows[3].items.salary.agreed + x.rows[3].items.overnight.agreed, 1000); // ten days at 100
+  assert.equal(x.job.to, '2026-04-10');
+  // a day marked libre is not worked
+  const off = settleOf(offer, { ...record, months: { '2026-04': { days: { '05': 'off' } } } }, '2026-11-12');
+  assert.equal(off.rows[3].items.salary.agreed + off.rows[3].items.overnight.agreed, 900);
+  // the calendar shows them as worked
+  const marks = marksOf(offer, record, { key: '2026-04', from: '2026-04-01', to: '2026-04-30' });
+  assert.deepEqual([marks[9].kind, marks[10].kind], ['work', 'off']);
 });
 
 test('the empty-record invariant still holds with the trimming in place: nothing marked, nothing moves', () => {
@@ -647,4 +662,32 @@ test('the overnight bonus enters the accounts only in Huesca; the ledgers add up
     near(T.items.overnight.minimum, cents(r.min.overnight), `${province}: minimum overnight`);
     near(T.shortfall, cents(r.debt.total), `${province}: debt`, 0.01);
   }
+});
+
+test('the claim dates from the earliest month the cobros dated by its due date did not cover, not from the oldest-first leftover', () => {
+  // October never paid, November to March paid at each month's end: the shortfall is October's, lapsed on 31 Oct 2026
+  const offer = offerWith({ start: '2025-10-01', duration: 182 });
+  const paid = ['2025-11-30', '2025-12-31', '2026-01-31', '2026-02-28', '2026-03-31'].map((date, i) =>
+    payment(`p${i}`, date, 1424.5),
+  );
+  const x = settleOf(offer, { payments: paid }, '2026-11-15');
+  assert.equal(x.totals.owed, 1424.5); // the total owed does not change
+  assert.deepEqual(
+    x.rows.filter((row) => row.owed > 0).map((row) => [row.month, row.deadline, row.lapsed]),
+    [['2026-03', '2026-10-31', true]],
+  );
+  // what the screens say follows it: the nearest claim and the ladder's `by`
+  const net = calc(offer, ctx).netFactor;
+  const standing = standingOf(x, '2026-11-15', 'finished', paid, net);
+  assert.equal(standing.nearest?.deadline, '2026-10-31');
+  assert.equal(claimSteps({ today: '2026-11-15', standing, end: undefined, marks: {} }).by, null); // lapsed: none left
+  // paid on time, one month short: the deadline is that month's own
+  const onTimePaid = ['2025-10-31', '2025-11-30', '2025-12-31', '2026-01-31', '2026-02-28'].map((date, i) =>
+    payment(`o${i}`, date, 1424.5),
+  );
+  const onTime = settleOf(offer, { payments: [...onTimePaid, payment('q', '2026-03-31', 1000)] }, '2026-11-15');
+  assert.deepEqual(
+    onTime.rows.filter((row) => row.owed > 0).map((row) => [row.month, row.deadline]),
+    [['2026-03', '2027-03-31']],
+  );
 });

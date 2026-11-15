@@ -72,6 +72,8 @@ export function marksOf(offer, record, span, job) {
   const days = daysOf(span);
   const end = endOf(offer.terms);
   const endIso = end ? isoOf(end) : '9999-12-31';
+  // an end said after the offer's extends the job: those days are worked unless marked otherwise
+  const statedEnd = record?.end?.date ?? '';
   const { municipality, province } = offer.terms;
   const holidays = new Map(
     holidaysOf({ municipality, province, year: Number(span.key.slice(0, 4)) }).days.map((d) => [d.date, d.name]),
@@ -85,7 +87,9 @@ export function marksOf(offer, record, span, job) {
   return days.map(([day, date], i) => ({
     day,
     date,
-    kind: recorded[day] ?? (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : 'off'),
+    kind:
+      recorded[day] ??
+      (onLeave(record, date) ? 'sick' : date <= endIso ? kinds[i] : date <= statedEnd ? 'work' : 'off'),
     recorded: day in recorded,
     outside: job ? date < job.from || date > job.to : false,
     holiday: holidays.get(date) ?? '',

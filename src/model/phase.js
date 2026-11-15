@@ -4,13 +4,14 @@ import { endOf, isoOf } from '../offer.js';
 import { lastWorkedDay } from './record.js';
 
 /**
- * The end that counts: the later of the end (the one the shepherd said, else the offer's) and the last day marked as
- * worked, so a job stretched past its end goes on. Without a known end, none.
+ * The one end of the job, for the phase and for `settle`: the end the shepherd said, else the offer's, or the last day
+ * marked as worked when that is later. An end after the offer's extends the job; one before it cuts it. Without a
+ * known end, none.
  * @param {{terms: object}} offer
  * @param {import('./settle.js').OfferRecord} [record]
  * @returns {string} an ISO date, or ''
  */
-export function effectiveEnd(offer, record) {
+export function jobEnd(offer, record) {
   const end = endOf(offer.terms);
   const base = record?.end?.date || (end ? isoOf(end) : '');
   if (!base) return '';
@@ -28,7 +29,7 @@ export function phaseOf(offer, today, record) {
   const { terms } = offer;
   if (terms.offerOnly) return 'offerOnly';
   if (!terms.start || terms.start > today) return 'undecided';
-  const end = effectiveEnd(offer, record);
+  const end = jobEnd(offer, record);
   if (end && end < today) return 'finished';
   return 'underway';
 }

@@ -895,7 +895,9 @@ test.describe('the real period of the work', () => {
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
   });
 
-  test('a job that ended early: the closed month trims its libre days after the last day worked', async ({ page }) => {
+  test('libre days after the last day worked in a closed month do not end the job; the end said does', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     const before = amount(await tile(page, 'Corresponde').textContent());
@@ -909,7 +911,15 @@ test.describe('the real period of the work', () => {
       offers.closeMonth(o, { key: '2026-09', from: '2026-09-01', to: '2026-09-30' });
       app.select(o.id);
     });
-    await expect(page.locator('.real')).toHaveText(/al 10 sept 2026 \(oferta: 30 sept 2026\)/);
+    await expect(page.locator('.real')).toHaveCount(0);
+    expect(amount(await tile(page, 'Corresponde').textContent())).toBe(before);
+    await page.evaluate(() => {
+      app.active().mine.record.end = { how: 'agreed', date: '2026-09-10' };
+      app.select(app.active().id);
+    });
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveText(
+      /al 10 sept 2026 \(oferta: 30 sept 2026\)/,
+    );
     expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(before);
   });
 

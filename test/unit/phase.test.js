@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { phaseOf } from '../../src/model/phase.js';
+import { jobEnd, phaseOf } from '../../src/model/phase.js';
 
 const days = (start, duration, extra = {}) => ({ terms: { start, duration, durationUnit: 'days', ...extra } });
 
@@ -63,4 +63,18 @@ test('a day worked after the end said still extends the job', () => {
   const record = { end: { how: 'agreed', date: '2026-06-10' }, months: { '2026-06': { days: { 15: 'work' } } } };
   assert.equal(phaseOf(days('2026-06-01', 10), '2026-06-12', record), 'underway');
   assert.equal(phaseOf(days('2026-06-01', 10), '2026-06-16', record), 'finished');
+});
+
+test('the job’s end is one: an end said after the offer’s extends it, in the phase and in settle', () => {
+  const offer = days('2026-06-01', 10);
+  const record = { end: { how: 'agreed', date: '2026-06-20' } };
+  assert.equal(jobEnd(offer, record), '2026-06-20');
+  assert.equal(phaseOf(offer, '2026-06-20', record), 'underway');
+  assert.equal(phaseOf(offer, '2026-06-21', record), 'finished');
+  assert.equal(jobEnd(offer, { end: { how: 'agreed', date: '2026-06-05' } }), '2026-06-05');
+  assert.equal(
+    jobEnd(offer, { end: { how: 'agreed', date: '2026-06-05' }, months: { '2026-06': { days: { 14: 'work' } } } }),
+    '2026-06-14',
+  );
+  assert.equal(jobEnd({ terms: { start: '2026-06-01', durationUnit: 'unknown' } }, {}), '');
 });
