@@ -1,6 +1,6 @@
 # ADR-0034: Reclamar as a guided ladder of steps with a printable dossier and the end of the job asked, instead of a copy button for one claim text
 
-Status: Proposed (main agent, 14 November 2026, under the owner's mandate to advance the union-assistant workflow; the owner confirms on return)
+Status: Accepted (proposed by the main agent on 14 November 2026 under the owner's mandate; accepted by the owner on 15 November 2026 when publishing it)
 Date: 2026-11-14
 
 ## Context
