@@ -15,6 +15,7 @@ import { fE } from '../../src/format.js';
 import { fSumE, spreadTo, sum } from '../../src/ledger.js';
 import { standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
+import { marksOf, toggleDay } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG } from '../../src/offer.js';
 import { ingestSaved } from '../../src/schema.js';
@@ -91,8 +92,22 @@ describe('«Resumen para el ganadero»', () => {
     assert.match(text, /^Hola, Casa Pérez\./);
   });
 
-  test('says the jornadas of each month and which are estimated', () => {
-    assert.match(text, /Jornadas: junio \d+ \(estimadas\), julio/);
+  test('says the jornadas and the libres of each month, above or below what was agreed, and which are estimated', () => {
+    assert.match(text, /Jornadas por mes:\n· Junio: \d+ jornadas?, \d+ libres?.*\(estimado\)\n· Julio: /);
+    // A month with a day more than the offer's says so
+    const more = contextOf(worked[0], 300);
+    const key = more.settled.rows[1].month;
+    const span = { key, from: more.settled.rows[1].calendarFrom, to: more.settled.rows[1].calendarTo };
+    const off = marksOf(more.o, more.record, span).find((m) => m.kind === 'off' && !m.outside);
+    toggleDay(more.o, more.record, span, off.day);
+    const changed = employerSummaryText({ ...more, settled: settle(more.o, more.record, '2030-01-01', ctx) });
+    assert.match(changed, /1 más de las pactadas/);
+  });
+
+  test('Falta is the amount alone, in total and per month: no breakdown by item', () => {
+    assert.match(text, /\nFalta: [\d.]+\s€ netos\.\n· /);
+    assert.doesNotMatch(text.slice(text.indexOf('Falta:')), /pernocta|vacaciones|salario/i);
+    for (const line of text.split('\n').filter((l) => /^· \w+: [\d.]+\s€/.test(l))) assert.doesNotMatch(line, /\(/);
   });
 
   test('with nothing cobrado it says so', () => {

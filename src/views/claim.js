@@ -141,7 +141,7 @@ export function underwayTalk(talk) {
   return html`<div class="block ask">${stepFold(
     talk.step,
     'Hablar con el ganadero',
-    html`<p>Lo más rápido suele ser hablarlo. Este resumen dice lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto, mes a mes.</p>${textCard('summary', talk.summary, talk.canShare)}`,
+    html`<p>Lo más rápido suele ser hablarlo. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto.</p>${textCard('summary', talk.summary, talk.canShare)}`,
   )}</div>`;
 }
 
@@ -167,7 +167,7 @@ export function claimView(c) {
         ? stepFold(
             talk,
             'Hablar con el ganadero',
-            html`<p>Lo más rápido suele ser hablarlo. Este resumen dice lo que corresponde, lo cobrado y lo que falta, en neto, mes a mes.</p>${textCard('summary', c.summary, c.canShare)}`,
+            html`<p>Lo más rápido suele ser hablarlo. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
             { open: true },
           )
         : talk

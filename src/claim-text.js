@@ -8,7 +8,7 @@
 import { capitalize, fDate, fE, joinAnd } from './format.js';
 import { fSumE, spreadTo } from './ledger.js';
 import { spanOf } from './model/accounts.js';
-import { marksOf } from './model/record.js';
+import { countsOf, defaultMarks, marksOf } from './model/record.js';
 import { ITEMS } from './model/settle.js';
 import { isoOf, parseDate } from './offer.js';
 import { ITEM_TEXT, monthName, monthYear, summaries } from './text.js';
@@ -69,21 +69,31 @@ export function owedNet(settled, falta, netFactor, unit = 0.01) {
   });
 }
 
-const itemsText = (items, show = fSumE) =>
-  items.map((x) => `${ITEM_TEXT[x.item].toLowerCase()} ${show(x.amount)}`).join(', ');
-
-/** The days worked in each month as the calendar has them, and whether the month is closed. */
+/**
+ * The days of each month as the calendar has them: worked, off, and how many worked above (+) or below (−) the offer's
+ * own days; and whether the month is closed.
+ */
 function jornadasOf(o, settled, record) {
   return settled.rows
     .filter((row) => row.days > 0)
-    .map((row) => ({
-      month: row.month,
-      closed: row.closed,
-      worked: marksOf(o, record, spanOf(row), { from: row.jobFrom, to: row.jobTo }).filter(
-        (m) => !m.outside && m.kind === 'work',
-      ).length,
-    }));
+    .map((row) => {
+      const span = spanOf(row);
+      const counts = countsOf(marksOf(o, record, span, { from: row.jobFrom, to: row.jobTo }).filter((m) => !m.outside));
+      return {
+        month: row.month,
+        closed: row.closed,
+        worked: counts.work,
+        off: counts.off,
+        delta: counts.work - countsOf(defaultMarks(o, span)).work,
+      };
+    });
 }
+
+/** «22 jornadas, 8 libres; 2 más de las pactadas». */
+const daysLine = (j) =>
+  `${j.worked} ${j.worked === 1 ? 'jornada' : 'jornadas'}, ${j.off} ${j.off === 1 ? 'libre' : 'libres'}${
+    j.delta ? `; ${Math.abs(j.delta)} ${j.delta > 0 ? 'más' : 'menos'} de las pactadas` : ''
+  }${j.closed ? '' : ' (estimado)'}`;
 
 /** The cobros, oldest first, one line each. */
 const cobrosLines = (payments) =>
@@ -109,11 +119,8 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   const to = parties.employerName ? `Hola, ${parties.employerName}.` : 'Hola.';
   const out = [to, `Se han repasado las cuentas del trabajo de ${jobName(o)}${when ? ` (${when})` : ''}.`, ''];
   out.push(`Pactado: ${lines.pay}.`);
-  out.push(
-    `Jornadas: ${jornadasOf(o, settled, record)
-      .map((j) => `${monthName(j.month)} ${j.worked}${j.closed ? '' : ' (estimadas)'}`)
-      .join(', ')}.`,
-  );
+  out.push('', 'Jornadas por mes:');
+  for (const j of jornadasOf(o, settled, record)) out.push(`· ${capitalize(monthName(j.month))}: ${daysLine(j)}`);
   out.push('');
   // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
   const whole = (x) => fE(x, 0);
@@ -125,7 +132,7 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   } else out.push('Cobrado: nada hasta ahora.');
   out.push('', `Falta: ${whole(falta)} netos.`);
   for (const m of owedNet(settled, falta, r.netFactor, 1))
-    out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)} (${itemsText(m.items, whole)})`);
+    out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)}`);
   if (standing.unclosed.length)
     out.push(
       '',
