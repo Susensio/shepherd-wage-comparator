@@ -86,10 +86,12 @@ test.describe('under way: Registro', () => {
     await expect(fests).toHaveCount(2);
     await expect(fests.first()).toHaveAttribute('title', 'San Lorenzo');
     await expect(fests.first()).toHaveAttribute('aria-label', /^10 de agosto: .*; festivo: San Lorenzo$/);
-    await expect(page.locator('.days .fests')).toHaveText('Festivos: 10 (San Lorenzo), 15 (Asunción de la Virgen).');
+    await expect(page.locator('.days .fests')).toHaveText(
+      'Festivos: día 10, San Lorenzo · día 15, Asunción de la Virgen.',
+    );
     await strip(page, '2026-06').click();
     await expect(page.locator('.days .day.fest')).toHaveCount(1);
-    await expect(page.locator('.days .fests')).toContainText('25 (Santa Orosia)');
+    await expect(page.locator('.days .fests')).toHaveText('Festivo: día 25, Santa Orosia.');
     // A holiday is only marked: the day is still a jornada, a tap still turns it libre
     const day = page.locator('.days .day.fest');
     await expect(day).toHaveClass(/work/);
@@ -288,14 +290,14 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#secEmployer')).toHaveCount(0);
   });
 
-  test('«Debe el ganadero» carries a stamp «Pendiente», like the offer’s «Ilegal»; no stamp without a debt', async ({
+  test('«Debe el ganadero» carries a stamp «Falta», like the offer’s «Ilegal»; no stamp without a debt', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await expect(page.locator('.block.result .stamp')).toHaveCount(0); // no cobro yet: only Corresponde
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
-    await expect(page.locator('.block.result .tag .stamp')).toHaveText('Pendiente');
+    await expect(page.locator('.block.result .tag .stamp')).toHaveText('Falta');
     await addPayments(page, [{ date: '2026-07-06', amount: 50000, via: 'payroll' }]);
     await expect(page.locator('.block.result .stamp')).toHaveCount(0); // all cobrado: calm
   });

@@ -99,7 +99,7 @@ const fieldSets = (fields) =>
 /** The papeleta: what it is, the fields prefilled, and where it is filed. */
 function conciliationBody(c) {
   const office = c.office;
-  return html`<p>Es un paso previo obligatorio para ir al juzgado (${cite('lrjs', '63')}). Presentarla interrumpe la prescripción y suspende la caducidad (${cite('lrjs', '65.1')}), y la asistencia a la cita es obligatoria (${cite('lrjs', '66')}). Si pasan ${LAW.conciliationResumeDays} días hábiles sin celebrarse, el plazo sigue contando.</p>
+  return html`<p>Es un paso previo obligatorio para ir al juzgado (${cite('lrjs', '63')}). Presentarla interrumpe la prescripción y suspende la caducidad (${cite('lrjs', '65.1')}), y la asistencia a la cita es obligatoria (${cite('lrjs', '66')}). Si pasan ${LAW.conciliationResumeDays} días hábiles sin celebrarse, solo se reanuda la caducidad (la del despido, si lo hay); la prescripción de las cantidades sigue interrumpida.</p>
     <p class="hint">Lleva: el DNI, el nombre y el NIF o CIF del ganadero, el contrato y las nóminas si los hay, y el Expediente.</p>
     ${fieldSets(c.fields)}
     ${

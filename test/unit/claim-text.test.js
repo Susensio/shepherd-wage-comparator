@@ -123,7 +123,7 @@ describe('«Petición de pago»', () => {
 
   test('is dated, gross as the claim is, with the pay-by date, and polite', () => {
     assert.match(text, /^Fecha: 1 ene 2030/);
-    assert.ok(text.includes(`Total pendiente: ${fSumE(c.settled.totals.owed)} brutos`));
+    assert.ok(text.includes(`Falta: ${fSumE(c.settled.totals.owed)} brutos`));
     assert.ok(text.includes('Se pide que se pague antes del 16 ene 2030.'));
     assert.match(text, /A: Casa Pérez \(B12345678\)/);
     assert.match(text, /Gracias\.\nAna Gil$/);

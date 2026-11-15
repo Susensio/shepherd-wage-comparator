@@ -54,11 +54,11 @@ function grid(cal) {
   return html`<div class="wd" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="grid">${cells}</div>`;
 }
 
-/** «Festivos: 25 (Santa Orosia), 10 (San Lorenzo)»: the names the dots on the grid stand for; nothing where the month has none. */
+/** «Festivo: día 2, Todos los Santos» or «Festivos: día 25, Santa Orosia · día 10, San Lorenzo»: the names the dots on the grid stand for; nothing where the month has none. */
 function holidays(cal) {
   const list = cal.acc.marks.filter((m) => m.holiday);
   return list.length
-    ? html`<p class="hint fests"><i class="festdot" aria-hidden="true"></i>Festivos: ${list.map((m) => `${Number(m.day)} (${m.holiday})`).join(', ')}.</p>`
+    ? html`<p class="hint fests"><i class="festdot" aria-hidden="true"></i>${list.length === 1 ? 'Festivo' : 'Festivos'}: ${list.map((m) => `día ${Number(m.day)}, ${m.holiday}`).join(' · ')}.</p>`
     : nothing;
 }
 
@@ -68,7 +68,7 @@ function money(cal) {
   const { jornadas, delta } = acc;
   return html`<div class="rows">
     ${row(`Corresponde de ${monthName(acc.row.month)}`, fE(acc.due, 0), { sub: acc.row.closed ? nothing : cal.current && cal.mode === 'ficha' ? 'estimado, hasta hoy' : 'estimado' })}
-    ${delta === null ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fE(Math.abs(delta), 0)}`, { cls: 'sub' })}
+    ${delta === null || Math.abs(delta) < 0.5 ? nothing : row(`${plural(Math.abs(jornadas), 'jornada', 'jornadas')} ${jornadas > 0 ? 'más' : 'menos'} que la oferta`, `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fE(Math.abs(delta), 0)}`, { cls: 'sub' })}
   </div>`;
 }
 

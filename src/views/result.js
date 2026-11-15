@@ -56,7 +56,7 @@ const STAMPS = {
   selfEmployed: { text: 'Autónomo', warn: true },
   allCash: { text: 'Todo en negro' },
   belowMinimum: { text: 'Bajo el mínimo' },
-  noOvernight: { text: 'Sin plus', warn: true },
+  noOvernight: { text: 'Sin plus de pernocta', warn: true },
 };
 
 const PILL_RANK = { bad: 0, warn: 1, '': 2, ok: 3 };

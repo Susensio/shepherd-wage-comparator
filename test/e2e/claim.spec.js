@@ -107,6 +107,9 @@ test.describe('the ladder', () => {
     ])
       await expect(legal.locator('details.step > summary', { hasText: title })).toBeVisible();
     await expect(legal).toContainText('CCOO, UGT y otros sindicatos');
+    // only the caducity resumes after 15 días (LRJS 65.1), not the prescription of the amounts
+    await expect(legal).toContainText('solo se reanuda la caducidad');
+    await expect(legal).not.toContainText('el plazo sigue contando');
     await page.evaluate(() => {
       app.active().terms.province = 'L'; // no office known there
       app.select(app.active().id);

@@ -196,7 +196,7 @@ function result(c) {
   return html`<div class="block result">
     <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
       // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
-      s.hasPayments && !settled ? html`<span class="stamp">Pendiente</span>` : nothing
+      s.hasPayments && !settled ? html`<span class="stamp">Falta</span>` : nothing
     }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
     ${tiles(s)}
     ${notes(s, { over: '' })}
