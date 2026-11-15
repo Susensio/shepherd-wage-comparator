@@ -105,6 +105,8 @@ function recordLine(line, phase) {
 /** «Siguiente: Petición de pago · hasta el 31 jul 2027», on a card «Para reclamar». */
 function nextStep(claim) {
   if (!claim?.inWindow || !claim.next) return nothing;
+  if (claim.next.promise)
+    return html`<span class="oc-next"><span>Prometió pagar el <b>${fDate(parseDate(claim.next.promise))}</b>${claim.next.by ? ` · plazo legal: ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
   return html`<span class="oc-next"><span>Siguiente: <b>${CLAIM_NEXT_TEXT[claim.next.id]}</b>${claim.next.by ? ` · plazo legal: ${fDate(parseDate(claim.next.by))}` : ''}</span></span>`;
 }
 

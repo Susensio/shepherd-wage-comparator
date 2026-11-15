@@ -731,6 +731,9 @@ export function onClaimInput(e) {
     const o = active();
     offers.setParties(o, { ...o.mine.parties, [el.dataset.party]: el.value });
     callbacks.paint();
+  } else if (el.matches('[data-promise]')) {
+    offers.setPromise(active(), el.value);
+    callbacks.paint();
   } else if (el.matches('[data-pay-by]')) {
     ui.payBy[active().id] = el.value || defaultPayBy(todayISO());
     callbacks.paint();
@@ -765,7 +768,7 @@ export function askHowItEnded(offerId) {
  * What a card says of a job under way or finished: its phase and, with a record to show, what is owed and how many
  * months are still not closed. Null phase for an offer only offered.
  * @param {any} o
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null } | null } | null }}
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, line: { hasPayments: boolean, owed: number, unclosed: number } | null, claim: { inWindow: boolean, next: { id: string, by: string | null, promise: string | null } | null } | null }}
  */
 export function cardRecord(o, r) {
   const today = todayISO();
@@ -788,7 +791,14 @@ export function cardRecord(o, r) {
   return {
     phase,
     pill: pillPhase(o, /** @type {any} */ (phase)),
-    claim: ladder && { inWindow: ladder.inWindow, next: ladder.next && { id: ladder.next.id, by: ladder.next.by } },
+    claim: ladder && {
+      inWindow: ladder.inWindow,
+      next: ladder.next && {
+        id: ladder.next.id,
+        by: ladder.next.by,
+        promise: 'promise' in ladder.next ? ladder.next.promise : null,
+      },
+    },
     line: {
       hasPayments: s.hasPayments,
       owed: s.falta,

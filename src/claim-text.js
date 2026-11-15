@@ -168,8 +168,14 @@ export function paymentRequestText({ o, settled, record, parties, today, payBy }
     );
     out.push(`· ${capitalize(monthYear(row.month))}: ${parts.join(', ')}`);
   }
+  const unclosed = rows.filter((row) => row.days > 0 && !row.closed);
   out.push(
     `Total pendiente: ${fSumE(totals.owed)} brutos.${record.payments?.length ? ' Lo ya cobrado está descontado.' : ''}`,
+    ...(unclosed.length
+      ? [
+          `Cálculo con ${unclosed.length} ${unclosed.length === 1 ? 'mes' : 'meses'} sin revisar (según lo pactado): ${joinAnd(unclosed.map((row) => monthName(row.month)))}.`,
+        ]
+      : []),
     '',
     `Se pide que se pague antes del ${fIso(payBy)}. Si hay alguna diferencia con estas cuentas, se pueden revisar.`,
     '',

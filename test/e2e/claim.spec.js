@@ -427,3 +427,37 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
     await expect(step.getByRole('button', { name: 'Hecho' })).toHaveCount(0);
   });
 });
+
+test.describe('a promise to pay', () => {
+  test.use({ today: '2026-11-12' });
+
+  test('typed after the conversation, the card says it; once the date passes the next step is the Petición', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    const step = page.locator('details.step[data-step=talk]');
+    await step.getByRole('button', { name: 'Hecho' }).click();
+    await step.locator(':scope > summary').click();
+    await step.locator('[data-promise]').fill('2026-11-20');
+    expect(await page.evaluate(() => app.active().mine.claim.steps.talk)).toEqual({
+      done: '2026-11-12',
+      promise: '2026-11-20',
+    });
+    await page.evaluate(() => app.showTab('offers'));
+    const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
+    await expect(card).toContainText(/Prometió pagar el 20 nov 2026 · plazo legal: \d+ \w+ 2027/);
+    await page.clock.setFixedTime(new Date('2026-11-21T12:00:00'));
+    await page.evaluate(() => app.select(app.active().id));
+    await page.evaluate(() => app.showTab('offers'));
+    await expect(card).toContainText('Siguiente: petición de pago');
+  });
+
+  test('the Petición says that its months are not reviewed', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    await expect(page.locator('details.step[data-step=request] .claim-text')).toContainText(
+      'Cálculo con 4 meses sin revisar',
+    );
+  });
+});

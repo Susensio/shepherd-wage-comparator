@@ -117,6 +117,13 @@ describe('«Petición de pago»', () => {
     assert.match(text, /queda por pagar, en bruto:/);
   });
 
+  test('says when months are not reviewed, and not when all are closed', () => {
+    assert.match(text, /Cálculo con 4 meses sin revisar \(según lo pactado\): junio, julio, agosto y septiembre\./);
+    const closed = contextOf(worked[0], 300);
+    for (const row of closed.settled.rows) row.closed = true;
+    assert.doesNotMatch(paymentRequestText(closed), /sin revisar/);
+  });
+
   test('speaks in gross only: no net figure, and what arrived is said without a figure', () => {
     assert.doesNotMatch(text, /netos/);
     assert.match(text, /Lo ya cobrado está descontado\./);

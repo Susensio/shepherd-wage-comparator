@@ -27,7 +27,11 @@ const cite = (source, art) => {
 /** «Hecho» in one tap, with the date taken from today; once marked, its date and a way to undo it. */
 function doneRow(step, { button = 'Hecho', done = 'Hecho' } = {}) {
   return step.done
-    ? html`<p class="hint donemark"><span>${done} el ${fIso(step.done.done)}</span> <button type="button" class="linkbtn" data-action="unmarkStep" data-step=${step.id}>Quitar</button></p>`
+    ? html`<p class="hint donemark"><span>${done} el ${fIso(step.done.done)}</span> <button type="button" class="linkbtn" data-action="unmarkStep" data-step=${step.id}>Quitar</button></p>${
+        step.id === 'talk'
+          ? html`<label class="fld promise">Prometió pagar el <small>(si se dijo una fecha)</small><input type="date" data-promise .value=${step.done.promise ?? ''} min=${step.done.done} /></label>`
+          : nothing
+      }`
     : html`<button type="button" class="sm donebtn" data-action="markStep" data-step=${step.id}>${button}</button>`;
 }
 

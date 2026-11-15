@@ -25,6 +25,7 @@ import {
   setEnd,
   setNothingPaid,
   setParties,
+  setPromise,
   startSick,
   toggleDay,
   unmarkStep,
@@ -855,6 +856,10 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
       talk: { done: '2026-11-01', note: 'por teléfono' },
       request: { done: '2026-11-02' },
     });
+    setPromise(offer, '2026-11-20', '2026-11-12');
+    assert.deepEqual(offer.mine.claim.steps.talk, { done: '2026-11-01', note: 'por teléfono', promise: '2026-11-20' });
+    setPromise(offer, '', '2026-11-12');
+    assert.deepEqual(offer.mine.claim.steps.talk, { done: '2026-11-01', note: 'por teléfono' });
     assert.equal(unmarkStep(offer, 'talk'), true);
     assert.equal(unmarkStep(offer, 'talk'), false);
     assert.deepEqual(Object.keys(offer.mine.claim.steps), ['request']);

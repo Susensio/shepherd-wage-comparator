@@ -180,6 +180,9 @@ test.describe('the «⋯» menu on each card', () => {
 
     test('a right click on a card opens the same menu', async ({ loaded: page }) => {
       const card = page.locator('#cards .ocard').nth(3);
+      // Scrolled into view first: a scroll after the menu opens would take its card off the screen
+      await card.scrollIntoViewIfNeeded();
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
       await card.click({ button: 'right' });
       await expect(page.locator('#offerMenu')).toBeVisible();
       await page.keyboard.press('Escape');

@@ -72,6 +72,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     removeEvidence: (offer, index) => edit(offer, (r) => record.removeEvidence(r, index)),
     setParties: (offer, parties) => change(() => record.setParties(offer, parties)),
     markStep: (offer, id, mark) => change(() => record.markStep(offer, id, mark)),
+    setPromise: (offer, date) => change(() => record.setPromise(offer, date, todayISO())),
     unmarkStep: (offer, id) => change(() => record.unmarkStep(offer, id)),
   };
 

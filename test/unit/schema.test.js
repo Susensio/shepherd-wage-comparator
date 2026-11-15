@@ -444,8 +444,8 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
               parties: { employerName: 'Casa Pérez', employerId: 'B123', workerName: 5, extra: 1 },
               claim: {
                 steps: {
-                  talk: { done: '2026-11-01', note: 'por teléfono' },
-                  request: { done: 'ayer' },
+                  talk: { done: '2026-11-01', note: 'por teléfono', promise: '2026-11-20' },
+                  request: { done: 'ayer', promise: '2026-11-20' },
                   union: 'x',
                   future: { done: '2026-11-02' },
                 },
@@ -458,7 +458,7 @@ describe('version 6: the claim ladder (ADR-0034)', () => {
     );
     assert.deepEqual(offers[0].mine.parties, { employerName: 'Casa Pérez', employerId: 'B123' });
     assert.deepEqual(offers[0].mine.claim.steps, {
-      talk: { done: '2026-11-01', note: 'por teléfono' },
+      talk: { done: '2026-11-01', note: 'por teléfono', promise: '2026-11-20' },
       future: { done: '2026-11-02' },
     });
     for (const bad of [null, 'x', [], 5]) {

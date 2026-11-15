@@ -47,7 +47,7 @@ export const STEP_IDS = /** @type {const} */ ([
  * @property {number | null} daysLeft days from today to `deadline`; negative once lapsed
  * @property {boolean} lapsed `deadline` is before today
  * @property {boolean} ready it can be taken now: the court only after the conciliation was done
- * @property {{ done: string, note?: string } | null} done the «Hecho» mark
+ * @property {{ done: string, note?: string, promise?: string } | null} done the «Hecho» mark
  */
 
 /**
@@ -62,7 +62,7 @@ export const STEP_IDS = /** @type {const} */ ([
  * @param {string} input.today ISO date
  * @param {ReturnType<typeof import('./accounts.js').standingOf>} input.standing
  * @param {import('./settle.js').JobEnd | undefined} input.end
- * @param {Record<string, { done: string, note?: string }>} input.marks `mine.claim.steps`
+ * @param {Record<string, { done: string, note?: string, promise?: string }>} input.marks `mine.claim.steps`
  */
 export function claimSteps({ today, standing, end, marks }) {
   const owed = standing.hasPayments && standing.falta > 0;
@@ -103,6 +103,8 @@ export function claimSteps({ today, standing, end, marks }) {
     steps.push(make('union'), make('conciliation', steps[0].deadline));
   }
   const dismissal = steps.find((s) => s.id === 'dismissal');
+  /** The date the ganadero promised to pay, while it has not passed. */
+  const promise = owed && marks.talk?.promise && marks.talk.promise >= today ? marks.talk.promise : null;
   const next = steps.find((s) => s.ready && !s.done) ?? null;
   return {
     mode,
@@ -110,10 +112,12 @@ export function claimSteps({ today, standing, end, marks }) {
     by,
     lapsedAll,
     inWindow: ((owed || noCobros) && by !== null) || Boolean(dismissal && !dismissal.lapsed && !dismissal.done),
-    // With no cobro said, what comes first is saying them
+    // With no cobro said, what comes first is saying them; a promise to pay not yet due is waited for
     next:
       noCobros && !(next?.id === 'dismissal')
         ? { id: /** @type {const} */ ('cobros'), deadline: null, by }
-        : next && { ...next, by: next.deadline ?? by },
+        : promise && next?.id !== 'dismissal'
+          ? { id: /** @type {const} */ ('promise'), deadline: null, by, promise }
+          : next && { ...next, by: next.deadline ?? by },
   };
 }

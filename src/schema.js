@@ -178,7 +178,11 @@ export function normalizeClaim(saved) {
   const claim = emptyClaim();
   for (const [id, step] of Object.entries(isObject(saved?.steps) ? saved.steps : {})) {
     if (!isObject(step) || !isIsoDate(step.done)) continue;
-    claim.steps[id] = { done: step.done, ...(typeof step.note === 'string' && step.note ? { note: step.note } : {}) };
+    claim.steps[id] = {
+      done: step.done,
+      ...(typeof step.note === 'string' && step.note ? { note: step.note } : {}),
+      ...(isIsoDate(step.promise) ? { promise: step.promise } : {}),
+    };
   }
   return claim;
 }

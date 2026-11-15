@@ -520,6 +520,7 @@ export const CLAIM_STEP_TEXT = {
 /** The next step on a card «Para reclamar», as a sentence: «Siguiente: hablar con el ganadero · plazo legal: …». */
 export const CLAIM_NEXT_TEXT = {
   dismissal: 'presentar la papeleta por despido',
+  promise: 'esperar el pago prometido',
   cobros: 'apuntar los cobros',
   talk: 'hablar con el ganadero',
   request: 'petición de pago',

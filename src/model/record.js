@@ -232,6 +232,21 @@ export function markStep(offer, id, { done, note = '' }) {
   return true;
 }
 
+/**
+ * «Prometió pagar el <fecha>»: the ganadero's promise after the conversation, kept on the step «Hablar con el ganadero»
+ * (marked done today if it was not). An empty date takes the promise away.
+ * @param {{ mine: { claim?: { steps?: Record<string, any> } } }} offer
+ * @param {string} date ISO
+ * @param {string} today ISO
+ */
+export function setPromise(offer, date, today) {
+  const steps = { ...(offer.mine.claim?.steps ?? {}) };
+  const { promise: _old, ...talk } = steps.talk ?? { done: today };
+  steps.talk = date ? { ...talk, promise: date } : talk;
+  offer.mine.claim = { steps };
+  return true;
+}
+
 /** Takes a «Hecho» mark away. */
 export function unmarkStep(offer, id) {
   if (!offer.mine.claim?.steps?.[id]) return false;

@@ -38,6 +38,17 @@ const ladder = (over) =>
   claimSteps({ today: '2026-11-14', standing: standing([owing('2027-07-31')]), end: undefined, marks: {}, ...over });
 const ids = (l) => l.steps.map((s) => s.id);
 
+describe('a promise to pay', () => {
+  test('while it has not passed the next step is waiting for it; once it has, the Petición', () => {
+    const marks = { talk: { done: '2026-11-10', promise: '2026-11-20' } };
+    const waiting = ladder({ marks });
+    assert.deepEqual(waiting.next, { id: 'promise', deadline: null, by: '2027-07-31', promise: '2026-11-20' });
+    const due = claimSteps({ today: '2026-11-21', standing: standing([owing('2027-07-31')]), end: undefined, marks });
+    assert.equal(due.next?.id, 'request');
+    assert.equal(ladder({ marks: { talk: { done: '2026-11-10' } } }).next?.id, 'request');
+  });
+});
+
 describe('claimSteps', () => {
   test('owed: the ladder from the conversation to FOGASA, the court waiting for the conciliation', () => {
     const l = ladder({});
