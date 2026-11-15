@@ -169,6 +169,22 @@ export const RULES = {
  * ded: IRPF deduction for wages near the minimum wage (up to `max` €, reduced by `taper` € per euro above `from`).
  */
 export const MIN_WAGE = {
+  // 2022 and 2023: read in the BOE text of the decrees on 15 November 2026 (art. 1 and 4: 33,33 €/día · 1.000 €/mes, and
+  // 36 €/día · 1.080 €/mes, in 14 pagas; the casual daily figure of art. 4 for under 120 days)
+  2022: {
+    annual: 14000,
+    casual: 47.36,
+    decree: 'RD 152/2022',
+    url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2022-2851',
+    ded: null,
+  },
+  2023: {
+    annual: 15120,
+    casual: 51.15,
+    decree: 'RD 99/2023',
+    url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2023-3982',
+    ded: null,
+  },
   2024: {
     annual: 15876,
     casual: 53.71,

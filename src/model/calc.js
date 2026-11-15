@@ -222,6 +222,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   return {
     cfg,
     year: wage.year,
+    /** The year the job really falls in, when the page has no minimum wage for it: the first year it has is used instead. */
+    wageYearAsked: actualYear(offer.terms),
     wage,
     noContract,
     split,

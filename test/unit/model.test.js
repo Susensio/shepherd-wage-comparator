@@ -11,6 +11,7 @@ import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
 import { DEF_CFG, DEF_MINE, parseDate } from '../../src/offer.js';
 import { normalizeOffer } from '../../src/schema.js';
+import { wageYearNote } from '../../src/text.js';
 import { incomeOf } from '../../src/units.js';
 import { offerOf } from './flat-offer.js';
 
@@ -370,4 +371,24 @@ test('without a contract the job is measured as a fixed one (ET 15.4): monthly m
   const temporary = figures({ ...none, contract: 'temporary', payAmount: 1000, cashAmount: '', cashUnit: 'month' });
   assert.equal(temporary.min.casual, true);
   assert.ok(temporary.employer.severance > 0);
+});
+
+test('jobs of 2022 and 2023 are checked against their own minimum wage (RD 152/2022, RD 99/2023); earlier years say so', () => {
+  const year = (y) => figures({ start: `${y}-03-01`, duration: 12, durationUnit: 'months' });
+  assert.equal(year(2023).year, 2023);
+  near(
+    year(2023).min.salary,
+    15120 * Math.min(1, (year(2023).time.workFrac * 7 * 8) / 40),
+    0.01,
+    '2023 monthly minimum',
+  );
+  assert.equal(year(2022).wage.annual, 14000);
+  assert.equal(year(2022).wage.casual, 47.36);
+  assert.equal(minWageOf(2023).casual, 51.15);
+  assert.equal(year(2023).wageYearAsked, 2023);
+  assert.equal(wageYearNote(year(2023)), '');
+  assert.equal(
+    wageYearNote(year(2021)),
+    'La página no tiene el salario mínimo de 2021; se compara con el de 2022, más alto.',
+  );
 });

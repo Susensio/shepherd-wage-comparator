@@ -6,6 +6,7 @@ import { LAW } from '../law.js';
 import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
 import { retaPct } from '../model/self-employed.js';
 import { hoursWeek } from '../model/time.js';
+import { wageYearNote } from '../text.js';
 import { row } from './parts.js';
 
 const section = (title, rows, note) =>
@@ -106,7 +107,7 @@ function minimumSection(o, r, net) {
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}`,
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));
