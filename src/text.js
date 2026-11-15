@@ -351,7 +351,7 @@ export function claimText(o, r) {
     );
     add(`Mínimo en todo el contrato, contado por meses: ${fE(r.min.total)} brutos.`);
     add(
-      `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.`,
+      `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.${r.noContract ? ' Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4).' : ''}`,
     );
     if (r.min.overnight > 0)
       add(

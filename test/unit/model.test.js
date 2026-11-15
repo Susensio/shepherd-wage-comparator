@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { num } from '../../src/format.js';
-import { MIN_WAGE } from '../../src/law.js';
+import { MIN_WAGE, minWageOf, ssOf } from '../../src/law.js';
 import { calc, calcTermsOnly, yearMoney } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
@@ -341,4 +341,33 @@ test('yearMoney: recorded cobros of the year apart from what the offers project,
   const money = yearMoney(items, '2026');
   assert.equal(money.recorded, 300);
   assert.equal(money.projected, 900);
+});
+
+test('without a contract the job is measured as a fixed one (ET 15.4): monthly minimum, SS of «none», no severance', () => {
+  // 60 days: a temporary contract this short would be measured against the casual daily figure
+  const none = {
+    contract: 'none',
+    duration: 60,
+    durationUnit: 'days',
+    payAmount: '',
+    cashAmount: 1000,
+    cashUnit: 'month',
+  };
+  const r = figures(none);
+  const wage = minWageOf(2026);
+  const months = r.time.months;
+  assert.equal(r.min.casual, false);
+  near(
+    r.min.salary,
+    ((wage.annual * months) / 12) * Math.min(1, (r.time.workFrac * 7 * 8) / 40),
+    0.01,
+    'the monthly minimum, not the daily one',
+  );
+  assert.equal(r.pay.rates.workerPct, ssOf('none').workerPct);
+  assert.notEqual(r.pay.rates.workerPct, ssOf('temporary').workerPct);
+  assert.equal(r.employer.severance, 0);
+  // the same 60 days with a temporary contract: the casual minimum, a severance
+  const temporary = figures({ ...none, contract: 'temporary', payAmount: 1000, cashAmount: '', cashUnit: 'month' });
+  assert.equal(temporary.min.casual, true);
+  assert.ok(temporary.employer.severance > 0);
 });

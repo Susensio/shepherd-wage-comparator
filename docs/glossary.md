@@ -54,7 +54,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | Temporal | | `contract: 'temporary'` | eventual (except in the law's own text) |
 | Fijo discontinuo | | `contract: 'seasonal'` | |
 | Fijo | | `contract: 'permanent'` | indefinido |
-| Sin contrato | no contract and no Social Security registration | `contract: 'none'` | en B |
+| Sin contrato | no contract and no Social Security registration; measured as a fixed job (ET 15.4): monthly minimum, SS of `ssOf('none')`, no severance | `contract: 'none'` | en B |
 
 The pills may add «Contrato» («Contrato temporal») where the word alone would be unclear.
 

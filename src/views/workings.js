@@ -19,6 +19,9 @@ const unpaidRow = (label, unpaid, net, cls = 'tot') =>
     sub: isWorthCounting(unpaid) ? `unos ${net(unpaid)} netos` : '',
   });
 
+/** Why a job without a contract is measured against the monthly minimum. */
+const NO_CONTRACT_FIXED = 'Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4)';
+
 function timeSection(o, r) {
   const t = r.time;
   const days = (x) => `${fCount(x)} días`;
@@ -103,7 +106,7 @@ function minimumSection(o, r, net) {
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
       ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses`,
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));

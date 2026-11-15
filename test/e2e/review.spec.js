@@ -33,6 +33,14 @@ test.describe('figures that must agree', () => {
     await expect(page.locator('#result')).not.toContainText('El mínimo exigible supera lo pactado');
   });
 
+  test('without a contract the minimum says it is measured as a fixed job', async ({ page }) => {
+    await loadOffers(page, sample, SIN_CONTRATO_D);
+    await expect(page.locator('#result')).toContainText(
+      'Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4)',
+    );
+    await expect(page.locator('#result')).not.toContainText('por jornada ×');
+  });
+
   test('«Copiar reclamación» on a job worked copies the Petición de pago; on one still to decide, the offer’s', async ({
     page,
   }) => {
