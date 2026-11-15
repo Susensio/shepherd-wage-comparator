@@ -153,3 +153,15 @@ describe('claimSteps', () => {
       assert.equal(ids(ladder({ end: { how, date: '2026-11-06' } }))[0], 'talk');
   });
 });
+
+describe('the papeleta after a dismissal with money owed', () => {
+  test('its deadline is the earlier of the dismissal’s and the amounts’', () => {
+    const end = { how: /** @type {const} */ ('dismissed'), date: '2026-11-02' }; // the 20th weekday after: 30 Nov
+    const soon = claimSteps({ today: '2026-11-14', standing: standing([owing('2026-11-20')]), end, marks: {} });
+    assert.equal(soon.steps.find((s) => s.id === 'conciliation')?.deadline, '2026-11-20');
+    const later = claimSteps({ today: '2026-11-14', standing: standing([owing('2027-07-31')]), end, marks: {} });
+    assert.equal(later.steps.find((s) => s.id === 'conciliation')?.deadline, '2026-11-30');
+    const lapsed = claimSteps({ today: '2026-11-14', standing: standing([owing('2026-10-01', true)]), end, marks: {} });
+    assert.equal(lapsed.steps.find((s) => s.id === 'conciliation')?.deadline, '2026-11-30');
+  });
+});

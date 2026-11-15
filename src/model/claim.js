@@ -93,7 +93,8 @@ export function claimSteps({ today, standing, end, marks }) {
     steps.push(
       make('request'),
       make('union'),
-      make('conciliation', by),
+      // after a dismissal the papeleta also impugns it: the earlier of that deadline and the amounts'
+      make('conciliation', dismissed ? ([dismissalDeadline(end.date), by].filter(Boolean).sort()[0] ?? null) : by),
       make('inspection'),
       make('court', null, Boolean(marks.conciliation)),
       make('fogasa'),
