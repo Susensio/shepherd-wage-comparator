@@ -38,6 +38,7 @@ import {
   showTab,
 } from './ui/navigation.js';
 import { setUpOfferMenu } from './ui/offer-menu.js';
+import { hidePastJob, savePastJob, showPastJob } from './ui/past-job.js';
 import { changePlace } from './ui/place-field.js';
 import { askHowItEnded, claimCopyOf, onClaimInput, recordActions, showDossier } from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
@@ -317,6 +318,9 @@ const OFFER_ACTIONS = {
   openOffer: (b) => openOffer(b.dataset.id),
   closeFicha,
   newOffer: () => startEntry(),
+  newPastJob: showPastJob,
+  closePastJob: hidePastJob,
+  savePastJob,
   template: (b) => pickTemplate(b.dataset.template),
   startFromWelcome: leaveWelcome,
   editStep: (b) => editStep(b.dataset.step, b.classList.contains('missing')),

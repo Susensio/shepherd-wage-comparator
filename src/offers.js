@@ -70,6 +70,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     answerRecall: (offer, year, answer) => edit(offer, (r) => record.answerRecall(r, year, answer)),
     clearEnd: (offer) => edit(offer, (r) => record.clearEnd(r)),
     setPaid: (offer, paid) => edit(offer, (r) => record.setPaid(r, paid)),
+    enterTotalDays: (offer, months, total) => edit(offer, (r) => record.enterTotalDays(r, months, total)),
     addEvidence: (offer, note) => edit(offer, (r) => record.addEvidence(r, note)),
     removeEvidence: (offer, index) => edit(offer, (r) => record.removeEvidence(r, index)),
     setParties: (offer, parties) => change(() => record.setParties(offer, parties)),

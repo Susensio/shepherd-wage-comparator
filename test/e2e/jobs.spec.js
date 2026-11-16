@@ -156,3 +156,96 @@ test.describe('the Registro page', () => {
     expect(await tile.textContent()).not.toBe(before);
   });
 });
+
+test.describe('«Trabajo ya hecho»', () => {
+  test.use({ today: '2026-11-15' });
+  const recordOf = (page) => page.evaluate(() => app.active().mine.record);
+  const termsOf = (page) => page.evaluate(() => app.active().terms);
+
+  /** Opens the screen from the list. */
+  async function open(page) {
+    await loadOffers(page, sample, 1);
+    await page.click('[data-action=closeFicha]');
+    await page.getByRole('button', { name: 'Trabajo ya hecho' }).click();
+    await expect(page.locator('#pastPage')).toBeVisible();
+  }
+  const dates = async (page, from, to) => {
+    await page.locator('#pastStart').fill(from);
+    await page.locator('#pastEnd').fill(to);
+  };
+
+  test('only the dates are required, and what is wrong is said', async ({ page }) => {
+    await open(page);
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastPage [role=alert]')).toContainText('Escribe el primer y el último día.');
+    await dates(page, '2026-08-31', '2026-06-01');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastPage [role=alert]')).toContainText('no puede ser anterior al primero');
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastDays').fill('200');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastPage [role=alert]')).toContainText('entre 0 y 92');
+    await page.goBack();
+    await expect(page.locator('#pastPage')).toBeHidden();
+    await expect(page.locator('#offersList')).toBeVisible();
+  });
+
+  test('by conditions only: the job is taken as agreed, its record closed', async ({ page }) => {
+    await open(page);
+    await page.locator('#pastName').fill('Verano en Yebra');
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastPay').fill('1500');
+    await page.locator('#pastType').selectOption('gross');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastPage')).toBeHidden();
+    await expect(page.locator('#fichaName')).toHaveText('Verano en Yebra');
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+    const record = await recordOf(page);
+    expect(record.paid).toBe('asAgreed');
+    expect(record.complete).toBeTruthy();
+    expect(await termsOf(page)).toMatchObject({ start: '2026-06-01', duration: 92, payAmount: 1500, payType: 'gross' });
+    await expect(page.locator('#result')).not.toContainText('¿Se cobró este trabajo?');
+    await page.goBack(); // the ficha took the page's entry: Back is the list
+    await expect(page.locator('#offersList')).toBeVisible();
+  });
+
+  test('by what happened only: a days total and a total cobrado, approximate, with no pay agreed', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastDays').fill('60');
+    await page.locator('#pastPaid').fill('4000');
+    await page.locator('#pastApprox').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    const record = await recordOf(page);
+    expect(Object.values(record.months).map((m) => m.count.work)).toEqual([20, 20, 20]);
+    expect(record.payments).toHaveLength(1);
+    expect(record.payments[0]).toMatchObject({ amount: 4000, approx: true, date: '2026-08-31' });
+    expect(record.paid).toBeUndefined();
+    expect(record.complete).toBeTruthy();
+    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
+  });
+
+  test('both: the pay agreed and what happened', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastPay').fill('1500');
+    await page.locator('#pastDays').fill('80');
+    await page.locator('#pastPaid').fill('3000');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    const record = await recordOf(page);
+    expect(record.payments[0]).toMatchObject({ amount: 3000 });
+    expect(record.payments[0].approx).toBeUndefined();
+    expect(record.paid).toBeUndefined();
+    expect(Object.values(record.months).reduce((t, m) => t + m.count.work, 0)).toBe(80);
+    await expect(page.locator('#result .sofar > div', { hasText: 'Cobrado' }).locator('b')).toContainText('3.000');
+  });
+
+  test('with only the dates, the job is saved bare and asks whether it was paid', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
+  });
+});

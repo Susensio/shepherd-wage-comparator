@@ -4401,11 +4401,13 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   min-height: 44px;
   width: 100%;
 }
-.bsheet .amount {
+.bsheet .amount,
+.past-doc .amount {
   position: relative;
   display: block;
 }
-.bsheet .amount input {
+.bsheet .amount input,
+.past-doc .amount input {
   font-family: var(--f-num);
   font-size: 22px;
   padding-right: 34px;
@@ -4415,7 +4417,8 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   color: var(--ink);
   padding-left: 10px;
 }
-.bsheet .amount span {
+.bsheet .amount span,
+.past-doc .amount span {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -5096,4 +5099,30 @@ body.reviewing .ficha > .back {
 }
 .registro-doc .tocl {
   margin: 0;
+}
+
+/* «Trabajo ya hecho» */
+.past-doc .past-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.past-doc .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+}
+
+.past-doc select {
+  min-height: var(--tap);
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.past-doc .fld > .hint {
+  display: inline;
 }

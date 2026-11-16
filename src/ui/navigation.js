@@ -44,6 +44,8 @@ const hooks = {
   reviewDismissed: /** @type {() => void} */ (() => {}),
   /** Back left the «Expediente». */
   dossierDismissed: /** @type {() => void} */ (() => {}),
+  /** Back left «Trabajo ya hecho». */
+  pastJobDismissed: /** @type {() => void} */ (() => {}),
   /** Back left the «Registro». */
   registroDismissed: /** @type {() => void} */ (() => {}),
   /** Back left «Vía legal». */
@@ -55,6 +57,9 @@ const review = { open: false };
 
 /** The «Expediente» is open over everything: its own history entry, so Back leaves it for what was below. */
 const dossier = { open: false };
+
+/** «Trabajo ya hecho» is open over the list: a page of its own with its history entry. */
+const pastJob = { open: false };
 
 /** The «Registro» is open over the ficha: a page of its own with its history entry, so Back returns to the ficha. */
 const registro = { open: false };
@@ -77,6 +82,7 @@ export const reviewOpen = () => review.open;
 export const dossierOpen = () => dossier.open;
 export const legalOpen = () => legal.open;
 export const registroOpen = () => registro.open;
+export const pastJobOpen = () => pastJob.open;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
@@ -165,6 +171,9 @@ export function onPopState() {
     legal.open = false;
     document.body.classList.remove('on-legal');
     hooks.legalDismissed();
+  } else if (pastJob.open && !kept.pastJob) {
+    pastJob.open = false;
+    hooks.pastJobDismissed();
   } else if (registro.open && !kept.registro) {
     registro.open = false;
     hooks.registroDismissed();
@@ -208,6 +217,25 @@ export function closeDossier() {
   dossier.open = false;
   document.body.classList.remove('on-dossier');
   if (history.state?.dossier) history.back();
+}
+
+/** «Trabajo ya hecho», over the list: an entry of its own. */
+export function openPastJob() {
+  if (pastJob.open) return;
+  pastJob.open = true;
+  history.pushState({ ...history.state, pastJob: true }, '');
+}
+/** Out of «Trabajo ya hecho» by its own button: drops its entry. */
+export function closePastJob() {
+  if (!pastJob.open) return;
+  pastJob.open = false;
+  if (history.state?.pastJob) history.back();
+}
+/** The job was saved: its ficha takes the place of the page, in the same history entry. */
+export function pastJobToFicha() {
+  pastJob.open = false;
+  showTab('offers');
+  go({ ficha: true, entry: false }, history.state?.pastJob ? 'replace' : 'push');
 }
 
 /** The «Registro», over the ficha: an entry of its own. */

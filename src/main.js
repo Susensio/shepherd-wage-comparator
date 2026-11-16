@@ -18,6 +18,7 @@ import {
   setUpNavigation,
   showTab,
 } from './ui/navigation.js';
+import { setUpPastJob } from './ui/past-job.js';
 import { setUpPlaceField } from './ui/place-field.js';
 import { setUpPullRefresh } from './ui/pull-refresh.js';
 import { setUpRecord } from './ui/record.js';
@@ -38,6 +39,7 @@ resetHistory();
 setUpEntry({ paint: paintAll, select, showSelected });
 setUpEvents();
 setUpRecord({ paint: paintAll });
+setUpPastJob({ paint: paintAll, showSelected });
 setUpTooltips();
 setUpPullRefresh();
 setUpPlaceField({ commit, paint: paintAll });

@@ -55,6 +55,7 @@
   <section class="offers-list" id="offersList" aria-label="Los trabajos">
     <p class="sr-only" id="listLoading" role="status" hidden>Cargando la cuenta…</p>
     <button type="button" class="pri newoffer" id="btnAdd" data-action="newOffer">+ Nueva oferta</button>
+    <button type="button" class="newoffer" id="btnPast" data-action="newPastJob">Trabajo ya hecho</button>
     <div class="cards" id="cards"></div>
   </section>
 
@@ -581,6 +582,12 @@
     <button type="button" class="pri sm" data-action="printDossier">Imprimir o guardar PDF</button>
   </div>
   <div id="dossierBody"></div>
+</div>
+<div class="dossier" id="pastPage" hidden>
+  <div class="legal-bar">
+    <button type="button" class="back" data-action="closePastJob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Volver</button>
+  </div>
+  <div id="pastBody"></div>
 </div>
 <div class="dossier" id="registroPage" hidden>
   <div class="legal-bar">
