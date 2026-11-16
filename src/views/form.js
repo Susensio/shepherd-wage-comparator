@@ -25,8 +25,16 @@ import { NO_CONTRACT_VACATION, overnightHint } from '../rights.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
 import { isUnderAMonth } from '../units.js';
 
+/** «El salario mínimo» chosen as the pay itself: no amount, all of it on payroll at the minimum. */
+const isAllMinimum = (a) => a.payroll === 'min' && !(num(a.amount) > 0);
+
+/** The minimum's gross payslip: per month, or the whole contract's under a month (a monthly figure would be an extrapolation). */
+const minimumGross = (r) => (isUnderAMonth(r) ? r.min.salary : r.min.salary / r.time.months);
+
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
+  // With «El salario mínimo» as the pay the question has one answer, so it is not asked
+  payrollAsk: (o) => !isAllMinimum(answersOf(o.terms)),
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
   hasStart: (o) => !!o.terms.start,
   hasEnd: (o) => !!endOf(o.terms),
@@ -169,7 +177,7 @@ const awaitsDays = (o, a) => a.unit === 'day' && missing(o.terms).includes('hour
 /** The offer told back as answered. The figures are the model's, rounded as the result shows them. */
 function payTold(o, r, a) {
   const amount = num(a.amount);
-  const allMinimum = a.payroll === 'min' && !(amount > 0);
+  const allMinimum = isAllMinimum(a);
   if (!(amount > 0) && !allMinimum) return html`Responde abajo y aquí se resume la oferta.`;
   const per = UNIT_PER[a.unit];
   /** @type {(string | import('lit-html').TemplateResult)[]} */
@@ -219,7 +227,13 @@ function paintAnswers(o, r) {
   // The contract radios have no «none»: leaving «Sin contrato» has to uncheck and check them
   for (const el of /** @type {HTMLInputElement[]} */ ($$('#f input[name=contract]')))
     el.checked = el.value === o.terms.contract;
-  set('#payTotal', inputValue(a.amount));
+  const allMinimum = isAllMinimum(a);
+  const total = /** @type {HTMLInputElement} */ ($('#payTotal'));
+  total.disabled = allMinimum;
+  // Read-only, it shows the figure the minimum gives; the typed amount is empty meanwhile
+  if (allMinimum) total.value = `${fE(minimumGross(r))} brutos`;
+  else set('#payTotal', inputValue(a.amount));
+  /** @type {HTMLInputElement} */ ($('#payMinimum')).checked = allMinimum;
   set('#payPart', inputValue(a.part));
   text('#payPartPer', UNIT_PER[a.unit]);
   render(payTold(o, r, a), $('#payTold'));
@@ -239,13 +253,8 @@ function payHint(o, r) {
     return `${o.terms.vatIncluded ? `Sin el IVA (${fN(LAW.selfEmployed.vatPct)}\u00a0%), se facturan ${fE(se.invoiced)} ${over}. ` : ''}Se pagan unos ${fE(se.quota)} de cuota de autónomos y ${fE(se.irpf)} de IRPF por módulos ${over}.`;
   }
   if (o.terms.payrollMin) {
-    // Under a month the figure per month would be an extrapolation: the whole contract's
-    const whole = isUnderAMonth(r);
-    const gross = whole ? r.min.salary : r.min.salary / r.time.months;
-    const figures = `Unos ${fE(gross)} brutos ${whole ? 'en todo el contrato' : 'al mes'}, ${fE(gross * r.netFactor)} netos.`;
-    return a.payroll === 'min' && !(num(a.amount) > 0)
-      ? `${figures} Todo va en nómina; si se escribe un pago, lo que pase del mínimo va en negro.`
-      : figures;
+    const gross = minimumGross(r);
+    return `Unos ${fE(gross)} brutos ${isUnderAMonth(r) ? 'en todo el contrato' : 'al mes'}, ${fE(gross * r.netFactor)} netos.${isAllMinimum(a) ? ' Todo va en nómina.' : ''}`;
   }
   if (!(num(o.terms.payAmount) > 0)) return '';
   const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.terms.payUnit];

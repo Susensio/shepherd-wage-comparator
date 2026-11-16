@@ -81,7 +81,8 @@ function endDateTyped(value) {
 function payAnswerTyped(el, o) {
   const answers = answersOf(o.terms);
   const amount = el.value.trim() === '' ? '' : num(el.value);
-  if (el.dataset.answer === 'amount') answers.amount = amount;
+  if (el.dataset.answer === 'minimum') Object.assign(answers, { payroll: el.checked ? 'min' : 'all', amount: '' });
+  else if (el.dataset.answer === 'amount') answers.amount = amount;
   else if (el.dataset.answer === 'part') answers.part = amount;
   else if (el.dataset.answer === 'unit') answers.unit = /** @type {'day' | 'month' | 'total'} */ (el.value);
   else {

@@ -56,10 +56,44 @@ test('«El mínimo» with no amount: all on payroll, nothing en negro, and the h
   await expect(page.locator('#payHint')).toContainText(/^Unos [\d.]+\s€ brutos al mes, [\d.]+\s€ netos\./);
   await expect(page.locator('#payCash')).toBeHidden();
   await expect(page.locator('[data-required=pay]')).toHaveText('');
-  // typing an amount makes it «the minimum on payroll, the rest en negro»
+  // an amount typed first, then «El salario mínimo» as the payslip, is «the minimum on payroll, the rest en negro»
+  await page.uncheck('#payMinimum');
   await page.fill('#payTotal', '2100');
+  await answer(page, 'payroll', 'min');
   expect(await terms(page)).toMatchObject({ payrollMin: true, cashMode: 'total', totalAmount: 2100 });
   await expect(page.locator('#payCash')).toContainText('van en negro');
+});
+
+test('«El salario mínimo» under the amount: all on payroll at the minimum, kept on reload, and back to a typed amount', async ({
+  page,
+}) => {
+  await startOffer(page, 'offer');
+  await page.fill('#duration', '4');
+  await goStep(page, 'day');
+  await page.fill('#hoursPerDay', '9');
+  await goStep(page, 'pay');
+  await page.check('#payMinimum');
+  const saved = { payrollMin: true, cashMode: 'amount', cashAmount: '', totalAmount: '' };
+  expect(await terms(page)).toMatchObject(saved);
+  await expect(page.locator('#payTotal')).toBeDisabled();
+  await expect(page.locator('#payTotal')).toHaveValue(/^[\d.]+\s€ brutos$/);
+  await expect(page.locator('input[name=payPer]').first()).toBeHidden();
+  await expect(page.locator('input[name=payroll][value=min]')).toBeHidden();
+  await expect(page.locator('#payTold')).toContainText('Pago el salario mínimo · todo en nómina');
+  await expect(page.locator('#payHint')).toContainText('Todo va en nómina.');
+  await page.reload();
+  await page.waitForFunction(() => window.app);
+  await openStep(page, 'pay');
+  expect(await terms(page)).toMatchObject(saved);
+  await expect(page.locator('#payMinimum')).toBeChecked();
+  await expect(page.locator('#payTotal')).toBeDisabled();
+  await page.uncheck('#payMinimum');
+  await expect(page.locator('#payTotal')).toBeEnabled();
+  await expect(page.locator('#payTotal')).toHaveValue('');
+  await expect(page.locator('input[name=payroll][value=min]')).toBeVisible();
+  expect(await terms(page)).toMatchObject({ payrollMin: false });
+  await page.fill('#payTotal', '1500');
+  expect(await terms(page)).toMatchObject({ payrollMin: false, payAmount: 1500 });
 });
 
 test('a wage per day split before step 4 gives no en negro figure; it appears once the hours are answered', async ({

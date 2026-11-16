@@ -427,6 +427,18 @@ input[type="text"] {
   width: 100%;
   min-width: 0;
 }
+input:disabled,
+select:disabled {
+  background: var(--bg);
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+  border-style: dashed;
+  opacity: 1;
+  cursor: not-allowed;
+}
+.seg label:has(input:disabled) {
+  opacity: 0.5;
+}
 input[type="text"].n {
   font-family: var(--f-num);
   font-size: 15px;

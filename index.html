@@ -414,17 +414,18 @@
           <label class="ask" for="payTotal">Lo que se paga</label>
           <div class="combo">
             <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
-            <div class="seg" role="radiogroup" aria-label="Por">
+            <div class="seg" role="radiogroup" aria-label="Por" data-show="payrollAsk">
               <label><input type="radio" name="payPer" data-answer="unit" value="day">al día</label>
               <label><input type="radio" name="payPer" data-answer="unit" value="month">al mes</label>
               <label data-show="withDuration"><input type="radio" name="payPer" data-answer="unit" value="total">en total</label>
             </div>
           </div>
+          <label class="check"><input type="checkbox" id="payMinimum" data-answer="minimum">El salario mínimo</label>
           <p class="hint warn" data-required="pay"></p>
         </div>
         <div class="fld full">
-          <span class="ask">¿Cuánto va en nómina?</span>
-          <div class="opts" role="radiogroup" aria-label="En nómina">
+          <span class="ask" data-show="payrollAsk">¿Cuánto va en nómina?</span>
+          <div class="opts" role="radiogroup" aria-label="En nómina" data-show="payrollAsk">
             <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="all"><b>Todo</b></label>
             <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="min"><b>El salario mínimo</b></label>
             <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="part"><b>Una parte</b></label>
