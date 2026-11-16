@@ -316,3 +316,13 @@ sample.offers.forEach((offer, index) => {
     await expect(page.locator('[data-show=payLegacy]')).toBeHidden();
   });
 });
+
+test('«La de la nómina, %» shows its field, and what is typed there is saved', async ({ page }) => {
+  await newOffer(page);
+  await expect(page.locator('#irpfManual')).toBeHidden();
+  await answer(page, 'irpfMode', 'manual');
+  await page.fill('#irpfManual', '12');
+  expect(await page.evaluate(() => app.active().mine)).toMatchObject({ irpfMode: 'manual', irpfManual: 12 });
+  await answer(page, 'irpfMode', 'auto');
+  await expect(page.locator('#irpfManual')).toBeHidden();
+});
