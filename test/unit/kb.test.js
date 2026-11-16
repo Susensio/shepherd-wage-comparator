@@ -54,7 +54,7 @@ test("the owner's private table carries no text, hash or URL; the Huesca 2022-20
   assert.equal(manifest.find((d) => d.id === 'BOPH-2016-058-convenio-agricola-2015-2017').status, 'superseded');
 });
 
-test('Huesca agreement terms: six rows, checked and not verified, with their articles', () => {
+test('Huesca agreement terms: six rows, verified by the owner, with their articles', () => {
   const rows = parseCsv(readFileSync(join(KB, 'tables', 'agreement_terms.csv'), 'utf8')).slice(1);
   const byConcept = Object.fromEntries(rows.map((r) => [r[3], r]));
   const expected = {
@@ -68,7 +68,11 @@ test('Huesca agreement terms: six rows, checked and not verified, with their art
   assert.equal(rows.length, 6);
   for (const [concept, [value, article]] of Object.entries(expected)) {
     const row = byConcept[concept];
-    assert.deepEqual([row[0], row[4], row[8], row[10]], ['prov:22', value, article, 'checked'], concept);
+    assert.deepEqual(
+      [row[0], row[4], row[8], row[10], row[11]],
+      ['prov:22', value, article, 'verified', 'owner 2026-11-16'],
+      concept,
+    );
   }
 });
 

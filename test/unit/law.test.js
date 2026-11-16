@@ -2,7 +2,18 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { conciliationOffice, LAW, MIN_WAGE, overnightOf, RULES, SOURCES, ssOf } from '../../src/law.js';
+import {
+  agreementOf,
+  annualHoursOf,
+  conciliationOffice,
+  holidayWorkOf,
+  LAW,
+  MIN_WAGE,
+  overnightOf,
+  RULES,
+  SOURCES,
+  ssOf,
+} from '../../src/law.js';
 import { DEF_CFG } from '../../src/offer.js';
 
 const years = Object.keys(MIN_WAGE).map(Number);
@@ -69,6 +80,30 @@ test("the overnight bonus is an agreement's, known per province: Huesca only, an
   assert.equal(huesca.cite, 'Convenio colectivo del sector agrícola de la provincia de Huesca, art. 28');
   assert.match(huesca.url, /^https:\/\/www\.boa\.aragon\.es\/.*MLKOB=1342050573232$/);
   for (const other of ['Z', 'TE', 'M', '', undefined, null]) assert.equal(overnightOf(other), null, String(other));
+});
+
+test("agreement figures come from the verified kb rows, per province, with the agreement's article", () => {
+  const cite = 'Convenio colectivo del sector agrícola de la provincia de Huesca';
+  const hours = agreementOf('HU', 'annual_hours', 2026);
+  assert.deepEqual([hours?.value, hours.unit, hours.cite.label], [1760, 'hours', `${cite}, art. 25`]);
+  assert.match(hours.cite.url ?? '', /MLKOB=1342050573232$/);
+  assert.equal(agreementOf('HU', 'overtime_premium_pct')?.value, 75);
+  assert.equal(agreementOf('HU', 'overtime_holiday_premium_pct')?.value, 100);
+  assert.equal(agreementOf('HU', 'vacation_days')?.value, 30);
+  assert.equal(agreementOf('HU', 'weekly_hours')?.value, 40);
+  assert.equal(agreementOf('HU', 'annual_hours', 2021), null, 'the agreement starts in 2022');
+  assert.equal(agreementOf('HU', 'annual_hours', 2031)?.value, 1760, 'open-ended: in force provisionally (art. 5)');
+  assert.equal(agreementOf('Z', 'annual_hours'), null);
+  assert.equal(holidayWorkOf('HU')?.cite, `${cite}, art. 35`);
+  assert.equal(holidayWorkOf('Z'), null);
+});
+
+test('annual hours: the province agreement where verified, else the general reference', () => {
+  assert.equal(annualHoursOf('HU', 2026).hours, 1760);
+  assert.match(annualHoursOf('HU', 2026).cite?.label ?? '', /art\. 25$/);
+  for (const other of ['Z', 'M', '', undefined, null]) {
+    assert.deepEqual(annualHoursOf(other, 2026), { hours: LAW.annualHours, cite: null }, String(other));
+  }
 });
 
 test('the procedural figures of a claim carry their source (ET 59.3, LRJS 65.1, Aragón)', () => {

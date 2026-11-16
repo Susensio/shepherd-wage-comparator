@@ -6,7 +6,7 @@
  * the unemployment limits and the IRPF scale, and run the tests. The Leyes tab is filled in from here.
  */
 
-import { HOLIDAY_DATA } from './law-territorial.js';
+import { AGREEMENT_DATA, HOLIDAY_DATA } from './law-territorial.js';
 
 /** Where the rules come from. `cite` is how the page names the source next to a figure. */
 export const SOURCES = {
@@ -145,11 +145,11 @@ export const RULES = {
     note: 'Aragón: after 30 days without the conciliation being held, the procedure is over (Gobierno de Aragón, conciliation page, SOURCES.aragonConciliation)',
   },
   annualHours: {
-    // TODO: Huesca's agreement (art. 25) gives 1,760: kb/tables/agreement_terms.csv, row prov:22 annual_hours, `checked`; switch Huesca to it once the owner verifies the row
+    // read through annualHoursOf: a province with a verified agreement row uses its own (Huesca 1,760)
     value: 1826,
     source: 'granada',
     art: '5',
-    note: 'provincial reference, not a national figure: the Granada farm agreement (BOP Granada nº 229, 1 Dec 2023, valid 2023-2025, expired) sets 1,826 hours a year, 160 a month, 40 a week; other provinces differ (Huesca about 1,760); turns the annual minimum wage into an hourly one',
+    note: 'provincial reference, not a national figure: the Granada farm agreement (BOP Granada nº 229, 1 Dec 2023, valid 2023-2025, expired) sets 1,826 hours a year, 160 a month, 40 a week; other provinces differ (Huesca 1,760, kb row prov:22 annual_hours); turns the annual minimum wage into an hourly one',
   },
   casualMaxDays: {
     value: 120,
@@ -362,36 +362,70 @@ export const LAW = {
   irpf: IRPF,
   selfEmployed: SELF_EMPLOYED,
 };
-/**
- * The overnight bonus (plus de pernocta) of the collective agreements known per province: what a shepherd who must
- * sleep away from home to watch the flock gets on top of the agreement's salary. Spain has no general rule for it, so
- * where no agreement is known for the province the page counts and claims nothing (ADR-0033, owner's rule).
- * Keyed by the province code of the places list (`terms.province`).
- * The base is the minimum wage: where an agreement's salary is below it the agreement is out of date and the minimum
- * wage governs (owner's rule, 15 November 2026; the provisional 2025 pastor salary equals the 2025 minimum wage).
- * @type {Record<string, { pct: number, cite: string, url: string }>}
- */
-const OVERNIGHT_BY_PROVINCE = {
-  HU: {
-    pct: 25,
-    cite: `${SOURCES.huescaAgreement.cite}, art. 28`,
-    url: SOURCES.huescaAgreement.url,
-  },
-};
-/** The overnight bonus an agreement gives in a province: `{ pct, cite, url }`, or null where none is known. */
-export const overnightOf = (province) => OVERNIGHT_BY_PROVINCE[province ?? ''] ?? null;
+/** Agreement names by source id in kb/manifest.json, as cited after the article. */
+const AGREEMENT_NAMES = { 'BOPH-2024-131-convenio-agricola-2022-2025': SOURCES.huescaAgreement.cite };
 
 /**
- * Collective agreements that regulate working a public holiday, by province code of the places list: the article to
- * cite. No figure: the premium of the kb row (kb/tables/agreement_terms.csv, overtime_holiday_premium_pct) reaches the
- * page once the owner verifies it. Elsewhere none is known.
- * @type {Record<string, { cite: string, url: string }>}
+ * A figure of the collective agreement known for a province, from the verified rows of the knowledge base
+ * (kb/tables/agreement_terms.csv, ADR-0033). Keyed by the province code of the places list (`terms.province`).
+ * With `year`, the row in force that year; without, the latest.
+ * @param {string | null | undefined} province
+ * @param {string} concept a concept of the table, e.g. `annual_hours`
+ * @param {number} [year]
+ * @returns {{ value: number, unit: string, appliesTo: string, cite: { label: string, url: string | null } } | null}
  */
-const HOLIDAY_WORK_BY_PROVINCE = {
-  HU: { cite: `${SOURCES.huescaAgreement.cite}, art. 35`, url: SOURCES.huescaAgreement.url },
+export const agreementOf = (province, concept, year) => {
+  const rows = AGREEMENT_DATA[province ?? '']?.[concept] ?? [];
+  const row = rows.findLast(
+    (r) => year === undefined || (r.from <= `${year}-12-31` && (!r.to || r.to >= `${year}-01-01`)),
+  );
+  if (!row) return null;
+  const name = AGREEMENT_NAMES[row.cite.id] ?? row.cite.id;
+  return {
+    value: row.value,
+    unit: row.unit,
+    appliesTo: row.appliesTo,
+    cite: { label: `${name}, ${row.cite.article}`, url: row.cite.url },
+  };
 };
-/** The agreement article on working a holiday in a province: `{ cite, url }`, or null where none is known. */
-export const holidayWorkOf = (province) => HOLIDAY_WORK_BY_PROVINCE[province ?? ''] ?? null;
+
+/**
+ * The hours of a working year that turn an annual wage into an hourly one: the province's agreement where it has a
+ * verified row, else the general reference `LAW.annualHours`. `cite` is the agreement's, or null for the reference.
+ * @param {string | null | undefined} province
+ * @param {number} [year]
+ * @returns {{ hours: number, cite: { label: string, url: string | null } | null }}
+ */
+export const annualHoursOf = (province, year) => {
+  const agreement = agreementOf(province, 'annual_hours', year);
+  return agreement ? { hours: agreement.value, cite: agreement.cite } : { hours: LAW.annualHours, cite: null };
+};
+
+/**
+ * The overnight bonus (plus de pernocta) of the collective agreement known for a province: what a shepherd who must
+ * sleep away from home to watch the flock gets on top of the agreement's salary. Spain has no general rule for it, so
+ * where no agreement is known for the province the page counts and claims nothing (ADR-0033, owner's rule).
+ * The base is the minimum wage: where an agreement's salary is below it the agreement is out of date and the minimum
+ * wage governs (owner's rule, 15 November 2026; the provisional 2025 pastor salary equals the 2025 minimum wage).
+ * @param {string | null | undefined} province
+ * @param {number} [year]
+ * @returns {{ pct: number, cite: string, url: string | null } | null}
+ */
+export const overnightOf = (province, year) => {
+  const agreement = agreementOf(province, 'overnight_pct', year);
+  return agreement ? { pct: agreement.value, cite: agreement.cite.label, url: agreement.cite.url } : null;
+};
+
+/**
+ * The agreement article on working a public holiday in a province: `{ cite, url }`, or null where none is known. No
+ * figure: the premium of the row `overtime_holiday_premium_pct` is not worded on the page.
+ * @param {string | null | undefined} province
+ * @returns {{ cite: string, url: string | null } | null}
+ */
+export const holidayWorkOf = (province) => {
+  const agreement = agreementOf(province, 'overtime_holiday_premium_pct');
+  return agreement ? { cite: agreement.cite.label, url: agreement.cite.url } : null;
+};
 
 /**
  * The offices where the prior conciliation is held, by province code of the places list: only Aragón's three, from the
