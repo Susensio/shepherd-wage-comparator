@@ -4985,6 +4985,15 @@ body.reviewing .ficha > .back {
 .dtable th:first-child,
 .dtable td:first-child {
   text-align: left;
+  overflow-wrap: anywhere;
+}
+/* Four columns of amounts in cents: on a phone, with wider system fonts, they must still fit */
+@media (max-width: 420px) {
+  .dtable th,
+  .dtable td {
+    padding: 3px 2px;
+    font-size: 11.5px;
+  }
 }
 .dtable th {
   font-weight: 600;
