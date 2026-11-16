@@ -803,3 +803,41 @@ test('without a contract, the record owes the vacation unless it was taken or pa
   const standing = (o) => standingOf(o.x, '2026-04-15', 'finished', [], o.r.netFactor, 'none');
   assert.ok(standing(apart).falta > standing(taken).falta, 'nothing cobrado: the vacation apart is owed too');
 });
+
+// «The agreed pay is the minimum» (`payrollMin`, no total): the cobros are checked against the law alone
+const minimumOffer = (changes = {}) =>
+  offerWith({ payrollMin: true, payAmount: '', contract: 'temporary', ...changes });
+const netOfMinimum = (offer) => {
+  const r = calc(offer, ctx);
+  return { r, net: r.min.salary * r.netFactor };
+};
+
+test('the agreed minimum, monthly: all on payroll, no cash, and the net payslips that match it leave nothing short', () => {
+  const offer = minimumOffer({ contract: 'permanent', duration: 90, vacation: 'taken' });
+  const { r, net } = netOfMinimum(offer);
+  assert.equal(r.cash.total, 0);
+  near(r.pay.gross, r.min.salary, 'payslip is the minimum', 0.01);
+  const monthly = net / 3;
+  const record = {
+    payments: [1, 2, 3].map((n) => ({ id: `p${n}`, date: `2026-0${n}-28`, amount: monthly, via: 'payroll' })),
+  };
+  const x = settle(offer, record, '2026-04-15', r);
+  near(x.totals.owed, 0, 'nothing short', 0.05);
+  near(x.totals.items.salary.agreed, x.totals.items.salary.minimum, 'agreed is the minimum', 0.01);
+  const short = settle(
+    offer,
+    { payments: [{ id: 'p1', date: '2026-02-28', amount: net - 100, via: 'payroll' }] },
+    '2026-04-15',
+    r,
+  );
+  near(short.totals.owed, 100 / r.netFactor, 'what is short, gross', 0.05);
+});
+
+test('the agreed minimum, casual daily rate: agreed follows the days worked as the minimum does', () => {
+  const offer = minimumOffer({ start: '2026-02-01', duration: 28, hoursPerDay: 8, daysOff: 0 });
+  const r = calc(offer, ctx);
+  assert.equal(r.min.casual, true);
+  const x = settle(offer, { paid: 'asAgreed' }, '2026-04-15', r);
+  near(x.totals.items.salary.agreed, x.totals.items.salary.minimum, 'agreed is the minimum', 0.01);
+  assert.equal(x.totals.items.salary.shortfall, 0);
+});

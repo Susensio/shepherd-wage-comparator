@@ -17,10 +17,10 @@ const HOW = [
 ];
 
 /**
- * @param {{ error: string, how: string, rows: { id: string, amount: string, date: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
- * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `rows`: the cobros listed under «Una parte»
+ * @param {{ error: string, how: string, min: boolean, rows: { id: string, amount: string, date: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
+ * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `min`: the pay agreed is the minimum wage; `rows`: the cobros listed under «Una parte»
  */
-export function pastJobView({ error, how, rows }) {
+export function pastJobView({ error, how, min, rows }) {
   return html`<form class="dossier-doc past-doc" id="pastForm" novalidate>
     <h1>Trabajo ya hecho</h1>
     <p class="hint">Se apunta lo que se recuerde: solo hacen falta las fechas.</p>
@@ -32,10 +32,11 @@ export function pastJobView({ error, how, rows }) {
     <section class="block">
       <div class="bh"><h2>Lo pactado</h2></div>
       <p class="hint">Si se recuerdan las condiciones y no hay más datos, se da por cobrado lo pactado.</p>
-      <label class="fld">Pago<span class="amount"><input type="text" class="n" id="pastPay" inputmode="decimal" autocomplete="off" placeholder="0"><span>€</span></span></label>
+      <label class="fld">Pago<span class="amount"><input type="text" class="n" id="pastPay" inputmode="decimal" autocomplete="off" placeholder="0" ?disabled=${min}><span>€</span></span></label>
+      <label class="check"><input type="checkbox" id="pastMin" data-action="pastMin" ?checked=${min}> El pago es el salario mínimo</label>
       <div class="past-dates">
-        <label class="fld">Cada<select id="pastUnit"><option value="month">mes</option><option value="day">día</option><option value="total">en total</option></select></label>
-        <label class="fld">Es<select id="pastType"><option value="net">neto</option><option value="gross">bruto</option></select></label>
+        <label class="fld">Cada<select id="pastUnit" ?disabled=${min}><option value="month">mes</option><option value="day">día</option><option value="total">en total</option></select></label>
+        <label class="fld">Es<select id="pastType" ?disabled=${min}><option value="net">neto</option><option value="gross">bruto</option></select></label>
       </div>
     </section>
     <section class="block">

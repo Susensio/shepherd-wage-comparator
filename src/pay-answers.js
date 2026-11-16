@@ -14,7 +14,7 @@ import { DEF_TERMS, isShortContract } from './offer.js';
 /**
  * @typedef {object} Answers
  * @property {'all' | 'min' | 'part' | 'none' | 'self'} payroll how much goes on the payslip; `self`: none, invoiced as autónomo
- * @property {number | string} amount everything together, in `unit` (what reaches the shepherd)
+ * @property {number | string} amount everything together, in `unit` (what reaches the shepherd); with «min», empty means all of it is the minimum
  * @property {'day' | 'month' | 'total'} unit
  * @property {number | string} part with «part»: what goes on the payslip, in `unit`
  * @property {'net' | 'gross'} partType whether what goes on the payslip is net or gross: `part` with «part», `amount` with «all»
@@ -25,6 +25,8 @@ export function answersOf(t) {
   const none = { part: '', partType: 'net' };
   if (t.contract === 'none') return { ...none, payroll: 'none', amount: t.cashAmount, unit: t.cashUnit };
   if (t.contract === 'selfEmployed') return { ...none, payroll: 'self', amount: t.payAmount, unit: t.payUnit };
+  // «El mínimo» with no total: all of it is the minimum, nothing en negro (`cashMode: 'amount'`, no cash)
+  if (t.payrollMin && t.cashMode !== 'total') return { ...none, payroll: 'min', amount: '', unit: t.totalUnit };
   if (t.payrollMin) return { ...none, payroll: 'min', amount: t.totalAmount, unit: t.totalUnit };
   if (t.cashMode === 'total')
     return { payroll: 'part', amount: t.totalAmount, unit: t.totalUnit, part: t.payAmount, partType: t.payType };
@@ -50,7 +52,9 @@ export function writeAnswers(t, { payroll, amount, unit, part, partType }) {
     return;
   }
   if (t.contract === 'none' || t.contract === 'selfEmployed') t.contract = DEF_TERMS.contract;
-  if (payroll === 'min')
+  if (payroll === 'min' && !(num(amount) > 0))
+    Object.assign(t, { payrollMin: true, cashMode: 'amount', cashAmount: '', totalAmount: '', totalUnit: unit });
+  else if (payroll === 'min')
     Object.assign(t, { payrollMin: true, cashMode: 'total', totalAmount: amount, totalUnit: unit });
   else if (payroll === 'part')
     Object.assign(t, {
@@ -81,7 +85,7 @@ const unitFits = (unit, terms) =>
 export function isAnswerable(t) {
   if (t.contract === 'none') return unitFits(t.cashUnit, t);
   if (t.contract === 'selfEmployed') return t.cashMode !== 'total' && unitFits(t.payUnit, t);
-  if (t.payrollMin) return t.cashMode === 'total' && unitFits(t.totalUnit, t);
+  if (t.payrollMin) return unitFits(t.totalUnit, t) && (t.cashMode === 'total' || !(num(t.cashAmount) > 0));
   if (t.cashMode === 'total') return t.payUnit === t.totalUnit && unitFits(t.payUnit, t);
   return !(num(t.cashAmount) > 0) && unitFits(t.payUnit, t);
 }

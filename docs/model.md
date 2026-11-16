@@ -115,9 +115,12 @@ The «Pago» section of the form is a view over `terms`; it saves no fields of i
 | Answer | Fields |
 |---|---|
 | Todo | `payrollMin: false`, `payType` net or gross (the seg «neto, lo que llega» / «bruto, como en la nómina» shows for «Todo» and «Una parte»; without a contract or as autónomo it does not), `payAmount` and `payUnit` = amount and unit, `cashMode: 'amount'`, `cashAmount: ''` |
-| El mínimo (el salario mínimo) | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
+| El mínimo (el salario mínimo), with an amount | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit: the payslip is the minimum, the rest of the total en negro |
+| El mínimo, with no amount | `payrollMin: true`, `cashMode: 'amount'`, `cashAmount: ''`, `totalAmount: ''`: all of the pay is the minimum, nothing en negro. The shape the model always had for «the payroll is the minimum» with no cash (`missing` has never asked for a pay there), so no saved format changes |
 | Una parte | `payrollMin: false`, `payAmount` = the part, `payType` net or gross, `payUnit` = unit, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
 | Sin contrato | `contract: 'none'`, `cashAmount` and `cashUnit` = amount and unit |
+
+«The agreed pay is the minimum» is what lets the cobros be checked against the law alone: in `settle`, the agreed payroll of a month under `payrollMin` (with no net total per day) is that month's minimum salary, which for a casual contract follows the days worked as the minimum does, so an agreed minimum never falls short of itself, and «Una parte» plus the payslips shows whether they reach it (net payslips are grossed up by `netFactor` and meet the due). The severance at the end of a temporary contract stays the law's: it is a shortfall of an agreed pay that does not promise it.
 
 En negro is never asked: it is the model's `split.cash`. «Una parte» without the part is missing (`payrollPart`), as the model would take all of it as en negro. The vacation answers are `terms.vacation`; «Las libro» is hidden when `vacationPayable`: the contract is casual (`isCasual`: temporary, `natDays` of the schedule up to `LAW.casualMaxDays`) or lasts a month or less of any kind (`isShortContract`), the cases where the vacation may be paid instead of taken. The same rule decides whether paying it is legal in `rights.js`, so an option the form hides is never the one the verdict asks for. It does not change the default `defaultVacation` sets (only a month or less); an offer that already has «Las libro» keeps it, with a hint.
 

@@ -208,13 +208,15 @@ const PAY_PER = { day: 'al día', month: 'al mes', total: 'en total' };
 function payToldPlain(o, r, vacation) {
   const a = answersOf(o.terms);
   const amount = num(a.amount);
-  if (!(amount > 0)) return 'Sin poner';
+  const allMinimum = a.payroll === 'min' && !(amount > 0);
+  if (!(amount > 0) && !allMinimum) return 'Sin poner';
   const per = PAY_PER[a.unit] ?? '';
   if (a.payroll === 'none') return `${fEntered(amount)} ${per} · todo en negro, sin contrato`;
   if (a.payroll === 'self')
     return `${fEntered(amount)} ${per} ${o.terms.vatIncluded ? 'con el IVA dentro' : 'más IVA'} · en factura, como autónomo`;
-  const parts = [`${fEntered(amount)} ${per}`];
-  if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
+  const parts = [allMinimum ? 'El salario mínimo' : `${fEntered(amount)} ${per}`];
+  if (allMinimum) parts.push('todo en nómina');
+  else if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
   else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
   else if (num(a.part) > 0) parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}en nómina`);
   else parts.push('una parte en nómina');

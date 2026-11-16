@@ -11,10 +11,11 @@ import { closePastJob, openPastJob, pastJobToFicha } from './navigation.js';
 const ui = {
   error: '',
   how: '',
+  min: false,
   rows: /** @type {{ id: string, amount: string, date: string, approx: boolean }[]} */ ([]),
   next: 0,
 };
-export const pastJobState = () => ({ error: ui.error, how: ui.how, rows: ui.rows });
+export const pastJobState = () => ({ error: ui.error, how: ui.how, min: ui.min, rows: ui.rows });
 
 const newRow = () => ({ id: `r${ui.next++}`, amount: '', date: '', approx: false });
 
@@ -39,6 +40,7 @@ export function setUpPastJob(given) {
 export function showPastJob() {
   ui.error = '';
   ui.how = '';
+  ui.min = false;
   ui.rows = [newRow()];
   openPastJob();
   callbacks.paint();
@@ -54,6 +56,11 @@ export const pastJobActions = {
   pastHow(b) {
     syncRows();
     ui.how = b.value;
+    callbacks.paint();
+  },
+  pastMin(b) {
+    syncRows();
+    ui.min = /** @type {HTMLInputElement} */ (b).checked;
     callbacks.paint();
   },
   pastAddCobro() {
@@ -90,13 +97,13 @@ function cobrosTyped() {
 }
 
 /** What is wrong with the dates and the figures typed, or ''. */
-function problemOf({ start, end, days, duration, how, pay, cobros }) {
+function problemOf({ start, end, days, duration, how, min, pay, cobros }) {
   if (!start || !end) return 'Escribe el primer y el último día.';
   if (end < start) return 'El último día no puede ser anterior al primero.';
   if (end >= todayISO()) return 'El trabajo tiene que haber acabado antes de hoy.';
   if (days !== '' && !(Number.isInteger(num(days)) && num(days) >= 0 && num(days) <= duration))
     return `Los días trabajados tienen que ser un número entre 0 y ${duration}.`;
-  if (how === 'all' && !(pay > 0)) return 'Para dar por cobrado lo pactado, escribe el pago.';
+  if (how === 'all' && !(pay > 0) && !min) return 'Para dar por cobrado lo pactado, escribe el pago.';
   if (how === 'part' && !cobros.length) return 'Escribe la cantidad de al menos un cobro.';
   if (cobros.some((cobro) => cobro.date && (cobro.date > todayISO() || cobro.date < start)))
     return 'La fecha de un cobro tiene que estar entre el primer día y hoy.';
@@ -109,10 +116,10 @@ export function savePastJob() {
   const end = value('pastEnd');
   const days = value('pastDays');
   const duration = start && end && end >= start ? daysInclusive(parseDate(start), parseDate(end)) : 0;
-  const pay = num(value('pastPay'));
-  const { how } = ui;
+  const { how, min } = ui;
+  const pay = min ? 0 : num(value('pastPay'));
   const cobros = how === 'part' ? cobrosTyped() : [];
-  ui.error = problemOf({ start, end, days, duration, how, pay, cobros });
+  ui.error = problemOf({ start, end, days, duration, how, min, pay, cobros });
   if (ui.error) {
     syncRows();
     return callbacks.paint();
@@ -122,6 +129,7 @@ export function savePastJob() {
     start,
     duration,
     durationUnit: 'days',
+    ...(min ? { payrollMin: true } : {}),
     ...(pay > 0 ? { payAmount: pay, payUnit: value('pastUnit'), payType: value('pastType') } : {}),
   };
   const job = makeOffer(terms, { name: uniqueName(value('pastName') || 'Trabajo ya hecho') });
@@ -140,8 +148,8 @@ export function savePastJob() {
     for (const cobro of cobros)
       offers.addPayment(job, { date: cobro.date || end, amount: cobro.amount, via: 'payroll', approx: cobro.approx });
   else if (how === 'none') offers.setPaid(job, 'none');
-  else if (how === 'all' || (how === '' && pay > 0)) offers.setPaid(job, 'asAgreed');
-  const recorded = days !== '' || how !== '' || pay > 0;
+  else if (how === 'all' || (how === '' && (pay > 0 || min))) offers.setPaid(job, 'asAgreed');
+  const recorded = days !== '' || how !== '' || pay > 0 || min;
   if (recorded) {
     for (const row of settleOffer(job).rows)
       offers.closeMonth(job, { key: row.month, from: row.calendarFrom, to: row.calendarTo });

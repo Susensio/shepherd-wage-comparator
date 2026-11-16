@@ -45,6 +45,23 @@ test('«El mínimo»: the amount is the agreed total and en negro is worked out'
   await expect(page.locator('[data-show=payPart]').first()).toBeHidden();
 });
 
+test('«El mínimo» with no amount: all on payroll, nothing en negro, and the hint gives the figure', async ({
+  page,
+}) => {
+  await newOffer(page);
+  await page.fill('#payTotal', '');
+  await answer(page, 'payroll', 'min');
+  expect(await terms(page)).toMatchObject({ payrollMin: true, cashMode: 'amount', cashAmount: '', totalAmount: '' });
+  await expect(page.locator('#payTold')).toContainText('Pago el salario mínimo · todo en nómina · contrato');
+  await expect(page.locator('#payHint')).toContainText(/^Unos [\d.]+\s€ brutos al mes, [\d.]+\s€ netos\./);
+  await expect(page.locator('#payCash')).toBeHidden();
+  await expect(page.locator('[data-required=pay]')).toHaveText('');
+  // typing an amount makes it «the minimum on payroll, the rest en negro»
+  await page.fill('#payTotal', '2100');
+  expect(await terms(page)).toMatchObject({ payrollMin: true, cashMode: 'total', totalAmount: 2100 });
+  await expect(page.locator('#payCash')).toContainText('van en negro');
+});
+
 test('a wage per day split before step 4 gives no en negro figure; it appears once the hours are answered', async ({
   page,
 }) => {

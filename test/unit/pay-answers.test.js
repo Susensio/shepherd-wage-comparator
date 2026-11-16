@@ -237,3 +237,21 @@ test('«Todo» told gross: the payslip is the amount as entered, and the net com
   assert.ok(Math.abs(r.pay.entered.gross - 1300) < 0.01);
   assert.ok(r.pay.net < r.pay.gross, 'the net is lower');
 });
+
+test('«El mínimo» with no amount is all of the pay: no total, no cash, and it reads back', () => {
+  const terms = { ...makeOffer({}).terms };
+  writeAnswers(terms, { payroll: 'min', amount: '', unit: 'month', part: '', partType: 'net' });
+  assert.deepEqual([terms.payrollMin, terms.cashMode, terms.cashAmount, terms.totalAmount], [true, 'amount', '', '']);
+  assert.equal(isAnswerable(terms), true);
+  assert.deepEqual([answersOf(terms).payroll, answersOf(terms).amount, answersOf(terms).unit], ['min', '', 'month']);
+  writeAnswers(terms, { payroll: 'min', amount: 1500, unit: 'month', part: '', partType: 'net' });
+  assert.deepEqual([terms.cashMode, terms.totalAmount], ['total', 1500]);
+});
+
+test('a saved minimum with no cash is not converted, and its figures are those it always had', () => {
+  const offer = offerWith({ payrollMin: true, cashMode: 'amount', cashAmount: '', payAmount: '', vacation: 'taken' });
+  const before = figuresOf(calc(offer, { cfg, offers: [offer] }));
+  assert.equal(convert(offer, [offer]), false);
+  assert.equal(answersOf(offer.terms).payroll, 'min');
+  assertSameFigures(before, figuresOf(calc(offer, { cfg, offers: [offer] })), 'minimum with no cash');
+});

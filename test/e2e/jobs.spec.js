@@ -264,6 +264,64 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.locator('#offersList')).toBeVisible();
   });
 
+  /** What the payslips of the minimum bring in net (salary and vacation), plus the severance of the temporary contract, for the job below. */
+  const minimumNet = (page) =>
+    page.evaluate(async () => {
+      const { makeOffer } = await import('./src/offer.js');
+      const job = makeOffer(
+        { start: '2026-06-01', duration: 92, durationUnit: 'days', payrollMin: true },
+        { id: 'probe' },
+      );
+      app.state.offers.push(job);
+      const r = app.calcOffer(job);
+      app.state.offers.pop();
+      return Math.round((r.pay.net + r.employer.severance) * 100) / 100;
+    });
+
+  test('the agreed pay is the minimum: cobros that add up show nothing short', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastMin').check();
+    await expect(page.locator('#pastPay')).toBeDisabled();
+    const net = await minimumNet(page);
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill(String(net).replace('.', ','));
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    expect(await termsOf(page)).toMatchObject({ payrollMin: true, cashMode: 'amount', cashAmount: '' });
+    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    await expect(tile('Falta')).not.toHaveText('—');
+    const short = await tile('Falta').textContent();
+    expect(Number.parseFloat(short.replace(/\./g, '').replace(',', '.'))).toBeLessThan(1);
+  });
+
+  test('the agreed pay is the minimum: cobros that fall short show what is missing', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastMin').check();
+    const net = await minimumNet(page);
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill(String(Math.round(net - 300)));
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    const short = await tile('Falta').textContent();
+    const missing = Number.parseFloat(short.replace(/\./g, '').replace(',', '.'));
+    expect(missing).toBeGreaterThan(250);
+    expect(missing).toBeLessThan(350);
+  });
+
+  test('the agreed pay is the minimum, and everything was paid: taken as agreed with no amount typed', async ({
+    page,
+  }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastMin').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    expect((await recordOf(page)).paid).toBe('asAgreed');
+  });
+
   test('by what happened only: a days total and a total cobrado, approximate, with no pay agreed', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');

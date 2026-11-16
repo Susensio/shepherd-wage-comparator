@@ -23,6 +23,7 @@ import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from
 import { placeOfTerms } from '../places.js';
 import { NO_CONTRACT_VACATION, overnightHint } from '../rights.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
+import { isUnderAMonth } from '../units.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
@@ -168,13 +169,15 @@ const awaitsDays = (o, a) => a.unit === 'day' && missing(o.terms).includes('hour
 /** The offer told back as answered. The figures are the model's, rounded as the result shows them. */
 function payTold(o, r, a) {
   const amount = num(a.amount);
-  if (!(amount > 0)) return html`Responde abajo y aquí se resume la oferta.`;
+  const allMinimum = a.payroll === 'min' && !(amount > 0);
+  if (!(amount > 0) && !allMinimum) return html`Responde abajo y aquí se resume la oferta.`;
   const per = UNIT_PER[a.unit];
   /** @type {(string | import('lit-html').TemplateResult)[]} */
-  const parts = [html`Pago <b>${fEntered(amount)} ${per}</b>`];
+  const parts = [allMinimum ? html`Pago <b>el salario mínimo</b>` : html`Pago <b>${fEntered(amount)} ${per}</b>`];
   if (a.payroll === 'none') parts.push('todo en negro, sin contrato');
   else {
-    if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
+    if (allMinimum) parts.push('todo en nómina');
+    else if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
     else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
     else if (num(a.part) > 0)
       parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}${per} en nómina`);
@@ -228,6 +231,7 @@ function paintAnswers(o, r) {
 /** The hint under the pay: the other side of what you entered (gross or net), the rates and the refund. */
 function payHint(o, r) {
   if (o.terms.contract === 'none') return '';
+  const a = answersOf(o.terms);
   const se = r.selfEmployed;
   if (se) {
     if (!(se.invoiced > 0)) return '';
@@ -235,7 +239,13 @@ function payHint(o, r) {
     return `${o.terms.vatIncluded ? `Sin el IVA (${fN(LAW.selfEmployed.vatPct)}\u00a0%), se facturan ${fE(se.invoiced)} ${over}. ` : ''}Se pagan unos ${fE(se.quota)} de cuota de autónomos y ${fE(se.irpf)} de IRPF por módulos ${over}.`;
   }
   if (o.terms.payrollMin) {
-    return `En nómina, unos ${fE((r.min.salary / r.time.months) * r.netFactor)} netos al mes.`;
+    // Under a month the figure per month would be an extrapolation: the whole contract's
+    const whole = isUnderAMonth(r);
+    const gross = whole ? r.min.salary : r.min.salary / r.time.months;
+    const figures = `Unos ${fE(gross)} brutos ${whole ? 'en todo el contrato' : 'al mes'}, ${fE(gross * r.netFactor)} netos.`;
+    return a.payroll === 'min' && !(num(a.amount) > 0)
+      ? `${figures} Todo va en nómina; si se escribe un pago, lo que pase del mínimo va en negro.`
+      : figures;
   }
   if (!(num(o.terms.payAmount) > 0)) return '';
   const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.terms.payUnit];
