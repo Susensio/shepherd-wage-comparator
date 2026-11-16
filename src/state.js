@@ -1,6 +1,7 @@
 /** The app's state: settings and preferences, saving them in the browser, and the fields `offers.js` owns. */
 
 import { calc } from './model/calc.js';
+import { happenedOf } from './model/happened.js';
 import { settle } from './model/settle.js';
 import { DEF_CFG, todayISO } from './offer.js';
 import { ingestSaved } from './schema.js';
@@ -47,6 +48,8 @@ export const state = {
   cmpUnit: 'day',
   /** Comparar shows the figures of the terms alone (not saved: a way of looking). */
   termsOnly: false,
+  /** Comparar ranks the figures agreed in every job, also those finished with a closed record (not saved: a way of looking). */
+  agreedOnly: false,
   /** Comparar ranks your offers that were only offers (not worked) too; on by default (not saved: a way of looking). */
   showOfferOnly: true,
   /** Comparar ranks by what you earn alone, without the paro each offer generates (not saved: a way of looking). */
@@ -75,7 +78,7 @@ export const myOffers = () => offersOf(state);
 /** What the model needs besides an offer: your settings and your other offers. */
 export const calcContext = () => ({ cfg: state.config, offers: myOffers() });
 
-/** @type {Map<object, { today: string, r?: ReturnType<typeof calc>, settled?: ReturnType<typeof settle> }>} */
+/** @type {Map<object, { today: string, r?: ReturnType<typeof calc>, settled?: ReturnType<typeof settle>, happened?: ReturnType<typeof happenedOf> }>} */
 const figures = new Map();
 
 /** Forgets the figures of every offer: after a save and at the start of a paint, so no figure outlives its state. */
@@ -103,6 +106,13 @@ export function settleOffer(o) {
   const memo = memoOf(o);
   memo.settled ??= settle(o, o.mine.record, memo.today, calcOffer(o));
   return memo.settled;
+}
+
+/** What happened in a job, with what was agreed as its default (`model/happened.js`): null for a job not begun or only an offer. */
+export function happenedOffer(o) {
+  const memo = memoOf(o);
+  if (!('happened' in memo)) memo.happened = happenedOf(o, memo.today, calcOffer(o), settleOffer(o));
+  return memo.happened;
 }
 
 /** Called after every save of offers or settings (the account sync listens). */
