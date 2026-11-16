@@ -44,6 +44,8 @@ const hooks = {
   reviewDismissed: /** @type {() => void} */ (() => {}),
   /** Back left the «Expediente». */
   dossierDismissed: /** @type {() => void} */ (() => {}),
+  /** Back left the «Registro». */
+  registroDismissed: /** @type {() => void} */ (() => {}),
   /** Back left «Vía legal». */
   legalDismissed: /** @type {() => void} */ (() => {}),
 };
@@ -53,6 +55,9 @@ const review = { open: false };
 
 /** The «Expediente» is open over everything: its own history entry, so Back leaves it for what was below. */
 const dossier = { open: false };
+
+/** The «Registro» is open over the ficha: a page of its own with its history entry, so Back returns to the ficha. */
+const registro = { open: false };
 
 /** «Vía legal» is open over the ficha: a page of its own with its history entry, so Back returns to Cuentas. */
 const legal = { open: false };
@@ -71,6 +76,7 @@ export const entryOpen = () => view.entry;
 export const reviewOpen = () => review.open;
 export const dossierOpen = () => dossier.open;
 export const legalOpen = () => legal.open;
+export const registroOpen = () => registro.open;
 export const tabInView = (/** @type {string} */ tab) => where.tab === tab && !where.page;
 
 /** Shows the list and the ficha as the view says; on wide screens both, with the ficha of the active offer. */
@@ -159,6 +165,9 @@ export function onPopState() {
     legal.open = false;
     document.body.classList.remove('on-legal');
     hooks.legalDismissed();
+  } else if (registro.open && !kept.registro) {
+    registro.open = false;
+    hooks.registroDismissed();
   } else if (dossier.open && !kept.dossier) {
     dossier.open = false;
     document.body.classList.remove('on-dossier');
@@ -199,6 +208,19 @@ export function closeDossier() {
   dossier.open = false;
   document.body.classList.remove('on-dossier');
   if (history.state?.dossier) history.back();
+}
+
+/** The «Registro», over the ficha: an entry of its own. */
+export function openRegistro() {
+  if (registro.open) return;
+  registro.open = true;
+  history.pushState({ ...history.state, registro: true }, '');
+}
+/** Out of the «Registro» by its own button: drops its entry. */
+export function closeRegistro() {
+  if (!registro.open) return;
+  registro.open = false;
+  if (history.state?.registro) history.back();
 }
 
 /** «Vía legal», over the ficha: an entry of its own. */

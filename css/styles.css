@@ -5072,3 +5072,28 @@ body.reviewing .ficha > .back {
 .sofar .f.ok b {
   color: var(--c-pay);
 }
+
+/* The row of the ficha that opens the Registro */
+.registro-link {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+  font-weight: 400;
+}
+.registro-link svg {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+}
+.registro-doc .tocl {
+  margin: 0;
+}

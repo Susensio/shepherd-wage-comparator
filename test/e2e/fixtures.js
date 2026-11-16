@@ -155,3 +155,15 @@ export const test = base.extend({
 });
 
 export { expect };
+
+/** On the ficha of a job with a record, opens the Registro page (a history entry over the ficha). */
+export async function openRegistro(page) {
+  await page.locator('#result .registro-link').click();
+  await expect(page.locator('#registroPage')).toBeVisible();
+}
+
+/** Leaves the Registro page for the ficha. */
+export async function closeRegistro(page) {
+  await page.locator('#registroPage [data-action=closeRegistro]').click();
+  await expect(page.locator('#registroPage')).toBeHidden();
+}

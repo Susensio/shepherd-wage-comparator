@@ -1,6 +1,15 @@
 // What happened (ADR-0032): the ficha by phase, the calendar, the cobros and the review. The date is set, not the real one.
 
-import { expect, loadOffers, openAccounts, openLegalPage, sample, test } from './fixtures.js';
+import {
+  closeRegistro,
+  expect,
+  loadOffers,
+  openAccounts,
+  openLegalPage,
+  openRegistro,
+  sample,
+  test,
+} from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -32,7 +41,7 @@ test.describe('under way: Registro', () => {
       .getByRole('button', { name: 'Sí', exact: true })
       .click();
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
-    await expect(page.locator('#result h2.mode')).toContainText('Registro');
+    await expect(page.locator('#result h2.mode')).toContainText('Hasta hoy');
     await expect(page.locator('.conditions')).toBeVisible(); // every mode starts with the agreed conditions
     await at(page, '2026-05-01');
     await reselect(page);
@@ -52,6 +61,7 @@ test.describe('under way: Registro', () => {
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
+    await openRegistro(page);
     await expect(page.locator('.monthstrip button')).toHaveCount(4);
     await expect(strip(page, '2026-06')).toContainText('por cerrar');
     await expect(strip(page, '2026-08')).toContainText('en curso');
@@ -60,7 +70,9 @@ test.describe('under way: Registro', () => {
     await expect(strip(page, '2026-08')).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('.days h3')).toHaveText('Agosto 2026');
     await expect(page.locator('.nudge')).toContainText('Junio y julio, por cerrar');
-    await page.locator('.nudge [data-action=selectMonth]').click();
+    await closeRegistro(page);
+    await page.locator('.nudge [data-action=openRegistro]').click();
+    await expect(page.locator('#registroPage')).toBeVisible();
     await expect(page.locator('.days h3')).toHaveText('Junio 2026');
     // The month that ended can be closed, from its calendar; the current one cannot yet
     await page.getByRole('button', { name: 'Cerrar junio' }).click();
@@ -81,6 +93,7 @@ test.describe('under way: Registro', () => {
         app.select(app.active().id);
       }, terms);
     await place({ municipality: '22252', province: 'HU' });
+    await openRegistro(page);
     await expect(page.locator('.days h3')).toHaveText('Agosto 2026');
     const fests = page.locator('.days .day.fest');
     await expect(fests).toHaveCount(2);
@@ -107,6 +120,7 @@ test.describe('under way: Registro', () => {
       Object.assign(app.active().terms, { municipality: '22252', province: 'HU', holidays: 'yes' });
       app.select(app.active().id);
     });
+    await openRegistro(page);
     const fests = page.locator('.days .day.fest');
     await expect(fests).toHaveCount(2);
     await expect(fests.first()).toHaveClass(/off/);
@@ -134,6 +148,7 @@ test.describe('under way: Registro', () => {
     const before = await figures();
     expect(before.cobrado).toBe(400);
     expect(Math.round((before.corresponde - before.cobrado) * 100) / 100).toBe(before.falta);
+    await openRegistro(page);
     await page.locator('[data-action=openPaySheet]').click();
     await expect(page.locator('#paySheet')).toBeVisible();
     await expect(page.locator('#payDate')).toHaveValue('2026-08-12');
@@ -175,6 +190,7 @@ test.describe('under way: Registro', () => {
       app.select(app.active().id);
     });
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);
+    await openRegistro(page);
     await strip(page, '2026-07').click();
     const counts = page.locator('.cal .counts');
     const month = page.locator('.cal .row', { hasText: 'Corresponde de julio' }).locator(':scope > :last-child');
@@ -212,6 +228,7 @@ test.describe('under way: Registro', () => {
       { date: '2026-07-06', amount: 100, via: 'cash' },
       { date: '2026-07-07', amount: 50, via: 'cash' },
     ]);
+    await openRegistro(page);
     await expect(page.locator('.cobros .pr')).toHaveCount(3);
     await expect(page.getByRole('button', { name: /Ver todos/ })).toHaveCount(0);
     const rm = page.locator('.cobros .rm').first();
@@ -270,7 +287,7 @@ test.describe('finished: Cuentas', () => {
       'h2:Balance del trabajo',
       'h2:¿Se cumplió la ley?',
       'h2:Pedir lo que falta',
-      'details[data-autofold=registro]',
+      '.registro-link',
       'details[data-fold=reference]',
     ];
     for (let i = 0; i < order.length - 1; i++)
@@ -477,27 +494,21 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
   });
 
-  test('«Registro del trabajo» is open while something remains to record, closed when nothing does', async ({
+  test('the row «Registro» says what remains to record and opens the page with the months and the cobros', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    const fold = page.locator('details[data-autofold=registro]');
-    await expect(fold).toHaveAttribute('open', ''); // months not closed, and no cobros
+    const link = page.locator('#result .registro-link');
+    await expect(link).toContainText('4 sin cerrar · 0 cobros');
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(fold).toHaveAttribute('open', ''); // months not closed
+    await expect(link).toContainText('4 sin cerrar · 1 cobro');
     await closeMonths(page, 'all');
-    await expect(fold).not.toHaveAttribute('open', ''); // nothing remains
-    await expect(fold.locator(':scope > summary')).toContainText('meses cerrados · 1 cobro');
-    await fold.locator(':scope > summary').click(); // it can still be opened
-    await expect(fold.locator('.monthrow')).toHaveCount(4);
-    await expect(fold.locator('.cobros')).toBeVisible();
-    // Closed months and no cobros: open again
-    await page.evaluate(() => {
-      app.active().mine.record.payments = [];
-      app.select(app.active().id);
-    });
-    await expect(page.locator('details[data-autofold=registro]')).toHaveAttribute('open', '');
+    await expect(link).toContainText('4 meses cerrados · 1 cobro');
+    await openRegistro(page);
+    await expect(page.locator('#registroPage h1')).toContainText('Registro');
+    await expect(page.locator('#registroPage .monthrow')).toHaveCount(4);
+    await expect(page.locator('#registroPage .cobros')).toBeVisible();
   });
 
   test('«Oferta original» is one closed fold at the end, without «Para negociar», with the simulator', async ({
@@ -515,7 +526,7 @@ test.describe('finished: Cuentas', () => {
     await expect(fold.locator('[data-fold=payslips]')).toHaveCount(1);
     await expect(fold.locator('[data-fold=workings]')).toHaveCount(1);
     await expect(page.locator('#secEmployer')).toHaveCount(0);
-    expect(await after(page, 'details[data-autofold=registro]', 'details[data-fold=reference]')).toBe(true);
+    expect(await after(page, '.registro-link', 'details[data-fold=reference]')).toBe(true);
   });
 
   /** Closes months of the active offer from the page, as the review would. */
@@ -702,7 +713,8 @@ test.describe('finished: Cuentas', () => {
       app.active().terms.daysOff = 12;
       app.select(app.active().id);
     });
-    const junio = page.locator('details[data-autofold=registro] .monthrow', { hasText: 'Junio' });
+    await openRegistro(page);
+    const junio = page.locator('#registroPage .monthrow', { hasText: 'Junio' });
     await junio.click();
     // In place: no separate view, no history entry, the row open and its calendar right below
     await expect(page.locator('.review-progress')).toHaveCount(0);
@@ -725,17 +737,18 @@ test.describe('finished: Cuentas', () => {
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    const rows = page.locator('details[data-autofold=registro] .monthrow');
+    await openRegistro(page);
+    const rows = page.locator('#registroPage .monthrow');
     await expect(rows).toHaveCount(4);
     await expect(page.locator('.monthbody')).toHaveCount(0);
-    await rows.first().scrollIntoViewIfNeeded();
-    await page.evaluate(() => window.scrollBy(0, 120));
-    const before = await page.evaluate(() => window.scrollY);
+    const scrolled = () => page.evaluate(() => document.querySelector('#registroPage').scrollTop);
+    await page.evaluate(() => document.querySelector('#registroPage').scrollBy(0, 120));
+    const before = await scrolled();
     await rows.nth(1).click();
     await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('.monthbody')).toHaveCount(1);
     await expect(page.locator('.monthbody .cal h3')).toHaveText('Julio 2026');
-    expect(Math.abs((await page.evaluate(() => window.scrollY)) - before)).toBeLessThan(2);
+    expect(Math.abs((await scrolled()) - before)).toBeLessThan(2);
     // Its calendar sits right under its row, and the other month's row stays below it
     expect(
       await page.evaluate(() => {
@@ -807,6 +820,7 @@ test.describe('the month in progress, the days outside the job and what the mini
     await expect(page.locator('#result')).not.toContainText('el mes en curso, se cuenta hasta hoy');
     await expect(page.locator('#result')).not.toContainText('Aparte, aún sin pagar');
     // A day off marked among the days elapsed is one day less
+    await openRegistro(page);
     await page.locator('.cal .day.work').first().click();
     expect(amount(await tile(page, 'Corresponde').textContent())).toBeLessThan(sofar);
   });
@@ -819,6 +833,7 @@ test.describe('the month in progress, the days outside the job and what the mini
       app.active().terms.duration = 55; // ends on 14 August
       app.select(app.active().id);
     });
+    await openRegistro(page);
     await expect(page.locator('.cal .day.away')).toHaveCount(17); // 15 to 31 August
     await expect(page.locator('.cal .day.away').first()).toContainText('fuera');
     await expect(page.locator('.cal .day.away').first()).toHaveAttribute('aria-label', /fuera del trabajo/);
@@ -918,6 +933,7 @@ test.describe('the real period of the work', () => {
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     const before = amount(await tile(page, 'Corresponde').textContent());
     await expect(page.locator('.real')).toHaveCount(0);
+    await openRegistro(page);
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await expect(page.locator('.monthbody .cal h3')).toContainText('Octubre 2026');
     await expect(page.locator('.cal')).toContainText('Se suma al trabajo al marcar un día');
@@ -935,7 +951,7 @@ test.describe('the real period of the work', () => {
     await at(page, '2026-10-02');
     await reselect(page);
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
-    await expect(page.locator('#result h2.mode')).toHaveText(/Registro/);
+    await expect(page.locator('#result h2.mode')).toHaveText(/Hasta hoy/);
     await expect(page.locator('.monthstrip button[data-key="2026-10"]')).toContainText('en curso');
     await at(page, '2026-10-03');
     await reselect(page);
@@ -945,6 +961,7 @@ test.describe('the real period of the work', () => {
   test('a month added and left with nothing marked is not part of the job', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
+    await openRegistro(page);
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="01"]').click(); // marked and unmarked again
@@ -996,6 +1013,7 @@ test.describe('the real period of the work', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
+    await openRegistro(page);
     await expect(page.locator('.monthstrip button')).toHaveCount(5);
     await expect(page.locator('.monthstrip button[data-key="2026-10"]')).toContainText('en curso');
     await expect(page.locator('.real')).toContainText('al 5 oct 2026');

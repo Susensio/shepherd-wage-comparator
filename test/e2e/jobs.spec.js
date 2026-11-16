@@ -1,6 +1,6 @@
 // The job as one thing with two sides (ADR-0035, phase C): the screens for what happened, whatever the terms say.
 
-import { addJob, expect, test } from './fixtures.js';
+import { addJob, closeRegistro, expect, loadOffers, openRegistro, sample, test } from './fixtures.js';
 
 test.describe('thin terms', () => {
   test.use({ today: '2026-11-15' });
@@ -70,8 +70,10 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     expect((await recordOf(page)).paid).toBe('asAgreed');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(question(page)).toHaveCount(0);
+    await openRegistro(page);
     await expect(page.locator('.cobros')).toContainText('Se apuntó que se cobró todo lo pactado.');
     await page.locator('.cobros').getByRole('button', { name: 'Quitar' }).click();
+    await closeRegistro(page);
     await expect(question(page)).toBeVisible();
     expect((await recordOf(page)).paid).toBeUndefined();
   });
@@ -107,5 +109,50 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await question(page).getByRole('button', { name: 'Sí, nada' }).click();
     expect((await recordOf(page)).paid).toBe('none');
     await expect(tile(page, 'Falta')).toHaveText(await tile(page, 'Corresponde').textContent());
+  });
+});
+
+test.describe('the Registro page', () => {
+  test.use({ today: '2026-08-12' });
+  const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
+
+  test('is reached from a row of the ficha, has its history entry, and Back and «Volver» return to the ficha', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page
+      .getByRole('group', { name: '¿Empezó el trabajo?' })
+      .getByRole('button', { name: 'Sí', exact: true })
+      .click();
+    await expect(page.locator('#registroPage')).toBeHidden();
+    // The ficha keeps «Hasta hoy» and the way in; the days and the cobros are in the page
+    await expect(page.locator('#result .registro-link')).toContainText('Registro');
+    await expect(page.locator('#result .monthstrip')).toHaveCount(0);
+    await openRegistro(page);
+    expect(await page.evaluate(() => history.state?.registro)).toBe(true);
+    await expect(page.locator('#registroPage .monthstrip button')).toHaveCount(4);
+    await expect(page.locator('#registroPage .cobros')).toBeVisible();
+    await page.goBack();
+    await expect(page.locator('#registroPage')).toBeHidden();
+    await expect(page.locator('#ficha')).toBeVisible();
+    await openRegistro(page);
+    await closeRegistro(page);
+    expect(await page.evaluate(() => history.state?.registro)).toBeUndefined();
+    await expect(page.locator('#ficha')).toBeVisible();
+  });
+
+  test('a day tapped in the page changes the figures of the ficha beneath it', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    // A wage per day: each day worked counts
+    await page.evaluate(() => {
+      Object.assign(app.active().terms, { payUnit: 'day', payAmount: 80, cashMode: 'amount', cashAmount: 0 });
+      app.select(app.active().id);
+    });
+    const tile = page.locator('#result .sofar > div', { hasText: 'Corresponde' }).locator('b');
+    const before = await tile.textContent();
+    await openRegistro(page);
+    await page.locator('#registroPage .cal .day.work:not(.ahead)').first().click();
+    await closeRegistro(page);
+    expect(await tile.textContent()).not.toBe(before);
   });
 });

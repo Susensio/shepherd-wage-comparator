@@ -18,7 +18,7 @@ import { loadOthers, paintAccountStatus } from './ui/account-section.js';
 import { chosenTemplate, currentStep, dismiss, isAskingMissing, paintEntry } from './ui/entry.js';
 import { restoreFolds } from './ui/folds.js';
 import { fadeIn } from './ui/motion.js';
-import { dossierOpen, entryOpen, legalOpen, onNavigate, openFicha } from './ui/navigation.js';
+import { dossierOpen, entryOpen, legalOpen, onNavigate, openFicha, registroOpen } from './ui/navigation.js';
 import { dismissReview, dossierContext, forgetRecordUi, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
@@ -28,6 +28,7 @@ import { dossierView } from './views/dossier.js';
 import { fichaView } from './views/ficha.js';
 import { fillForm, paintForm } from './views/form.js';
 import { offersListView, skeletonCardsView, templatesView } from './views/offers-list.js';
+import { registroPageView } from './views/record.js';
 import { sharedView } from './views/shared.js';
 
 /** What the page remembers while open, not saved. */
@@ -207,6 +208,8 @@ export function paintAll({ animate = false } = {}) {
   restoreFolds($('#result'));
   $('#dossier').hidden = !dossierOpen();
   render(dossierOpen() ? dossierView(dossierContext(o, r), o, r, placesIfLoaded()) : '', $('#dossierBody'));
+  $('#registroPage').hidden = !registroOpen();
+  render(registroOpen() && record ? registroPageView(record, o.mine.name || 'Sin nombre') : '', $('#registroBody'));
   $('#legalPage').hidden = !legalOpen();
   render(legalOpen() && record?.claim ? legalPageView(record.claim) : '', $('#legalBody'));
   const appeared = paintForm(o, r, myOffers(), placesNow());
@@ -277,6 +280,7 @@ onNavigate({
     paintAll();
   },
   dossierDismissed: () => paintAll(),
+  registroDismissed: () => paintAll(),
   legalDismissed: () => paintAll(),
 });
 

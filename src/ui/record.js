@@ -40,7 +40,16 @@ import { ACCOUNT_CONFIG } from '../storage/account-config.js';
 import { claimText, legalLine } from '../text.js';
 import { accountState } from './account-section.js';
 import { copyText } from './dom.js';
-import { closeDossier, closeLegal, closeReview, openDossier, openLegal, openReview } from './navigation.js';
+import {
+  closeDossier,
+  closeLegal,
+  closeRegistro,
+  closeReview,
+  openDossier,
+  openLegal,
+  openRegistro,
+  openReview,
+} from './navigation.js';
 
 /**
  * @typedef {object} CalendarContext
@@ -585,6 +594,20 @@ export const recordActions = {
     }
     offers.startSick(o, date);
     delete ui.end[o.id];
+    callbacks.paint();
+  },
+  /** «Registro»: the page of the days and the cobros, over the ficha; a month named opens first. */
+  openRegistro(b) {
+    const id = active().id;
+    if (b.dataset.key) {
+      ui.months[id] = b.dataset.key;
+      if (recordPhase(active(), todayISO()) === 'finished') ui.opened[id] = b.dataset.key;
+    }
+    openRegistro();
+    callbacks.paint();
+  },
+  closeRegistro() {
+    closeRegistro();
     callbacks.paint();
   },
   /** «Vía legal»: the page of its own, over Cuentas; Back returns. */

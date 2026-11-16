@@ -1,6 +1,6 @@
 // Fixes from the UI review of 14 November 2026: figures that contradicted each other, wording, tap targets, layout.
 
-import { expect, loadOffers, openAccounts, sample, startOffer, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, openRegistro, sample, startOffer, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026, 17 h of overtime a week
 const SIN_CONTRATO_D = 4; // 30 January to 12 March 2026
@@ -174,17 +174,17 @@ test.describe('Cuentas and Registro', () => {
     for (const text of await page.locator('.sofar b, .result .big').allTextContents()) expect(text).not.toContain(',');
   });
 
-  test('the registro fold counts the months closed', async ({ page }) => {
+  test('the row «Registro» counts the months closed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    await expect(page.locator('[data-autofold=registro] > summary .stat')).toHaveText('4 sin cerrar · 0 cobros');
+    await expect(page.locator('.registro-link .cv')).toHaveText('4 sin cerrar · 0 cobros');
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       const { monthSpan } = await import('./src/model/days.js');
       for (const m of ['2026-06', '2026-07', '2026-08', '2026-09']) offers.closeMonth(app.active(), monthSpan(m));
       app.select(app.active().id);
     });
-    await expect(page.locator('[data-autofold=registro] > summary .stat')).toHaveText('4 meses cerrados · 0 cobros');
+    await expect(page.locator('.registro-link .cv')).toHaveText('4 meses cerrados · 0 cobros');
   });
 
   test('«Revisar los meses» has one way back, and the days outside the job say «fuera»', async ({ page }) => {
@@ -198,20 +198,15 @@ test.describe('Cuentas and Registro', () => {
     await expect(page.locator('.cal .day.out small').first()).toHaveText('fuera');
   });
 
-  test('the fold summaries share one style, and «Cobros» inside the registro is a small heading', async ({ page }) => {
+  test('the fold summaries share one style, and «Cobros» in the Registro is a small heading', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    const styles = await page.evaluate(() =>
-      ['reference', 'registro'].map((name) => {
-        const s = document.querySelector(`[data-fold=${name}] > summary, [data-autofold=${name}] > summary`);
-        return getComputedStyle(s).textTransform;
-      }),
-    );
-    expect(styles).toEqual(['uppercase', 'uppercase']);
+    await expect(page.locator('[data-fold=reference] > summary')).toHaveCSS('text-transform', 'uppercase');
     await page.locator('[data-fold=reference] > summary').click();
     await expect(page.locator('[data-fold=workings] > summary')).toHaveCSS('text-transform', 'uppercase');
-    await expect(page.locator('[data-autofold=registro] h2')).toHaveCount(0);
-    await expect(page.locator('[data-autofold=registro] h3', { hasText: 'Cobros' })).toBeVisible();
+    await openRegistro(page);
+    await expect(page.locator('#registroPage h2')).toHaveCount(0);
+    await expect(page.locator('#registroPage h3', { hasText: 'Cobros' })).toBeVisible();
   });
 });
 
@@ -220,6 +215,7 @@ test.describe('under way', () => {
 
   test('the month in progress: today ringed, the days to come faded, the counts up to today', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openRegistro(page);
     await expect(page.locator('.cal .day.today')).toHaveCount(1);
     await expect(page.locator('.cal .day.today')).toContainText('12');
     await expect(page.locator('.cal .day.ahead')).toHaveCount(19);

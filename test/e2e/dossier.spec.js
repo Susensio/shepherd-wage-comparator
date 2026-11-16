@@ -1,6 +1,6 @@
 // The «Expediente» (ADR-0034): a printable page with its own history entry; its totals are the tiles'.
 
-import { expect, loadOffers, openLegalPage, sample, test } from './fixtures.js';
+import { closeRegistro, expect, loadOffers, openLegalPage, openRegistro, sample, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
 const amount = (text) => Number.parseFloat(text.replace(/[^\d,]/g, '').replace(',', '.'));
@@ -109,9 +109,11 @@ test.describe('the dossier', () => {
   });
 
   test('notes added in Registro appear in the dossier, dated', async ({ page }) => {
+    await openRegistro(page);
     await page.locator('#noteText').fill('El ganadero dijo que pagaba en diciembre');
     await page.getByRole('button', { name: 'Añadir apunte' }).click();
     await expect(page.locator('.apuntes')).toContainText('El ganadero dijo que pagaba en diciembre');
+    await closeRegistro(page);
     await openLegalPage(page);
     await page.locator('#legalPage [data-action=openDossier]').click();
     await expect(page.locator('#dossier')).toContainText('12 nov 2026: El ganadero dijo que pagaba en diciembre');

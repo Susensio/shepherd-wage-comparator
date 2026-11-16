@@ -166,12 +166,26 @@ const nudgeText = (months) =>
       ? `${capital(joinAnd(months.map(monthName)))}, por cerrar.`
       : `${months.length} meses por cerrar.`;
 
-/** «Registro»: the months strip, «Hasta hoy» in net, the month open below with its calendar, and the cobros. */
+const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
+
+/** What the row that opens the Registro says of it: the months closed (or not) and the cobros. */
+function registroSummary(c) {
+  const open = c.standing.unclosed.length;
+  const months = c.strip.filter((m) => m.state !== 'add' && m.state !== 'later');
+  const closed = months.length - open;
+  const cobros = c.payments.length === 1 ? '1 cobro' : `${c.payments.length} cobros`;
+  return `${open ? `${open} sin cerrar` : closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`} · ${cobros}`;
+}
+
+/** The row of the ficha that opens the Registro, the page of the days and the cobros. */
+const registroLink = (c) =>
+  html`<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Registro</span><span class="cv">${registroSummary(c)}</span>${CHEVRON}</button>`;
+
+/** A job under way: «Hasta hoy» in net, what waits to be closed, and the way to the Registro. */
 function registro(c) {
   const { standing: s, today } = c;
-  return html`<h2 class="mode">Registro${NET}<small>Lo que pasa, mes a mes.</small></h2>
-    ${strip(c)}
-    ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="selectMonth" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
+  return html`<h2 class="mode">Hasta hoy${NET}<small>Lo que va del trabajo.</small></h2>
+    ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
       ${tiles(s)}
@@ -179,9 +193,7 @@ function registro(c) {
       ${minimumLine(c.minimum)}
     </div>
     ${underwayTalk(c.talk)}
-    ${calendarView(c.calendar)}
-    ${cobrosView(c)}
-    ${apuntesView(c)}`;
+    ${registroLink(c)}`;
 }
 
 /** «Detalle de lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
@@ -251,20 +263,29 @@ function balanceBlock(c) {
 const monthRow = (key, opened, label, calendar, cls = 'monthrow') =>
   html`<button type="button" class=${cls} data-action="toggleMonth" data-key=${key} aria-expanded=${String(opened)}>${label}<span class="chev" aria-hidden="true"></span></button>${opened ? html`<div class="monthbody">${calendarView(calendar)}</div>` : nothing}`;
 
-/** «Registro del trabajo»: the months, each opening its calendar in place, and the cobros, open only while something remains to record. */
-function registroFold(c) {
-  const { standing: s } = c;
+/** The months of a job finished, each opening its calendar in place, and the one that can be added. */
+function monthsList(c) {
   const months = c.strip.filter((m) => m.state !== 'add');
-  // The calendar of a finished job is only there while a month is open: the fold stays open with it
+  // The calendar of a finished job is only there while a month is open
   const shown = c.calendar?.acc.row.month ?? null;
-  const open = s.unclosed.length > 0 || c.payments.length === 0 || shown !== null;
-  const closed = months.length - s.unclosed.length;
-  return html`<details class="plg" data-autofold="registro" ?open=${open}><summary>Registro del trabajo<span class="stat dt">${s.unclosed.length ? `${s.unclosed.length} sin cerrar` : closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`} · ${c.payments.length === 1 ? '1 cobro' : `${c.payments.length} cobros`}</span></summary>
-    <div class="tocl">${months.map((m) => monthRow(m.month, shown === m.month, html`<span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span>`, c.calendar))}</div>
-    ${c.addable ? monthRow(c.addable, shown === c.addable, html`<span>+ Añadir ${monthName(c.addable)}</span>`, c.calendar, 'linkbtn addmonth') : nothing}
+  return html`<div class="tocl">${months.map((m) => monthRow(m.month, shown === m.month, html`<span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span>`, c.calendar))}</div>
+    ${c.addable ? monthRow(c.addable, shown === c.addable, html`<span>+ Añadir ${monthName(c.addable)}</span>`, c.calendar, 'linkbtn addmonth') : nothing}`;
+}
+
+/**
+ * The Registro as a page of its own: the months (a strip and the calendar of the one picked while the
+ * job goes on, a list that opens one calendar while it is over), the cobros and the notes.
+ * @param {RecordContext} c
+ * @param {string} name the job's name
+ */
+export function registroPageView(c, name) {
+  return html`<div class="dossier-doc registro-doc">
+    <h1>Registro${NET}</h1>
+    <p class="hint">${name}</p>
+    ${c.phase === 'underway' ? html`${strip(c)}${calendarView(c.calendar)}` : monthsList(c)}
     ${cobrosView(c)}
     ${apuntesView(c)}
-  </details>`;
+  </div>`;
 }
 
 const FACT_TEXT = {
@@ -382,7 +403,7 @@ function cuentas(c) {
     ${balanceBlock(c)}
     ${lawBlock(c)}
     ${claimView(c.claim)}
-    ${registroFold(c)}`;
+    ${registroLink(c)}`;
 }
 
 /** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */
