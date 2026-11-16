@@ -294,7 +294,7 @@ const EXPECTED = {
     contract: 'seasonal',
   },
   'Campaña B': { payroll: 'min', total: '63', per: 'day', contract: 'seasonal' },
-  'Invernada C': { payroll: 'part', per: 'month', part: '1430', type: 'gross', contract: 'temporary' },
+  'Invernada C': { payroll: 'all', total: '1430', per: 'month', type: 'gross', contract: 'temporary' },
   'Sin contrato D': { payroll: 'none', total: '63', per: 'day' },
   'Temporada E': { payroll: 'all', total: '1450', per: 'total', contract: 'seasonal' },
   'Temporada F': { payroll: 'all', total: '78,75', per: 'day', contract: 'seasonal' },
@@ -313,6 +313,8 @@ sample.offers.forEach((offer, index) => {
       await expect(page.locator('#payPart')).toHaveValue(want.part);
       await expect(page.locator(`input[name=payType][value=${want.type}]`)).toBeChecked();
     }
+    // «Todo» told gross shows it too
+    if (want.type && !want.part) await expect(page.locator(`input[name=payType][value=${want.type}]`)).toBeChecked();
     if (want.contract) await expect(page.locator(`input[name=contract][value=${want.contract}]`)).toBeChecked();
     await expect(page.locator('[data-show=payLegacy]')).toBeHidden();
   });
@@ -350,4 +352,25 @@ test('«La de la nómina, %» shows its field, and what is typed there is saved'
   expect(await page.evaluate(() => app.active().mine)).toMatchObject({ irpfMode: 'manual', irpfManual: 12 });
   await answer(page, 'irpfMode', 'auto');
   await expect(page.locator('#irpfManual')).toBeHidden();
+});
+
+test('«Todo» can be told gross: «1.300 € brutos al mes», and no contract or autónomo stay net', async ({ page }) => {
+  await newOffer(page);
+  await page.fill('#payTotal', '1300');
+  await answer(page, 'payroll', 'all');
+  const gross = page.locator('label', { has: page.locator('input[name=payType][value=gross]') });
+  await expect(gross).toBeVisible();
+  await answer(page, 'payType', 'gross');
+  expect(await terms(page)).toMatchObject({ payType: 'gross', payAmount: 1300, payUnit: 'month', cashAmount: '' });
+  await expect(page.locator('#payTold')).toContainText('Pago 1.300 € al mes · todo en nómina, bruto · contrato');
+  await expect(page.locator('#payHint')).toContainText('netos/mes');
+  // The choice follows the answer to «Una parte» and back
+  await answer(page, 'payroll', 'part');
+  await expect(gross).toBeVisible();
+  await answer(page, 'payroll', 'all');
+  await expect(page.locator('input[name=payType][value=net]')).toBeAttached();
+  await answer(page, 'payroll', 'none');
+  await expect(gross).toBeHidden();
+  await answer(page, 'payroll', 'self');
+  await expect(gross).toBeHidden();
 });

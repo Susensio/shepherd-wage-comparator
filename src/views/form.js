@@ -30,6 +30,8 @@ const SHOW = {
   hasStart: (o) => !!o.terms.start,
   hasEnd: (o) => !!endOf(o.terms),
   payPart: (o) => answersOf(o.terms).payroll === 'part',
+  // Gross or net goes with whatever is on the payslip: the amount itself («Todo») or its part
+  onPayroll: (o) => ['all', 'part'].includes(answersOf(o.terms).payroll),
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
   // «Las libro» makes no sense when the vacation may be paid instead; one already saved with it keeps showing, with a hint
@@ -172,7 +174,7 @@ function payTold(o, r, a) {
   const parts = [html`Pago <b>${fEntered(amount)} ${per}</b>`];
   if (a.payroll === 'none') parts.push('todo en negro, sin contrato');
   else {
-    if (a.payroll === 'all') parts.push('todo en nómina');
+    if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
     else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
     else if (num(a.part) > 0)
       parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}${per} en nómina`);

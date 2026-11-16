@@ -114,14 +114,14 @@ The «Pago» section of the form is a view over `terms`; it saves no fields of i
 
 | Answer | Fields |
 |---|---|
-| Todo | `payrollMin: false`, `payType: 'net'`, `payAmount` and `payUnit` = amount and unit, `cashMode: 'amount'`, `cashAmount: ''` |
+| Todo | `payrollMin: false`, `payType` net or gross (the seg «neto, lo que llega» / «bruto, como en la nómina» shows for «Todo» and «Una parte»; without a contract or as autónomo it does not), `payAmount` and `payUnit` = amount and unit, `cashMode: 'amount'`, `cashAmount: ''` |
 | El mínimo (el salario mínimo) | `payrollMin: true`, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
 | Una parte | `payrollMin: false`, `payAmount` = the part, `payType` net or gross, `payUnit` = unit, `cashMode: 'total'`, `totalAmount` and `totalUnit` = amount and unit |
 | Sin contrato | `contract: 'none'`, `cashAmount` and `cashUnit` = amount and unit |
 
 En negro is never asked: it is the model's `split.cash`. «Una parte» without the part is missing (`payrollPart`), as the model would take all of it as en negro. The vacation answers are `terms.vacation`; «Las libro» is hidden when `vacationPayable`: the contract is casual (`isCasual`: temporary, `natDays` of the schedule up to `LAW.casualMaxDays`) or lasts a month or less of any kind (`isShortContract`), the cases where the vacation may be paid instead of taken. The same rule decides whether paying it is legal in `rights.js`, so an option the form hides is never the one the verdict asks for. It does not change the default `defaultVacation` sets (only a month or less); an offer that already has «Las libro» keeps it, with a hint.
 
-Shapes the answers cannot say are converted once, in `ingestSaved` (every load path), by `toAnswerable`: a yearly amount becomes monthly, «total» without a duration becomes a month, and a payslip with en negro money, or a part whose unit differs from the total's, becomes «Una parte» with total = net payslip + en negro in the payslip's unit. A conversion is kept only if the earnings, gross, net, cash and debt figures stay within a cent. The exception is a net payslip with en negro money and vacation inside the pay: with a total the model puts the vacation on top of the payslip, so both amounts are kept and only that treatment of the vacation moves.
+Shapes the answers cannot say are converted once, in `ingestSaved` (every load path), by `toAnswerable`: a yearly amount becomes monthly, «total» without a duration becomes a month, and a payslip with en negro money, or a part whose unit differs from the total's, becomes «Una parte» with total = net payslip + en negro in the payslip's unit. A gross payslip with no en negro money is «Todo» told gross (`partType` of `answersOf`), not converted. A conversion is kept only if the earnings, gross, net, cash and debt figures stay within a cent. The exception is a net payslip with en negro money and vacation inside the pay: with a total the model puts the vacation on top of the payslip, so both amounts are kept and only that treatment of the vacation moves.
 
 ## Rules added in November 2026
 

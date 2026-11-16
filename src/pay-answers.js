@@ -17,7 +17,7 @@ import { DEF_TERMS, isShortContract } from './offer.js';
  * @property {number | string} amount everything together, in `unit` (what reaches the shepherd)
  * @property {'day' | 'month' | 'total'} unit
  * @property {number | string} part with «part»: what goes on the payslip, in `unit`
- * @property {'net' | 'gross'} partType with «part»: whether `part` is net or gross
+ * @property {'net' | 'gross'} partType whether what goes on the payslip is net or gross: `part` with «part», `amount` with «all»
  */
 
 /** The answers an offer's terms give. For a shape the questions cannot say (`isAnswerable`), the nearest reading. */
@@ -28,7 +28,7 @@ export function answersOf(t) {
   if (t.payrollMin) return { ...none, payroll: 'min', amount: t.totalAmount, unit: t.totalUnit };
   if (t.cashMode === 'total')
     return { payroll: 'part', amount: t.totalAmount, unit: t.totalUnit, part: t.payAmount, partType: t.payType };
-  return { ...none, payroll: 'all', amount: t.payAmount, unit: t.payUnit };
+  return { ...none, payroll: 'all', amount: t.payAmount, unit: t.payUnit, partType: t.payType };
 }
 
 /** Puts the answers in the terms, each path with its own fields and the others cleared of what would add to it. */
@@ -67,7 +67,7 @@ export function writeAnswers(t, { payroll, amount, unit, part, partType }) {
       payrollMin: false,
       cashMode: 'amount',
       cashAmount: '',
-      payType: 'net',
+      payType: partType,
       payAmount: amount,
       payUnit: unit,
     });
@@ -83,7 +83,7 @@ export function isAnswerable(t) {
   if (t.contract === 'selfEmployed') return t.cashMode !== 'total' && unitFits(t.payUnit, t);
   if (t.payrollMin) return t.cashMode === 'total' && unitFits(t.totalUnit, t);
   if (t.cashMode === 'total') return t.payUnit === t.totalUnit && unitFits(t.payUnit, t);
-  return t.payType === 'net' && !(num(t.cashAmount) > 0) && unitFits(t.payUnit, t);
+  return !(num(t.cashAmount) > 0) && unitFits(t.payUnit, t);
 }
 
 /**

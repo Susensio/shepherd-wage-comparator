@@ -57,8 +57,8 @@ const offerWith = (terms) =>
 test('every sample offer keeps its earnings and debt once converted', () => {
   const offers = sample.offers.map(normalizeOffer);
   const converted = offers.filter((offer) => convert(offer, offers)).map((offer) => offer.mine.name);
-  // A gross payslip with nothing en negro is the only sample shape the questions did not have
-  assert.deepEqual(converted, ['Invernada C']);
+  // A gross payslip with nothing en negro is «Todo» as it is: every sample shape is one the questions have
+  assert.deepEqual(converted, []);
 });
 
 test('each sample offer reads as the expected answers', () => {
@@ -74,7 +74,7 @@ test('each sample offer reads as the expected answers', () => {
     'Puerto A': ['part', 'month', 'seasonal', 'net'],
     'Puerto A, otra cuenta': ['part', 'month', 'seasonal', 'gross'],
     'Campaña B': ['min', 'day', 'seasonal'],
-    'Invernada C': ['part', 'month', 'temporary', 'gross'],
+    'Invernada C': ['all', 'month', 'temporary'],
     'Sin contrato D': ['none', 'day', 'none'],
     'Temporada E': ['all', 'total', 'seasonal'],
     'Temporada F': ['all', 'day', 'seasonal'],
@@ -147,10 +147,15 @@ test('a total without a duration is a month', () => {
   assert.equal(offer.terms.payUnit, 'month');
 });
 
-test('a gross payslip with vacation inside the pay is said as its net', () => {
+test('a gross payslip with vacation inside the pay is «Todo», gross, as it is', () => {
   const offer = offerWith({ payType: 'gross', payAmount: 1500, vacation: 'included' });
-  assert.equal(convert(offer, [offer]), true);
-  assert.deepEqual([answersOf(offer.terms).payroll, offer.terms.payType], ['all', 'net']);
+  assert.equal(convert(offer, [offer]), false);
+  assert.deepEqual(
+    [answersOf(offer.terms).payroll, answersOf(offer.terms).partType, offer.terms.payType],
+    ['all', 'gross', 'gross'],
+  );
+  const net = offerWith({ payType: 'net', payAmount: 1500 });
+  assert.equal(answersOf(net.terms).partType, 'net');
 });
 
 test('a net payslip, en negro money and vacation inside the pay keep both amounts; only the vacation treatment moves', () => {
@@ -206,9 +211,9 @@ test('the answers go to the terms by the mapping and read back', () => {
   const all = read('all');
   assert.deepEqual(
     [all.payrollMin, all.payType, all.payAmount, all.payUnit, all.cashMode, all.cashAmount],
-    [false, 'net', 60, 'day', 'amount', ''],
+    [false, 'gross', 60, 'day', 'amount', ''],
   );
-  assert.deepEqual(answersOf(read('all')), { payroll: 'all', amount: 60, unit: 'day', part: '', partType: 'net' });
+  assert.deepEqual(answersOf(read('all')), { payroll: 'all', amount: 60, unit: 'day', part: '', partType: 'gross' });
   assert.deepEqual(answersOf(read('min')), { payroll: 'min', amount: 60, unit: 'day', part: '', partType: 'net' });
   assert.deepEqual(answersOf(read('part')), { payroll: 'part', amount: 60, unit: 'day', part: 40, partType: 'gross' });
   assert.deepEqual(answersOf(read('none')), { payroll: 'none', amount: 60, unit: 'day', part: '', partType: 'net' });
@@ -217,4 +222,18 @@ test('the answers go to the terms by the mapping and read back', () => {
   const terms = read('none');
   writeAnswers(terms, { payroll: 'all', amount: 60, unit: 'day', part: '', partType: 'net' });
   assert.equal(terms.contract, 'temporary');
+});
+
+test('«Todo» told gross: the payslip is the amount as entered, and the net comes out of it', () => {
+  const offer = offerWith({
+    payType: 'gross',
+    payAmount: 1300,
+    payUnit: 'month',
+    vacation: 'taken',
+    extraPays: 'included',
+  });
+  const r = calc(offer, { cfg, offers: [offer] });
+  assert.ok(Math.abs(r.pay.gross - 1300 * r.time.months) < 0.01, 'the gross is what was typed');
+  assert.ok(Math.abs(r.pay.entered.gross - 1300) < 0.01);
+  assert.ok(r.pay.net < r.pay.gross, 'the net is lower');
 });

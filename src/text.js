@@ -214,7 +214,7 @@ function payToldPlain(o, r, vacation) {
   if (a.payroll === 'self')
     return `${fEntered(amount)} ${per} ${o.terms.vatIncluded ? 'con el IVA dentro' : 'más IVA'} · en factura, como autónomo`;
   const parts = [`${fEntered(amount)} ${per}`];
-  if (a.payroll === 'all') parts.push('todo en nómina');
+  if (a.payroll === 'all') parts.push(a.partType === 'gross' ? 'todo en nómina, bruto' : 'todo en nómina');
   else if (a.payroll === 'min') parts.push('el salario mínimo en nómina');
   else if (num(a.part) > 0) parts.push(`${fEntered(num(a.part))} ${a.partType === 'gross' ? 'brutos ' : ''}en nómina`);
   else parts.push('una parte en nómina');
