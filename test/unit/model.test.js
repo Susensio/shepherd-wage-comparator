@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { num } from '../../src/format.js';
 import { LAW, MIN_WAGE, minWageOf, ssOf } from '../../src/law.js';
-import { calc, calcTermsOnly, yearMoney } from '../../src/model/calc.js';
+import { calc, calcTermsOnly } from '../../src/model/calc.js';
 import { monthlyPayslips } from '../../src/model/payslips.js';
 import { irpfTax, unemploymentBenefit } from '../../src/model/tax.js';
 import { claimDeadlines, payrollMonths } from '../../src/model/time.js';
@@ -347,28 +347,6 @@ test("Huesca's agreement hours change the hourly figures and nothing else of a j
   assert.ok(differing.includes('.min.hourly') && differing.includes('.extra.overtimeValue'));
   near(huesca.min.hourly, other.min.hourly * (1826 / 1760), 1e-9, 'hourly minimum');
   near(huesca.min.hourly, huesca.wage.annual / 1760, 1e-9, 'annual wage over 1,760 hours');
-});
-
-test('yearMoney: recorded cobros of the year apart from what the offers project, never added', () => {
-  const job = (payments, received, share) => ({
-    o: { mine: { record: { payments } } },
-    r: { earnings: { received } },
-    share,
-  });
-  const items = [
-    job(
-      [
-        { date: '2026-03-02', amount: 300 },
-        { date: '2025-12-30', amount: 90 },
-      ],
-      1000,
-      0.5,
-    ),
-    job([], 400, 1),
-  ];
-  const money = yearMoney(items, '2026');
-  assert.equal(money.recorded, 300);
-  assert.equal(money.projected, 900);
 });
 
 test('without a contract the job is measured as a fixed one (ET 15.4): monthly minimum, SS of «none», no severance', () => {

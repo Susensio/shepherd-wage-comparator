@@ -90,3 +90,62 @@ test('the head to head starts from a button at the top of the ranking, and no me
   await start.click();
   await expect(page.locator('#cmpBlk')).toContainText('Marca dos ofertas.');
 });
+
+test.describe('real and agreed figures', () => {
+  test.use({ today: '2026-11-15' });
+  const PUERTO_A_OTRA = 1;
+  const row = (page, name) =>
+    page.locator('#cmpBlk .lr', { has: page.locator('.nm b', { hasText: new RegExp(`^${name}$`) }) });
+
+  /** Closes the record of the active job with a total cobrado of 1.500 €, far below what was agreed. */
+  const closeRecord = (page) =>
+    page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      const { settleOffer } = await import('./src/state.js');
+      const o = app.active();
+      offers.addPayment(o, { date: '2026-09-30', amount: 1500, via: 'payroll' });
+      for (const r of settleOffer(o).rows)
+        offers.closeMonth(o, { key: r.month, from: r.calendarFrom, to: r.calendarTo });
+      offers.completeRecord(o);
+      app.select(o.id);
+    });
+  const figure = (page, name) => row(page, name).locator('.fig').textContent();
+
+  test('each row says «pactado», or «real» for a job finished with its record closed', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.click('.tabs [data-tab=compare]');
+    await expect(page.locator('#cmpBlk .lr .basis.real')).toHaveCount(0);
+    expect(await page.locator('#cmpBlk .lr .basis').allTextContents()).not.toContain('real');
+    await expect(row(page, 'Campaña B').locator('.basis')).toHaveText('pactado');
+    await expect(page.getByLabel('Lo pactado')).toHaveCount(0);
+    await page.evaluate(() => app.showTab('offers'));
+    await closeRecord(page);
+    await page.click('.tabs [data-tab=compare]');
+    await expect(row(page, 'Puerto A, otra cuenta').locator('.basis')).toHaveText('real');
+    await expect(row(page, 'Campaña B').locator('.basis')).toHaveText('pactado');
+  });
+
+  test('«Lo pactado» compares the agreed figures for all, and the real ones come back when it is off', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await closeRecord(page);
+    await page.click('.tabs [data-tab=compare]');
+    const real = await figure(page, 'Puerto A, otra cuenta');
+    await page.getByLabel('Lo pactado').check();
+    await expect(page.locator('#cmpBlk .basis.real')).toHaveCount(0);
+    await expect(row(page, 'Puerto A, otra cuenta').locator('.basis')).toHaveText('pactado');
+    expect(await figure(page, 'Puerto A, otra cuenta')).not.toBe(real);
+    await expect(page.locator('#cmpBlk .hint').first()).toBeVisible();
+    await page.getByLabel('Lo pactado').uncheck();
+    expect(await figure(page, 'Puerto A, otra cuenta')).toBe(real);
+  });
+
+  test('«Año a año» is gone, the trend over time stays', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.click('.tabs [data-tab=compare]');
+    await expect(page.locator('#tlBlk')).toBeVisible();
+    await expect(page.locator('#trend')).not.toBeEmpty();
+    await expect(page.getByText('Año a año')).toHaveCount(0);
+  });
+});

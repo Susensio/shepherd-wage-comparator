@@ -3,7 +3,6 @@
 import { html, nothing, svg } from 'lit-html';
 import { fCount, fDate, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
-import { yearMoney, yearShares } from '../model/calc.js';
 import { workedOffers } from '../model/phase.js';
 import { DAY_MS, datesText, isComplete, missing, spanOf } from '../offer.js';
 import { failuresOf, H_MAX, H_ORDINARY, LAW_SHORT } from '../rights.js';
@@ -32,13 +31,16 @@ const unitPicker = (unit, scope) =>
  * The view switches, as chips under the ranking: the offers that were only offers (shown apart), and the figures of
  * the terms alone (forced on by other shepherds' offers). One hint line, only when something needs saying.
  */
-function viewSwitches({ scope, termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly }) {
+function viewSwitches({ scope, termsOnly, forced, showOfferOnly, offerOnlyCount, moneyOnly, realCount, agreedOnly }) {
   const hint = [
     forced
       ? 'Con ofertas de otros pastores se comparan sin desplazamientos ni gastos de nadie.'
       : termsOnly
         ? 'Sin desplazamientos ni gastos propios, y con el IRPF como si no se cobrara nada más ese año.'
         : '',
+    agreedOnly && scope === 'compare'
+      ? 'Se comparan las cifras pactadas, también en los trabajos con el registro cerrado.'
+      : '',
     offerOnlyCount && !showOfferOnly
       ? offerOnlyCount === 1
         ? 'Se oculta 1 de solo oferta.'
@@ -54,6 +56,11 @@ function viewSwitches({ scope, termsOnly, forced, showOfferOnly, offerOnlyCount,
     ${
       offerOnlyCount
         ? html`<label class="check"><input type="checkbox" name=${fieldName(scope, 'showOfferOnly')} .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
+        : nothing
+    }
+    ${
+      scope === 'compare' && (realCount || agreedOnly)
+        ? html`<label class="check"><input type="checkbox" name="agreedOnly" .checked=${agreedOnly}>Lo pactado</label>`
         : nothing
     }
     <label class="check"><input type="checkbox" name=${fieldName(scope, 'termsOnly')} .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
@@ -270,12 +277,13 @@ function hoursView(list) {
  * alone (ADR-0013, ADR-0030).
  * @param {object} args
  * @param {'compare' | 'others'} args.scope
- * @param {{o: object, r: object, sharer?: object}[]} args.everything your offers and, with `sharer`, other shepherds' ones, with their figures
+ * @param {{o: object, r: object, sharer?: object, real?: boolean}[]} args.everything your offers and, with `sharer`, other shepherds' ones, with their figures
  * @param {string} args.unit
  * @param {boolean} args.termsOnly show the figures of the terms alone (always, in 'others')
  * @param {{status: string, items: object[]}} args.others how loading other shepherds' offers went; used by 'others'
  * @param {{on: boolean, ids: string[], scope: string}} args.pairing «Comparar dos»: whether it is on, which offers are picked and in which ranking
  * @param {boolean} args.showOfferOnly rank the offers of solo oferta, yours or others', shown apart
+ * @param {boolean} [args.agreedOnly] rank the figures agreed in every job: the «Lo pactado» switch
  * @param {boolean} args.moneyOnly rank by what you earn alone: by default the paro each offer generates is added (ADR-0022)
  * @returns {{picker: unknown, body: unknown, more: unknown}}
  */
@@ -288,6 +296,7 @@ export function compareView({
   pairing: allPairing,
   showOfferOnly,
   moneyOnly,
+  agreedOnly = false,
 }) {
   const pairing = allPairing.scope === scope ? allPairing : { on: false, ids: [], scope };
   const U = UNITS[unit];
@@ -313,6 +322,8 @@ export function compareView({
     showOfferOnly,
     offerOnlyCount,
     moneyOnly,
+    realCount: everything.filter((x) => x.real).length,
+    agreedOnly,
   })}${scope === 'others' ? othersControl(others) : nothing}`;
   if (list.length < 2) {
     const incomplete = all.filter(({ o }) => !isComplete(o.terms));
@@ -354,7 +365,7 @@ export function compareView({
     const hoursCls = r.time.hoursPerWeek <= H_ORDINARY ? '' : r.time.hoursPerWeek <= H_MAX ? 'warn' : 'bad';
     const content = html`<span class="n">${pairing.on ? (picked ? '●' : '○') : n + 1}</span><span class="nm"><b>${o.mine.name}</b>${detailOf(x)}</span><span class="v"><span class="fig">${figure(r)}</span>${moneyOnly ? nothing : paroLine(r)}</span>
       ${incomeBar(r, max, per(r))}
-      <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
+      <span class="det">${x.sharer ? html`<span class="who">otro pastor</span>` : nothing}${scope === 'compare' ? html`<span class=${x.real ? 'basis real' : 'basis'}>${x.real ? 'real' : 'pactado'}</span>` : nothing}${isOfferOnly(x) ? html`<span class="offer-only-tag">solo oferta</span>` : nothing}${r.noContract ? nothing : cashText(r)}${legalShort(o, r)}<span class=${hoursCls}>${fN(r.time.hoursPerWeek)}\u00a0h/sem</span>${
         isWorthCounting(debt)
           ? html`<span class="bad">Falta para el mínimo ${isUnderAMonth(r) ? `${fE(debt)} en total` : `${fE(inUnit(debt, r, 'month'))} al mes`}</span>`
           : nothing
@@ -494,48 +505,4 @@ export function trendView(all, unit, width) {
     )}</svg>
     <p class="hint">Solo las ofertas trabajadas: con fecha y sin «solo oferta».</p>
     </div>`;
-}
-
-/**
- * What was worked each year: days, money, what you earn and contributions. Each contract is split by days between
- * the years it touches; offers you did not work are left out.
- */
-export function yearlyView(all) {
-  const byYear = {};
-  const worked = new Set(workedOffers(all.map((x) => x.o)));
-  for (const { o, r } of all) {
-    if (!worked.has(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
-    for (const [year, share] of Object.entries(yearShares(o.terms)))
-      byYear[year] = [...(byYear[year] || []), { o, r, share }];
-  }
-  const years = Object.keys(byYear).sort().reverse();
-  if (!years.length) return nothing;
-  const columns = years.map((year) => {
-    const items = byYear[year];
-    const sum = (fn) => items.reduce((s, { r, share }) => s + fn(r) * share, 0);
-    const { recorded, projected: money } = yearMoney(items, year);
-    const hours = sum((r) => r.time.hours);
-    return {
-      year,
-      jobs: items.length,
-      days: sum((r) => r.time.daysWorked),
-      recorded,
-      money,
-      cash: sum((r) => r.cash.total),
-      perHour: hours > 0 ? money / hours : 0,
-      earned: sum((r) => r.earnings.total),
-      contrib: sum((r) => r.unemployment.contribDays),
-    };
-  });
-  const row = (label, cell) => html`<tr><th>${label}</th>${columns.map((c) => html`<td>${cell(c)}</td>`)}</tr>`;
-  return html`<div class="yearly"><h4 class="sub">Año a año</h4><div class="tablew"><table class="table">
-    <thead><tr><th></th>${columns.map((c) => html`<th>${c.year}<small>${c.jobs === 1 ? '1 oferta' : `${c.jobs} ofertas`}</small></th>`)}</tr></thead><tbody>
-    ${row('Días trabajados', (c) => fN(c.days))}
-    ${columns.some((c) => c.recorded > 0.5) ? row('Cobrado', (c) => (c.recorded > 0.5 ? fE(c.recorded) : '—')) : nothing}
-    ${row('Según las ofertas', (c) => fE(c.money))}
-    ${columns.some((c) => c.cash > 0.5) ? row('de ello, en negro', (c) => (c.cash > 0.5 ? `${fN((c.cash / c.money) * 100)}\u00a0%` : '—')) : nothing}
-    ${row('Por hora, según las ofertas', (c) => fE(c.perHour, 2))}
-    ${row('Total', (c) => fE(c.earned))}
-    ${row('Días cotizados', (c) => fN(c.contrib))}
-    </tbody></table></div><p class="hint">Sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p></div>`;
 }

@@ -160,7 +160,11 @@ describe('use (a): an offer that was worked and recorded', () => {
     near(real.earnings.perDay, 4000 / 66, 'perDay', 0.01);
     near(real.earnings.perHour, 4000 / 528, 'perHour', 0.01);
     near(real.earnings.perMonth, 4000 / real.time.months, 'perMonth', 0.01);
+    // the parts of the bar: the money received as one part, so the parts add up to the total
+    near(real.earnings.parts.base, 4000, 'parts.base', 0.01);
+    assert.equal(real.earnings.parts.b + real.earnings.parts.vacationPay + real.earnings.parts.extraPays, 0);
     const agreed = actualFigures(offer, TODAY, r);
+    assert.equal(agreed.earnings.parts, r.earnings.parts);
     assert.equal(agreed.earnings.total, r.earnings.total);
     assert.equal(agreed.time.daysWorked, r.time.daysWorked);
   });

@@ -85,7 +85,7 @@ export function happenedOf(offer, today, r, settled = settle(offer, offer.mine.r
  * @param {string} today
  * @param {ReturnType<typeof import('./calc.js').calc>} r
  * @param {ReturnType<typeof happenedOf>} [happened] when the caller has it already
- * @returns {{ real: boolean, earnings: { total: number, perHour: number, perDay: number, perMonth: number }, time: { daysWorked: number, months: number, hours: number } }}
+ * @returns {{ real: boolean, earnings: { total: number, perHour: number, perDay: number, perMonth: number, parts: object }, time: { daysWorked: number, months: number, hours: number } }}
  */
 export function actualFigures(offer, today, r, happened = happenedOf(offer, today, r)) {
   const agreed = {
@@ -95,6 +95,7 @@ export function actualFigures(offer, today, r, happened = happenedOf(offer, toda
       perHour: r.earnings.perHour,
       perDay: r.earnings.perDay,
       perMonth: r.earnings.perMonth,
+      parts: r.earnings.parts,
     },
     time: { daysWorked: r.time.daysWorked, months: r.time.months, hours: r.time.hours },
   };
@@ -110,6 +111,16 @@ export function actualFigures(offer, today, r, happened = happenedOf(offer, toda
       perHour: hours > 0 ? total / hours : 0,
       perDay: daysWorked > 0 ? total / daysWorked : 0,
       perMonth: months > 0 ? total / months : 0,
+      // The money that reaches the shepherd is what was received, as one part; housing, meals and severance stay as agreed
+      parts: {
+        ...r.earnings.parts,
+        base: happened.money.received,
+        extraPays: 0,
+        vacationPay: 0,
+        b: 0,
+        km: 0,
+        invoice: 0,
+      },
     },
     time: { daysWorked, months, hours },
   };

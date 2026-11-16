@@ -39,23 +39,6 @@ export function yearShares(terms) {
 }
 
 /**
- * The money of one year, from the jobs that touch it: what was recorded (`recorded`: the cobros dated in that year, net,
- * as they arrived) and what the offers say (`projected`: `earnings.received` of each, split by days, which for a job
- * with cobros is only a reference). The two are never added.
- * @param {{ o: { mine: { record?: { payments?: { date: string, amount: number }[] } } }, r: { earnings: { received: number } }, share: number }[]} items
- * @param {string} year
- */
-export function yearMoney(items, year) {
-  const recorded = items.reduce(
-    (total, { o }) =>
-      total + (o.mine.record?.payments ?? []).filter((p) => p.date.startsWith(year)).reduce((t, p) => t + p.amount, 0),
-    0,
-  );
-  const projected = items.reduce((total, { r, share }) => total + r.earnings.received * share, 0);
-  return { recorded, projected };
-}
-
-/**
  * For IRPF: for each year the offer touches, its share of the gross and what your other worked offers earn on payroll
  * that year (also split by days). The others are calculated on their own, to avoid going round in circles.
  */

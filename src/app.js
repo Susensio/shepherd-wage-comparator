@@ -6,11 +6,12 @@
 import { render } from 'lit-html';
 import { $ } from './dom.js';
 import { calcTermsOnly } from './model/calc.js';
+import { actualFigures } from './model/happened.js';
 import { cardOf, pillPhase } from './model/job-view.js';
 import { phaseOf, workedOffers } from './model/phase.js';
 import { defaultVacation, missing, todayISO } from './offer.js';
 import { offers } from './offers.js';
-import { active, calcOffer, myOffers, resetFigures, settleOffer, state } from './state.js';
+import { active, calcOffer, happenedOffer, myOffers, resetFigures, settleOffer, state } from './state.js';
 import { FIELD_OF_MISSING, STEP_OF_MISSING } from './steps.js';
 import { placesIfLoaded, placesStatus, preloadPlaces } from './storage/places.js';
 import { PHASE_TEXT, sharedLabels } from './text.js';
@@ -32,7 +33,7 @@ import { dismissReview, dossierContext, forgetRecordUi, recordContext } from './
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
 import { legalPageView } from './views/claim.js';
-import { compareView, trendView, yearlyView } from './views/compare.js';
+import { compareView, trendView } from './views/compare.js';
 import { dossierView } from './views/dossier.js';
 import { fichaView } from './views/ficha.js';
 import { fillForm, paintForm } from './views/form.js';
@@ -71,7 +72,18 @@ function markMissing() {
 
 /** Your offers with their figures: full, or from their terms alone when that is on. */
 const compared = () =>
-  myOffers().map((o) => ({ o, r: state.termsOnly ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o) }));
+  myOffers().map((o) => {
+    const r = state.termsOnly ? calcTermsOnly(o, { cfg: state.config }) : calcOffer(o);
+    if (state.agreedOnly) return { o, r, real: false };
+    // A job finished with its record closed is ranked by what happened (`actualFigures`), the rest by what was agreed
+    const actual = actualFigures(o, todayISO(), r, happenedOffer(o));
+    if (!actual.real) return { o, r, real: false };
+    return {
+      o,
+      r: { ...r, earnings: { ...r.earnings, ...actual.earnings }, time: { ...r.time, ...actual.time } },
+      real: true,
+    };
+  });
 
 /**
  * Other shepherds' offers with their terms-only figures and the label that tells same-named ones apart. One that
@@ -112,6 +124,7 @@ export function paintCompare() {
     pairing: state.pairing,
     showOfferOnly: state.showOfferOnly,
     moneyOnly: state.moneyOnly,
+    agreedOnly: state.agreedOnly,
   });
   render(picker, $('#cmpView'));
   render(body, $('#cmpBlk'));
@@ -174,7 +187,6 @@ function paintTimeline(all = compared()) {
   const dated = workedOffers(all.map((x) => x.o)).length > 0;
   $('#tlBlk').hidden = !dated;
   render(dated ? trendView(all, state.cmpUnit, $('#cmpBlk').clientWidth) : '', $('#trend'));
-  render(dated ? yearlyView(all) : '', $('#yearly'));
 }
 
 /**

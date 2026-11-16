@@ -1033,6 +1033,15 @@ section.others p {
   color: var(--muted);
   font-style: italic;
 }
+.lr .det .basis {
+  color: var(--muted);
+  font-style: italic;
+}
+.lr .det .basis.real {
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 650;
+}
 .shared-conditions dt {
   color: var(--muted);
 }
@@ -2602,8 +2611,7 @@ details.paste > summary {
   flex-direction: column;
   gap: 6px;
 }
-.trend h4,
-.yearly h4 {
+.trend h4 {
   margin: 0;
   font-size: 15px;
 }
@@ -2644,12 +2652,6 @@ details.paste > summary {
 .trend .hit:focus-visible {
   fill: color-mix(in srgb, var(--ink) 7%, transparent);
 }
-.yearly {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 .owed .deadline {
   margin-top: 6px;
 }
@@ -2660,8 +2662,7 @@ details.paste > summary {
   gap: 12px;
 }
 .cmp .sub,
-.trend h4,
-.yearly h4 {
+.trend h4 {
   margin: 10px 0 0;
   font-family: var(--f-display);
   font-weight: 750;

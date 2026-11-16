@@ -464,6 +464,10 @@ export function setUpEvents() {
       state.moneyOnly = el.value === 'money';
       paintAll();
     }
+    if (name === 'agreedOnly') {
+      state.agreedOnly = el.checked;
+      paintAll();
+    }
     if (name === 'termsOnly') {
       state.termsOnly = el.checked;
       paintAll();
