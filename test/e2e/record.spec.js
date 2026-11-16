@@ -1031,7 +1031,7 @@ test.describe('the cards', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await page.evaluate(() => app.showTab('offers'));
     await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Acabada');
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toHaveText('Sin cobros apuntados');
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toHaveText('Sin registro');
     await expect(card(page, 'Campaña B').locator('.phase')).toHaveText('Acabada');
     await expect(card(page, 'Temporada F').locator('.phase')).toHaveCount(0);
     await expect(named(page, 'Puerto A').locator('.phase')).toHaveCount(0); // solo oferta

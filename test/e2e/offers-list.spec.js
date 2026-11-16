@@ -37,29 +37,12 @@ test('cards are grouped by year under a header, latest year first, «Por decidir
   expect(order.slice(at2025 + 1).length).toBeLessThanOrEqual(1);
 });
 
-test('a year header says how many were worked, what the offers say they pay and the days contributed, as «Año a año» does', async ({
-  loaded: page,
-}) => {
+test('a year header is the year and one sum, marked ≈ where it rests on what was agreed', async ({ loaded: page }) => {
   await withUndecided(page);
   const heads = await page.locator('#cards .year-head').allTextContents();
   const year = (y) => heads.find((h) => h.startsWith(`${y} ·`));
-  expect(year(2026)).toMatch(/^2026 · \d+ trabajadas · [\d.]+ € según las ofertas · [\d.]+ días cotizados$/);
-  expect(year(2025)).toMatch(/^2025 · 1 trabajada · [\d.]+ € según las ofertas · [\d.]+ días cotizados$/);
-  // The same figures as the table over time in Comparar
-  await page.click('.tabs [data-tab=compare]');
-  const cell = (label, column) =>
-    page
-      .locator('#yearly tr', { has: page.locator('th', { hasText: new RegExp(`^${label}$`) }) })
-      .locator('td')
-      .nth(column)
-      .textContent();
-  for (const [column, y] of [
-    [0, 2026],
-    [1, 2025],
-  ]) {
-    expect(year(y)).toContain(`${await cell('Según las ofertas', column)} según las ofertas`);
-    expect(year(y)).toContain(`${await cell('Días cotizados', column)} días cotizados`);
-  }
+  expect(year(2026)).toMatch(/^2026 · ≈ [\d.]+\s€$/);
+  expect(year(2025)).toMatch(/^2025 · ≈ [\d.]+\s€$/);
 });
 
 test('offers of solo oferta stay muted inside their year, and the hint explains the figures', async ({

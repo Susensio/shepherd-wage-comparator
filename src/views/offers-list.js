@@ -1,8 +1,8 @@
 /** Your offers as cards, and the templates to start a new one. */
 
 import { html, nothing } from 'lit-html';
-import { fCount, fDate, fE } from '../format.js';
-import { yearMoney, yearShares } from '../model/calc.js';
+import { fDate, fE } from '../format.js';
+import { yearShares } from '../model/calc.js';
 import { isWorked, workedOffers } from '../model/phase.js';
 import { datesText, isComplete, missing, parseDate, TEMPLATES, todayISO } from '../offer.js';
 import { herdText, PHASE_TEXT } from '../text.js';
@@ -21,38 +21,42 @@ const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
 
 /**
- * What was worked each year: how many offers, the cobros recorded, what the offers say they pay and the days contributed. Each contract is split by
- * days between the years it touches; offers of solo oferta, incomplete ones and those without a duration are left out.
+ * What each year came to, as one sum: per job the cobros of that year where they are known (a total told as approximate
+ * marks the sum «≈»), else what was agreed split by days (always «≈»). Each contract is split by days between the years it
+ * touches; offers of solo oferta, not yet started, incomplete or without a duration are left out.
  * @param {{ o: any, r: any }[]} items
- * @returns {Record<string, { jobs: number, recorded: number, projected: number, contrib: number }>}
+ * @returns {Record<string, { sum: number, approx: boolean, jobs: number }>}
  */
 function yearTotals(items) {
   const worked = new Set(workedOffers(items.map((x) => x.o)));
-  const parts = {};
+  /** @type {Record<string, { sum: number, approx: boolean, jobs: number }>} */
+  const years = {};
   for (const { o, r } of items) {
     if (!worked.has(o) || startsLater(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
-    for (const [year, share] of Object.entries(yearShares(o.terms)))
-      parts[year] = [...(parts[year] || []), { o, r, share }];
+    const { payments = [], paid } = o.mine.record;
+    for (const [year, share] of Object.entries(yearShares(o.terms))) {
+      years[year] ??= { sum: 0, approx: false, jobs: 0 };
+      const total = years[year];
+      total.jobs++;
+      if (payments.length) {
+        const here = payments.filter((p) => p.date.startsWith(year));
+        total.sum += here.reduce((t, p) => t + p.amount, 0);
+        total.approx ||= here.some((p) => p.approx);
+      } else if (paid === 'none') {
+        // nothing was received
+      } else {
+        total.sum += r.earnings.received * share;
+        total.approx = true;
+      }
+    }
   }
-  return Object.fromEntries(
-    Object.entries(parts).map(([year, list]) => {
-      const contrib = list.reduce((total, { r, share }) => total + r.unemployment.contribDays * share, 0);
-      return [year, { jobs: list.length, ...yearMoney(list, year), contrib }];
-    }),
-  );
+  return years;
 }
 
-/** «2026 · 3 trabajadas · 900 € cobrados · 14.200 € según las ofertas · 180 días cotizados» */
+/** «2026 · ≈ 12.681 €»: the year and one sum. */
 function yearHeading(year, totals) {
-  const { jobs = 0, recorded = 0, projected = 0, contrib = 0 } = totals ?? {};
-  const days = fCount(contrib);
-  const parts = [
-    jobs === 0 ? 'ninguna trabajada' : jobs === 1 ? '1 trabajada' : `${jobs} trabajadas`,
-    recorded >= 0.5 && `${fE(recorded)} cobrados`,
-    jobs > 0 && projected >= 0.5 && `${fE(projected)} según las ofertas`,
-    jobs > 0 && contrib >= 0.5 && `${days} ${days === '1' ? 'día cotizado' : 'días cotizados'}`,
-  ].filter(Boolean);
-  return html`<h3 class="year-head"><b>${year}</b> · ${parts.join(' · ')}</h3>`;
+  const { sum = 0, approx = false } = totals ?? {};
+  return html`<h3 class="year-head"><b>${year}</b>${sum >= 0.5 ? html` · ${approx ? '≈ ' : ''}${fE(sum, 0)}` : nothing}</h3>`;
 }
 
 /**
@@ -85,17 +89,16 @@ export function offersListView(items, activeId) {
   )}${years.length ? html`<p class="hint">Cada año cuenta sin las de solo oferta. Si un contrato pasa de un año a otro, se reparte por días.</p>` : nothing}`;
 }
 
-/** «· plazo pasado» or «· hasta el 31 mar 2027»: when what is owed can still be claimed. */
+/** «· hasta el 31 mar 2027»: when what is owed can still be claimed; nothing once it lapsed (the status says «Prescrito»). */
 function claimNote(claim) {
-  if (!claim) return nothing;
-  if (claim.lapsed) return ' · plazo pasado';
+  if (!claim || claim.lapsed) return nothing;
   return claim.by ? ` · hasta el ${fDate(parseDate(claim.by))}` : nothing;
 }
 
 /** The status line of a job worked: red where the ganadero owes, amber where something remains to record. */
 function statusLine(status) {
   if (!status) return nothing;
-  return html`<span class=${status.tone ? `oc-status ${status.tone}` : 'oc-status'}>${status.text}${status.owed ? html` <b>${fE(status.owed, 0)}</b>` : nothing}${claimNote(status.claim)}</span>`;
+  return html`<span class=${status.tone ? `oc-status ${status.tone}` : 'oc-status'}>${status.text}${status.owed ? html` <b>${status.approx ? '≈ ' : ''}${fE(status.owed, 0)}</b>` : nothing}${claimNote(status.claim)}</span>`;
 }
 
 /**

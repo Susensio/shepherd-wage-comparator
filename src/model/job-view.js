@@ -3,7 +3,7 @@
  * open (ADR-0035). No DOM, no templates: `ui/record.js` supplies what the page remembers and paints the result.
  */
 
-import { isoOf, parseDate } from '../offer.js';
+import { isoOf, parseDate, payKnown } from '../offer.js';
 import { jobStatus, standingOf } from './accounts.js';
 import { hasFacts, jobStart, phaseOf } from './phase.js';
 
@@ -16,6 +16,15 @@ import { hasFacts, jobStart, phaseOf } from './phase.js';
  * @property {boolean | undefined} endLater «¿Cómo acabó?» put off for this session
  * @property {{ no: boolean, error?: string } | undefined} recall the answer to «¿Se llamó para la campaña?», if «No»
  */
+
+const BARE = {
+  phase: /** @type {const} */ ('finished'),
+  hasPayments: false,
+  owed: 0,
+  unclosed: 0,
+  complete: false,
+  bare: true,
+};
 
 /** The phase of an offer that has a record to show, or null: not decided, or only an offer. Thin terms still show it. */
 export function recordPhase(o, today) {
@@ -160,25 +169,31 @@ export function cardOf(o, r, settledOf, today) {
   if (phase === 'offerOnly' || !o.terms.start) return { phase: null, status: null };
   if (!recordPhase(o, today)) return { phase, status: null };
   const recordPhaseNow = /** @type {'underway' | 'finished'} */ (phase);
+  // Old jobs nobody recorded are calm and cost nothing to draw
+  if (recordPhaseNow === 'finished' && !hasFacts(o.mine.record))
+    return { phase, pill: pillPhase(o, phase), status: jobStatus(BARE) };
   const s = standingOf(settledOf(), today, recordPhaseNow, o.mine.record.payments, r.netFactor, o.mine.record.paid);
   return {
     phase,
     pill: pillPhase(o, phase),
     // A job not yet confirmed as started has nothing to record
-    status: unconfirmedStart(o, phase)
-      ? null
-      : jobStatus({
-          phase: recordPhaseNow,
-          hasPayments: s.hasPayments,
-          owed: s.falta,
-          unclosed: s.unclosed.length,
-          complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
-          claim: {
-            by: s.deadlines
-              .filter((d) => !d.lapsed)
-              .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
-            lapsed: s.lapsedAll,
-          },
-        }),
+    status:
+      unconfirmedStart(o, phase) || !payKnown(o.terms)
+        ? null
+        : jobStatus({
+            phase: recordPhaseNow,
+            hasPayments: s.hasPayments,
+            owed: s.falta,
+            unclosed: s.unclosed.length,
+            complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
+            window: s.firstDeadline !== null,
+            approx: !o.mine.record.paid && o.mine.record.payments.some((p) => p.approx),
+            claim: {
+              by: s.deadlines
+                .filter((d) => !d.lapsed)
+                .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
+              lapsed: s.lapsedAll,
+            },
+          }),
   };
 }

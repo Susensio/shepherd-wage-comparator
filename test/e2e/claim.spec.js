@@ -357,10 +357,17 @@ test.describe('the status of a card in Trabajos', () => {
     expect(year).toMatch(/^2026/);
   });
 
-  test('amber with nothing recorded, then with the months or the record not closed; nothing once settled and closed', async ({
+  test('grey with nothing recorded; amber while a deadline runs and nothing is recorded; calm once paid in full; «Todo cobrado» when closed', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
+    await list(page);
+    await expect(card(page)).toHaveClass(/st-grey/);
+    await expect(card(page).locator('.oc-status')).toHaveText('Sin registro');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.closeMonth(app.active(), { key: '2026-06', from: '2026-06-21', to: '2026-06-30' });
+    });
     await list(page);
     await expect(card(page)).toHaveClass(/st-amber/);
     await expect(card(page).locator('.oc-status')).toContainText('Sin cobros apuntados');
@@ -369,7 +376,8 @@ test.describe('the status of a card in Trabajos', () => {
       offers.addPayment(app.active(), { date: '2026-07-05', amount: 50000, via: 'payroll' });
     });
     await list(page);
-    await expect(card(page).locator('.oc-status')).toContainText('4 meses sin cerrar');
+    // Paid in full: nothing to claim, so no deadline runs and the card stays calm
+    await expect(card(page).locator('.oc-status')).toHaveCount(0);
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       const { settleOffer } = await import('./src/state.js');
@@ -377,7 +385,7 @@ test.describe('the status of a card in Trabajos', () => {
         offers.closeMonth(app.active(), { key: row.month, from: row.calendarFrom, to: row.calendarTo });
     });
     await list(page);
-    await expect(card(page).locator('.oc-status')).toContainText('Registro sin cerrar');
+    await expect(card(page).locator('.oc-status')).toHaveCount(0);
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       offers.completeRecord(app.active());
@@ -530,7 +538,7 @@ test.describe('a promise to pay', () => {
 test.describe('an old job: every month past its deadline', () => {
   test.use({ today: '2028-03-01' });
 
-  test('the line says when it passed, the request is informal only, and the card says «plazo pasado»', async ({
+  test('the line says when it passed, the request is informal only, and the card says «Prescrito», in grey', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -540,12 +548,13 @@ test.describe('an old job: every month past its deadline', () => {
     await expect(page.locator('#result .block.ask').getByRole('button', { name: 'Vía legal' })).toHaveCount(0);
     await expect(page.locator('details.step[data-step=talk]')).toBeVisible();
     await page.evaluate(() => app.showTab('offers'));
-    await expect(
-      page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),
-    ).toContainText('Debe el ganadero');
-    await expect(
-      page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),
-    ).toContainText('plazo pasado');
+    const card = page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' });
+    // Lapsed: grey and «Prescrito», never red
+    await expect(card.locator('.oc-status')).toContainText('Prescrito');
+    await expect(card.locator('.oc-status')).toHaveClass(/grey/);
+    await expect(card).toHaveClass(/st-grey/);
+    await expect(card).not.toHaveClass(/st-red/);
+    await expect(card.locator('.oc-status')).not.toContainText('Debe el ganadero');
   });
 });
 

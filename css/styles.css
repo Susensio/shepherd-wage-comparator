@@ -3959,6 +3959,12 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   color: var(--neg);
   font-weight: 600;
 }
+.ocard.st-grey {
+  box-shadow: inset 4px 0 0 var(--line);
+}
+.oc-status.grey {
+  color: var(--muted);
+}
 .oc-status.amber {
   color: var(--c-cash-t);
   font-weight: 600;

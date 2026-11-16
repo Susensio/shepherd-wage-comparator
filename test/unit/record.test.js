@@ -1037,6 +1037,26 @@ describe('the status of a job on its card', () => {
     assert.equal(job({ phase: 'underway', owed: 50, claim })?.claim, undefined);
   });
 
+  test('lapsed is grey «Prescrito», never red; a finished job nobody recorded is grey «Sin registro»', () => {
+    const claim = { by: null, lapsed: true };
+    assert.deepEqual(job({ owed: 120, claim }), { tone: 'grey', text: 'Prescrito', owed: 120 });
+    assert.equal(job({ phase: 'underway', owed: 50, claim })?.tone, 'red', 'under way nothing has lapsed');
+    assert.deepEqual(job({ hasPayments: false, bare: true }), { tone: 'grey', text: 'Sin registro' });
+    assert.equal(job({ phase: 'underway', hasPayments: false, bare: true }), null);
+  });
+
+  test('an approximate cobro marks what is owed', () => {
+    assert.equal(job({ owed: 120, approx: true })?.approx, true);
+    assert.equal(job({ owed: 120 })?.approx, undefined);
+  });
+
+  test('amber only while a claim deadline runs: after it, the job is calm', () => {
+    assert.equal(job({ hasPayments: false, window: false }), null);
+    assert.equal(job({ unclosed: 2, window: false }), null);
+    assert.equal(job({ complete: false, window: false }), null);
+    assert.equal(job({ complete: false, window: true })?.tone, 'amber');
+  });
+
   test('amber where something remains to record', () => {
     assert.deepEqual(job({ hasPayments: false }), { tone: 'amber', text: 'Sin cobros apuntados' });
     assert.equal(job({ unclosed: 1 })?.text, '1 mes sin cerrar');

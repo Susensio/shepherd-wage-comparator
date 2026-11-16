@@ -267,27 +267,44 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
 }
 
 /**
- * The status of a worked job on its card in Trabajos: a colour and one short line, or null where nothing is said.
- * Red where the ganadero owes (a cobro recorded and Falta above 0); amber where something remains to record (no cobro,
- * months not closed, a finished job's record not closed); plain «Todo cobrado» for a finished job settled and closed.
- * A job under way says nothing until a month has ended: there is nothing to record yet.
- * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean, claim?: { by: string | null, lapsed: boolean } }} job `unclosed`: months that have ended and are not closed; `claim`: the deadline of what is owed (`by`: the nearest not lapsed; `lapsed`: all of it is)
- * @returns {{ tone: 'red' | 'amber' | null, text: string, owed?: number, claim?: { by: string | null, lapsed: boolean } } | null}
+ * The status of a worked job on its card in Trabajos: a tone and one short line, or null where nothing is said. The list
+ * stays calm (ADR-0035): red only where the ganadero owes and the claim is still in time; amber only while a claim
+ * deadline runs (something remains to record); grey for a job finished with nothing recorded («Sin registro») and for
+ * what lapsed («Prescrito», never red); plain «Todo cobrado» for a job settled and closed. A job under way says nothing
+ * until a month has ended.
+ * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean, claim?: { by: string | null, lapsed: boolean }, bare?: boolean, window?: boolean, approx?: boolean }} job `unclosed`: months that have ended and are not closed; `claim`: the deadline of what is owed (`by`: the nearest not lapsed; `lapsed`: all of it is); `bare`: finished with nothing recorded; `window`: some deadline of what is due has not passed; `approx`: the cobros are approximate
+ * @returns {{ tone: 'red' | 'amber' | 'grey' | null, text: string, owed?: number, approx?: boolean, claim?: { by: string | null, lapsed: boolean } } | null}
  */
-export function jobStatus({ phase, hasPayments, owed, unclosed, complete, claim }) {
+export function jobStatus({
+  phase,
+  hasPayments,
+  owed,
+  unclosed,
+  complete,
+  claim,
+  bare = false,
+  window = true,
+  approx = false,
+}) {
   const finished = phase === 'finished';
-  if (hasPayments && owed > 0)
+  if (bare && finished) return { tone: 'grey', text: 'Sin registro' };
+  if (hasPayments && owed > 0) {
+    const about = approx ? { approx: true } : {};
+    if (finished && claim?.lapsed) return { tone: 'grey', text: 'Prescrito', owed, ...about };
     return {
       tone: 'red',
       text: finished ? 'Debe el ganadero' : 'Falta',
       owed,
+      ...about,
       ...(finished && claim ? { claim } : {}),
     };
+  }
   if (!finished && unclosed === 0) return null;
-  if (!hasPayments) return { tone: 'amber', text: 'Sin cobros apuntados' };
-  if (unclosed > 0)
-    return { tone: 'amber', text: unclosed === 1 ? '1 mes sin cerrar' : `${unclosed} meses sin cerrar` };
-  if (finished && !complete) return { tone: 'amber', text: 'Registro sin cerrar' };
+  /** @param {string} text */
+  const amber = (text) => (window ? { tone: /** @type {const} */ ('amber'), text } : null);
+  if (!hasPayments) return amber('Sin cobros apuntados');
+  if (unclosed > 0) return amber(unclosed === 1 ? '1 mes sin cerrar' : `${unclosed} meses sin cerrar`);
+  if (finished && !complete) return amber('Registro sin cerrar');
   return finished ? { tone: null, text: 'Todo cobrado' } : null;
 }
 

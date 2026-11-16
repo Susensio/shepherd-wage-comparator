@@ -76,16 +76,17 @@ test.describe('figures that must agree', () => {
     await expect(page.locator('#offerMenu [data-menu=copyClaim]')).toBeHidden();
   });
 
-  test('the year headers and «Año a año» keep what was cobrado apart from what the offers say', async ({ page }) => {
+  test('the year header is one sum, ≈ where agreed figures are in it; «Año a año» keeps cobros and offers apart', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await page.evaluate(() => app.showTab('offers'));
     const header = page.locator('#cards .year-head', { hasText: '2026' });
-    await expect(header).toContainText('según las ofertas');
-    await expect(header).not.toContainText('cobrados');
+    await expect(header).toHaveText(/^2026 · ≈ [\d.]+\s€$/);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await page.evaluate(() => app.showTab('offers'));
-    await expect(header).toContainText('1.000 € cobrados');
-    await expect(header).toContainText('según las ofertas');
+    // The other jobs of the year are still what was agreed
+    await expect(header).toHaveText(/^2026 · ≈ [\d.]+\s€$/);
     await page.click('.tabs [data-tab=compare]');
     const yearly = page.locator('.yearly');
     await expect(yearly.locator('th', { hasText: /^Según las ofertas$/ })).toBeVisible();
