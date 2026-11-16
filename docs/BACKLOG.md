@@ -59,3 +59,6 @@
 - The Expediente does not mark approximate cobros with «≈».
 - A month kept as counts cannot be turned back into per-day marks.
 - «Trabajo ya hecho» has no place, contract or hours fields.
+- Saved no-contract offers carry a vacation answer that was hidden until 16 November 2026 (often `taken` or `paidAtEnd` by default); they now owe no vacation silently. The screen shows the answer, so the shepherd can correct it; a migration was not judged worth it.
+- The Pago summary in Condiciones does not show the vacation answer for a job without a contract.
+- Vacation taken without a contract: the cash is paid per day worked, so the days off taken as vacation are not valued as paid.

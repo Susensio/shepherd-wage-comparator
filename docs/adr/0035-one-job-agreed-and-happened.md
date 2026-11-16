@@ -58,3 +58,8 @@ Weighed and discarded:
 - A finished job with no facts and no answer is bare (`isBare` in `job-view.js`): the ficha leads with the analysis and asks «¿Se cobró este trabajo?».
 - The Registro and «Trabajo ya hecho» are pages over the ficha, each with a history entry. «Trabajo ya hecho» needs only the first and last day; a total cobrado becomes one cobro on the last day.
 - The list is amber only while a claim deadline runs; «Sin registro» and «Prescrito» are grey. «Año a año» and `yearMoney` are gone.
+
+## Notes from the owner's first use (16 November 2026)
+
+- The question about what was paid answers «Todo lo pactado», «Una parte» or «Nada»; «Una parte» opens the cobro sheet at once, which can add several in a row. Cobros live on the ficha of any job that has them, not on the Registro page. «Trabajo ya hecho» takes a list of cobros instead of one total.
+- A job without a contract is asked about vacation too: taken or paid apart owes nothing; «dentro del pago» still owes it, since a job measured as fijo cannot fold vacation into the pay (ET 38.1).
