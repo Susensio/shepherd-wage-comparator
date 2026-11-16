@@ -322,6 +322,33 @@ test('sleeping out counts the bonus only where an agreement known for the provin
   assert.ok(huesca.extra.dayValue > plain.extra.dayValue);
 });
 
+test("Huesca's agreement hours change the hourly figures and nothing else of a job", () => {
+  const terms = { hoursPerDay: 10, daysOff: 1, payAmount: 1000 };
+  const other = figures({ ...terms, province: 'Z' });
+  const huesca = figures({ ...terms, province: 'HU' });
+  const differing = [];
+  const walk = (a, b, path) => {
+    if (a && typeof a === 'object') for (const key of Object.keys(a)) walk(a[key], b?.[key], `${path}.${key}`);
+    else if (typeof a !== 'function' && a !== b) differing.push(path);
+  };
+  walk(other, huesca, '');
+  const hourly = [
+    '.min.hourly',
+    '.extra.dayValue',
+    '.extra.daysValue',
+    '.extra.overtimeValue',
+    '.extra.overtimeUnpaid',
+    '.extra.daysUnpaid',
+  ];
+  const unexpected = differing.filter(
+    (path) => !hourly.includes(path) && !/^\.(extra\.overtimeUnpaidPerWeek|savings\.)/.test(path),
+  );
+  assert.deepEqual(unexpected, [], 'only the figures priced by the hour move');
+  assert.ok(differing.includes('.min.hourly') && differing.includes('.extra.overtimeValue'));
+  near(huesca.min.hourly, other.min.hourly * (1826 / 1760), 1e-9, 'hourly minimum');
+  near(huesca.min.hourly, huesca.wage.annual / 1760, 1e-9, 'annual wage over 1,760 hours');
+});
+
 test('yearMoney: recorded cobros of the year apart from what the offers project, never added', () => {
   const job = (payments, received, share) => ({
     o: { mine: { record: { payments } } },

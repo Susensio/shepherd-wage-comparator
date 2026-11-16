@@ -1,7 +1,7 @@
 /** Money: the payroll, the legal minimum, how an agreed total is split, and the car. */
 
 import { num } from '../format.js';
-import { LAW, overnightOf, ssOf } from '../law.js';
+import { annualHoursOf, LAW, overnightOf, ssOf } from '../law.js';
 import { DAYS_PER_MONTH, fromTotal } from '../offer.js';
 import { bisect, irpfAdded } from './tax.js';
 
@@ -77,7 +77,7 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
     overnightRate,
     overnightStay: stay,
     overnightAgreement: agreement,
-    hourly: wage.annual / LAW.annualHours,
+    hourly: wage.annual / annualHoursOf(terms.province, wage.year).hours,
   };
 }
 

@@ -400,9 +400,9 @@ export function trendView(all, unit, width) {
     const annual = r.wage.annual;
     const base =
       unit === 'hour'
-        ? annual / LAW.annualHours
+        ? r.min.hourly
         : unit === 'day'
-          ? (annual / LAW.annualHours) * LAW.workdayHours
+          ? r.min.hourly * LAW.workdayHours
           : unit === 'month'
             ? annual / 12
             : (r.min.salary + r.min.vacation) / bonus;
