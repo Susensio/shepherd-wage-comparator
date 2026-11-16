@@ -48,10 +48,12 @@ export async function addJob(page, { terms = {}, record = {}, name = 'Trabajo' }
   );
 }
 
-/** On the ficha of a job finished with nothing recorded, answers «No todo» to «¿Se cobró este trabajo?»: the accounts open. */
+/** On the ficha of a job finished with nothing recorded, answers «Una parte» to «¿Se cobró este trabajo?»: the accounts open, and the cobro sheet with them, which is closed. */
 export async function openAccounts(page) {
-  const some = page.getByRole('button', { name: 'No todo' });
-  if (await some.isVisible()) await some.click();
+  const some = page.getByRole('button', { name: 'Una parte', exact: true });
+  if (!(await some.isVisible())) return;
+  await some.click();
+  await page.locator('#paySheet [data-action=payCancel]').click();
 }
 
 /** On a first visit, leaves the welcome for the templates; nothing to do anywhere else. */

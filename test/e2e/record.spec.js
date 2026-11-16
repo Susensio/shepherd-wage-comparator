@@ -148,16 +148,15 @@ test.describe('under way: Registro', () => {
     const before = await figures();
     expect(before.cobrado).toBe(400);
     expect(Math.round((before.corresponde - before.cobrado) * 100) / 100).toBe(before.falta);
-    await openRegistro(page);
-    await page.locator('[data-action=openPaySheet]').click();
+    await page.locator('#result [data-action=openPaySheet]').click();
     await expect(page.locator('#paySheet')).toBeVisible();
     await expect(page.locator('#payDate')).toHaveValue('2026-08-12');
-    await page.locator('#payForm button[type=submit]').click();
+    await page.locator('#payForm .btns .pri').click();
     await expect(page.locator('#payError')).toContainText('cantidad');
     await page.locator('#payAmount').fill('300');
     await page.locator('#paySheet [data-via=cash]').click();
     await page.locator('#payNote').fill('adelanto');
-    await page.locator('#payForm button[type=submit]').click();
+    await page.locator('#payForm .btns .pri').click();
     await expect(page.locator('#paySheet')).toBeHidden();
     const after = await figures();
     expect(after.cobrado).toBe(700);
@@ -228,14 +227,13 @@ test.describe('under way: Registro', () => {
       { date: '2026-07-06', amount: 100, via: 'cash' },
       { date: '2026-07-07', amount: 50, via: 'cash' },
     ]);
-    await openRegistro(page);
-    await expect(page.locator('.cobros .pr')).toHaveCount(3);
+    await expect(page.locator('#result .cobros .pr')).toHaveCount(3);
     await expect(page.getByRole('button', { name: /Ver todos/ })).toHaveCount(0);
-    const rm = page.locator('.cobros .rm').first();
+    const rm = page.locator('#result .cobros .pr .rm:has-text("Quitar")').first();
     await rm.click();
     await expect(rm).toHaveText('¿Quitar?');
     await rm.click();
-    await expect(page.locator('.cobros .pr')).toHaveCount(2);
+    await expect(page.locator('#result .cobros .pr')).toHaveCount(2);
   });
 
   test('the record is saved with the offer', async ({ page }) => {
@@ -508,7 +506,8 @@ test.describe('finished: Cuentas', () => {
     await openRegistro(page);
     await expect(page.locator('#registroPage h1')).toContainText('Registro');
     await expect(page.locator('#registroPage .monthrow')).toHaveCount(4);
-    await expect(page.locator('#registroPage .cobros')).toBeVisible();
+    await expect(page.locator('#registroPage .cobros')).toHaveCount(0);
+    await expect(page.locator('#result .cobros')).toHaveCount(1);
   });
 
   test('«Oferta original» is one closed fold at the end, without «Para negociar», with the simulator', async ({

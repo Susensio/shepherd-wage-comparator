@@ -610,7 +610,10 @@
     <label class="fld">Fecha<input id="payDate" type="date"></label>
     <div class="fld"><span id="payViaLabel">Forma de pago</span><div class="seg" role="group" aria-labelledby="payViaLabel"><button type="button" data-action="payVia" data-via="payroll" aria-pressed="true">Nómina</button><button type="button" data-action="payVia" data-via="cash" aria-pressed="false">En mano</button></div></div>
     <label class="fld"><span>Nota <span class="hint">(opcional)</span></span><input id="payNote" type="text" autocomplete="off" placeholder="Por ejemplo: adelanto"></label>
+    <label class="check"><input type="checkbox" id="payApprox"> Es una cifra aproximada</label>
     <p class="hint bad" id="payError" role="alert"></p>
+    <p class="hint" id="payDone" role="status"></p>
+    <button type="submit" id="payMore" class="linkbtn" value="more">Guardar y apuntar otro</button>
     <div class="btns"><button type="submit" class="pri">Guardar</button><button type="button" data-action="payCancel">Cancelar</button></div>
   </form>
 </dialog>

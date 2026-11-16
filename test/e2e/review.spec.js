@@ -134,7 +134,7 @@ test.describe('Cuentas and Registro', () => {
     // It is the main state of the yellow block, with the way out right there
     const prompt = page.locator('.result .nocobros');
     await expect(prompt).toBeVisible();
-    await expect(prompt.getByRole('button', { name: '+ Apuntar cobro' })).toBeVisible();
+    await expect(prompt.getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
     await expect(prompt.getByRole('button', { name: 'No se cobró nada' })).toBeVisible();
     await expect(page.locator('[data-action=openPaySheet]')).toHaveCount(1);
   });
@@ -198,7 +198,7 @@ test.describe('Cuentas and Registro', () => {
     await expect(page.locator('.cal .day.out small').first()).toHaveText('fuera');
   });
 
-  test('the fold summaries share one style, and «Cobros» in the Registro is a small heading', async ({ page }) => {
+  test('the fold summaries share one style, and the Registro has no big headings', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
     await expect(page.locator('[data-fold=reference] > summary')).toHaveCSS('text-transform', 'uppercase');
@@ -206,7 +206,6 @@ test.describe('Cuentas and Registro', () => {
     await expect(page.locator('[data-fold=workings] > summary')).toHaveCSS('text-transform', 'uppercase');
     await openRegistro(page);
     await expect(page.locator('#registroPage h2')).toHaveCount(0);
-    await expect(page.locator('#registroPage h3', { hasText: 'Cobros' })).toBeVisible();
   });
 });
 

@@ -265,6 +265,27 @@ export function addPayment(record, { date, amount, via, note = '', approx = fals
   return payment;
 }
 
+/**
+ * Changes a payment in place, keeping its id: the fields as `addPayment` takes them.
+ * @param {OfferRecord} record
+ * @param {string} id
+ * @param {{ date: string, amount: number, via: 'payroll' | 'cash', note?: string, approx?: boolean }} fields
+ * @returns {import('./settle.js').Payment | null} null when there is no such payment or the amount is not a positive figure
+ */
+export function updatePayment(record, id, { date, amount, via, note = '', approx = false }) {
+  const payment = record.payments?.find((p) => p.id === id);
+  if (!payment || !(Number.isFinite(amount) && amount > 0) || !date) return null;
+  for (const key of ['note', 'approx']) delete payment[key];
+  Object.assign(payment, {
+    date,
+    amount,
+    via,
+    ...(note.trim() ? { note: note.trim() } : {}),
+    ...(approx ? { approx: true } : {}),
+  });
+  return payment;
+}
+
 /** Removes a payment by id. Returns whether there was one. */
 export function removePayment(record, id) {
   const at = record.payments?.findIndex((p) => p.id === id) ?? -1;

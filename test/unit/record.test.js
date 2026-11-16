@@ -31,6 +31,7 @@ import {
   startSick,
   toggleDay,
   unmarkStep,
+  updatePayment,
 } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
@@ -167,6 +168,17 @@ describe('payments', () => {
     assert.ok(removePayment(record, p.id));
     assert.equal(record.payments.length, 1);
     assert.equal(removePayment(record, 'nothing'), false);
+  });
+
+  test('a payment is changed in place, keeping its id; a bad change leaves it as it was', () => {
+    const record = emptyRecord();
+    const p = addPayment(record, { date: '2026-06-30', amount: 500, via: 'cash', note: 'adelanto', approx: true });
+    const changed = updatePayment(record, p.id, { date: '2026-07-02', amount: 450, via: 'payroll' });
+    assert.deepEqual(changed, { id: p.id, date: '2026-07-02', amount: 450, via: 'payroll' });
+    assert.equal(record.payments.length, 1);
+    assert.equal(updatePayment(record, p.id, { date: '2026-07-02', amount: 0, via: 'payroll' }), null);
+    assert.equal(updatePayment(record, 'nothing', { date: '2026-07-02', amount: 5, via: 'cash' }), null);
+    assert.equal(record.payments[0].amount, 450);
   });
 
   test('no amount, a zero one or no date is not a payment', () => {

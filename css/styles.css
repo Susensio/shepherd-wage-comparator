@@ -4088,6 +4088,10 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
   padding-inline: 10px;
   align-self: center;
 }
+/* «Editar» and «Quitar» of a cobro, side by side in its last cell */
+.pay .pr .rowbtns {
+  display: flex;
+}
 .via {
   font-weight: 600;
 }
@@ -5122,6 +5126,27 @@ body.reviewing .ficha > .back {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+.past-doc .past-cobros {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.past-doc .past-cobro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.past-doc .past-cobro .check {
+  grid-column: 1 / -1;
+}
+.past-doc .past-cobro .linkbtn {
+  grid-column: 1 / -1;
+  justify-self: end;
 }
 .past-doc .check {
   display: flex;

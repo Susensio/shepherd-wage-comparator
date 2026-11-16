@@ -14,7 +14,7 @@ import {
   paymentRequestText,
 } from '../claim-text.js';
 import { $ } from '../dom.js';
-import { fDate, num } from '../format.js';
+import { fDate, fE, fInputValue, num } from '../format.js';
 import { conciliationOffice } from '../law.js';
 import { addableMonth, balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
@@ -358,7 +358,11 @@ function sheetElements() {
     amount: /** @type {HTMLInputElement} */ ($('#payAmount')),
     date: /** @type {HTMLInputElement} */ ($('#payDate')),
     note: /** @type {HTMLInputElement} */ ($('#payNote')),
+    approx: /** @type {HTMLInputElement} */ ($('#payApprox')),
     error: $('#payError'),
+    done: $('#payDone'),
+    title: $('#payTitle'),
+    more: $('#payMore'),
   };
 }
 
@@ -372,14 +376,25 @@ const wayChosen = () =>
       .via ?? 'payroll'
   );
 
-function openPaySheet() {
+/** The cobro the sheet is changing, or null while it makes a new one. */
+let editing = null;
+
+/** @param {import('../model/settle.js').Payment | null} [payment] a cobro to change; without one, a new cobro */
+function openPaySheet(payment = null) {
   const sheet = sheetElements();
   const today = todayISO();
+  editing = payment;
   sheet.form.reset();
-  sheet.date.value = today;
+  sheet.date.value = payment?.date ?? today;
   sheet.date.max = today;
-  setWay(lastWayOf(active().mine.record));
+  sheet.amount.value = payment ? fInputValue(payment.amount, 0, 2) : '';
+  sheet.note.value = payment?.note ?? '';
+  sheet.approx.checked = Boolean(payment?.approx);
+  setWay(payment?.via ?? lastWayOf(active().mine.record));
+  sheet.title.textContent = payment ? 'Editar el cobro' : 'Cobro';
+  sheet.more.hidden = Boolean(payment);
   sheet.error.textContent = '';
+  sheet.done.textContent = '';
   sheet.dialog.showModal();
   sheet.amount.focus();
 }
@@ -398,13 +413,22 @@ function savePayment(event) {
     sheet.date.focus();
     return;
   }
-  const payment = offers.addPayment(active(), {
+  const fields = {
     date: sheet.date.value,
     amount,
     via: wayChosen(),
     note: sheet.note.value,
-  });
-  sheet.dialog.close();
+    approx: sheet.approx.checked,
+  };
+  const payment = editing ? offers.updatePayment(active(), editing.id, fields) : offers.addPayment(active(), fields);
+  // «Guardar y apuntar otro»: the sheet stays, with the date and the way of the last one
+  if (!editing && event.submitter === sheet.more) {
+    sheet.amount.value = '';
+    sheet.note.value = '';
+    sheet.approx.checked = false;
+    sheet.done.textContent = `Apuntado: ${fE(amount, 2)}. Se puede apuntar otro.`;
+    sheet.amount.focus();
+  } else sheet.dialog.close();
   ui.fresh = payment.id;
   callbacks.paint();
   setTimeout(() => {
@@ -470,7 +494,8 @@ export const recordActions = {
     ui.ask = null;
     callbacks.paint();
   },
-  openPaySheet,
+  openPaySheet: () => openPaySheet(),
+  editPayment: (b) => openPaySheet(active().mine.record.payments.find((p) => p.id === b.dataset.id)),
   payVia: (b) => setWay(b.dataset.via),
   payCancel: () => sheetElements().dialog.close(),
   removePaymentAsk(b) {
@@ -741,11 +766,12 @@ export const recordActions = {
     offers.setPaid(active(), 'asAgreed');
     callbacks.paint();
   },
-  /** «No todo»: the accounts open, to record what was received. */
+  /** «Una parte»: the accounts open and the cobro to record, right there. */
   paidSome() {
     ui.recording[active().id] = true;
     ui.ask = null;
     callbacks.paint();
+    openPaySheet();
   },
   /** «No se cobró nada» of a job finished asks first: it makes everything that corresponds a debt. */
   paidNoneAsk() {

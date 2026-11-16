@@ -28,7 +28,7 @@ import {
   pastJobOpen,
   registroOpen,
 } from './ui/navigation.js';
-import { pastJobError } from './ui/past-job.js';
+import { pastJobState } from './ui/past-job.js';
 import { dismissReview, dossierContext, forgetRecordUi, recordContext } from './ui/record.js';
 import { scrollToTop } from './ui/scroller.js';
 import { paintBackup } from './ui/settings-page.js';
@@ -232,7 +232,7 @@ export function paintAll({ animate = false } = {}) {
   $('#dossier').hidden = !dossierOpen();
   render(dossierOpen() ? dossierView(dossierContext(o, r), o, r, placesIfLoaded()) : '', $('#dossierBody'));
   $('#pastPage').hidden = !pastJobOpen();
-  render(pastJobOpen() ? pastJobView(pastJobError()) : '', $('#pastBody'));
+  render(pastJobOpen() ? pastJobView(pastJobState()) : '', $('#pastBody'));
   $('#registroPage').hidden = !registroOpen();
   render(registroOpen() && record ? registroPageView(record, o.mine.name || 'Sin nombre') : '', $('#registroBody'));
   $('#legalPage').hidden = !legalOpen();

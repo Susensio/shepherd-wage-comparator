@@ -56,7 +56,7 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await addJob(page, { terms: FINISHED });
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     await expect(question(page).locator('h3')).toContainText('¿Se cobró este trabajo?');
-    for (const name of ['Sí, todo', 'No todo', 'No se cobró nada'])
+    for (const name of ['Todo lo pactado', 'Una parte', 'Nada'])
       await expect(question(page).getByRole('button', { name })).toBeVisible();
     await expect(page.locator('#result h2.analysis-title')).toBeVisible();
     await expect(page.locator('#result h2.mode')).toHaveCount(0);
@@ -64,23 +64,21 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await expect(page.locator('#result')).not.toContainText('Aún no hay cobros apuntados');
   });
 
-  test('«Sí, todo» takes what was agreed as received; «Quitar» brings the question back', async ({ page }) => {
+  test('«Todo lo pactado» takes what was agreed as received; «Quitar» brings the question back', async ({ page }) => {
     await addJob(page, { terms: FINISHED });
-    await question(page).getByRole('button', { name: 'Sí, todo' }).click();
+    await question(page).getByRole('button', { name: 'Todo lo pactado' }).click();
     expect((await recordOf(page)).paid).toBe('asAgreed');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(question(page)).toHaveCount(0);
-    await openRegistro(page);
-    await expect(page.locator('.cobros')).toContainText('Se apuntó que se cobró todo lo pactado.');
-    await page.locator('.cobros').getByRole('button', { name: 'Quitar' }).click();
-    await closeRegistro(page);
+    await expect(page.locator('#result .cobros')).toContainText('Se apuntó que se cobró todo lo pactado.');
+    await page.locator('#result .cobros').getByRole('button', { name: 'Quitar' }).click();
     await expect(question(page)).toBeVisible();
     expect((await recordOf(page)).paid).toBeUndefined();
   });
 
-  test('«Sí, todo» still shows a shortfall below the legal minimum, and calls it that', async ({ page }) => {
+  test('«Todo lo pactado» still shows a shortfall below the legal minimum, and calls it that', async ({ page }) => {
     await addJob(page, { terms: { ...FINISHED, payAmount: 700, payType: 'net' } });
-    await question(page).getByRole('button', { name: 'Sí, todo' }).click();
+    await question(page).getByRole('button', { name: 'Todo lo pactado' }).click();
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Falta hasta el mínimo legal');
     await expect(page.locator('#result')).toContainText(
       'Se cobró todo lo pactado. Falta lo que la ley exige y no se pactó: el mínimo legal.',
@@ -89,23 +87,80 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     expect(falta).toBeGreaterThan(0);
   });
 
-  test('«No todo» opens the accounts to record the cobros', async ({ page }) => {
+  test('«Una parte» opens the cobro right there; several can be added in a row and each edited or removed', async ({
+    page,
+  }) => {
     await addJob(page, { terms: FINISHED });
-    await question(page).getByRole('button', { name: 'No todo' }).click();
+    await question(page).getByRole('button', { name: 'Una parte', exact: true }).click();
+    await expect(page.locator('#paySheet')).toBeVisible();
+    await expect(page.locator('#payDate')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+    // «Guardar y apuntar otro» keeps the sheet for the next one
+    await page.locator('#payAmount').fill('1000');
+    await page.locator('#paySheet [data-via=cash]').click();
+    await page.locator('#payMore').click();
+    await expect(page.locator('#paySheet')).toBeVisible();
+    await expect(page.locator('#payDone')).toContainText('Apuntado: 1.000,00 €');
+    await expect(page.locator('#payAmount')).toHaveValue('');
+    await page.locator('#payAmount').fill('500');
+    await page.locator('#payApprox').check();
+    await page.locator('#payForm .btns .pri').click();
+    await expect(page.locator('#paySheet')).toBeHidden();
+    // The cobros are listed on the ficha, with «+ Otro cobro»
+    const cobros = page.locator('#result .cobros');
+    await expect(cobros.locator('.pr')).toHaveCount(2);
+    await expect(cobros.getByRole('button', { name: '+ Otro cobro' })).toBeVisible();
+    await expect(cobros).toContainText('≈');
+    expect((await recordOf(page)).payments.map((p) => [p.amount, p.via, Boolean(p.approx)])).toEqual([
+      [1000, 'cash', false],
+      [500, 'cash', true],
+    ]);
+    // Edit one
+    await cobros.locator('.pr', { hasText: 'cifra aproximada' }).getByRole('button', { name: 'Editar' }).click();
+    await expect(page.locator('#payAmount')).toHaveValue('500');
+    await expect(page.locator('#payApprox')).toBeChecked();
+    await expect(page.locator('#payMore')).toBeHidden();
+    await page.locator('#payAmount').fill('600');
+    await page.locator('#payApprox').uncheck();
+    await page.locator('#payForm .btns .pri').click();
+    expect((await recordOf(page)).payments.map((p) => [p.amount, Boolean(p.approx)])).toEqual([
+      [1000, false],
+      [600, false],
+    ]);
+    // Remove one: two taps
+    await cobros.locator('.pr', { hasText: '600' }).getByRole('button', { name: 'Quitar' }).click();
+    await cobros.getByRole('button', { name: '¿Quitar?' }).click();
+    await expect(cobros.locator('.pr')).toHaveCount(1);
+    expect((await recordOf(page)).paid).toBeUndefined();
+  });
+
+  test('the sheet «Una parte» opens can be left: the accounts stay open, asking for the cobro', async ({ page }) => {
+    await addJob(page, { terms: FINISHED });
+    await question(page).getByRole('button', { name: 'Una parte', exact: true }).click();
+    await page.locator('#paySheet [data-action=payCancel]').click();
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(page.locator('.nocobros')).toContainText('Aún no hay cobros apuntados');
-    await expect(page.locator('.nocobros').getByRole('button', { name: '+ Apuntar cobro' })).toBeVisible();
+    await expect(page.locator('.nocobros').getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
     expect((await recordOf(page)).paid).toBeUndefined();
+  });
+
+  test('a cobro is one tap from the ficha of a job finished or under way, with cobros already', async ({ page }) => {
+    await addJob(page, {
+      terms: FINISHED,
+      record: { payments: [{ id: 'p1', date: '2026-08-31', amount: 900, via: 'payroll' }] },
+    });
+    await expect(page.locator('#result .cobros').getByRole('button', { name: '+ Otro cobro' })).toBeVisible();
+    await page.locator('#result .cobros').getByRole('button', { name: '+ Otro cobro' }).click();
+    await expect(page.locator('#paySheet')).toBeVisible();
   });
 
   test('«No se cobró nada» asks first, and then everything that corresponds is owed', async ({ page }) => {
     await addJob(page, { terms: FINISHED });
-    await question(page).getByRole('button', { name: 'No se cobró nada' }).click();
+    await question(page).getByRole('button', { name: 'Nada', exact: true }).click();
     await expect(question(page).locator('h3')).toContainText('¿No se cobró nada?');
     expect((await recordOf(page)).paid).toBeUndefined();
     await question(page).getByRole('button', { name: 'Volver' }).click();
-    await expect(question(page).getByRole('button', { name: 'Sí, todo' })).toBeVisible();
-    await question(page).getByRole('button', { name: 'No se cobró nada' }).click();
+    await expect(question(page).getByRole('button', { name: 'Todo lo pactado' })).toBeVisible();
+    await question(page).getByRole('button', { name: 'Nada', exact: true }).click();
     await question(page).getByRole('button', { name: 'Sí, nada' }).click();
     expect((await recordOf(page)).paid).toBe('none');
     await expect(tile(page, 'Falta')).toHaveText(await tile(page, 'Corresponde').textContent());
@@ -125,13 +180,12 @@ test.describe('the Registro page', () => {
       .getByRole('button', { name: 'Sí', exact: true })
       .click();
     await expect(page.locator('#registroPage')).toBeHidden();
-    // The ficha keeps «Hasta hoy» and the way in; the days and the cobros are in the page
+    // The ficha keeps «Hasta hoy» and the way in; the days are in the page
     await expect(page.locator('#result .registro-link')).toContainText('Registro');
     await expect(page.locator('#result .monthstrip')).toHaveCount(0);
     await openRegistro(page);
     expect(await page.evaluate(() => history.state?.registro)).toBe(true);
     await expect(page.locator('#registroPage .monthstrip button')).toHaveCount(4);
-    await expect(page.locator('#registroPage .cobros')).toBeVisible();
     await page.goBack();
     await expect(page.locator('#registroPage')).toBeHidden();
     await expect(page.locator('#ficha')).toBeVisible();
@@ -214,8 +268,9 @@ test.describe('«Trabajo ya hecho»', () => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
     await page.locator('#pastDays').fill('60');
-    await page.locator('#pastPaid').fill('4000');
-    await page.locator('#pastApprox').check();
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill('4000');
+    await page.locator('.pastApprox').check();
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     const record = await recordOf(page);
@@ -233,8 +288,9 @@ test.describe('«Trabajo ya hecho»', () => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
     await page.locator('#pastDays').fill('60');
-    await page.locator('#pastPaid').fill('4000');
-    await page.locator('#pastApprox').check();
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill('4000');
+    await page.locator('.pastApprox').check();
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
     await expect(tile('Cobrado')).toContainText('≈');
@@ -245,10 +301,10 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.locator('#result .block.result .sub')).toContainText('No se apuntó lo pactado');
     const rest = page.locator('#result .lawcheck > div', { hasText: 'Descanso semanal' });
     await expect(rest).toContainText('No se puede juzgar en 3 meses apuntados por totales');
+    await expect(page.locator('#result .cobros .pr .a')).toContainText('≈');
+    await expect(page.locator('#result .cobros .pr')).toContainText('cifra aproximada');
+    await expect(page.locator('#result .cobros .bh .n')).toContainText('≈');
     await openRegistro(page);
-    await expect(page.locator('#registroPage .cobros .pr .a')).toContainText('≈');
-    await expect(page.locator('#registroPage .cobros .pr')).toContainText('cifra aproximada');
-    await expect(page.locator('#registroPage .cobros .bh .n')).toContainText('≈');
     await page.locator('#registroPage .monthrow').first().click();
     const cal = page.locator('#registroPage .cal');
     await expect(cal).toHaveClass(/counted/);
@@ -263,7 +319,8 @@ test.describe('«Trabajo ya hecho»', () => {
     await dates(page, '2026-06-01', '2026-08-31');
     await page.locator('#pastPay').fill('1500');
     await page.locator('#pastDays').fill('80');
-    await page.locator('#pastPaid').fill('3000');
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill('3000');
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     const record = await recordOf(page);
     expect(record.payments[0]).toMatchObject({ amount: 3000 });
@@ -271,6 +328,58 @@ test.describe('«Trabajo ya hecho»', () => {
     expect(record.paid).toBeUndefined();
     expect(Object.values(record.months).reduce((t, m) => t + m.count.work, 0)).toBe(80);
     await expect(page.locator('#result .sofar > div', { hasText: 'Cobrado' }).locator('b')).toContainText('3.000');
+  });
+
+  test('«Una parte»: several cobros before saving, each with its date and its own «aproximada»; «Quitar» keeps the rest', async ({
+    page,
+  }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastPay').fill('1500');
+    await expect(page.locator('.past-cobro')).toHaveCount(0);
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await expect(page.locator('.past-cobro')).toHaveCount(1);
+    await page.locator('.pastAmount').nth(0).fill('1000');
+    await page.locator('.pastWhen').nth(0).fill('2026-07-05');
+    await page.getByRole('button', { name: '+ Otro cobro' }).click();
+    await page.locator('.pastAmount').nth(1).fill('700');
+    await page.locator('.pastApprox').nth(1).check();
+    await page.getByRole('button', { name: '+ Otro cobro' }).click();
+    await page.locator('.pastAmount').nth(2).fill('300');
+    // Removing the first leaves the others as typed
+    await page.locator('.past-cobro').nth(0).getByRole('button', { name: 'Quitar' }).click();
+    await expect(page.locator('.past-cobro')).toHaveCount(2);
+    await expect(page.locator('.pastAmount').nth(0)).toHaveValue('700');
+    await expect(page.locator('.pastApprox').nth(0)).toBeChecked();
+    await expect(page.locator('.pastAmount').nth(1)).toHaveValue('300');
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    const record = await recordOf(page);
+    expect(record.payments.map((p) => [p.amount, p.date, Boolean(p.approx)])).toEqual([
+      [700, '2026-08-31', true],
+      [300, '2026-08-31', false],
+    ]);
+    expect(record.paid).toBeUndefined();
+    expect(record.complete).toBeTruthy();
+    await expect(page.locator('#result .cobros .pr')).toHaveCount(2);
+  });
+
+  test('«Todo lo pactado» and «Nada» record the answer; «Todo lo pactado» needs the pay, «Una parte» an amount', async ({
+    page,
+  }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastForm input[name=pastHow][value=all]').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastForm [role=alert]')).toContainText('escribe el pago');
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#pastForm [role=alert]')).toContainText('al menos un cobro');
+    await page.locator('#pastForm input[name=pastHow][value=none]').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    const record = await recordOf(page);
+    expect(record.paid).toBe('none');
+    expect(record.payments ?? []).toEqual([]);
+    expect(record.complete).toBeTruthy();
   });
 
   test('with only the dates, the job is saved bare and asks whether it was paid', async ({ page }) => {

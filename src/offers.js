@@ -62,6 +62,7 @@ export function createOffers({ state, store, notify = () => {} }) {
     completeRecord: (offer) => edit(offer, (r) => record.completeRecord(r, todayISO())),
     reopenRecord: (offer) => edit(offer, (r) => record.reopenRecord(r)),
     addPayment: (offer, payment) => edit(offer, (r) => record.addPayment(r, payment)),
+    updatePayment: (offer, id, fields) => edit(offer, (r) => record.updatePayment(r, id, fields)),
     removePayment: (offer, id) => edit(offer, (r) => record.removePayment(r, id)),
     confirmStart: (offer, date) => edit(offer, (r) => record.confirmStart(r, date)),
     setEnd: (offer, end) => edit(offer, (r) => record.setEnd(r, end)),

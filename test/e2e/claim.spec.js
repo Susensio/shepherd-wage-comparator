@@ -1,15 +1,6 @@
 // «Pedir lo que falta» (ADR-0034): asking the ganadero first and the one line with the deadline; the legal path is the page «Vía legal».
 
-import {
-  closeRegistro,
-  expect,
-  loadOffers,
-  openAccounts,
-  openLegalPage,
-  openRegistro,
-  sample,
-  test,
-} from './fixtures.js';
+import { expect, loadOffers, openAccounts, openLegalPage, sample, test } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -272,10 +263,8 @@ test.describe('without cobros, and when nothing is owed', () => {
     expect(await page.evaluate(() => app.active().mine.record.paid)).toBe('none');
     await expect(page.locator('details.step[data-step=talk] .claim-text')).toContainText('Cobrado: nada hasta ahora.');
     await expect(page.locator('.ask .due-line')).toContainText('Plazo para reclamar');
-    await openRegistro(page);
-    await expect(page.locator('.cobros')).toContainText('Se apuntó que no se cobró nada');
-    await page.locator('.cobros').getByRole('button', { name: 'Quitar' }).click();
-    await closeRegistro(page);
+    await expect(page.locator('#result .cobros')).toContainText('Se apuntó que no se cobró nada');
+    await page.locator('#result .cobros').getByRole('button', { name: 'Quitar' }).click();
     // Taken back: the job is as it was, finished with nothing recorded, and the question returns
     await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
   });

@@ -2,8 +2,25 @@
 
 import { html, nothing } from 'lit-html';
 
-/** @param {string} error what is wrong with what was typed, or '' */
-export function pastJobView(error) {
+/** One cobro of «Una parte»: its amount, date (the last day by default) and whether it is approximate. */
+const cobroRow = ({ id, amount, date, approx }, _index, { length }) => html`<div class="past-cobro" data-cobro=${id}>
+  <label class="fld">Cantidad<span class="amount"><input type="text" class="n pastAmount" inputmode="decimal" autocomplete="off" placeholder="0" .value=${amount}><span>€</span></span></label>
+  <label class="fld">Fecha<input type="date" class="pastWhen" .value=${date}></label>
+  <label class="check"><input type="checkbox" class="pastApprox" .checked=${approx}> Es una cifra aproximada</label>
+  ${length > 1 ? html`<button type="button" class="linkbtn" data-action="pastRemoveCobro" data-id=${id}>Quitar</button>` : nothing}
+</div>`;
+
+const HOW = [
+  ['all', 'Todo lo pactado'],
+  ['part', 'Una parte'],
+  ['none', 'Nada'],
+];
+
+/**
+ * @param {{ error: string, how: string, rows: { id: string, amount: string, date: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
+ * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `rows`: the cobros listed under «Una parte»
+ */
+export function pastJobView({ error, how, rows }) {
   return html`<form class="dossier-doc past-doc" id="pastForm" novalidate>
     <h1>Trabajo ya hecho</h1>
     <p class="hint">Se apunta lo que se recuerde: solo hacen falta las fechas.</p>
@@ -25,8 +42,19 @@ export function pastJobView(error) {
       <div class="bh"><h2>Lo que pasó</h2></div>
       <p class="hint">Si se recuerda lo que pasó de verdad, vale más que lo pactado.</p>
       <label class="fld">Días trabajados en total<input type="text" class="n" id="pastDays" inputmode="numeric" autocomplete="off" placeholder="0"></label>
-      <label class="fld">Total cobrado<span class="amount"><input type="text" class="n" id="pastPaid" inputmode="decimal" autocomplete="off" placeholder="0"><span>€</span></span><small class="hint">Neto: lo que llegó, sin retenciones.</small></label>
-      <label class="check"><input type="checkbox" id="pastApprox"> Es una cifra aproximada</label>
+      <div class="fld" role="radiogroup" aria-label="¿Se cobró este trabajo?">
+        <span class="ask">¿Se cobró este trabajo?</span>
+        <div class="seg">${HOW.map(([value, label]) => html`<label><input type="radio" name="pastHow" value=${value} data-action="pastHow" ?checked=${how === value}>${label}</label>`)}</div>
+      </div>
+      ${
+        how === 'part'
+          ? html`<div class="past-cobros">
+        ${rows.map(cobroRow)}
+        <button type="button" class="sm" data-action="pastAddCobro">+ Otro cobro</button>
+        <small class="hint">Neto: lo que llegó, sin retenciones. Sin fecha, se toma el último día.</small>
+      </div>`
+          : nothing
+      }
     </section>
     ${error ? html`<p class="hint bad" role="alert">${error}</p>` : nothing}
     <button type="button" class="pri" data-action="savePastJob">Guardar el trabajo</button>

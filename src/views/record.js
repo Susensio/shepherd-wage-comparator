@@ -31,7 +31,7 @@ const WAY = { payroll: 'Nómina', cash: 'En mano' };
 function paymentRow(p, today, { fresh = false, remove = null } = {}) {
   return html`<div class=${fresh ? 'pr fresh' : 'pr'}><span class="d">${fWhen(p.date, today)}</span><span><span class=${p.via === 'cash' ? 'via cash' : 'via'}>${WAY[p.via]}</span>${p.approx ? html`<small>cifra aproximada</small>` : nothing}${p.note ? html`<small>${p.note}</small>` : nothing}</span><span class="a">${p.approx ? '≈ ' : ''}${money(p.amount)}</span>${
     remove
-      ? html`<button type="button" class="linkbtn rm" data-action=${remove.asking ? 'removePayment' : 'removePaymentAsk'} data-id=${p.id}>${remove.asking ? '¿Quitar?' : 'Quitar'}</button>`
+      ? html`<span class="rowbtns"><button type="button" class="linkbtn rm" data-action="editPayment" data-id=${p.id}>Editar</button><button type="button" class="linkbtn rm" data-action=${remove.asking ? 'removePayment' : 'removePaymentAsk'} data-id=${p.id}>${remove.asking ? '¿Quitar?' : 'Quitar'}</button></span>`
       : nothing
   }</div>`;
 }
@@ -55,12 +55,7 @@ function cobrosView({ today, payments, fresh, ask, paid }) {
             )}</div>`
           : html`<div class="pay">${payments.map(row)}</div>`
     }
-    ${
-      // With no cobro and nothing said, the block above asks (button included): not twice
-      !payments.length && !paid
-        ? nothing
-        : html`<button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button>`
-    }
+    <button type="button" class="pri addbtn" data-action="openPaySheet">${payments.length ? '+ Otro cobro' : 'Apuntar un cobro'}</button>
     ${
       !payments.length && paid
         ? html`<p class="hint">${PAID_TEXT[paid]} <button type="button" class="linkbtn" data-action="paidClear">Quitar</button></p>`
@@ -86,8 +81,8 @@ export function paidQuestion(c) {
     </div>`;
   return html`<div class="tcard-q" role="group" aria-label="¿Se cobró este trabajo?">
     <h3>¿Se cobró este trabajo?</h3>
-    <p class="hint">«Sí, todo» da por cobrado lo pactado.</p>
-    <div class="choices"><button type="button" data-action="paidAll">Sí, todo</button><button type="button" data-action="paidSome">No todo</button><button type="button" data-action="paidNoneAsk">No se cobró nada</button></div>
+    <p class="hint">«Todo lo pactado» da por cobrado lo acordado.</p>
+    <div class="choices"><button type="button" data-action="paidAll">Todo lo pactado</button><button type="button" data-action="paidSome">Una parte</button><button type="button" data-action="paidNoneAsk">Nada</button></div>
   </div>`;
 }
 
@@ -127,7 +122,7 @@ const noCobros = (c) => {
   if (c.phase === 'finished' && !c.recording) return paidQuestion(c);
   if (c.ask?.type === 'paidNone') return paidQuestion(c);
   return html`<div class="nocobros"><b>Aún no hay cobros apuntados</b><span>Apunta lo cobrado para ver lo que falta.</span>
-  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">+ Apuntar cobro</button><button type="button" class="linkbtn" data-action=${c.phase === 'finished' ? 'paidNoneAsk' : 'nothingPaid'}>No se cobró nada</button></div></div>`;
+  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">Apuntar un cobro</button><button type="button" class="linkbtn" data-action=${c.phase === 'finished' ? 'paidNoneAsk' : 'nothingPaid'}>No se cobró nada</button></div></div>`;
 };
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
@@ -196,6 +191,7 @@ function registro(c) {
       ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
+    ${c.standing.hasPayments ? cobrosView(c) : nothing}
     ${underwayTalk(c.talk)}
     ${registroLink(c)}`;
 }
@@ -290,7 +286,6 @@ export function registroPageView(c, name) {
     <h1>Registro${NET}</h1>
     <p class="hint">${name}</p>
     ${c.phase === 'underway' ? html`${strip(c)}${calendarView(c.calendar)}` : monthsList(c)}
-    ${cobrosView(c)}
     ${apuntesView(c)}
   </div>`;
 }
@@ -411,6 +406,7 @@ function cuentas(c) {
   const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
+    ${c.standing.hasPayments ? cobrosView(c) : nothing}
     ${endQuestion(c.cards, c.today, false)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
