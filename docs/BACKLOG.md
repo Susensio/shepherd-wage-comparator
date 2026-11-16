@@ -55,3 +55,4 @@
 - `ui/scroller.js` calls `matchMedia` at import (`wide`), so `ui/navigation.js` cannot be imported in Node for unit tests; making `wide` lazy would allow it.
 - `test/unit/mutations.test.js` cannot see a mutation through a destructured alias (`const { terms } = o; terms.x = …`).
 - Move the month share (`shareOf`, in `model/settle.js`) into `model/days.js`, so ADR-0035's one owner of the month share holds.
+- Huesca overtime premium (agreement art. 35: +75 % working days, +100 % holidays, on the agreement's hourly salary): the model values overtime at the ordinary minimum hour; a premium needs a place in `extra.overtimeValue`, the agreement's hourly base, and wording in the claim and cards.
