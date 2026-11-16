@@ -38,3 +38,7 @@ Weighed and discarded:
 - The release assets live outside git: deleting a release loses the copies, though the manifest keeps URLs and hashes.
 - `kb/` is published with the page, so it holds only public material.
 - The holiday ladder can show a date that is estimated or unconfirmed; the screens say so wherever one is used.
+
+## Amendment (16 November 2026)
+
+The owner delegated verification: «puedes dar por buenos los datos que hayas sacado de documentos, me fío de ti». A row whose quote the script found verbatim in an official text (`checked`) may be set `verified` by the main agent, with `verified_by` naming the main agent and this delegation. The owner still verifies rows from secondary sources or with no text to match, and the summary table is still shown to the owner after the fact.
