@@ -5,7 +5,7 @@
 
 import { html, render } from 'lit-html';
 import { fN, joinAnd } from '../format.js';
-import { articleUrl, LAW, MIN_WAGE, overnightOf, SOURCES, ssOf } from '../law.js';
+import { annualHoursOf, articleUrl, LAW, MIN_WAGE, overnightOf, SOURCES, ssOf } from '../law.js';
 
 const decimals = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 2);
 const fPct = (x) => fN(x, decimals(x));
@@ -34,6 +34,8 @@ const LAW_FIGURES = {
   dismissalDays: fN(LAW.dismissalDays),
   overnightHuescaPct: fN(overnightOf('HU')?.pct ?? 0),
   annualHours: fN(LAW.annualHours),
+  annualHoursHuesca: fN(annualHoursOf('HU').hours),
+  annualHoursHuescaArt: annualHoursOf('HU').cite?.label.split(', ').at(-1) ?? '',
   casualMaxDays: fN(LAW.casualMaxDays),
   workDaysWeek: fN(7 - LAW.weeklyRest, 1),
   normalWorkday: fN(LAW.weeklyHours / (7 - LAW.weeklyRest), 1),

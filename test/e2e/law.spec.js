@@ -16,6 +16,10 @@ test('the Leyes page is filled in', async ({ page }) => {
   });
   const year = await page.evaluate(async () => Object.keys((await import('./src/law.js')).MIN_WAGE).at(-1));
   await expect(page.locator('[data-panel=laws]')).toContainText(`en ${year},`);
+  // The hourly minimum: the Granada reference, and Huesca's own hours read from its agreement row
+  await expect(page.locator('[data-panel=laws]')).toContainText(
+    'En Huesca se usan las 1.760 horas del convenio de la provincia (art. 25).',
+  );
 });
 
 test("the overnight bonus is the Huesca agreement's alone: cited there, not counted elsewhere, plain text without a link", async ({
