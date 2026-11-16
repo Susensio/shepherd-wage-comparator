@@ -83,7 +83,7 @@ function owedCard(o, r, money) {
     const lost = r.unemployment.lost;
     const reasons = [
       isWorthCounting(r.debt.vacation) &&
-        `Sin contrato no se pagan las vacaciones que corresponden (${fDays(r.time.vacationDays)}): debe el ganadero unos ${money.netAll(r.debt.vacation)} netos.`,
+        `Las vacaciones que corresponden (${fDays(r.time.vacationDays)}) no se pagan aparte, y sin contrato no pueden ir dentro del pago (${citeOf('et', '38.1').label}): debe el ganadero unos ${money.netAll(r.debt.vacation)} netos.`,
       isWorthCounting(r.debt.salary) &&
         `Lo que se da no llega al salario mínimo: debe el ganadero ${money.net(r.debt.salary)} ${per}.`,
       'Sin jubilación ni bajas pagadas: en caso de enfermedad o accidente, no se cobra.',

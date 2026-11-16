@@ -838,7 +838,8 @@ describe('why Corresponde is more than the pay agreed', () => {
   test('an item short while the pay agreed is above the minimum as a whole: the item says so, except vacation without a contract', () => {
     const saved = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
     const offers = ingestSaved(saved, { fallbackCfg: { ...DEF_CFG } }).offers;
-    const d = offers.find((o) => o.mine.name === 'Sin contrato D');
+    const found = offers.find((o) => o.mine.name === 'Sin contrato D');
+    const d = { ...found, terms: { ...found.terms, vacation: 'included' } };
     // «Las vacaciones no se pagan aparte» adds nothing where there is no contract: no line
     assert.equal(note(d), null);
     // The same figures as if there were a contract: the item that falls short is named

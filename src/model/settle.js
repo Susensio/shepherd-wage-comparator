@@ -156,7 +156,7 @@ export function settle(offer, record, today, r) {
   const perDay = (terms.payrollMin ? 'total' : terms.payUnit) === 'day' && time.paidDays > 0;
   const totalPerDay = r.split?.unit === 'day' && time.daysWorked > 0;
   const dayRate = perDay ? pay.base / time.paidDays : 0;
-  const vacationMinimum = terms.vacation === 'taken' && !r.noContract ? 0 : min.vacation; // as the ficha's debt
+  const vacationMinimum = terms.vacation === 'taken' ? 0 : min.vacation; // as the ficha's debt
   const realEnd = jobEnd(offer, record);
   // Vacation taken is paid and follows the offer, like the holidays; the vacation owed comes from the terms, not the days.
   const vacationTaken = time.vacationTaken;
@@ -249,11 +249,12 @@ export function settle(offer, record, today, r) {
         : index === shares.length - 1
           ? shares.reduce((t, x) => t + x.fullWeight, 0)
           : 0;
-  const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
+  // (without a contract, `vacationApart`: the vacation paid at the end on top of the cash)
+  const vacationAgreedOf = (index) =>
+    labour ? cents((pay.vacationPay + r.vacationApart) * vacationShareOf(index)) : 0;
   // Vacation taken, but the job ended before the days were: the days accrued and not taken are owed at the end (ET 38.1).
   // The offer's days taken are its last ones (the calendar lays them out so), so those after the real end were not taken.
-  const endedEarly =
-    !openEnded && terms.vacation === 'taken' && !r.noContract && realEnd < isoOf(/** @type {Date} */ (offerEnd));
+  const endedEarly = !openEnded && terms.vacation === 'taken' && realEnd < isoOf(/** @type {Date} */ (offerEnd));
   const untakenDays = () => {
     const accrued = Math.round(
       (LAW.vacationDaysPerYear * time.months * shares.reduce((t, x) => t + x.fullWeight, 0)) / 12,

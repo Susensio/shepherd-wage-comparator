@@ -166,7 +166,14 @@ test('IRPF in 2026, with the minimum-wage deduction', () => {
 
 test('without a contract: paid the minimum, only the vacation is owed', () => {
   const minimum = figures({ contract: 'none', payAmount: 0, cashAmount: 0, duration: 1 }).debt.minNetNoContract;
-  const r = figures({ contract: 'none', payAmount: 0, cashAmount: minimum, cashUnit: 'total', duration: 1 });
+  const r = figures({
+    contract: 'none',
+    payAmount: 0,
+    cashAmount: minimum,
+    cashUnit: 'total',
+    duration: 1,
+    vacation: 'included',
+  });
   assert.ok(r.debt.salary < 1, 'no salary owed');
   assert.ok(r.debt.vacation > 1, 'vacation owed');
 });
@@ -415,6 +422,7 @@ test('a vacation day owed or paid is worth the real daily pay, cash included, or
     cashUnit: 'month',
     duration: 6,
     durationUnit: 'months',
+    vacation: 'included',
   });
   near(none.min.vacationDay, 1500 / 30, 0.01, 'no contract: the cash day');
   assert.ok(none.debt.vacation > none.time.vacationDays * smiDay, 'above a day at the minimum wage');
@@ -435,4 +443,31 @@ test('without a duration an offer is counted as one month, as step 2 says', () =
   assert.equal(r.time.months, 1);
   near(r.pay.base, 1500, 0.01, 'one month of pay');
   assert.deepEqual(missing(offerOf({ ...BASE, durationUnit: 'unknown', duration: '' }).terms), []);
+});
+
+// Without a contract the job is measured as a fixed one: its vacation cannot go inside the pay (ET 38.1, 15.4)
+test('without a contract, the vacation answer decides whether it is owed', () => {
+  const none = (vacation) =>
+    figures({
+      contract: 'none',
+      payAmount: 0,
+      cashAmount: 70,
+      cashUnit: 'day',
+      duration: 40,
+      durationUnit: 'days',
+      holidays: 'no',
+      vacation,
+    });
+  const included = none('included');
+  assert.ok(included.debt.vacation > 100, 'inside the pay: still owed');
+  near(none('').debt.vacation, included.debt.vacation, 0.001, 'no answer: owed as inside the pay');
+  assert.equal(none('taken').debt.vacation, 0, 'taken: nothing owed');
+  assert.equal(none('taken').min.vacation, 0);
+  assert.ok(none('taken').time.vacationTaken > 0, 'taken: the days are off');
+  const apart = none('paidAtEnd');
+  assert.equal(apart.debt.vacation, 0, 'paid apart: nothing owed');
+  near(apart.vacationApart, apart.min.vacation, 0.001, 'paid apart: at the minimum vacation');
+  assert.ok(apart.earnings.parts.vacationPay > 0, 'paid apart: it is money received');
+  assert.equal(apart.pay.gross, 0, 'still no payroll');
+  assert.equal(included.vacationApart, 0);
 });

@@ -75,7 +75,7 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
     // (cash above what the minimum needs moves into a vacation valued at the real daily pay, cash included)
     near(
       T.salary.agreed + T.overnight.agreed + T.vacation.agreed,
-      cents(agreedSalary + r.pay.vacationPay),
+      cents(agreedSalary + r.pay.vacationPay + r.vacationApart),
       `${name}: agreed salary and vacation`,
       0.01,
     );
@@ -771,4 +771,35 @@ test('vacation taken but the job ends before the days: the days accrued and not 
   // two months accrue 5 days; none was taken (the last eight days of the offer lie after the end)
   near(early.totals.items.vacation.due, 5 * r.min.vacationDay, 'five days at the minimum wage', 0.01);
   assert.equal(early.rows.at(-1).items.vacation.due, early.totals.items.vacation.due);
+});
+
+// Without a contract the vacation follows the same rule in the record as on the ficha (ET 38.1)
+test('without a contract, the record owes the vacation unless it was taken or paid apart', () => {
+  const none = (vacation) =>
+    offerWith({
+      contract: 'none',
+      payAmount: 0,
+      cashAmount: 2000,
+      cashUnit: 'month',
+      vacation,
+    });
+  const owed = (vacation, record = {}) => {
+    const offer = none(vacation);
+    const r = calc(offer, ctx);
+    return { r, x: settleOf(offer, record, '2026-04-15'), ficha: r.debt.vacation };
+  };
+  const inside = owed('included');
+  assert.ok(inside.x.totals.items.vacation.shortfall > 0);
+  near(inside.x.totals.items.vacation.shortfall, cents(inside.ficha), 'the ficha’s debt');
+  // Taken: the days libres of the record change nothing, the answer decides
+  const taken = owed('taken', {
+    months: { '2026-03': { closed: true, days: { '2026-03-30': 'off', '2026-03-31': 'off' } } },
+  });
+  assert.equal(taken.x.totals.items.vacation.shortfall, 0);
+  // Paid apart: due, but not short; with nothing cobrado it is owed with the rest
+  const apart = owed('paidAtEnd');
+  assert.equal(apart.x.totals.items.vacation.shortfall, 0);
+  near(apart.x.totals.items.vacation.due, cents(apart.r.vacationApart), 'the vacation paid apart is due');
+  const standing = (o) => standingOf(o.x, '2026-04-15', 'finished', [], o.r.netFactor, 'none');
+  assert.ok(standing(apart).falta > standing(taken).falta, 'nothing cobrado: the vacation apart is owed too');
 });

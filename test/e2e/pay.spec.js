@@ -99,7 +99,8 @@ test('«Sin contrato»: everything is en negro and the contract questions go', a
   });
   await expect(page.locator('#payCash')).toHaveText('Todo en negro: 2.100 € al mes.');
   await expect(page.locator('input[name=contract]').first()).toBeHidden();
-  await expect(page.locator('input[name=vacation]').first()).toBeHidden();
+  // The vacation is asked without a contract too: a job measured as a fixed one owes it
+  await expect(page.locator('input[name=vacation]').first()).toBeAttached();
   // Leaving it brings the contract back
   await answer(page, 'payroll', 'all');
   expect((await terms(page)).contract).toBe('temporary');
@@ -315,6 +316,30 @@ sample.offers.forEach((offer, index) => {
     if (want.contract) await expect(page.locator(`input[name=contract][value=${want.contract}]`)).toBeChecked();
     await expect(page.locator('[data-show=payLegacy]')).toBeHidden();
   });
+});
+
+test('without a contract the vacation is asked: unanswered or inside the pay it is still owed, and the page says why', async ({
+  page,
+}) => {
+  await newOffer(page);
+  await answer(page, 'payroll', 'none');
+  const hint = page.locator('#vacationHint');
+  const vacation = (value) => page.locator('label', { has: page.locator(`input[name=vacation][value=${value}]`) });
+  await expect(vacation('taken')).toBeVisible();
+  await expect(hint).toContainText(
+    'Sin contrato se mide como un trabajo fijo: las vacaciones no pueden ir dentro del pago',
+  );
+  await expect(hint).toContainText('Estatuto, art. 38.1');
+  await answer(page, 'vacation', 'included');
+  await expect(hint).toContainText('no pueden ir dentro del pago');
+  await answer(page, 'vacation', 'paidAtEnd');
+  await expect(hint).toBeEmpty();
+  expect(await terms(page)).toMatchObject({ contract: 'none', vacation: 'paidAtEnd' });
+  await answer(page, 'vacation', 'taken');
+  expect(await terms(page)).toMatchObject({ vacation: 'taken' });
+  // A self-employed job has no vacation to ask
+  await answer(page, 'payroll', 'self');
+  await expect(vacation('taken')).toBeHidden();
 });
 
 test('«La de la nómina, %» shows its field, and what is typed there is saved', async ({ page }) => {

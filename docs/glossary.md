@@ -15,8 +15,8 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | libranzas | days off, not counting the weekly rest owed: a libranza and a vacation day are the same mark, «libre», on the calendar (the vacation owed comes from the offer's terms, not from day marks) | `terms.daysOff`, `r.time.daysOffMonth`, day kind `off` | ET art. 37.1 (descanso semanal) | días libres (may stay as an explanation: «días libres, sin contar vacaciones») |
 | descanso semanal | the legal weekly rest (day and a half) | `LAW.weeklyRest` | ET art. 37.1 | |
 | vacaciones | | `terms.vacation`, `p.vacationPay` | ET art. 38 | |
-| vacaciones aparte, al acabar | worked and paid on top at the end | `vacation: 'paidAtEnd'` | | pagadas aparte |
-| vacaciones dentro | worked, and already inside the pay | `vacation: 'included'` | | incluidas |
+| vacaciones aparte, al acabar | worked and paid on top at the end; also without a contract, where it is the only way to pay them in money (`r.vacationApart`) | `vacation: 'paidAtEnd'` | | pagadas aparte |
+| vacaciones dentro | worked, and already inside the pay. Without a contract they do not discharge the vacation: «Sin contrato se mide como un trabajo fijo: las vacaciones no pueden ir dentro del pago (Estatuto, art. 38.1)» | `vacation: 'included'` | | incluidas |
 | vacaciones libradas | days off, paid | `vacation: 'taken'` | | disfrutadas |
 | duración del contrato | | `terms.duration`, `terms.durationUnit` | | |
 

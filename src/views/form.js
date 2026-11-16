@@ -21,7 +21,7 @@ import {
 } from '../offer.js';
 import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from '../pay-answers.js';
 import { placeOfTerms } from '../places.js';
-import { overnightHint } from '../rights.js';
+import { NO_CONTRACT_VACATION, overnightHint } from '../rights.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
@@ -49,6 +49,8 @@ const SHOW = {
   irpfManual: (o) => o.mine.irpfMode === 'manual',
   withContract: (o) => o.terms.contract !== 'none' && o.terms.contract !== 'selfEmployed',
   selfEmployed: (o) => o.terms.contract === 'selfEmployed',
+  // The vacation is asked without a contract too: a job measured as a fixed one (ET 15.4) owes it unless it is taken or paid apart
+  notSelfEmployed: (o) => o.terms.contract !== 'selfEmployed',
 };
 
 /** Under a required question, while it is empty: what cannot be done without it. */
@@ -142,6 +144,8 @@ const UNIT_PER = { day: 'al día', month: 'al mes', total: 'en total' };
 
 /** Under the vacation options: why one is missing, or has to change, when it may be paid instead; or the automatic choice. */
 function vacationHint(o, r) {
+  if (o.terms.contract === 'none' && !['taken', 'paidAtEnd'].includes(o.terms.vacation))
+    return `${NO_CONTRACT_VACATION}.`;
   if (!vacationPayable(o.terms, r.time)) return '';
   const why = isCasual(o.terms, r.time)
     ? `En contratos temporales de hasta ${LAW.casualMaxDays} días no se libran`

@@ -14,16 +14,16 @@ const ranked = (page) => page.locator('#cmpBlk .lr .nm b').allTextContents();
 test('ranked by money plus paro: each row shows both, or «sin paro»', async ({ page }) => {
   await compareByMonth(page);
   expect(await ranked(page)).toEqual([
+    'Sin contrato G',
     'Puerto A',
     'Puerto A, otra cuenta',
-    'Sin contrato G',
     'Campaña B',
     'Temporada F',
-    'Sin contrato D',
     'Temporada E',
+    'Sin contrato D',
     'Invernada C',
   ]);
-  const first = page.locator('#cmpBlk .lr').first();
+  const first = page.locator('#cmpBlk .lr').filter({ has: page.locator('.nm b', { hasText: /^Puerto A$/ }) });
   await expect(first.locator('.v')).toContainText(/2\.311\s€\/mes/);
   await expect(first.locator('.paro')).toHaveText(/^\+ 428\s€ de paro$/);
   await expect(first.locator('.paro')).toHaveClass(/ok/);
@@ -47,8 +47,8 @@ test('«Ordenar: Sin el paro» ranks by money alone and hides the paro lines', a
     'Puerto A',
     'Campaña B',
     'Puerto A, otra cuenta',
-    'Sin contrato D',
     'Temporada F',
+    'Sin contrato D',
     'Temporada E',
     'Invernada C',
   ]);

@@ -79,7 +79,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     : othersInYear(offer, { cfg, offers });
   const ctx = { cfg, wage, irpfShares: others.shares };
 
-  // Without a contract there is no payroll and no paid vacation: everything is cash, against a temporary contract's minimum.
+  // Without a contract there is no payroll: everything is cash, against a fixed contract's minimum.
   // Self-employed, neither: the invoice is apart (`selfEmployed`), and labour law's debts do not apply (ADR-0029).
   const { terms: effective, split } = effectiveOffer(offer.terms, mine, ctx, schedule);
   const noContract = effective.contract === 'none';
@@ -90,7 +90,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
           ...effective,
           payAmount: 0,
           ...(isSelfEmployed ? { cashAmount: 0 } : {}),
-          vacation: 'included',
+          // Only «taken» changes the days; the other answers are settled below (`vacationApart`, `debtVacation`)
+          vacation: noContract && effective.vacation === 'taken' ? 'taken' : 'included',
           extraPays: 'included',
           // Without a contract the job is measured as a fixed one (ET 15.4: a worker not registered in Social Security is
           // presumed permanent): the monthly minimum, the rates of `ssOf('none')`, no severance, the vacation as permanent.
@@ -103,8 +104,12 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const se = isSelfEmployed ? selfEmployed(effective, time, ctx) : null;
   const pay = payroll(t, mine, ctx, time);
   const car = travel(t, mine, time, cfg);
-  const min = legalMinimum(t, ctx, time, { realPay: offer.terms.vacation !== 'included' });
+  const min = legalMinimum(t, ctx, time, { realPay: noContract || offer.terms.vacation !== 'included' });
   const { months, natDays, daysWorked, hours, noDuration } = time;
+  // Without a contract: the vacation paid apart, at the end, is cash on top of the pay (a fixed job's vacation cannot go
+  // inside the pay, ET 38.1); inside it, or unanswered, it is still owed (`debtVacation`)
+  const vacationApart = noContract && effective.vacation === 'paidAtEnd' ? min.vacation : 0;
+  const noContractFactor = pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100;
 
   // Cash, housing and food, expenses
   const cashAmount = num(t.cashAmount);
@@ -137,7 +142,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const parts = {
     base: pay.base * pay.netFactor,
     extraPays: pay.extraPays * pay.netFactor,
-    vacationPay: pay.vacationPay * pay.netFactor,
+    vacationPay: pay.vacationPay * pay.netFactor + vacationApart * noContractFactor,
     b: cash,
     housing,
     food,
@@ -155,11 +160,11 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   let minNetNoContract = 0;
   if (noContract) {
     // What you are paid in cash against the minimum wage with bonus, through the same net↔gross factor as the rest
-    const factor = pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100;
+    const factor = noContractFactor;
     const minSalary = min.salary + min.overnight;
     minNetNoContract = minSalary * factor;
     debtSalary = Math.max(0, minSalary - cash / factor);
-    debtVacation = min.vacation;
+    debtVacation = vacationApart > 0 || t.vacation === 'taken' ? 0 : min.vacation;
   }
   const debtTotal = debtSalary + debtVacation;
   const coveredByCash = cash > 0 ? cashGrossEq : 0;
@@ -174,7 +179,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   // Casual workers are paid the minimum per day worked, so only the due days count against it.
   const extra = extraTime(time);
   const normalShare = min.casual && daysWorked > 0 ? Math.min(1, extra.due / daysWorked) : 1;
-  const normalPay = (min.salary + min.overnight) * normalShare + min.vacation;
+  const normalPay = (min.salary + min.overnight) * normalShare + (vacationApart > 0 ? 0 : min.vacation);
   const dayValue = min.hourly * extra.workday * (1 + min.overnightRate);
   const paidAbove = pay.gross > 0 || noContract ? Math.max(0, pay.gross - normalPay + coveredByCash) : 0;
   const daysValue = extra.days >= 0.5 ? extra.days * dayValue : 0;
@@ -252,6 +257,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     /** self-employed (autónomo): the invoice, IVA, the RETA quota and IRPF; null on a payroll or without contract */
     selfEmployed: se,
     min,
+    /** Without a contract, the vacation paid apart at the end (gross): money on top of the cash, which discharges it. */
+    vacationApart,
     debt: { salary: debtSalary, vacation: debtVacation, total: debtTotal, parts: debtParts, owed, minNetNoContract },
     rest: { legal: restLegal, short: Math.max(0, restLegal - time.daysOffTotal) },
     extra: {

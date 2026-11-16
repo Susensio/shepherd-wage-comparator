@@ -6,6 +6,7 @@ import { LAW } from '../law.js';
 import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
 import { retaPct } from '../model/self-employed.js';
 import { hoursWeek } from '../model/time.js';
+import { NO_CONTRACT_VACATION } from '../rights.js';
 import { wageYearNote } from '../text.js';
 import { row } from './parts.js';
 
@@ -32,12 +33,11 @@ function timeSection(o, r) {
     // Self-employed has no paid vacation: nothing «corresponds»
     !r.selfEmployed &&
       row('Vacaciones que corresponden', days(t.vacationDays), {
-        sub: r.noContract
-          ? 'sin contrato no se pagan'
-          : {
-              taken: 'se libran',
-              paidAtEnd: 'se pagan al acabar',
-            }[o.terms.vacation] || 'ni se libran ni se pagan aparte',
+        sub:
+          {
+            taken: 'se libran',
+            paidAtEnd: 'se pagan al acabar',
+          }[o.terms.vacation] || (r.noContract ? 'se deben' : 'ni se libran ni se pagan aparte'),
       }),
     row('Libranzas', days(t.daysOffTotal), { sub: o.terms.holidays === 'yes' ? 'y además los festivos' : '' }),
     row('Días trabajados', fN(t.daysWorked), { cls: 'tot' }),
@@ -123,9 +123,12 @@ function minimumSection(o, r, net) {
       bonus,
       row('− Se paga en negro, pasado a bruto', fE(r.cash.total / factor)),
       salaryShort(cashShort, ''),
-      min.vacation > 0.5 &&
-        row('Vacaciones sin pagar', fE(debt.vacation), { sub: fDays(r.time.vacationDays), cls: 'strong' }),
-      unpaidRow('Debe el ganadero', cashShort + (min.vacation > 0.5 ? shownEuros(debt.vacation) : 0), net),
+      debt.vacation > 0.5 &&
+        row('Vacaciones sin pagar', fE(debt.vacation), {
+          sub: `${fDays(r.time.vacationDays)}. ${NO_CONTRACT_VACATION}`,
+          cls: 'strong',
+        }),
+      unpaidRow('Debe el ganadero', cashShort + (debt.vacation > 0.5 ? shownEuros(debt.vacation) : 0), net),
     ]);
   }
   const vacation = min.vacation > 0.5 && o.terms.vacation !== 'taken';
