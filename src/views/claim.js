@@ -36,7 +36,7 @@ function doneRow(step, { button = 'Hecho', done = 'Hecho' } = {}) {
     : html`<button type="button" class="sm donebtn" data-action="markStep" data-step=${step.id}>${button}</button>`;
 }
 
-/** A step as a fold; `open` only the two that are the common way. */
+/** A step as a fold, closed unless `open`. */
 function stepFold(step, title, body, { open = false, mark = true } = {}) {
   // A step done folds itself away; its summary line says so
   return html`<details class="plg step" ?open=${open && !step.done} data-step=${step.id}><summary>${title}${step.done ? html`<span class="stat dt ok">hecho</span>` : nothing}</summary>
@@ -235,14 +235,13 @@ export function claimView(c) {
             talk,
             'Hablar con el ganadero',
             html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
-            { open: true },
           )
         : talk
           ? stepFold(
               talk,
               'Hablar con el ganadero',
               html`<p>Se puede empezar hablando con el ganadero. Con los cobros apuntados, aquí aparece un resumen para usar en la conversación.</p>`,
-              { open: true, mark: false },
+              { mark: false },
             )
           : nothing
     }

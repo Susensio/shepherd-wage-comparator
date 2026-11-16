@@ -432,13 +432,13 @@ test.describe('finished: Cuentas', () => {
     await expect(page.getByRole('button', { name: 'Vía legal' })).toHaveCount(0);
   });
 
-  test('«Pedir lo que falta»: the message open, one line with the deadline and the button to the legal page, which holds the one-year deadline and the months', async ({
+  test('«Pedir lo que falta»: the message a closed fold, one line with the deadline and the button to the legal page, which holds the one-year deadline and the months', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('#result .ask h2')).toHaveText('Pedir lo que falta');
-    await expect(page.locator('details.step[data-step=talk]')).toHaveAttribute('open', '');
+    await expect(page.locator('details.step[data-step=talk]')).not.toHaveAttribute('open', '');
     await expect(page.locator('#result .ask .due-line')).toContainText(/hasta el \d+ \w+ 2027 \(quedan \d+ días\)/);
     await openLegalPage(page);
     const legal = page.locator('#legalPage');

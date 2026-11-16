@@ -46,6 +46,7 @@ test.describe('the ladder', () => {
     // The months listed add up to Falta
     const months = [...shown.matchAll(/^· (?:Junio|Julio|Agosto|Septiembre): ([\d.,]+)\s€/gm)].map((m) => amount(m[1]));
     expect(Math.round(months.reduce((t, x) => t + x, 0) * 100) / 100).toBe(falta);
+    await page.locator('details.step[data-step=talk] > summary').click(); // the message is a closed fold
     await page.locator('details.step[data-step=talk] [data-action=copyClaimText]').click();
     await expect(page.locator('details.step[data-step=talk] .copy-msg')).toHaveText('Texto copiado.');
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shown);
@@ -60,6 +61,7 @@ test.describe('the ladder', () => {
       };
       app.select(app.active().id);
     });
+    await page.locator('details.step[data-step=talk] > summary').click(); // the message is a closed fold
     await page.locator('details.step[data-step=talk]').getByRole('button', { name: 'Compartir' }).click();
     expect(await page.evaluate(() => window.shared.length)).toBe(1);
     expect(await page.evaluate(() => window.shared[0])).toContain('¿Cuándo se puede pagar?');
@@ -91,8 +93,8 @@ test.describe('the ladder', () => {
 
   test('«Hecho» is one tap, dated today, saved, and taken back with «Quitar»', async ({ page }) => {
     const step = page.locator('details.step[data-step=talk]');
-    await step.getByRole('button', { name: 'Hecho' }).click();
-    await step.locator(':scope > summary').click(); // a step done folds away
+    await step.locator(':scope > summary').click();
+    await step.getByRole('button', { name: 'Hecho' }).click(); // the fold stays open: the date and the promise are there
     await expect(step.locator('.donemark')).toContainText('Hecho el 12 nov 2026');
     expect(await page.evaluate(() => app.active().mine.claim.steps)).toEqual({ talk: { done: '2026-11-12' } });
     await page.evaluate(() => app.select(app.active().id)); // repainted from the saved offer
@@ -482,15 +484,17 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
     ).toBe(true);
   });
 
-  test('a step marked «Hecho» folds away', async ({ page }) => {
+  test('a step marked «Hecho» says so in its summary and stays as the reader left it', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-11-12T12:00:00'));
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
     const step = page.locator('details.step[data-step=talk]');
+    await expect(step).not.toHaveAttribute('open', '');
+    await step.locator(':scope > summary').click();
     await expect(step).toHaveAttribute('open', '');
     await step.getByRole('button', { name: 'Hecho' }).click();
-    await expect(step).not.toHaveAttribute('open', '');
     await expect(step.locator(':scope > summary')).toContainText('hecho');
+    await expect(step.locator('.donemark')).toBeVisible();
   });
 
   test('with no cobros the step has no «Hecho»: there is nothing to have done yet', async ({ page }) => {
@@ -510,8 +514,8 @@ test.describe('a promise to pay', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
     const step = page.locator('details.step[data-step=talk]');
-    await step.getByRole('button', { name: 'Hecho' }).click();
     await step.locator(':scope > summary').click();
+    await step.getByRole('button', { name: 'Hecho' }).click();
     await step.locator('[data-promise]').fill('2026-11-20');
     expect(await page.evaluate(() => app.active().mine.claim.steps.talk)).toEqual({
       done: '2026-11-12',
