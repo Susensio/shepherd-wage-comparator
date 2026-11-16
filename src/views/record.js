@@ -29,7 +29,7 @@ const WAY = { payroll: 'Nómina', cash: 'En mano' };
 
 /** One cobro as a flat row. `remove`: its «Quitar» button, with the second tap that confirms. */
 function paymentRow(p, today, { fresh = false, remove = null } = {}) {
-  return html`<div class=${fresh ? 'pr fresh' : 'pr'}><span class="d">${fWhen(p.date, today)}</span><span><span class=${p.via === 'cash' ? 'via cash' : 'via'}>${WAY[p.via]}</span>${p.note ? html`<small>${p.note}</small>` : nothing}</span><span class="a">${money(p.amount)}</span>${
+  return html`<div class=${fresh ? 'pr fresh' : 'pr'}><span class="d">${fWhen(p.date, today)}</span><span><span class=${p.via === 'cash' ? 'via cash' : 'via'}>${WAY[p.via]}</span>${p.approx ? html`<small>cifra aproximada</small>` : nothing}${p.note ? html`<small>${p.note}</small>` : nothing}</span><span class="a">${p.approx ? '≈ ' : ''}${money(p.amount)}</span>${
     remove
       ? html`<button type="button" class="linkbtn rm" data-action=${remove.asking ? 'removePayment' : 'removePaymentAsk'} data-id=${p.id}>${remove.asking ? '¿Quitar?' : 'Quitar'}</button>`
       : nothing
@@ -44,14 +44,14 @@ function cobrosView({ today, payments, fresh, ask, paid }) {
   for (const p of payments) byMonth.set(p.date.slice(0, 7), [...(byMonth.get(p.date.slice(0, 7)) ?? []), p]);
   const row = (p) => paymentRow(p, today, { fresh: p.id === fresh, remove: { asking: p.id === asking } });
   return html`<div class="block cobros">
-    <div class="bh"><h3>Cobros</h3><span class="n">${money(netTotal(payments))}</span></div>
+    <div class="bh"><h3>Cobros</h3><span class="n">${payments.some((p) => p.approx) ? '≈ ' : ''}${money(netTotal(payments))}</span></div>
     ${
       !payments.length
         ? nothing
         : byMonth.size > 1
           ? html`<div class="pay">${[...byMonth].map(
               ([month, list]) =>
-                html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${money(netTotal(list))}</span></div>${list.map(row)}`,
+                html`<div class="ph"><span>${capital(monthName(month))} ${month.slice(0, 4)}</span><span>${list.some((p) => p.approx) ? '≈ ' : ''}${money(netTotal(list))}</span></div>${list.map(row)}`,
             )}</div>`
           : html`<div class="pay">${payments.map(row)}</div>`
     }
@@ -131,11 +131,14 @@ const noCobros = (c) => {
 };
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
-function tiles(s) {
+function tiles(c) {
+  const s = c.standing;
+  // Cobrado and Falta follow the cobros: one told as approximate makes both approximate
+  const about = c.approx ? '≈ ' : '';
   return html`<div class="sofar">
-    <div><span>Corresponde</span><b>${whole(s.corresponde)}</b></div>
-    <div><span>Cobrado</span><b>${whole(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
-    <div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments ? whole(s.falta) : '—'}</b></div>
+    <div><span>Corresponde</span><b>${c.noPay ? '—' : whole(s.corresponde)}</b></div>
+    <div><span>Cobrado</span><b>${about}${whole(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
+    <div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments && !c.noPay ? about + whole(s.falta) : '—'}</b></div>
   </div>`;
 }
 
@@ -145,7 +148,8 @@ function notes(c, { over }) {
   return html`${!s.hasPayments ? noCobros(c) : nothing}
     ${c.paid === 'asAgreed' && s.falta > 0 ? html`<p class="hint">Se cobró todo lo pactado. Falta lo que la ley exige y no se pactó: el mínimo legal.</p>` : nothing}
     ${s.hasPayments && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
-    ${s.sobra >= 1 ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
+    ${c.approx && s.hasPayments ? html`<p class="hint">${c.noPay ? 'Hay cobros apuntados como aproximados: Cobrado lo es también (≈).' : 'Hay cobros apuntados como aproximados: Cobrado y Falta lo son también (≈).'}</p>` : nothing}
+    ${s.sobra >= 1 && !c.noPay ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
 
 const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir', add: 'añadir' };
@@ -188,7 +192,7 @@ function registro(c) {
     ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
-      ${tiles(s)}
+      ${tiles(c)}
       ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
@@ -223,22 +227,25 @@ function result(c) {
   const { standing: s } = c;
   const open = s.unclosed.length;
   // Everything cobrado: calm, neutral, nothing to ask for
-  const settled = s.hasPayments && s.falta === 0;
-  const sub = settled
-    ? 'Lo cobrado cubre lo que corresponde.'
-    : !s.hasPayments
-      ? ''
-      : c.complete
+  const settled = s.hasPayments && s.falta === 0 && !c.noPay;
+  const told = c.noPay && s.hasPayments;
+  const sub = told
+    ? 'No se apuntó lo pactado: no hay con qué comparar lo cobrado.'
+    : settled
+      ? 'Lo cobrado cubre lo que corresponde.'
+      : !s.hasPayments
         ? ''
-        : open
-          ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
-          : '';
+        : c.complete
+          ? ''
+          : open
+            ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
+            : '';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${settled ? 'Todo cobrado' : c.paid === 'asAgreed' ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : whole(s.hasPayments ? s.falta : s.corresponde)}</span>${
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : c.paid === 'asAgreed' ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${s.hasPayments && c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.hasPayments ? s.falta : s.corresponde)}`}</span>${
       // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
-      s.hasPayments && !settled ? html`<span class="stamp">Falta</span>` : nothing
+      s.hasPayments && !settled && !told ? html`<span class="stamp">Falta</span>` : nothing
     }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
-    ${tiles(s)}
+    ${tiles(c)}
     ${notes(c, { over: '' })}
     ${recordClosing(c, open)}
   </div>${lapsedLine(c.claim)}`;
@@ -315,19 +322,24 @@ function lawBlock(c) {
         : `${f.off} libres, pero sin un día entero libre cada semana`
     }`;
   const closedMonths = law.months.closed > 0;
-  const rest = !law.rest.periods
-    ? mark('warn', 'Descanso semanal', `Aún no hay un periodo de ${weeks} semanas entero en meses cerrados.`)
-    : law.rest.fails.length
-      ? mark(
-          'bad',
-          'Descanso semanal',
-          `Días libres insuficientes en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.`,
-        )
-      : mark(
-          'ok',
-          'Descanso semanal',
-          `Se libra un día entero por semana (o dos cada 14 días) y ${fDaysSpoken(LAW.weeklyRest)} por semana de media en todos los periodos de ${weeks} semanas.`,
-        );
+  const counted = law.rest.counted;
+  const countedText = `No se puede juzgar en ${plural(counted, 'mes apuntado', 'meses apuntados')} por totales: no se sabe qué días se libraron.`;
+  const rest =
+    counted && !law.rest.periods
+      ? mark('warn', 'Descanso semanal', countedText)
+      : !law.rest.periods
+        ? mark('warn', 'Descanso semanal', `Aún no hay un periodo de ${weeks} semanas entero en meses cerrados.`)
+        : law.rest.fails.length
+          ? mark(
+              'bad',
+              'Descanso semanal',
+              `Días libres insuficientes en ${law.rest.fails.length} de ${law.rest.periods} periodos de ${weeks} semanas: ${law.rest.fails.slice(0, 2).map(range).join('; ')}${law.rest.fails.length > 2 ? ` y ${law.rest.fails.length - 2} más` : ''}.${counted ? ` ${countedText}` : ''}`,
+            )
+          : mark(
+              'ok',
+              'Descanso semanal',
+              `Se libra un día entero por semana (o dos cada 14 días) y ${fDaysSpoken(LAW.weeklyRest)} por semana de media en todos los periodos de ${weeks} semanas.${counted ? ` ${countedText}` : ''}`,
+            );
   const extra = Math.round(law.days.extra);
   const days =
     extra >= 1
@@ -396,7 +408,7 @@ function lawBlock(c) {
 
 /** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
 function cuentas(c) {
-  const settled = c.standing.hasPayments && c.standing.falta === 0;
+  const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
     ${endQuestion(c.cards, c.today, false)}

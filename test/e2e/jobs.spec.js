@@ -227,6 +227,37 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
   });
 
+  test('counted months are counts, not days; the weekly rest says it cannot be judged; approximate cobros carry «≈»', async ({
+    page,
+  }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastDays').fill('60');
+    await page.locator('#pastPaid').fill('4000');
+    await page.locator('#pastApprox').check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    await expect(tile('Cobrado')).toContainText('≈');
+    // No pay agreed: nothing to compare the cobros with
+    await expect(tile('Falta')).toHaveText('—');
+    await expect(tile('Corresponde')).toHaveText('—');
+    await expect(page.locator('#result .block.result .lbl')).toHaveText('Cobrado');
+    await expect(page.locator('#result .block.result .sub')).toContainText('No se apuntó lo pactado');
+    const rest = page.locator('#result .lawcheck > div', { hasText: 'Descanso semanal' });
+    await expect(rest).toContainText('No se puede juzgar en 3 meses apuntados por totales');
+    await openRegistro(page);
+    await expect(page.locator('#registroPage .cobros .pr .a')).toContainText('≈');
+    await expect(page.locator('#registroPage .cobros .pr')).toContainText('cifra aproximada');
+    await expect(page.locator('#registroPage .cobros .bh .n')).toContainText('≈');
+    await page.locator('#registroPage .monthrow').first().click();
+    const cal = page.locator('#registroPage .cal');
+    await expect(cal).toHaveClass(/counted/);
+    await expect(cal.locator('.grid')).toHaveCount(0);
+    await expect(cal.locator('.day')).toHaveCount(0);
+    await expect(cal.locator('.counts')).toContainText('20 jornadas');
+    await expect(cal).toContainText('Se apuntó el total del mes, no cada día');
+  });
+
   test('both: the pay agreed and what happened', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');

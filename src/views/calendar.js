@@ -88,8 +88,22 @@ function actions(cal) {
   return html`<div class="calact"><button type="button" class="pri" data-action="closeMonth" data-key=${key}>Cerrar ${name}</button></div>`;
 }
 
+/** A month kept as counts: no days to draw, only how many were worked, free and sick. */
+function countedMonth(cal) {
+  const { acc } = cal;
+  const [y] = acc.row.month.split('-');
+  return html`<div class=${acc.row.closed ? 'cal counted closed' : 'cal counted'}>
+    <div class="mh"><h3>${capital(monthName(acc.row.month))} ${y}</h3>${stateOf(acc, false)}</div>
+    <p class="hint">Se apuntó el total del mes, no cada día: el descanso semanal no se puede juzgar.</p>
+    <div class="counts"><span><i class="work"></i>${plural(acc.counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(acc.counts.off, 'libranza', 'libranzas')}</span>${acc.counts.sick ? html`<span><i class="sick"></i>${acc.counts.sick} de baja</span>` : nothing}</div>
+    ${money(cal)}
+    ${actions(cal)}
+  </div>`;
+}
+
 function month(cal) {
   const { acc } = cal;
+  if (acc.marks.some((m) => m.counted)) return countedMonth(cal);
   const [y] = acc.row.month.split('-');
   const now = cal.mode === 'ficha' && cal.current;
   // Up to today in the month in progress: the days after it are neither jornadas nor libranzas yet

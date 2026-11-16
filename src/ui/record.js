@@ -33,7 +33,7 @@ import {
 } from '../model/job-view.js';
 import { phaseOf } from '../model/phase.js';
 import { lastWayOf } from '../model/record.js';
-import { missing, parseDate, todayISO } from '../offer.js';
+import { missing, parseDate, payKnown, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
 import { active, calcOffer, settleOffer } from '../state.js';
 import { ACCOUNT_CONFIG } from '../storage/account-config.js';
@@ -88,6 +88,8 @@ import {
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
  * @property {ReturnType<typeof talkContext> | null} talk under way with something unpaid: the summary to talk to the ganadero
  * @property {import('../model/settle.js').Paid | undefined} paid «Sí, todo» or «No se cobró nada» was said
+ * @property {boolean} approx a cobro was told as approximate, so Cobrado and Falta are
+ * @property {boolean} noPay the job began with no pay told: what was cobrado has nothing agreed to be compared with
  * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
  * @property {boolean} recording «No todo» was answered: the cobros are being recorded
  * @property {{ date: string } | null} complete the record closed with every month closed: the figures are firm
@@ -309,6 +311,8 @@ export function recordContext(o, r) {
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
     paid: record.paid,
+    noPay: !payKnown(o.terms),
+    approx: !record.paid && record.payments.some((p) => p.approx),
     bare: isBare(o, phase, ui.recording[o.id]),
     recording: Boolean(ui.recording[o.id]),
     // Every month closed as well: a month reopened or added after it makes the figures estimates again
