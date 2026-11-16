@@ -22,6 +22,7 @@ const unpaidRow = (label, unpaid, net, cls = 'tot') =>
 
 /** Why a job without a contract is measured against the monthly minimum. */
 const NO_CONTRACT_FIXED = 'Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4)';
+const HOURS_UNKNOWN_FULL_DAY = `Sin horas apuntadas se mide como jornada completa, ${LAW.workdayHours} h al día`;
 
 function timeSection(o, r) {
   const t = r.time;
@@ -104,10 +105,11 @@ function minimumSection(o, r, net) {
   const { min, pay, debt } = r;
   const bonusShown = min.overnight > 0.5 ? shownEuros(min.overnight) : 0;
   const shortOf = (...taken) => Math.max(0, shownDiff(min.salary, ...taken) + bonusShown);
+  const fullDay = r.time.hoursUnknown ? `. ${HOURS_UNKNOWN_FULL_DAY}` : '';
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
-      ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
+      ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${fullDay}`
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));

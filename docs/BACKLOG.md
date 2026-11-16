@@ -58,5 +58,4 @@
 - Huesca overtime premium (agreement art. 35: +75 % working days, +100 % holidays, on the agreement's hourly salary): the model values overtime at the ordinary minimum hour; a premium needs a place in `extra.overtimeValue`, the agreement's hourly base, and wording in the claim and cards.
 - The Expediente does not mark approximate cobros with «≈».
 - A month kept as counts cannot be turned back into per-day marks.
-- A job with no hours has a minimum of 0, so no shortfall shows; decide whether to judge it as full-time (the legal default of a contract without stated hours).
 - «Trabajo ya hecho» has no place, contract or hours fields.

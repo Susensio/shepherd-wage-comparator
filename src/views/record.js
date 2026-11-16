@@ -87,7 +87,7 @@ export function paidQuestion(c) {
   return html`<div class="tcard-q" role="group" aria-label="¿Se cobró este trabajo?">
     <h3>¿Se cobró este trabajo?</h3>
     <p class="hint">«Sí, todo» da por cobrado lo pactado.</p>
-    <div class="choices"><button type="button" class="pri" data-action="paidAll">Sí, todo</button><button type="button" data-action="paidSome">No todo</button><button type="button" data-action="paidNoneAsk">No se cobró nada</button></div>
+    <div class="choices"><button type="button" data-action="paidAll">Sí, todo</button><button type="button" data-action="paidSome">No todo</button><button type="button" data-action="paidNoneAsk">No se cobró nada</button></div>
   </div>`;
 }
 
@@ -187,7 +187,7 @@ const registroLink = (c) =>
 
 /** A job under way: «Hasta hoy» in net, what waits to be closed, and the way to the Registro. */
 function registro(c) {
-  const { standing: s, today } = c;
+  const { today } = c;
   return html`<h2 class="mode">Hasta hoy${NET}<small>Lo que va del trabajo.</small></h2>
     ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
     <div class="block">

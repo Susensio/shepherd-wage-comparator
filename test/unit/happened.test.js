@@ -3,6 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
+import { LAW } from '../../src/law.js';
 import { standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { actualFigures, happenedOf } from '../../src/model/happened.js';
@@ -258,14 +259,14 @@ describe('use (c): a past job known only by what happened, with thin terms', () 
     assert.equal(h?.money.basis, 'cobros');
     assert.equal(h?.money.approx, true);
     assert.equal(h?.money.received, 4000);
-    // with no pay and no hours nothing is judged: no minimum, no Falta
-    assert.equal(h?.money.due, 0);
+    // with no hours the job is measured as full days: the minimum is due, and 4,000 cobrados cover it
+    assert.ok((h?.money.due ?? 0) > 0 && (h?.money.due ?? 0) < 4000);
     assert.equal(h?.money.missing, 0);
     const real = actualFigures(offer, TODAY, r, h);
     assert.equal(real.real, true);
     near(real.earnings.perDay, 4000 / 60, 'perDay', 0.001);
-    assert.equal(real.earnings.perHour, 0, 'without hours, nothing per hour');
-    assert.equal(real.time.hours, 0);
+    near(real.earnings.perHour, 4000 / (60 * LAW.workdayHours), 'perHour, at full days', 0.001);
+    assert.equal(real.time.hours, 60 * LAW.workdayHours);
   });
 
   test('with no terms at all but a start, the job still computes', () => {

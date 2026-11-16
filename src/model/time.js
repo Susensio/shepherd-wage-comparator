@@ -62,7 +62,10 @@ export function schedule(terms) {
         : days / DAYS_PER_MONTH
       : Math.max(0, num(terms.duration));
   const natDays = terms.durationUnit === 'days' && !noDuration ? days : months * DAYS_PER_MONTH;
-  const hoursPerDay = Math.max(0, num(terms.hoursPerDay));
+  // Hours not written down: measured as a full working day, the law's default when a contract states no part time
+  // (ET art. 12.4.a requires part time in writing).
+  const hoursUnknown = terms.hoursPerDay == null || terms.hoursPerDay === '';
+  const hoursPerDay = hoursUnknown ? LAW.workdayHours : Math.max(0, num(terms.hoursPerDay));
   // Vacation: 2.5 days per month, rounded to whole days, as on payslips (8.33 → 8)
   const vacationDays = Math.round((num(LAW.vacationDaysPerYear) * months) / 12);
   const vacationTaken = terms.vacation === 'taken' ? vacationDays : 0;
@@ -94,6 +97,7 @@ export function schedule(terms) {
     months,
     natDays,
     hoursPerDay,
+    hoursUnknown,
     workFrac,
     vacationDays,
     vacationTaken,
