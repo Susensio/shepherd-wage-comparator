@@ -51,3 +51,10 @@ Weighed and discarded:
 - `paid` wins over the cobros, and adding a cobro clears it.
 - A job's figures are real (`actualFigures`) once it is finished and its record is complete; a job entered by totals has counted months nobody closes, so closed months are not required.
 - Under «Sí, todo» what the law requires beyond the agreement (a severance the offer did not mention, pay below the minimum) still shows as Falta, labelled as the legal minimum.
+
+## Notes from phase C (16 November 2026)
+
+- For a job that has begun, `missing(terms, today)` asks only its duration; an offer still to start keeps asking hours, pay and vacation, which matter to compare it.
+- A finished job with no facts and no answer is bare (`isBare` in `job-view.js`): the ficha leads with the analysis and asks «¿Se cobró este trabajo?».
+- The Registro and «Trabajo ya hecho» are pages over the ficha, each with a history entry. «Trabajo ya hecho» needs only the first and last day; a total cobrado becomes one cobro on the last day.
+- The list is amber only while a claim deadline runs; «Sin registro» and «Prescrito» are grey. «Año a año» and `yearMoney` are gone.
