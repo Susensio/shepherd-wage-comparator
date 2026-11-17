@@ -86,12 +86,9 @@ function recallCard(recall, today) {
 /** The question of how it began, at the top of the ficha. */
 export const startQuestion = (/** @type {Cards | null} */ cards, today) => startCard(cards?.start ?? null, today);
 
-/**
- * The question of how it ended. Asked by hand it goes at the top; asked of a finished job on its own it waits under the
- * yellow block, so the result stays on the first screen (`atTop` says which).
- */
-export const endQuestion = (/** @type {Cards | null} */ cards, today, /** @type {boolean} */ atTop) =>
-  cards?.end && cards.end.early === atTop ? endCard(cards.end, today) : nothing;
+/** The question of how it ended, first on the ficha of a job finished: answered, it is one line (`endLine`). */
+export const endQuestion = (/** @type {Cards | null} */ cards, today) =>
+  cards?.end ? endCard(cards.end, today) : nothing;
 
 /** «¿Se llamó para la campaña de <año>?», of a fijo discontinuo, at the top. */
 export const recallQuestion = (/** @type {Cards | null} */ cards, today) => recallCard(cards?.recall ?? null, today);

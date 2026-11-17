@@ -273,19 +273,18 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(page.locator('.conditions')).toBeVisible();
-    // The yellow block is the first block after the conditions row, and on the first screen
-    expect(await after(page, '.conditions', '#result .block.result .tag')).toBe(true);
-    const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('result'));
+    // The cobros come first, then the yellow block
+    expect(await after(page, '.conditions', '#result .block.cobros')).toBe(true);
+    const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('cobros'));
     expect(first).toBe(true);
-    const box = await page.locator('#result .block.result .tag').boundingBox();
-    expect(box?.y ?? 9999).toBeLessThan(500);
+    expect(await after(page, '#result .block.cobros', '#result .block.result')).toBe(true);
     // The order of the rest
     const order = [
       '#result .result',
+      '.registro-link',
       'h2:Balance del trabajo',
       'h2:¿Se cumplió la ley?',
       'h2:Pedir lo que falta',
-      '.registro-link',
       'details[data-fold=reference]',
     ];
     for (let i = 0; i < order.length - 1; i++)
@@ -425,7 +424,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
     const ask = page.locator('#result .ask');
     await expect(ask.locator('details.step')).toHaveCount(1);
-    await expect(page.locator('.result .nocobros')).toContainText('Apunta lo cobrado');
+    await expect(page.locator('#result .cobros').getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
     await expect(ask.locator('.claim-text')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Vía legal' })).toHaveCount(0);
   });
@@ -492,19 +491,19 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('details[data-fold=how]')).not.toContainText('En negro');
   });
 
-  test('the row «Registro» says what remains to record and opens the page with the months and the cobros', async ({
+  test('the row «Días» says the months closed or still to close and opens the page with the months', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
     const link = page.locator('#result .registro-link');
-    await expect(link).toContainText('4 sin cerrar · 0 cobros');
+    await expect(link).toHaveText(/Días\s*4 meses por cerrar/);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await expect(link).toContainText('4 sin cerrar · 1 cobro');
+    await expect(link).toHaveText(/Días\s*4 meses por cerrar/);
     await closeMonths(page, 'all');
-    await expect(link).toContainText('4 meses cerrados · 1 cobro');
+    await expect(link).toHaveText(/Días\s*4 meses cerrados/);
     await openRegistro(page);
-    await expect(page.locator('#registroPage h1')).toContainText('Registro');
+    await expect(page.locator('#registroPage h1')).toHaveText('Días trabajados');
     await expect(page.locator('#registroPage .monthrow')).toHaveCount(4);
     await expect(page.locator('#registroPage .cobros')).toHaveCount(0);
     await expect(page.locator('#result .cobros')).toHaveCount(1);

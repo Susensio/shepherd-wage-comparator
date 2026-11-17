@@ -64,7 +64,7 @@ export function fichaView(o, r, places, record = null) {
   const analysisTitle = analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing;
   // A job finished with nothing recorded leads with what the offer said, and asks only whether it was paid
   if (record?.bare)
-    return html`${conditions}${endQuestion(record.cards, record.today, true)}${endLine(record.record)}${realPeriod(record)}${paidQuestion(record)}${head}${analysisTitle}`;
+    return html`${conditions}${endQuestion(record.cards, record.today)}${endLine(record.record)}${realPeriod(record)}${paidQuestion(record)}${head}${analysisTitle}`;
   return html`${conditions}
     ${record ? recordView(record) : head}
     ${record?.phase === 'finished' && sections ? referenceFold(head, sections) : record && sections ? closedAnalysis(head, sections) : analysisTitle}`;

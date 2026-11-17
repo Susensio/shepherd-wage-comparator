@@ -197,8 +197,7 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await question(page).getByRole('button', { name: 'Otra cantidad', exact: true }).click();
     await page.locator('#paySheet [data-action=payCancel]').click();
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
-    await expect(page.locator('.nocobros')).toContainText('Aún no hay cobros apuntados');
-    await expect(page.locator('.nocobros').getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
+    await expect(page.locator('#result .cobros').getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
     expect((await recordOf(page)).paid).toBeUndefined();
   });
 
@@ -240,7 +239,7 @@ test.describe('the Registro page', () => {
       .click();
     await expect(page.locator('#registroPage')).toBeHidden();
     // The ficha keeps «Hasta hoy» and the way in; the days are in the page
-    await expect(page.locator('#result .registro-link')).toContainText('Registro');
+    await expect(page.locator('#result .registro-link')).toContainText('Días');
     await expect(page.locator('#result .monthstrip')).toHaveCount(0);
     await openRegistro(page);
     expect(await page.evaluate(() => history.state?.registro)).toBe(true);

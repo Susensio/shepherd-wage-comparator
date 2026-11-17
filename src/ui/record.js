@@ -729,11 +729,6 @@ export const recordActions = {
     offers.unmarkStep(active(), b.dataset.step);
     callbacks.paint();
   },
-  /** «No se cobró nada» of a job under way: said once, and taken back with «Quitar». */
-  nothingPaid(b) {
-    offers.setPaid(active(), b.dataset.off === undefined ? 'none' : undefined);
-    callbacks.paint();
-  },
   /** «Sí, todo»: what was agreed was received. */
   paidAll() {
     ui.ask = null;

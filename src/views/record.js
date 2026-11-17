@@ -37,7 +37,9 @@ function paymentRow(p, today, { fresh = false, remove = null, late = false } = {
 }
 
 /** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
-function cobrosView({ today, payments, fresh, ask, record }) {
+function cobrosView({ today, payments, fresh, ask, record, phase, cards }) {
+  // One filled button on the screen: the one that asks for the first cobro, unless a question of the job is open
+  const primary = !cards && (phase === 'underway' || !payments.length);
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
@@ -61,7 +63,9 @@ function cobrosView({ today, payments, fresh, ask, record }) {
             )}</div>`
           : html`<div class="pay">${payments.map(row)}</div>`
     }
-    <button type="button" class="pri addbtn" data-action="openPaySheet">${payments.length ? '+ Otro cobro' : 'Apuntar un cobro'}</button>
+    ${payments.length || phase === 'finished' ? nothing : html`<p class="hint">Aún no hay cobros apuntados. Apunta lo cobrado para ver lo que falta.</p>`}
+    <button type="button" class=${primary ? 'pri addbtn' : 'addbtn'} data-action="openPaySheet">${payments.length ? '+ Otro cobro' : 'Apuntar un cobro'}</button>
+    ${payments.length || phase === 'underway' ? nothing : html`<p class="hint">Otra cantidad: se apunta cada cobro. <button type="button" class="linkbtn" data-action="paidClear">Cambiar</button></p>`}
   </div>`;
 }
 
@@ -145,14 +149,6 @@ const minimumLine = (m) => {
 /** Said once, next to the title of Registro and Cuentas: every amount on them is net. */
 const NET = html` <span class="net">en neto</span>`;
 
-/** No cobro recorded and nothing said: the main state of the block, with the way to leave it. */
-const noCobros = (c) => {
-  if (c.phase === 'finished' && !c.recording) return paidQuestion(c);
-  if (c.ask?.type === 'paidNone') return paidQuestion(c);
-  return html`<div class="nocobros"><b>Aún no hay cobros apuntados</b><span>Apunta lo cobrado para ver lo que falta.</span>
-  <div class="actions"><button type="button" class="pri addbtn" data-action="openPaySheet">Apuntar un cobro</button><button type="button" class="linkbtn" data-action=${c.phase === 'finished' ? 'paidNoneAsk' : 'nothingPaid'}>No se cobró nada</button></div></div>`;
-};
-
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
 function tiles(c) {
   const s = c.standing;
@@ -168,8 +164,7 @@ function tiles(c) {
 /** What the figures leave to say: nothing cobrado yet, cash agreed and not cobrado, more cobrado than calculated. */
 function notes(c, { over }) {
   const s = c.standing;
-  return html`${!s.hasPayments ? noCobros(c) : nothing}
-    ${paidLine(c)}
+  return html`${paidLine(c)}
     ${c.payments.length && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${c.approx && s.hasPayments ? html`<p class="hint">${c.noPay ? 'Hay cobros apuntados como aproximados: Cobrado lo es también (≈).' : 'Hay cobros apuntados como aproximados: Cobrado y Falta lo son también (≈).'}</p>` : nothing}
     ${s.sobra >= 1 && !c.noPay ? html`<p class="hint">Se cobraron ${whole(s.sobra)} más de lo que corresponde${over}: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.</p>` : nothing}`;
@@ -195,18 +190,21 @@ const nudgeText = (months) =>
 
 const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
 
-/** What the row that opens the Registro says of it: the months closed (or not) and the cobros. */
-function registroSummary(c) {
+/** What the row «Días» says: the months closed, and those still to close. */
+function daysSummary(c) {
   const open = c.standing.unclosed.length;
-  const months = c.strip.filter((m) => m.state !== 'add' && m.state !== 'later');
-  const closed = months.length - open;
-  const cobros = c.payments.length === 1 ? '1 cobro' : `${c.payments.length} cobros`;
-  return `${open ? `${open} sin cerrar` : closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`} · ${cobros}`;
+  const closed = c.strip.filter((m) => m.state !== 'add' && m.state !== 'later').length - open;
+  return [
+    closed && (closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`),
+    open && (open === 1 ? '1 mes por cerrar' : `${open} meses por cerrar`),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
-/** The row of the ficha that opens the Registro, the page of the days and the cobros. */
-const registroLink = (c) =>
-  html`<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Registro</span><span class="cv">${registroSummary(c)}</span>${CHEVRON}</button>`;
+/** The row of the ficha that opens the page of the days, and the way to go through the months not closed. */
+const daysRow = (c) =>
+  html`<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Días</span><span class="cv">${daysSummary(c)}</span>${CHEVRON}</button>${reviewLink(c.standing.unclosed.length)}`;
 
 /** A job under way: «Hasta hoy» in net, what waits to be closed, and the way to the Registro. */
 function registro(c) {
@@ -219,10 +217,13 @@ function registro(c) {
       ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
-    ${c.payments.length ? cobrosView(c) : nothing}
-    ${underwayTalk(c.talk)}
-    ${registroLink(c)}`;
+    ${showCobros(c) ? cobrosView(c) : nothing}
+    ${daysRow(c)}
+    ${underwayTalk(c.talk)}`;
 }
+
+/** «Cobros»: drawn once there is a cobro; before, only where the shepherd is recording them (or the job is going on). «Lo pactado» and «Nada» speak in one line instead. */
+const showCobros = (c) => c.payments.length > 0 || (!c.paid && (c.phase === 'underway' || c.recording));
 
 /** «Detalle de lo que corresponde»: the lines that add up to Corresponde, in a closed fold. */
 const howItAdds = (s) =>
@@ -284,7 +285,6 @@ function result(c) {
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c)}
     ${notes(c, { over: '' })}
-    ${reviewLink(open)}
   </div>${lapsedLine(c.claim)}`;
 }
 
@@ -324,7 +324,7 @@ function monthsList(c) {
  */
 export function registroPageView(c, name) {
   return html`<div class="dossier-doc registro-doc">
-    <h1>Registro${NET}</h1>
+    <h1>Días trabajados</h1>
     <p class="hint">${name}</p>
     ${c.phase === 'underway' ? html`${strip(c)}${calendarView(c.calendar)}` : monthsList(c)}
     ${apuntesView(c)}
@@ -445,15 +445,16 @@ function lawBlock(c) {
 /** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
 function cuentas(c) {
   const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
+  const unanswered = !c.payments.length && !c.paid && (!c.recording || c.ask?.type === 'paidNone');
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
+    ${unanswered ? paidQuestion(c) : nothing}
+    ${showCobros(c) ? cobrosView(c) : nothing}
     ${result(c)}
-    ${c.payments.length ? cobrosView(c) : nothing}
     ${missingCobrosQuestion(c)}
-    ${endQuestion(c.cards, c.today, false)}
+    ${daysRow(c)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
-    ${claimView(c.claim)}
-    ${registroLink(c)}`;
+    ${claimView(c.claim)}`;
 }
 
 /** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */
@@ -472,5 +473,5 @@ export function realPeriod(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today, true)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
+  return html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
 }

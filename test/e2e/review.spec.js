@@ -127,15 +127,15 @@ const count = (text, part) => text.split(part).length - 1;
 test.describe('Cuentas and Registro', () => {
   test.use({ today: '2026-11-12' });
 
-  test('«Aún no hay cobros apuntados» is said once', async ({ page }) => {
+  test('with the accounts open and no cobro, one button asks for it, and «Cambiar» takes the answer back', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    expect(count(await page.locator('#result').innerText(), 'Aún no hay cobros apuntados')).toBe(1);
-    // It is the main state of the yellow block, with the way out right there
-    const prompt = page.locator('.result .nocobros');
-    await expect(prompt).toBeVisible();
-    await expect(prompt.getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
-    await expect(prompt.getByRole('button', { name: 'No se cobró nada' })).toBeVisible();
+    const cobros = page.locator('#result .cobros');
+    await expect(cobros.getByRole('button', { name: 'Apuntar un cobro' })).toBeVisible();
+    await expect(cobros.getByRole('button', { name: 'Cambiar' })).toBeVisible();
+    expect(count(await page.locator('#result').innerText(), 'Apuntar un cobro')).toBe(1);
     await expect(page.locator('[data-action=openPaySheet]')).toHaveCount(1);
   });
 
@@ -174,17 +174,17 @@ test.describe('Cuentas and Registro', () => {
     for (const text of await page.locator('.sofar b, .result .big').allTextContents()) expect(text).not.toContain(',');
   });
 
-  test('the row «Registro» counts the months closed', async ({ page }) => {
+  test('the row «Días» counts the months closed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    await expect(page.locator('.registro-link .cv')).toHaveText('4 sin cerrar · 0 cobros');
+    await expect(page.locator('.registro-link .cv')).toHaveText('4 meses por cerrar');
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       const { monthSpan } = await import('./src/model/days.js');
       for (const m of ['2026-06', '2026-07', '2026-08', '2026-09']) offers.closeMonth(app.active(), monthSpan(m));
       app.select(app.active().id);
     });
-    await expect(page.locator('.registro-link .cv')).toHaveText('4 meses cerrados · 0 cobros');
+    await expect(page.locator('.registro-link .cv')).toHaveText('4 meses cerrados');
   });
 
   test('«Revisar los meses» has one way back, and the days outside the job say «fuera»', async ({ page }) => {

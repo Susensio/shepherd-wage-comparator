@@ -250,12 +250,23 @@ test.describe('without cobros, and when nothing is owed', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
     await expect(tile(page, 'Falta')).toHaveText('—');
-    await page.locator('.result').getByRole('button', { name: 'No se cobró nada' }).click();
+    // The accounts were opened for cobros: «Cambiar» goes back to the question, whose «Nada» asks first
+    const askNothing = async () => {
+      await page.locator('#result .cobros').getByRole('button', { name: 'Cambiar' }).click();
+      await page
+        .getByRole('group', { name: '¿Se cobró este trabajo?' })
+        .getByRole('button', { name: 'Nada', exact: true })
+        .click();
+    };
+    await askNothing();
     // It asks first: nothing is said until it is confirmed
     expect(await page.evaluate(() => app.active().mine.record.paid)).toBeUndefined();
     await page.getByRole('button', { name: 'Volver' }).click();
-    await expect(tile(page, 'Falta')).toHaveText('—');
-    await page.locator('.result').getByRole('button', { name: 'No se cobró nada' }).click();
+    await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
+    await page
+      .getByRole('group', { name: '¿Se cobró este trabajo?' })
+      .getByRole('button', { name: 'Nada', exact: true })
+      .click();
     await page.getByRole('button', { name: 'Sí, nada' }).click();
     const corresponde = amount(await tile(page, 'Corresponde').textContent());
     expect(amount(await tile(page, 'Falta').textContent())).toBe(corresponde);

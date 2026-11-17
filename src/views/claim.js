@@ -46,7 +46,7 @@ function stepFold(step, title, body, { open = false, mark = true } = {}) {
 /** A text to read, copy and share. */
 function textCard(kind, text, canShare) {
   return html`<div class="textcard"><pre class="claim-text" tabindex="0">${text}</pre>
-    <div class="actions"><button type="button" class="pri sm" data-action="copyClaimText" data-kind=${kind}>${COPY_ICON} Copiar</button>${canShare ? html`<button type="button" class="sm" data-action="shareClaimText" data-kind=${kind}>Compartir</button>` : nothing}</div>
+    <div class="actions"><button type="button" class="sm" data-action="copyClaimText" data-kind=${kind}>${COPY_ICON} Copiar</button>${canShare ? html`<button type="button" class="sm" data-action="shareClaimText" data-kind=${kind}>Compartir</button>` : nothing}</div>
     <p class="hint copy-msg" role="status"></p></div>`;
 }
 
