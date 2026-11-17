@@ -32,13 +32,17 @@ const pct = (x) => `${fN(x, 2)}\u00a0%`;
  * screen.
  */
 function shownFigures(x, r) {
-  const gross = sum([cents(x.salary), cents(x.vacation)]);
+  const base = cents(x.base);
+  const extraPays = cents(x.extraPays);
+  const gross = sum([base, extraPays, cents(x.vacation)]);
   const contributions = r.pay.rates.worker.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
   const irpf = cents(gross * r.pay.irpfPct);
   const severance = x.severance > 0.5 ? cents(x.severance) : 0;
   const deductions = sum([irpf, ...contributions.map(([, amount]) => amount)]);
   const employer = r.pay.rates.employer.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
   return {
+    base,
+    extraPays,
     gross,
     contributions,
     irpf,
@@ -67,7 +71,8 @@ function payslipTables(r, months, shown) {
       <thead><tr><th>Concepto</th><th class="det">Detalle</th><th>Abonos</th><th>Deducciones</th></tr></thead>
       <tbody>${months.map(
         (x, m) => html`
-        ${line(m, 'Salario', x.share < 1 ? `${x.days} días` : 'mes entero', x.salary, null)}
+        ${line(m, x.extraPays > 0.5 ? 'Salario base' : 'Salario', x.share < 1 ? `${x.days} días` : 'mes entero', shownMonths[m].base, null)}
+        ${x.extraPays > 0.5 ? line(m, 'Prorrata de pagas extra', `${LAW.extraPaysPerYear} pagas al año`, shownMonths[m].extraPays, null) : nothing}
         ${
           x.vacation > 0.5
             ? line(

@@ -45,6 +45,13 @@ export function monthlyPayslips(terms, r) {
   const lastIdx = months.length - 1;
   const ss = r.pay.rates.workerPct / 100;
   const employer = r.pay.rates.employerPct / 100;
+  // The salary's part that is the extra pays prorated: apart in the model, or inside a monthly amount (14 pagas / 12)
+  const extraShare =
+    r.pay.extraPays > 0 && r.pay.salary > 0
+      ? r.pay.extraPays / r.pay.salary
+      : terms.payrollMin || terms.payUnit === 'month'
+        ? LAW.extraPaysPerYear / (12 + LAW.extraPaysPerYear)
+        : 0;
   return months.map((x, i) => {
     const salary = (r.pay.salary * x.share * scale) / r.time.months;
     const vacation = r.pay.vacationPay > 0 && i === lastIdx ? r.pay.vacationPay : 0;
@@ -57,6 +64,9 @@ export function monthlyPayslips(terms, r) {
       days: x.days,
       share: x.share,
       salary,
+      /** `salary` without the prorated extra pays, and those pays: they add up to `salary`. */
+      base: salary * (1 - extraShare),
+      extraPays: salary * extraShare,
       vacation,
       gross,
       contrib,

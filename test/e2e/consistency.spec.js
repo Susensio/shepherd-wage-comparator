@@ -58,7 +58,7 @@ async function invariantProblems() {
     const nets = [...slip.querySelectorAll('tfoot tr.net')];
     const months = [];
     for (const row of slip.querySelectorAll('tbody tr')) {
-      if (row.querySelector('th').textContent === 'Salario') months.push({ credits: 0, debits: 0 });
+      if (row.querySelector('th').textContent.startsWith('Salario')) months.push({ credits: 0, debits: 0 });
       const cells = row.querySelectorAll('td');
       months.at(-1).credits += number(cells[1]);
       months.at(-1).debits += number(cells[2]);

@@ -269,6 +269,19 @@ test('the payslips add up to the gross', () => {
   }
 });
 
+test('the payslips split the salary into base and prorated extra pays, as the extra pays are told', () => {
+  const split = (changes) => {
+    const o = offerOf({ ...BASE, ...changes });
+    const [first] = monthlyPayslips(o.terms, calc(o, { cfg, alone: true }));
+    near(first.base + first.extraPays, first.salary, 0.001, 'they add up to the salary');
+    return first;
+  };
+  // apart: the monthly pay and two twelfths of it; included: the amount is 14 pagas / 12, so base is 12/14 of it
+  near(split({ extraPays: 'separate' }).extraPays, (1221 * 2) / 12, 0.01, 'separate');
+  near(split({ extraPays: 'included' }).base, (1221 * 12) / 14, 0.01, 'included');
+  assert.equal(split({ payUnit: 'day', payAmount: 50, extraPays: 'included' }).extraPays, 0);
+});
+
 // Functions (netOf…) are dropped, so two results compare by their figures
 const figuresOf = (r) => JSON.stringify(r);
 
