@@ -862,6 +862,10 @@ describe('why Corresponde is more than the pay agreed', () => {
       true,
     );
     assert.equal(note(below({ payUnit: 'day', payAmount: 20 }))?.unit, 'día');
+    // A pay agreed in total says it in total, not per month
+    const total = note(below({ payUnit: 'total', payAmount: 1000 }));
+    assert.equal(total?.unit, 'total');
+    assert.ok(total.total > total.agreed);
   });
 
   test('an item short while the pay agreed is above the minimum as a whole: the item says so, except vacation without a contract', () => {

@@ -187,6 +187,13 @@ test.describe('Cuentas and Registro', () => {
     await expect(page.locator('.registro-link .cv')).toHaveText('4 meses cerrados');
   });
 
+  test('links used as actions («Revisar los meses», «Cambiar») are at least 44 px tall', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
+    for (const name of ['Revisar los meses', 'Cambiar'])
+      expect((await box(page.getByRole('button', { name }).first())).height, name).toBeGreaterThanOrEqual(44);
+  });
+
   test('«Revisar los meses» has one way back, and the days outside the job say «fuera»', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);

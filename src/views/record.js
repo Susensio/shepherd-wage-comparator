@@ -65,7 +65,7 @@ function cobrosView({ today, payments, fresh, ask, record, phase, cards }) {
     }
     ${payments.length || phase === 'finished' ? nothing : html`<p class="hint">Aún no hay cobros apuntados. Apunta lo cobrado para ver lo que falta.</p>`}
     <button type="button" class=${primary ? 'pri addbtn' : 'addbtn'} data-action="openPaySheet">${payments.length ? '+ Otro cobro' : 'Apuntar un cobro'}</button>
-    ${payments.length || phase === 'underway' ? nothing : html`<p class="hint">Otra cantidad: se apunta cada cobro. <button type="button" class="linkbtn" data-action="paidClear">Cambiar</button></p>`}
+    ${payments.length || phase === 'underway' ? nothing : html`<p class="hint">Otra cantidad: se apunta cada cobro. <button type="button" class="linkbtn tapfull" data-action="paidClear">Cambiar</button></p>`}
   </div>`;
 }
 
@@ -88,7 +88,7 @@ const LEGAL_ITEM = {
 function paidLine(c) {
   if (!c.paid || c.payments.length) return nothing;
   const items = c.paid === 'asAgreed' ? c.standing.legalItems : [];
-  return html`<p class="hint paidline">${PAID_LINE[c.paid]} <button type="button" class="linkbtn" data-action="paidClear">Cambiar</button></p>
+  return html`<p class="hint paidline">${PAID_LINE[c.paid]} <button type="button" class="linkbtn tapfull" data-action="paidClear">Cambiar</button></p>
     ${
       items.length
         ? html`<div class="legal-items"><p class="hint">Falta lo que la ley exige y no se pactó:</p>
@@ -141,9 +141,10 @@ const SHORT_LINE = {
  */
 const minimumLine = (m) => {
   if (!m) return nothing;
+  const per = m.unit === 'total' ? ' en total' : `/${m.unit}`;
   if (!m.exceeds)
-    return html`<p class="hint">${m.short.map((x) => SHORT_LINE[x.key](`${fN(x.amount, 2)} €/${m.unit} netos`)).join('. ')}.</p>`;
-  return html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €/${m.unit} netos` : `/${m.unit} netos`}; pactado: ${fN(m.agreed, 2)} €/${m.unit}.</p>`;
+    return html`<p class="hint">${m.short.map((x) => SHORT_LINE[x.key](`${fN(x.amount, 2)} €${per} netos`)).join('. ')}.</p>`;
+  return html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €${per} netos` : `${per} netos`}; pactado: ${fN(m.agreed, 2)} €${per}.</p>`;
 };
 
 /** Said once, next to the title of Registro and Cuentas: every amount on them is net. */
@@ -231,7 +232,9 @@ const howItAdds = (s) =>
 
 /** The way to go through the months not closed, one by one. */
 const reviewLink = (open) =>
-  open ? html`<button type="button" class="linkbtn" data-action="reviewStart">Revisar los meses</button>` : nothing;
+  open
+    ? html`<button type="button" class="linkbtn tapfull" data-action="reviewStart">Revisar los meses</button>`
+    : nothing;
 
 /**
  * «¿Falta algún cobro por apuntar?»: asked under the cobros of a job finished until the shepherd answers. «No, están

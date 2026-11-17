@@ -359,8 +359,10 @@ export function minimumNote(offer, settled, r) {
   const { totals } = settled;
   if (totals.shortfall < 1) return null;
   const { terms } = offer;
-  const perDay = (terms.payrollMin ? terms.totalUnit : terms.payUnit) === 'day' || r.split?.unit === 'day';
-  const per = perDay ? r.time.daysWorked : r.time.months;
+  const agreedUnit = terms.payrollMin ? terms.totalUnit : terms.payUnit;
+  const inTotal = agreedUnit === 'total';
+  const perDay = agreedUnit === 'day' || r.split?.unit === 'day';
+  const per = inTotal ? 1 : perDay ? r.time.daysWorked : r.time.months;
   if (!(per > 0)) return null;
   const each = (gross) => cents((gross * r.netFactor) / per);
   const items = totals.items;
@@ -380,7 +382,8 @@ export function minimumNote(offer, settled, r) {
     .filter((x) => x.amount > 0 && !(x.key === 'vacation' && r.noContract));
   if (total <= agreed && !short.length) return null;
   return {
-    unit: perDay ? 'día' : 'mes',
+    /** The unit the pay was agreed in: per day, per month or in total. */
+    unit: inTotal ? 'total' : perDay ? 'día' : 'mes',
     components,
     total,
     agreed,

@@ -5190,3 +5190,9 @@ body.reviewing .ficha > .back {
   border-radius: 8px;
   padding: 8px 10px;
 }
+/* A link that works as an action keeps the full tap height; the line it sits in grows with it */
+button.linkbtn.tapfull {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+}
