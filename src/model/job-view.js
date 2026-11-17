@@ -98,12 +98,15 @@ export function cardsOf(o, phase, settled, today, pending) {
         min: jobStart(o),
         error: asked?.error ?? '',
         /** What «Al final pactado» takes: the last day of the job, never after today. */
-        agreedDate: [settled.job.to, today].find((d) => d && d <= today) ?? today,
+        agreedDate: lastDayOf(settled, today),
       }
     : null;
   const recall = recallOf(o, today, pending.recall);
   return start || end || recall ? { start, end, recall } : null;
 }
+
+/** The last day of the job, never after today. */
+export const lastDayOf = (settled, today) => [settled.job.to, today].find((d) => d && d <= today) ?? today;
 
 /** Where the calendar starts for an offer: this month under way, the first still open once finished. */
 function defaultMonth(rows, today, phase) {

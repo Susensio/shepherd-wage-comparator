@@ -187,17 +187,15 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
   const corresponde = sum(lines.map((x) => x.due));
   // «Sí, todo»: what the offer agreed was received, so what is missing is only what the minimum adds to it (and the
   // severance, which the offer does not promise); «No se cobró nada», and the payments are not read
-  const shortfall = sum(
-    dueItems.map(({ item }) =>
-      item === 'vacation'
-        ? sum(rows.map((row) => row.items.vacation.shortfall)) * accrual
-        : item === 'severance'
-          ? finished
-            ? sum(rows.map((row) => row.items.severance.shortfall))
-            : 0
-          : sum(counted.map((row) => row.items[item].shortfall)),
-    ),
-  );
+  const shortOf = (item) =>
+    item === 'vacation'
+      ? sum(rows.map((row) => row.items.vacation.shortfall)) * accrual
+      : item === 'severance'
+        ? finished
+          ? sum(rows.map((row) => row.items.severance.shortfall))
+          : 0
+        : sum(counted.map((row) => row.items[item].shortfall));
+  const shortfall = sum(ITEMS.map(shortOf));
   const cobrado =
     paid === 'asAgreed'
       ? Math.max(0, cents(corresponde - net(shortfall)))
@@ -205,6 +203,13 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
         ? 0
         : sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
+  // What the law adds to the agreed pay, item by item in whole euros that add up to the net total
+  const shortItems = ITEMS.map((item) => ({ key: item, amount: net(shortOf(item)) })).filter((x) => x.amount > 0);
+  const shortWhole = spreadTo(
+    shortItems.map((x) => x.amount),
+    Math.round(sum(shortItems.map((x) => x.amount))),
+    1,
+  );
   // Nothing is dated while nothing was said to be paid: with no cobro the debt is only what corresponds
   const hasPayments = payments.length > 0 || Boolean(paid);
   const claimable = falta > 0 && hasPayments;
@@ -233,6 +238,10 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
     /** The months counted in Corresponde: those that have ended and the one in progress (every one once finished). */
     counted: counted.map((row) => row.month),
     corresponde,
+    /** What the offer agreed, net: Corresponde without what only the law adds (the minimum, a severance the offer does not mention). */
+    agreed: Math.max(0, cents(corresponde - net(shortfall))),
+    /** What the law adds to the pay agreed, per item (`salary`, `overnight`, `vacation`, `severance`), in whole euros adding up to the net total. */
+    legalItems: shortItems.map((x, i) => ({ key: x.key, amount: shortWhole[i] })),
     cobrado,
     /** Of `cobrado`, what was handed in cash. */
     cobradoEnMano: totals.cash,

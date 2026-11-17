@@ -64,14 +64,17 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await expect(page.locator('#result')).not.toContainText('Aún no hay cobros apuntados');
   });
 
-  test('«Lo pactado» takes what was agreed as received; «Quitar» brings the question back', async ({ page }) => {
+  test('«Lo pactado» takes what was agreed as received; «Cambiar» brings the question back', async ({ page }) => {
     await addJob(page, { terms: FINISHED });
     await question(page).getByRole('button', { name: 'Lo pactado' }).click();
     expect((await recordOf(page)).paid).toBe('asAgreed');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(question(page)).toHaveCount(0);
-    await expect(page.locator('#result .cobros')).toContainText('Se apuntó que se cobró todo lo pactado.');
-    await page.locator('#result .cobros').getByRole('button', { name: 'Quitar' }).click();
+    // No empty block of cobros: one line says it
+    await expect(page.locator('#result .cobros')).toHaveCount(0);
+    await expect(page.locator('#result')).not.toContainText('Apuntar un cobro');
+    await expect(page.locator('#result .paidline')).toContainText('Se cobró todo lo pactado.');
+    await page.locator('#result .paidline').getByRole('button', { name: 'Cambiar' }).click();
     await expect(question(page)).toBeVisible();
     expect((await recordOf(page)).paid).toBeUndefined();
   });
@@ -80,11 +83,38 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await addJob(page, { terms: { ...FINISHED, payAmount: 700, payType: 'net' } });
     await question(page).getByRole('button', { name: 'Lo pactado' }).click();
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Falta hasta el mínimo legal');
-    await expect(page.locator('#result')).toContainText(
-      'Se cobró todo lo pactado. Falta lo que la ley exige y no se pactó: el mínimo legal.',
-    );
+    await expect(page.locator('#result .paidline')).toContainText('Se cobró todo lo pactado.');
+    await expect(page.locator('#result .legal-items')).toContainText('Falta lo que la ley exige y no se pactó:');
     const falta = Number.parseFloat((await tile(page, 'Falta').textContent()).replace(/[^\d,]/g, '').replace(',', '.'));
     expect(falta).toBeGreaterThan(0);
+  });
+
+  test('«Lo pactado» at the minimum wage: the severance shows as an item, and «También se cobró» turns the answer into a cobro', async ({
+    page,
+  }) => {
+    await addJob(page, {
+      terms: { ...FINISHED, payrollMin: true, payAmount: '', contract: 'temporary', vacation: 'taken' },
+    });
+    await question(page).getByRole('button', { name: 'Lo pactado' }).click();
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Falta hasta el mínimo legal');
+    const items = page.locator('#result .legal-items li');
+    await expect(items.filter({ hasText: 'Indemnización por fin de contrato' })).toHaveCount(1);
+    const money = async (li) =>
+      Number.parseFloat((await li.locator('b').textContent()).replace(/[^\d,]/g, '').replace(',', '.'));
+    let sum = 0;
+    for (const li of await items.all()) sum += await money(li);
+    const falta = Number.parseFloat((await tile(page, 'Falta').textContent()).replace(/[^\d,]/g, '').replace(',', '.'));
+    expect(sum).toBe(falta);
+    const corresponde = await tile(page, 'Corresponde').textContent();
+    await page.getByRole('button', { name: 'También se cobró' }).click();
+    const record = await recordOf(page);
+    expect(record.paid).toBeUndefined();
+    expect(record.payments).toHaveLength(1);
+    expect(record.payments[0]).toMatchObject({ via: 'payroll', date: '2026-08-31' });
+    await expect(tile(page, 'Falta')).toHaveText('0 €');
+    await expect(tile(page, 'Cobrado')).toHaveText(corresponde);
+    await expect(page.locator('#result .cobros')).toContainText('Nómina');
+    await expect(page.locator('#result .legal-items')).toHaveCount(0);
   });
 
   test('«Otra cantidad» opens the cobro right there; several can be added in a row and each edited or removed', async ({

@@ -92,6 +92,33 @@ describe('record.paid in settle and in where an offer stands', () => {
     assert.equal(none.falta, none.corresponde);
     assert.equal(stand(undefined).hasPayments, false);
   });
+
+  test('standing: what the law adds comes per item in whole euros that add up to Falta; one cobro of Corresponde clears it', () => {
+    const minimum = offerOf({ ...JOB, contract: 'temporary', payrollMin: true, payAmount: '' });
+    const rm = rOf(minimum);
+    const settledOf = (record) => settle(minimum, record, TODAY, rm);
+    const agreed = standingOf(
+      settledOf({ months: {}, payments: [], paid: 'asAgreed' }),
+      TODAY,
+      'finished',
+      [],
+      rm.netFactor,
+      'asAgreed',
+    );
+    assert.ok(agreed.legalItems.length > 0);
+    assert.ok(agreed.legalItems.every((x) => Number.isInteger(x.amount) && x.amount > 0));
+    assert.deepEqual(agreed.legalItems.map((x) => x.key).slice(-1), ['severance']);
+    assert.equal(
+      agreed.legalItems.reduce((total, x) => total + x.amount, 0),
+      Math.round(agreed.falta),
+    );
+    near(agreed.agreed + agreed.falta, agreed.corresponde, 'agreed + Falta');
+    // The same answer as one payroll cobro of everything that corresponds
+    const paid = [{ id: 'p', date: '2026-08-31', amount: agreed.corresponde, via: 'payroll' }];
+    const after = standingOf(settledOf({ months: {}, payments: paid }), TODAY, 'finished', paid, rm.netFactor);
+    assert.equal(after.falta, 0);
+    assert.equal(after.cobrado, agreed.corresponde);
+  });
 });
 
 /** June to August with `worked` days worked in each month, every month closed. */

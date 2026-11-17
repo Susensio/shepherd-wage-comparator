@@ -263,8 +263,9 @@ test.describe('without cobros, and when nothing is owed', () => {
     expect(await page.evaluate(() => app.active().mine.record.paid)).toBe('none');
     await expect(page.locator('details.step[data-step=talk] .claim-text')).toContainText('Cobrado: nada hasta ahora.');
     await expect(page.locator('.ask .due-line')).toContainText('Plazo para reclamar');
-    await expect(page.locator('#result .cobros')).toContainText('Se apuntó que no se cobró nada');
-    await page.locator('#result .cobros').getByRole('button', { name: 'Quitar' }).click();
+    await expect(page.locator('#result .cobros')).toHaveCount(0);
+    await expect(page.locator('#result .paidline')).toContainText('No se cobró nada.');
+    await page.locator('#result .paidline').getByRole('button', { name: 'Cambiar' }).click();
     // Taken back: the job is as it was, finished with nothing recorded, and the question returns
     await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
   });

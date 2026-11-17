@@ -16,6 +16,7 @@ import {
 import { $ } from '../dom.js';
 import { fDate, fE, fInputValue, num } from '../format.js';
 import { conciliationOffice } from '../law.js';
+import { cents } from '../ledger.js';
 import { addableMonth, balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
@@ -24,6 +25,7 @@ import { dossierOf } from '../model/dossier.js';
 import {
   cardsOf,
   isBare,
+  lastDayOf,
   monthFlags,
   monthOnCalendar,
   monthStrip,
@@ -772,6 +774,20 @@ export const recordActions = {
     ui.ask = null;
     callbacks.paint();
     openPaySheet();
+  },
+  /**
+   * «También se cobró»: «Lo pactado» was not all. It becomes cobros, one on the last day for everything that corresponds
+   * (the cash agreed apart, as it was), so nothing is missing.
+   */
+  alsoPaid() {
+    const o = active();
+    const settled = settleOffer(o);
+    const standing = standingOf(settled, todayISO(), 'finished', [], calcOffer(o).netFactor, 'asAgreed');
+    const date = lastDayOf(settled, todayISO());
+    const cash = standing.lines.find((x) => x.key === 'cash')?.due ?? 0;
+    if (cash > 0) offers.addPayment(o, { date, amount: cash, via: 'cash' });
+    offers.addPayment(o, { date, amount: cents(standing.corresponde - cash), via: 'payroll' });
+    callbacks.paint();
   },
   /** «No se cobró nada» of a job finished asks first: it makes everything that corresponds a debt. */
   paidNoneAsk() {

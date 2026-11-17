@@ -37,7 +37,7 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
 }
 
 /** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
-function cobrosView({ today, payments, fresh, ask, paid }) {
+function cobrosView({ today, payments, fresh, ask }) {
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
@@ -56,16 +56,38 @@ function cobrosView({ today, payments, fresh, ask, paid }) {
           : html`<div class="pay">${payments.map(row)}</div>`
     }
     <button type="button" class="pri addbtn" data-action="openPaySheet">${payments.length ? '+ Otro cobro' : 'Apuntar un cobro'}</button>
-    ${
-      !payments.length && paid
-        ? html`<p class="hint">${PAID_TEXT[paid]} <button type="button" class="linkbtn" data-action="paidClear">Quitar</button></p>`
-        : nothing
-    }
   </div>`;
 }
 
-/** What is said of an answer to «¿Se cobró este trabajo?». */
-const PAID_TEXT = { asAgreed: 'Se apuntó que se cobró todo lo pactado.', none: 'Se apuntó que no se cobró nada.' };
+/** What is said of an answer to «¿Se cobró este trabajo?» that takes the place of the cobros. */
+const PAID_LINE = { asAgreed: 'Se cobró todo lo pactado.', none: 'No se cobró nada.' };
+
+/** What the law adds to the pay agreed, as the items say it. */
+const LEGAL_ITEM = {
+  salary: 'Salario hasta el mínimo legal',
+  overnight: 'Plus de pernocta (convenio)',
+  vacation: 'Vacaciones',
+  severance: 'Indemnización por fin de contrato',
+};
+
+/**
+ * The answer «Lo pactado» or «Nada» in place of the cobros: one line with its «Cambiar». Under «Lo pactado», what the
+ * law adds that the agreement did not promise, item by item, with the way to say it was paid too.
+ * @param {RecordContext} c
+ */
+function paidLine(c) {
+  if (!c.paid || c.payments.length) return nothing;
+  const items = c.paid === 'asAgreed' ? c.standing.legalItems : [];
+  return html`<p class="hint paidline">${PAID_LINE[c.paid]} <button type="button" class="linkbtn" data-action="paidClear">Cambiar</button></p>
+    ${
+      items.length
+        ? html`<div class="legal-items"><p class="hint">Falta lo que la ley exige y no se pactó:</p>
+          <ul>${items.map((x) => html`<li>${LEGAL_ITEM[x.key]}: <b>${whole(x.amount)}</b></li>`)}</ul>
+          <button type="button" class="sm" data-action="alsoPaid">También se cobró</button>
+          <p class="hint">Si en la nómina vino también esto, se apunta como un cobro del último día.</p></div>`
+        : nothing
+    }`;
+}
 
 /**
  * «¿Se cobró este trabajo?»: asked of a job finished with no cobro recorded and nothing said. «No se cobró nada» asks
@@ -141,8 +163,8 @@ function tiles(c) {
 function notes(c, { over }) {
   const s = c.standing;
   return html`${!s.hasPayments ? noCobros(c) : nothing}
-    ${c.paid === 'asAgreed' && s.falta > 0 ? html`<p class="hint">Se cobró todo lo pactado. Falta lo que la ley exige y no se pactó: el mínimo legal.</p>` : nothing}
-    ${s.hasPayments && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
+    ${paidLine(c)}
+    ${c.payments.length && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${c.approx && s.hasPayments ? html`<p class="hint">${c.noPay ? 'Hay cobros apuntados como aproximados: Cobrado lo es también (≈).' : 'Hay cobros apuntados como aproximados: Cobrado y Falta lo son también (≈).'}</p>` : nothing}
     ${s.sobra >= 1 && !c.noPay ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
 }
@@ -191,7 +213,7 @@ function registro(c) {
       ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
-    ${c.standing.hasPayments ? cobrosView(c) : nothing}
+    ${c.payments.length ? cobrosView(c) : nothing}
     ${underwayTalk(c.talk)}
     ${registroLink(c)}`;
 }
@@ -406,7 +428,7 @@ function cuentas(c) {
   const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
-    ${c.standing.hasPayments ? cobrosView(c) : nothing}
+    ${c.payments.length ? cobrosView(c) : nothing}
     ${endQuestion(c.cards, c.today, false)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
