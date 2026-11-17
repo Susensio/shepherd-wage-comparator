@@ -60,6 +60,8 @@ export function createOffers({ state, store, notify = () => {} }) {
     closeMonth: (offer, span) => edit(offer, (r) => record.closeMonth(offer, r, span, todayISO())),
     reopenMonth: (offer, key) => edit(offer, (r) => record.reopenMonth(r, key)),
     completeRecord: (offer) => edit(offer, (r) => record.completeRecord(r, todayISO())),
+    expectPayment: (offer, by) => edit(offer, (r) => record.expectPayment(r, by)),
+    clearExpectation: (offer) => edit(offer, (r) => record.clearExpectation(r)),
     addPayment: (offer, payment) => edit(offer, (r) => record.addPayment(r, payment)),
     updatePayment: (offer, id, fields) => edit(offer, (r) => record.updatePayment(r, id, fields)),
     removePayment: (offer, id) => edit(offer, (r) => record.removePayment(r, id)),

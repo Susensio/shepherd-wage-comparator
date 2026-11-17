@@ -300,6 +300,13 @@ test.describe('without cobros, and when nothing is owed', () => {
   });
 });
 
+/** «No»: no more cobro is expected, so what is missing is owed. */
+const saidNoMore = (page) =>
+  page.evaluate(async () => {
+    const { offers } = await import('./src/offers.js');
+    offers.completeRecord(app.active());
+  });
+
 test.describe('at 375 px', () => {
   test.use({ today: '2026-11-12' });
   for (const scheme of ['light', 'dark']) {
@@ -341,6 +348,7 @@ test.describe('the status of a card in Trabajos', () => {
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
+    await saidNoMore(page);
     await list(page);
     expect(await page.locator('#cards .year-head b').allTextContents()).not.toContain('Para reclamar');
     await expect(card(page)).toHaveClass(/st-red/);
@@ -360,7 +368,7 @@ test.describe('the status of a card in Trabajos', () => {
     expect(year).toMatch(/^2026/);
   });
 
-  test('grey with nothing recorded; amber while a deadline runs and nothing is recorded; calm once paid in full; «Todo cobrado» when closed', async ({
+  test('grey with nothing recorded; amber while a deadline runs and nothing is recorded; green Saldado once paid in full', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -388,14 +396,40 @@ test.describe('the status of a card in Trabajos', () => {
         offers.closeMonth(app.active(), { key: row.month, from: row.calendarFrom, to: row.calendarTo });
     });
     await list(page);
-    await expect(card(page).locator('.oc-status')).toHaveCount(0);
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      offers.completeRecord(app.active());
-    });
-    await list(page);
-    await expect(card(page)).not.toHaveClass(/st-(red|amber)/);
-    await expect(card(page).locator('.oc-status')).toHaveText('Todo cobrado');
+    await expect(card(page)).toHaveClass(/st-green/);
+    await expect(card(page).locator('.oc-status')).toHaveText('Saldado');
+  });
+
+  test('with Falta, the card is grey Por confirmar until the shepherd says what is expected, then amber Esperando cobro or red Debe el ganadero; a lapsed promise turns red', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, PAID);
+    const status = async (record) => {
+      await page.evaluate(async (record) => {
+        const { offers } = await import('./src/offers.js');
+        offers.clearExpectation(app.active());
+        if (record === 'no') offers.completeRecord(app.active());
+        if (record === 'yes') offers.expectPayment(app.active());
+        if (record === 'promised') offers.expectPayment(app.active(), '2026-11-20');
+        if (record === 'lapsed') offers.expectPayment(app.active(), '2026-11-10');
+      }, record);
+      await list(page);
+    };
+    await status('none');
+    await expect(card(page)).toHaveClass(/st-grey/);
+    await expect(card(page).locator('.oc-status')).toContainText(/Por confirmar [\d.]+\s€/);
+    await status('yes');
+    await expect(card(page)).toHaveClass(/st-amber/);
+    await expect(card(page).locator('.oc-status')).toContainText(/Esperando cobro [\d.]+\s€/);
+    await status('promised');
+    await expect(card(page).locator('.oc-status')).toContainText('Esperando cobro');
+    await status('no');
+    await expect(card(page)).toHaveClass(/st-red/);
+    await expect(card(page).locator('.oc-status')).toContainText('Debe el ganadero');
+    await status('lapsed');
+    await expect(card(page)).toHaveClass(/st-red/);
+    await expect(card(page).locator('.oc-status')).toContainText('Debe el ganadero');
   });
 
   test('a job not worked has no status', async ({ page }) => {
@@ -514,6 +548,7 @@ test.describe('a promise to pay', () => {
   test('typed after the conversation, it is kept on the step; the card carries no long line', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
+    await saidNoMore(page);
     const step = page.locator('details.step[data-step=talk]');
     await step.locator(':scope > summary').click();
     await step.getByRole('button', { name: 'Hecho' }).click();
@@ -569,6 +604,7 @@ test.describe('a job still within its deadline', () => {
   test('the card says until when it can be claimed', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, PAID);
+    await saidNoMore(page);
     await page.evaluate(() => app.showTab('offers'));
     await expect(
       page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' }).locator('.oc-status'),

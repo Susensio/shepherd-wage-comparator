@@ -1067,9 +1067,7 @@ test.describe('the cards', () => {
     await expect(named(page, 'Puerto A').locator('.oc-status')).toHaveCount(0);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await page.evaluate(() => app.showTab('offers'));
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toContainText(
-      /Debe el ganadero [\d.,]+\s€/,
-    );
+    await expect(card(page, 'Puerto A, otra cuenta').locator('.oc-status')).toContainText(/Por confirmar [\d.,]+\s€/);
   });
 
   test('a job under way, and one not decided yet', async ({ page }) => {

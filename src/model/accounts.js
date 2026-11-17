@@ -276,20 +276,36 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
 }
 
 /**
+ * Where the money of a finished job stands (ADR-0035, «option D»: the state comes from what the shepherd expects). With
+ * nothing missing it is `settled`. With Falta above 0: `owed` once the shepherd said no more is expected (`complete`) or
+ * the date the ganadero promised passed; `expecting` while a cobro is expected and the promised date, if any, has not
+ * passed; `unconfirmed` while neither was said, which is never a debt to claim.
+ * @param {{ falta: number, record: { complete?: object, expecting?: { by?: string } }, today: string }} job `today` is an ISO date
+ * @returns {'settled' | 'owed' | 'expecting' | 'unconfirmed'}
+ */
+export function moneyState({ falta, record, today }) {
+  if (falta <= 0) return 'settled';
+  if (record.complete) return 'owed';
+  if (!record.expecting) return 'unconfirmed';
+  return record.expecting.by && record.expecting.by < today ? 'owed' : 'expecting';
+}
+
+/**
  * The status of a worked job on its card in Trabajos: a tone and one short line, or null where nothing is said. The list
- * stays calm (ADR-0035): red only where the ganadero owes and the claim is still in time; amber only while a claim
- * deadline runs (something remains to record); grey for a job finished with nothing recorded («Sin registro») and for
- * what lapsed («Prescrito», never red); plain «Todo cobrado» for a job settled and closed. A job under way says nothing
- * until a month has ended.
- * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, complete: boolean, claim?: { by: string | null, lapsed: boolean }, bare?: boolean, window?: boolean, approx?: boolean }} job `unclosed`: months that have ended and are not closed; `claim`: the deadline of what is owed (`by`: the nearest not lapsed; `lapsed`: all of it is); `bare`: finished with nothing recorded; `window`: some deadline of what is due has not passed; `approx`: the cobros are approximate
- * @returns {{ tone: 'red' | 'amber' | 'grey' | null, text: string, owed?: number, approx?: boolean, claim?: { by: string | null, lapsed: boolean } } | null}
+ * stays calm (ADR-0035): red only where the ganadero owes (`money` is `owed`: no more is expected, or the promise lapsed)
+ * and the claim is still in time; amber «Esperando cobro» while a cobro is expected, and amber while a claim deadline
+ * runs and something remains to record; grey «Por confirmar» while nobody said whether a cobro is expected, for a job
+ * finished with nothing recorded («Sin registro») and for what lapsed («Prescrito», never red); green «Saldado» for a job
+ * with nothing missing. A job under way says nothing until a month has ended.
+ * @param {{ phase: 'underway' | 'finished', hasPayments: boolean, owed: number, unclosed: number, money?: ReturnType<typeof moneyState>, claim?: { by: string | null, lapsed: boolean }, bare?: boolean, window?: boolean, approx?: boolean }} job `unclosed`: months that have ended and are not closed; `money`: of a finished job, from `moneyState`; `claim`: the deadline of what is owed (`by`: the nearest not lapsed; `lapsed`: all of it is); `bare`: finished with nothing recorded; `window`: some deadline of what is due has not passed; `approx`: the cobros are approximate
+ * @returns {{ tone: 'red' | 'amber' | 'grey' | 'green', text: string, owed?: number, approx?: boolean, claim?: { by: string | null, lapsed: boolean } } | null}
  */
 export function jobStatus({
   phase,
   hasPayments,
   owed,
   unclosed,
-  complete,
+  money = 'owed',
   claim,
   bare = false,
   window = true,
@@ -300,6 +316,8 @@ export function jobStatus({
   if (hasPayments && owed > 0) {
     const about = approx ? { approx: true } : {};
     if (finished && claim?.lapsed) return { tone: 'grey', text: 'Prescrito', owed, ...about };
+    if (finished && money === 'expecting') return { tone: 'amber', text: 'Esperando cobro', owed, ...about };
+    if (finished && money === 'unconfirmed') return { tone: 'grey', text: 'Por confirmar', owed, ...about };
     return {
       tone: 'red',
       text: finished ? 'Debe el ganadero' : 'Falta',
@@ -313,8 +331,7 @@ export function jobStatus({
   const amber = (text) => (window ? { tone: /** @type {const} */ ('amber'), text } : null);
   if (!hasPayments) return amber('Sin cobros apuntados');
   if (unclosed > 0) return amber(unclosed === 1 ? '1 mes sin cerrar' : `${unclosed} meses sin cerrar`);
-  if (finished && !complete) return amber('Cobros sin confirmar');
-  return finished ? { tone: null, text: 'Todo cobrado' } : null;
+  return finished ? { tone: 'green', text: 'Saldado' } : null;
 }
 
 /**

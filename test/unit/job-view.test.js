@@ -178,4 +178,28 @@ describe('the card of a job', () => {
     assert.equal(card.pill, 'underway');
     assert.ok('status' in card);
   });
+
+  test('a finished job with Falta changes with what is expected and the clock: Por confirmar, Esperando cobro, Debe el ganadero', () => {
+    const finished = (said) => {
+      const o = jobOf({}, emptyRecord());
+      addPayment(o.mine.record, { date: '2026-07-05', amount: 100, via: 'payroll' });
+      Object.assign(o.mine.record, said);
+      return o;
+    };
+    const text = (o, today) => cardFor(o, today).status?.text;
+    assert.equal(text(finished({}), '2026-11-17'), 'Por confirmar');
+    assert.equal(text(finished({ expecting: {} }), '2026-11-17'), 'Esperando cobro');
+    const promised = finished({ expecting: { by: '2026-12-15' } });
+    assert.equal(text(promised, '2026-12-15'), 'Esperando cobro');
+    assert.equal(text(promised, '2026-12-16'), 'Debe el ganadero', 'the promise passed');
+    assert.equal(text(finished({ complete: { date: '2026-11-01' } }), '2026-11-17'), 'Debe el ganadero');
+    assert.equal(cardFor(finished({}), '2026-11-17').status?.tone, 'grey');
+  });
+
+  test('a finished job with nothing missing is Saldado', () => {
+    const o = jobOf({}, emptyRecord());
+    addPayment(o.mine.record, { date: '2026-07-05', amount: 100000, via: 'payroll' });
+    for (const row of settledOf(o, '2026-11-17').rows) o.mine.record.months[row.month] = { closed: true, days: {} };
+    assert.deepEqual(cardFor(o, '2026-11-17').status, { tone: 'green', text: 'Saldado' });
+  });
 });

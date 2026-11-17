@@ -4,7 +4,7 @@
  */
 
 import { isoOf, parseDate, payKnown } from '../offer.js';
-import { jobStatus, standingOf } from './accounts.js';
+import { jobStatus, moneyState, standingOf } from './accounts.js';
 import { hasFacts, jobStart, phaseOf } from './phase.js';
 
 /**
@@ -22,7 +22,6 @@ const BARE = {
   hasPayments: false,
   owed: 0,
   unclosed: 0,
-  complete: false,
   bare: true,
 };
 
@@ -188,7 +187,7 @@ export function cardOf(o, r, settledOf, today) {
             hasPayments: s.hasPayments,
             owed: s.falta,
             unclosed: s.unclosed.length,
-            complete: Boolean(o.mine.record.complete) && s.unclosed.length === 0,
+            money: moneyState({ falta: s.falta, record: o.mine.record, today }),
             window: s.firstDeadline !== null,
             approx: !o.mine.record.paid && o.mine.record.payments.some((p) => p.approx),
             claim: {

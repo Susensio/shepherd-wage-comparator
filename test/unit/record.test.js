@@ -3,7 +3,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
-import { balanceOf, jobStatus, minimumNote, monthAccounts, spanOf, standingOf } from '../../src/model/accounts.js';
+import {
+  balanceOf,
+  jobStatus,
+  minimumNote,
+  moneyState,
+  monthAccounts,
+  spanOf,
+  standingOf,
+} from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { lawFromRecord } from '../../src/model/compliance.js';
 import {
@@ -11,12 +19,14 @@ import {
   addPayment,
   answerRecall,
   clearEnd,
+  clearExpectation,
   closeMonth,
   completeRecord,
   confirmStart,
   countsOf,
   defaultMarks,
   endSick,
+  expectPayment,
   lastWayOf,
   markStep,
   marksOf,
@@ -538,6 +548,31 @@ describe('the law, from the record: facts only', () => {
     assert.equal('complete' in record, false, 'nothing recorded of the money any more');
   });
 
+  test('«Sí, quedó en pagarlo» and «No» exclude each other; «Cambiar» clears both; the last cobro removed takes either back', () => {
+    const record = emptyRecord();
+    assert.equal(expectPayment(record), true);
+    assert.deepEqual(record.expecting, {});
+    assert.equal(expectPayment(record), false, 'the same answer again changes nothing');
+    assert.equal(expectPayment(record, '2026-12-15'), true);
+    assert.deepEqual(record.expecting, { by: '2026-12-15' });
+    assert.equal(expectPayment(record, ''), true, 'the date taken away');
+    assert.deepEqual(record.expecting, {});
+    assert.equal(completeRecord(record, '2026-11-12'), true, '«No» takes «Sí» back');
+    assert.equal('expecting' in record, false);
+    assert.equal(expectPayment(record, '2026-12-15'), true, '«Sí» takes «No» back');
+    assert.equal('complete' in record, false);
+    assert.equal(clearExpectation(record), true);
+    assert.equal(clearExpectation(record), false);
+    assert.deepEqual(
+      Object.keys(record).filter((k) => k === 'complete' || k === 'expecting'),
+      [],
+    );
+    const p = addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
+    expectPayment(record, '2026-12-15');
+    removePayment(record, p.id);
+    assert.equal('expecting' in record, false, 'nothing recorded of the money any more');
+  });
+
   test('«Lo pactado» and «Nada» say no cobro is missing; taking the answer back with no cobro takes that away', () => {
     const record = emptyRecord();
     assert.equal(setPaid(record, 'asAgreed', '2026-11-12'), true);
@@ -1055,9 +1090,44 @@ describe('the claim ladder’s transitions (ADR-0034)', () => {
   });
 });
 
+describe('where the money of a finished job stands', () => {
+  const state = (record, today = '2026-11-17', falta = 120) => moneyState({ falta, record, today });
+
+  test('nothing missing is settled whatever was said', () => {
+    assert.equal(state({}, undefined, 0), 'settled');
+    assert.equal(state({ complete: { date: '2026-11-01' } }, undefined, 0), 'settled');
+    assert.equal(state({ expecting: {} }, undefined, 0), 'settled');
+  });
+
+  test('with Falta and nothing said it is unconfirmed, never owed', () => {
+    assert.equal(state({}), 'unconfirmed');
+  });
+
+  test('«No» makes it owed', () => {
+    assert.equal(state({ complete: { date: '2026-11-01' } }), 'owed');
+  });
+
+  test('«Sí» without a date is expecting for good', () => {
+    assert.equal(state({ expecting: {} }), 'expecting');
+    assert.equal(state({ expecting: {} }, '2030-01-01'), 'expecting');
+  });
+
+  test('«Sí» with a date is expecting up to and including it, owed the day after', () => {
+    const record = { expecting: { by: '2026-12-15' } };
+    assert.equal(state(record, '2026-11-17'), 'expecting');
+    assert.equal(state(record, '2026-12-15'), 'expecting', 'the day itself');
+    assert.equal(state(record, '2026-12-16'), 'owed');
+  });
+
+  test('a late cobro that covers Falta settles it, either answer', () => {
+    assert.equal(state({ expecting: { by: '2026-11-01' } }), 'owed');
+    assert.equal(state({ expecting: { by: '2026-11-01' } }, undefined, 0), 'settled');
+    assert.equal(state({ complete: { date: '2026-11-01' } }, undefined, 0), 'settled');
+  });
+});
+
 describe('the status of a job on its card', () => {
-  const job = (changes) =>
-    jobStatus({ phase: 'finished', hasPayments: true, owed: 0, unclosed: 0, complete: true, ...changes });
+  const job = (changes) => jobStatus({ phase: 'finished', hasPayments: true, owed: 0, unclosed: 0, ...changes });
 
   test('red where the ganadero owes, in a finished job and under way', () => {
     assert.deepEqual(job({ owed: 120 }), { tone: 'red', text: 'Debe el ganadero', owed: 120 });
@@ -1084,22 +1154,48 @@ describe('the status of a job on its card', () => {
     assert.equal(job({ owed: 120 })?.approx, undefined);
   });
 
+  test('with Falta, what the shepherd expects colours the card: grey Por confirmar, amber Esperando cobro, red Debe el ganadero', () => {
+    const claim = { by: '2027-03-31', lapsed: false };
+    assert.deepEqual(job({ owed: 120, claim, money: 'unconfirmed' }), {
+      tone: 'grey',
+      text: 'Por confirmar',
+      owed: 120,
+    });
+    assert.deepEqual(job({ owed: 120, claim, money: 'expecting' }), {
+      tone: 'amber',
+      text: 'Esperando cobro',
+      owed: 120,
+    });
+    assert.deepEqual(job({ owed: 120, claim, money: 'owed' }), {
+      tone: 'red',
+      text: 'Debe el ganadero',
+      owed: 120,
+      claim,
+    });
+    assert.equal(job({ owed: 120, approx: true, money: 'expecting' })?.approx, true);
+  });
+
+  test('a lapsed claim is Prescrito, grey, whatever was said; under way the answer does not matter', () => {
+    const claim = { by: null, lapsed: true };
+    for (const money of ['unconfirmed', 'expecting', 'owed'])
+      assert.deepEqual(job({ owed: 120, claim, money }), { tone: 'grey', text: 'Prescrito', owed: 120 }, money);
+    assert.equal(job({ phase: 'underway', owed: 50, money: 'unconfirmed' })?.text, 'Falta');
+  });
+
   test('amber only while a claim deadline runs: after it, the job is calm', () => {
     assert.equal(job({ hasPayments: false, window: false }), null);
     assert.equal(job({ unclosed: 2, window: false }), null);
-    assert.equal(job({ complete: false, window: false }), null);
-    assert.equal(job({ complete: false, window: true })?.tone, 'amber');
+    assert.equal(job({ hasPayments: false, window: true })?.tone, 'amber');
   });
 
   test('amber where something remains to record', () => {
     assert.deepEqual(job({ hasPayments: false }), { tone: 'amber', text: 'Sin cobros apuntados' });
     assert.equal(job({ unclosed: 1 })?.text, '1 mes sin cerrar');
     assert.equal(job({ unclosed: 3 })?.text, '3 meses sin cerrar');
-    assert.deepEqual(job({ complete: false }), { tone: 'amber', text: 'Cobros sin confirmar' });
   });
 
-  test('nothing coloured for a job settled and closed, and nothing for one under way with nothing to record', () => {
-    assert.deepEqual(job({}), { tone: null, text: 'Todo cobrado' });
+  test('green Saldado for a job with nothing missing, and nothing for one under way with nothing to record', () => {
+    assert.deepEqual(job({}), { tone: 'green', text: 'Saldado' });
     assert.equal(job({ phase: 'underway', hasPayments: false }), null);
     assert.equal(job({ phase: 'underway' }), null);
     assert.equal(job({ phase: 'underway', unclosed: 2 })?.text, '2 meses sin cerrar');

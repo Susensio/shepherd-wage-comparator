@@ -227,10 +227,33 @@ export function reopenMonth(record, key) {
   return true;
 }
 
-/** «No, están todos»: no cobro is missing, said on `today` (ISO). Returns false if it already was. */
+/** «No»: no more cobro is expected, said on `today` (ISO); it takes «Sí, quedó en pagarlo» back. Returns false if it already was. */
 export function completeRecord(record, today) {
   if (record.complete || !today) return false;
   record.complete = { date: today };
+  delete record.expecting;
+  return true;
+}
+
+/**
+ * «Sí, quedó en pagarlo»: a cobro is still expected, by `by` (ISO) if the ganadero promised a date; it takes «No» back.
+ * Returns whether it changed.
+ * @param {OfferRecord} record
+ * @param {string} [by]
+ */
+export function expectPayment(record, by) {
+  const date = by || undefined;
+  if (!record.complete && record.expecting && record.expecting.by === date) return false;
+  delete record.complete;
+  record.expecting = date ? { by: date } : {};
+  return true;
+}
+
+/** «Cambiar»: neither answer is said, the question is asked again. Returns false if none was. */
+export function clearExpectation(record) {
+  if (!record.complete && !record.expecting) return false;
+  delete record.complete;
+  delete record.expecting;
   return true;
 }
 
@@ -283,8 +306,8 @@ export function removePayment(record, id) {
   const at = record.payments?.findIndex((p) => p.id === id) ?? -1;
   if (at < 0) return false;
   record.payments.splice(at, 1);
-  // Nothing recorded of the money any more: «no falta ningún cobro» has nothing to stand on
-  if (!record.payments.length && !record.paid) delete record.complete;
+  // Nothing recorded of the money any more: what was said of the cobros to come has nothing to stand on
+  if (!record.payments.length && !record.paid) clearExpectation(record);
   return true;
 }
 
@@ -332,7 +355,7 @@ export function setPaid(record, paid, today) {
     completeRecord(record, today);
   } else {
     delete record.paid;
-    if (!record.payments?.length) delete record.complete;
+    if (!record.payments?.length) clearExpectation(record);
   }
   return true;
 }
