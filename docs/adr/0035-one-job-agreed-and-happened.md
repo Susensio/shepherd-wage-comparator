@@ -65,3 +65,5 @@ Weighed and discarded:
 - A job without a contract is asked about vacation too: taken or paid apart owes nothing; «dentro del pago» still owes it, since a job measured as fijo cannot fold vacation into the pay (ET 38.1).
 
 17 November 2026: the question «¿Falta algún cobro por apuntar?» and «Todo cobrado» on the card, noted above, were replaced by ADR-0036 («¿Se espera algún pago más?»; cards Por confirmar, Esperando cobro, Debe el ganadero, Saldado) in saved format 9.
+
+17 November 2026, owner: «El salario mínimo» as the agreed pay is the monthly minimum with its extra pays prorated (as people say «cobrar el SMI»), for every contract; a short temporary is still judged against the per-jornada minimum. «Se libran, cobrando» is offered on every contract but self-employed.
