@@ -166,7 +166,7 @@ function notes(c, { over }) {
     ${paidLine(c)}
     ${c.payments.length && s.falta > 0 && s.enManoAgreed > 0 && s.cobradoEnMano === 0 ? html`<p class="hint">Sin cobros en mano apuntados. Pactado en mano: ${whole(s.enManoAgreed)}.</p>` : nothing}
     ${c.approx && s.hasPayments ? html`<p class="hint">${c.noPay ? 'Hay cobros apuntados como aproximados: Cobrado lo es también (≈).' : 'Hay cobros apuntados como aproximados: Cobrado y Falta lo son también (≈).'}</p>` : nothing}
-    ${s.sobra >= 1 && !c.noPay ? html`<p class="hint">Cobrado ${whole(s.sobra)} por encima de lo calculado${over}. Las retenciones reales de la nómina suelen diferir de las simuladas.</p>` : nothing}`;
+    ${s.sobra >= 1 && !c.noPay ? html`<p class="hint">Se cobraron ${whole(s.sobra)} más de lo que corresponde${over}: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.</p>` : nothing}`;
 }
 
 const MONTH_STATE = { closed: '✔ cerrado', due: 'por cerrar', now: 'en curso', later: 'por venir', add: 'añadir' };
@@ -240,6 +240,12 @@ function recordClosing(c, open) {
   return html`<button type="button" class="pri addbtn" data-action="closeRecord">Cerrar el registro</button>${review}`;
 }
 
+/** What is cobrado reaches the pay agreed (or is taken as agreed) and still falls short of what the law requires. */
+const belowLegalMinimum = (c) => {
+  const s = c.standing;
+  return s.hasPayments && s.falta > 0 && !c.noPay && c.paid !== 'none' && s.cobrado >= s.agreed;
+};
+
 /** The yellow block: what the ganadero owes, the three figures, and the way to close the record. */
 function result(c) {
   const { standing: s } = c;
@@ -247,22 +253,30 @@ function result(c) {
   // Everything cobrado: calm, neutral, nothing to ask for
   const settled = s.hasPayments && s.falta === 0 && !c.noPay;
   const told = c.noPay && s.hasPayments;
+  const belowMinimum = belowLegalMinimum(c);
   const sub = told
     ? 'No se apuntó lo pactado: no hay con qué comparar lo cobrado.'
     : settled
       ? 'Lo cobrado cubre lo que corresponde.'
-      : !s.hasPayments
-        ? ''
-        : c.complete
+      : belowMinimum
+        ? c.paid
           ? ''
-          : open
-            ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
-            : '';
+          : s.cobrado > s.agreed
+            ? 'Se cobró más de lo pactado, pero menos de lo que exige la ley.'
+            : 'Se cobró lo pactado, pero menos de lo que exige la ley.'
+        : !s.hasPayments
+          ? ''
+          : c.complete
+            ? ''
+            : open
+              ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
+              : '';
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : c.paid === 'asAgreed' ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${s.hasPayments && c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.hasPayments ? s.falta : s.corresponde)}`}</span>${
+    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${s.hasPayments && c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.hasPayments ? s.falta : s.corresponde)}`}</span>${
       // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
       s.hasPayments && !settled && !told ? html`<span class="stamp">Falta</span>` : nothing
     }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
+    ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c)}
     ${notes(c, { over: '' })}
     ${recordClosing(c, open)}
@@ -274,7 +288,7 @@ function balanceBlock(c) {
   const { balance: b, standing: s } = c;
   const vacation = Math.round(b.contribVacationDays);
   return html`<div class="block"><div class="bh"><h2>Balance del trabajo</h2></div>
-    ${minimumLine(c.minimum)}
+    ${belowLegalMinimum(c) ? nothing : minimumLine(c.minimum)}
     <div class="rows">
       ${row('Jornadas', String(b.worked), { sub: b.firm ? 'de los meses cerrados' : `${b.workedClosed} en meses cerrados; el resto, según la oferta` })}
       ${b.contribDays > 0 ? row('Días cotizados', String(Math.round(b.contribDays)), { sub: `según la oferta (la nómina real no se apunta)${vacation >= 1 ? `; incluye ${vacation} ${vacation === 1 ? 'día' : 'días'} de vacaciones pagadas` : ''}` }) : nothing}

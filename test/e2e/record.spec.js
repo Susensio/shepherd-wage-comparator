@@ -166,7 +166,7 @@ test.describe('under way: Registro', () => {
     await addPayments(page, [{ date: '2026-07-06', amount: 20000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
     await expect(page.locator('#result')).toContainText(
-      'Las retenciones reales de la nómina suelen diferir de las simuladas',
+      'más de lo que corresponde hasta hoy: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.',
     );
     for (const gone of ['de más', 'adelantado', 'Debe el ganadero'])
       await expect(page.locator('#result .block').first()).not.toContainText(gone);
@@ -408,7 +408,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#result')).not.toContainText('Sin cobros en mano apuntados');
     await expect(page.locator('#result')).not.toContainText('no es firme');
     await expect(page.locator('#result')).toContainText(
-      'Las retenciones reales de la nómina suelen diferir de las simuladas',
+      'más de lo que corresponde: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.',
     );
     for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
       await expect(page.locator('#result')).not.toContainText(gone);

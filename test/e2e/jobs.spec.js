@@ -117,6 +117,33 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await expect(page.locator('#result .legal-items')).toHaveCount(0);
   });
 
+  test('cobros above the pay agreed and below the legal minimum: the headline says so, with the minimum sentence under it', async ({
+    page,
+  }) => {
+    await addJob(page, { terms: { ...FINISHED, payAmount: 700, payType: 'net' } });
+    await question(page).getByRole('button', { name: 'Lo pactado' }).click();
+    const whole = async (name) =>
+      Number.parseFloat((await tile(page, name).textContent()).replace(/[^\d,]/g, '').replace(',', '.'));
+    const [corresponde, falta] = [await whole('Corresponde'), await whole('Falta')];
+    await page.locator('#result .paidline').getByRole('button', { name: 'Cambiar' }).click();
+    // More than agreed, less than the law requires: half of the shortfall is covered
+    await page.evaluate(
+      async (amount) => {
+        const { offers } = await import('./src/offers.js');
+        offers.addPayment(app.active(), { date: '2026-09-05', amount, via: 'payroll' });
+        app.select(app.active().id);
+      },
+      corresponde - falta / 2,
+    );
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Falta hasta el mínimo legal');
+    await expect(page.locator('.block.result .tag .sub')).toHaveText(
+      'Se cobró más de lo pactado, pero menos de lo que exige la ley.',
+    );
+    // The minimum sentence sits in the block, right under the headline
+    await expect(page.locator('.block.result > .hint').first()).toContainText('mínimo');
+    expect(await whole('Falta')).toBeGreaterThan(0);
+  });
+
   test('«Otra cantidad» opens the cobro right there; several can be added in a row and each edited or removed', async ({
     page,
   }) => {
