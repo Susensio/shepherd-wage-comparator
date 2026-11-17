@@ -28,8 +28,8 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const WAY = { payroll: 'Nómina', cash: 'En mano' };
 
 /** One cobro as a flat row. `remove`: its «Quitar» button, with the second tap that confirms. */
-function paymentRow(p, today, { fresh = false, remove = null } = {}) {
-  return html`<div class=${fresh ? 'pr fresh' : 'pr'}><span class="d">${fWhen(p.date, today)}</span><span><span class=${p.via === 'cash' ? 'via cash' : 'via'}>${WAY[p.via]}</span>${p.approx ? html`<small>cifra aproximada</small>` : nothing}${p.note ? html`<small>${p.note}</small>` : nothing}</span><span class="a">${p.approx ? '≈ ' : ''}${money(p.amount)}</span>${
+function paymentRow(p, today, { fresh = false, remove = null, late = false } = {}) {
+  return html`<div class=${fresh ? 'pr fresh' : 'pr'}><span class="d">${fWhen(p.date, today)}</span><span><span class=${p.via === 'cash' ? 'via cash' : 'via'}>${WAY[p.via]}</span>${p.approx ? html`<small>cifra aproximada</small>` : nothing}${p.note ? html`<small>${p.note}</small>` : nothing}${late ? html`<small>Cobro apuntado el ${fWhen(p.date, today)}, después de dar los cobros por completos.</small>` : nothing}</span><span class="a">${p.approx ? '≈ ' : ''}${money(p.amount)}</span>${
     remove
       ? html`<span class="rowbtns"><button type="button" class="linkbtn rm" data-action="editPayment" data-id=${p.id}>Editar</button><button type="button" class="linkbtn rm" data-action=${remove.asking ? 'removePayment' : 'removePaymentAsk'} data-id=${p.id}>${remove.asking ? '¿Quitar?' : 'Quitar'}</button></span>`
       : nothing
@@ -37,12 +37,18 @@ function paymentRow(p, today, { fresh = false, remove = null } = {}) {
 }
 
 /** «Cobros»: everything received, each cobro removable, and the button for a new one. Month headers only when it spans several. */
-function cobrosView({ today, payments, fresh, ask }) {
+function cobrosView({ today, payments, fresh, ask, record }) {
   const asking = ask?.type === 'payment' ? ask.id : null;
   /** @type {Map<string, typeof payments>} */
   const byMonth = new Map();
   for (const p of payments) byMonth.set(p.date.slice(0, 7), [...(byMonth.get(p.date.slice(0, 7)) ?? []), p]);
-  const row = (p) => paymentRow(p, today, { fresh: p.id === fresh, remove: { asking: p.id === asking } });
+  // A cobro dated after the day the cobros were given as complete was added after it
+  const row = (p) =>
+    paymentRow(p, today, {
+      fresh: p.id === fresh,
+      remove: { asking: p.id === asking },
+      late: Boolean(record.complete && p.date > record.complete.date),
+    });
   return html`<div class="block cobros">
     <div class="bh"><h3>Cobros</h3><span class="n">${payments.some((p) => p.approx) ? '≈ ' : ''}${money(netTotal(payments))}</span></div>
     ${
@@ -222,22 +228,21 @@ function registro(c) {
 const howItAdds = (s) =>
   html`<details class="plg" data-fold="how"><summary>Detalle de lo que corresponde</summary><div class="rows">${ledgerLines(s.lines)}${row('= Corresponde', money(s.corresponde))}</div></details>`;
 
+/** The way to go through the months not closed, one by one. */
+const reviewLink = (open) =>
+  open ? html`<button type="button" class="linkbtn" data-action="reviewStart">Revisar los meses</button>` : nothing;
+
 /**
- * The end of the yellow block: «Cerrar el registro» (the months are reviewed first when some are open), the question that
- * follows, and, once closed, the date and «Reabrir el registro». With no cobro recorded the block above asks for them.
+ * «¿Falta algún cobro por apuntar?»: asked under the cobros of a job finished until the shepherd answers. «No, están
+ * todos» is `record.complete`; «Sí» opens the sheet for the next cobro.
+ * @param {RecordContext} c
  */
-function recordClosing(c, open) {
-  const s = c.standing;
-  if (c.complete)
-    return html`<p class="hint closed-record">Registro cerrado el ${fWhen(c.complete.date, c.today)}. <button type="button" class="linkbtn" data-action="reopenRecord">Reabrir el registro</button></p>`;
-  const review = open
-    ? html`<button type="button" class="linkbtn" data-action="reviewStart">Revisar los meses</button>`
-    : nothing;
-  // Nothing to close while no cobro is said: the block above asks for them; the months can be reviewed all the same
-  if (!s.hasPayments) return review;
-  if (c.asking)
-    return html`<div class="confirm"><b>¿Están apuntados todos los cobros?</b><div class="btns"><button type="button" class="pri" data-action="completeYes">Sí, cerrar</button><button type="button" data-action="completeNo">Todavía no</button></div></div>`;
-  return html`<button type="button" class="pri addbtn" data-action="closeRecord">Cerrar el registro</button>${review}`;
+function missingCobrosQuestion(c) {
+  if (c.phase !== 'finished' || !(c.payments.length || c.paid) || c.record.complete) return nothing;
+  return html`<div class="tcard-q" role="group" aria-label="¿Falta algún cobro por apuntar?">
+    <h3>¿Falta algún cobro por apuntar?</h3>
+    <div class="choices"><button type="button" class="sm" data-action="cobrosComplete">No, están todos</button><button type="button" class="sm" data-action="openPaySheet">Sí</button></div>
+  </div>`;
 }
 
 /** What is cobrado reaches the pay agreed (or is taken as agreed) and still falls short of what the law requires. */
@@ -279,7 +284,7 @@ function result(c) {
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c)}
     ${notes(c, { over: '' })}
-    ${recordClosing(c, open)}
+    ${reviewLink(open)}
   </div>${lapsedLine(c.claim)}`;
 }
 
@@ -433,7 +438,7 @@ function lawBlock(c) {
     ${closedMonths ? html`<p class="hint">Según el registro, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>` : nothing}
     <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}${festivos}` : nothing}${payrollRows}</div>
     ${!closedMonths ? html`<p class="hint">Cierra los meses para comprobar el descanso semanal y las jornadas.</p>` : nothing}
-    ${!c.complete && later.length ? html`<p class="hint">Al cerrar el registro se comprueba también ${joinAnd(later)}.</p>` : nothing}
+    ${!c.complete && later.length ? html`<p class="hint">Con todos los cobros apuntados y los meses cerrados se comprueba también ${joinAnd(later)}.</p>` : nothing}
   </div>`;
 }
 
@@ -443,6 +448,7 @@ function cuentas(c) {
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
     ${result(c)}
     ${c.payments.length ? cobrosView(c) : nothing}
+    ${missingCobrosQuestion(c)}
     ${endQuestion(c.cards, c.today, false)}
     ${balanceBlock(c)}
     ${lawBlock(c)}

@@ -344,8 +344,8 @@ test.describe('finished: Cuentas', () => {
     await closeMonths(page, 'all');
     await expect(page.getByRole('button', { name: 'Revisar los meses' })).toHaveCount(0);
     await expect(page.locator('.block.result .tag .sub')).toHaveCount(0);
-    // The months are closed, the record is not: that is what is left to do
-    await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toBeVisible();
+    // The months are closed; whether a cobro is missing is still to say
+    await expect(page.getByRole('group', { name: '¿Falta algún cobro por apuntar?' })).toBeVisible();
   });
 
   test('a temporary contract owes severance at its end: in Corresponde and Falta, and no «Todo cobrado» until it is paid', async ({
@@ -563,7 +563,9 @@ test.describe('finished: Cuentas', () => {
     await expect(rows.filter({ hasText: 'Jornadas de más' })).toBeVisible();
     // Only rows that can be judged: the minimum on payroll waits for the record to be closed, and says so once
     await expect(rows.filter({ hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
-    await expect(block).toContainText('Al cerrar el registro se comprueba también el salario mínimo en nómina');
+    await expect(block).toContainText(
+      'Con todos los cobros apuntados y los meses cerrados se comprueba también el salario mínimo en nómina',
+    );
     await expect(block).not.toContainText('festivos trabajados');
     await expect(block).not.toContainText('Se comprobará cuando');
     await expect(page.locator('#result')).not.toContainText('La nómina declarada está');
@@ -607,62 +609,76 @@ test.describe('finished: Cuentas', () => {
     await expect(block).toContainText('Descanso semanal');
   });
 
-  test('«Cerrar el registro»: the months are reviewed first, then «¿Están apuntados todos los cobros?»; the figures are firm and the minimum is judged; «Reabrir» undoes it', async ({
+  test('«¿Falta algún cobro por apuntar?»: «No, están todos» says it, dated; the minimum is judged once the months are closed as well', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    // Nothing to close while no cobro is recorded: the block asks for them
+    const question = page.getByRole('group', { name: '¿Falta algún cobro por apuntar?' });
+    // Nothing to ask while no cobro is recorded; nothing to close the record with
+    await expect(question).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toHaveCount(0);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
-    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
-    // Months open: the review comes first
-    await expect(page.locator('.review-progress')).toContainText('Junio, 1 de 4');
-    for (const month of ['junio', 'julio', 'agosto', 'septiembre'])
-      await page.getByRole('button', { name: `Cerrar ${month}` }).click();
-    await expect(page.locator('#result')).toContainText('Revisión hecha');
-    await expect(page.getByText('¿Están apuntados todos los cobros?')).toBeVisible();
-    await page.getByRole('button', { name: 'Sí, cerrar el registro' }).click();
-    // Back in Cuentas: closed with its date, the figures firm, the minimum judged, the card no longer asks for it
-    await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
-    await expect(page.locator('.closed-record')).toContainText('Registro cerrado el 12 nov');
+    await expect(question).toBeVisible();
+    await question.getByRole('button', { name: 'No, están todos' }).click();
+    await expect(question).toHaveCount(0);
+    expect(await page.evaluate(() => app.active().mine.record.complete)).toEqual({ date: '2026-11-12' });
+    await expect(page.locator('.closed-record')).toHaveCount(0);
+    // The months are open: the days and the minimum wait for them
+    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
+    await expect(block).toContainText('Con todos los cobros apuntados y los meses cerrados se comprueba también');
+    await closeMonths(page, 'all');
     await expect(page.locator('.block.result .tag .sub')).toHaveCount(0);
     await expect(page.locator('#result')).not.toContainText('no es firme');
-    const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     const minimum = block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' });
     await expect(minimum).toContainText('En nómina se cobraron');
     await expect(minimum.locator('.m')).toHaveText(/[✔✘]/);
-    await expect(block).not.toContainText('Al cerrar el registro se comprueba');
-    expect(await page.evaluate(() => app.active().mine.record.complete)).toEqual({ date: '2026-11-12' });
-    // Undone: the minimum waits again
-    await page.getByRole('button', { name: 'Reabrir el registro' }).click();
-    await expect(page.locator('.closed-record')).toHaveCount(0);
-    await expect(minimum).toHaveCount(0);
-    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+    await expect(block).not.toContainText('Con todos los cobros apuntados');
   });
 
-  test('«Cerrar el registro» with every month closed asks in place, and «Todavía no» leaves it open; reopening a month reopens the record', async ({
+  test('«¿Falta algún cobro por apuntar?» «Sí» opens the cobro sheet; a cobro added later keeps it complete and says so; the last one removed takes it back', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    const question = page.getByRole('group', { name: '¿Falta algún cobro por apuntar?' });
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    await question.getByRole('button', { name: 'Sí', exact: true }).click();
+    await expect(page.locator('#paySheet')).toBeVisible();
+    await page.locator('#paySheet [data-action=payCancel]').click();
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+    // Said complete on 20 October; a cobro dated after that day was added after: kept, and told
+    await page.evaluate(() => {
+      app.active().mine.record.complete = { date: '2026-10-20' };
+    });
+    await addPayments(page, [{ date: '2026-11-05', amount: 100, via: 'payroll' }]);
+    expect(await page.evaluate(() => app.active().mine.record.complete)).toEqual({ date: '2026-10-20' });
+    await expect(question).toHaveCount(0);
+    await expect(page.locator('#result .cobros .pr')).toHaveCount(2);
+    await expect(page.locator('#result .cobros')).toContainText('después de dar los cobros por completos');
+    // Removing every cobro: nothing is complete any more, and the paid question is back
+    for (let i = 0; i < 2; i++) {
+      const rm = page.locator('#result .cobros .pr').first();
+      await rm.getByRole('button', { name: 'Quitar' }).click();
+      await rm.getByRole('button', { name: '¿Quitar?' }).click();
+    }
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+    await expect(page.getByRole('group', { name: '¿Se cobró este trabajo?' })).toBeVisible();
+  });
+
+  test('reopening a month keeps the cobros as complete: the days are one thing, the cobros another', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await closeMonths(page, 'all');
-    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
-    await expect(page.getByText('¿Están apuntados todos los cobros?')).toBeVisible();
-    await page.getByRole('button', { name: 'Todavía no' }).click();
-    await expect(page.getByText('¿Están apuntados todos los cobros?')).toHaveCount(0);
-    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
-    await page.getByRole('button', { name: 'Cerrar el registro' }).click();
-    await page.getByRole('button', { name: 'Sí, cerrar', exact: true }).click();
-    await expect(page.locator('.closed-record')).toBeVisible();
-    // A month reopened makes the figures estimates again, and the record is not closed any more
+    await page.getByRole('button', { name: 'No, están todos' }).click();
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       offers.reopenMonth(app.active(), '2026-08');
       app.select(app.active().id);
     });
-    await expect(page.locator('.closed-record')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Cerrar el registro' })).toBeVisible();
-    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(false);
+    expect(await page.evaluate(() => 'complete' in app.active().mine.record)).toBe(true);
+    await expect(page.getByRole('group', { name: '¿Falta algún cobro por apuntar?' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Revisar los meses' })).toBeVisible();
   });
 
   test('«Revisar los meses» goes month by month, its calendar first; Back leaves it for the ficha without a stale entry', async ({

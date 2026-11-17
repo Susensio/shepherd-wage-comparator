@@ -313,7 +313,7 @@ export function jobStatus({
   const amber = (text) => (window ? { tone: /** @type {const} */ ('amber'), text } : null);
   if (!hasPayments) return amber('Sin cobros apuntados');
   if (unclosed > 0) return amber(unclosed === 1 ? '1 mes sin cerrar' : `${unclosed} meses sin cerrar`);
-  if (finished && !complete) return amber('Registro sin cerrar');
+  if (finished && !complete) return amber('Cobros sin confirmar');
   return finished ? { tone: null, text: 'Todo cobrado' } : null;
 }
 

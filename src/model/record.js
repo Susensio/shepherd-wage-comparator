@@ -218,27 +218,19 @@ export function closeMonth(offer, record, span, today) {
   return true;
 }
 
-/** Opens a closed month again, keeping its days; the record is no longer complete. Returns false if it was not closed. */
+/** Opens a closed month again, keeping its days. Returns false if it was not closed. */
 export function reopenMonth(record, key) {
   const month = record.months?.[key];
   if (!month?.closed) return false;
   month.closed = false;
   delete month.closedAt;
-  delete record.complete;
   return true;
 }
 
-/** «Cerrar el registro»: every cobro is recorded, said on `today` (ISO). Returns false if it already was. */
+/** «No, están todos»: no cobro is missing, said on `today` (ISO). Returns false if it already was. */
 export function completeRecord(record, today) {
   if (record.complete || !today) return false;
   record.complete = { date: today };
-  return true;
-}
-
-/** «Reabrir el registro»: more cobros may come. Returns false if it was not complete. */
-export function reopenRecord(record) {
-  if (!record.complete) return false;
-  delete record.complete;
   return true;
 }
 
@@ -291,6 +283,8 @@ export function removePayment(record, id) {
   const at = record.payments?.findIndex((p) => p.id === id) ?? -1;
   if (at < 0) return false;
   record.payments.splice(at, 1);
+  // Nothing recorded of the money any more: «no falta ningún cobro» has nothing to stand on
+  if (!record.payments.length && !record.paid) delete record.complete;
   return true;
 }
 
@@ -324,15 +318,22 @@ export function clearEnd(record) {
 }
 
 /**
- * «¿Se cobró este trabajo?» as one answer, not a payment: `asAgreed` (Sí, todo) or `none` (No se cobró nada); undefined
- * takes the answer back and the cobros speak again. Returns whether it changed.
+ * «¿Se cobró este trabajo?» as one answer, not a payment: `asAgreed` (Lo pactado) or `none` (Nada); undefined takes the
+ * answer back and the cobros speak again. An answer says no cobro is missing (`complete`, dated `today`); taking it
+ * back with no cobro recorded takes that away too. Returns whether it changed.
  * @param {OfferRecord} record
  * @param {'asAgreed' | 'none' | undefined} paid
+ * @param {string} [today] ISO date
  */
-export function setPaid(record, paid) {
+export function setPaid(record, paid, today) {
   if (paid === record.paid) return false;
-  if (paid) record.paid = paid;
-  else delete record.paid;
+  if (paid) {
+    record.paid = paid;
+    completeRecord(record, today);
+  } else {
+    delete record.paid;
+    if (!record.payments?.length) delete record.complete;
+  }
   return true;
 }
 

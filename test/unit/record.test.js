@@ -23,7 +23,6 @@ import {
   removeEvidence,
   removePayment,
   reopenMonth,
-  reopenRecord,
   setEnd,
   setPaid,
   setParties,
@@ -498,7 +497,8 @@ describe('the law, from the record: facts only', () => {
     assert.ok(all.minimum.known && all.minimum.short > 0);
     // The record closed with months still open (a month reopened): nothing to judge
     reopenMonth(record, '2026-08');
-    assert.equal('complete' in record, false, 'reopening a month reopens the record');
+    assert.equal('complete' in record, true, 'reopening a month does not take back «no falta ningún cobro»');
+    assert.equal(law(record, offer).minimum.known, false, 'but the months are not all closed: nothing to judge');
     // Cash only, the record closed: there is nothing on payroll, and the minimum is short
     const cash = emptyRecord();
     addPayment(cash, { date: '2026-07-05', amount: 100, via: 'cash' });
@@ -523,15 +523,32 @@ describe('the law, from the record: facts only', () => {
     assert.equal(law(record, none).minimum.applicable, false);
   });
 
-  test('«Cerrar el registro» and «Reabrir el registro»: said once, dated, taken back', () => {
+  test('«No, están todos»: said once and dated; the last cobro removed takes it back, an answer keeps it', () => {
     const record = emptyRecord();
     assert.equal(completeRecord(record, '2026-11-12'), true);
     assert.deepEqual(record.complete, { date: '2026-11-12' });
-    assert.equal(completeRecord(record, '2026-11-13'), false, 'already closed: the first date stays');
+    assert.equal(completeRecord(record, '2026-11-13'), false, 'already said: the first date stays');
     assert.deepEqual(record.complete, { date: '2026-11-12' });
-    assert.equal(reopenRecord(record), true);
+    const first = addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
+    const second = addPayment(record, { date: '2026-11-20', amount: 50, via: 'cash' });
+    assert.ok(record.complete, 'adding a cobro afterwards keeps it');
+    removePayment(record, second.id);
+    assert.ok(record.complete, 'a cobro is still there');
+    removePayment(record, first.id);
+    assert.equal('complete' in record, false, 'nothing recorded of the money any more');
+  });
+
+  test('«Lo pactado» and «Nada» say no cobro is missing; taking the answer back with no cobro takes that away', () => {
+    const record = emptyRecord();
+    assert.equal(setPaid(record, 'asAgreed', '2026-11-12'), true);
+    assert.deepEqual(record.complete, { date: '2026-11-12' });
+    assert.equal(setPaid(record, undefined, '2026-11-13'), true);
     assert.equal('complete' in record, false);
-    assert.equal(reopenRecord(record), false);
+    addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
+    completeRecord(record, '2026-11-12');
+    setPaid(record, 'none', '2026-11-13');
+    setPaid(record, undefined, '2026-11-13');
+    assert.ok(record.complete, 'a cobro is recorded: it stays');
   });
 
   test('the minimum fails only beyond a margin for withholding differences', () => {
@@ -1074,7 +1091,7 @@ describe('the status of a job on its card', () => {
     assert.deepEqual(job({ hasPayments: false }), { tone: 'amber', text: 'Sin cobros apuntados' });
     assert.equal(job({ unclosed: 1 })?.text, '1 mes sin cerrar');
     assert.equal(job({ unclosed: 3 })?.text, '3 meses sin cerrar');
-    assert.deepEqual(job({ complete: false }), { tone: 'amber', text: 'Registro sin cerrar' });
+    assert.deepEqual(job({ complete: false }), { tone: 'amber', text: 'Cobros sin confirmar' });
   });
 
   test('nothing coloured for a job settled and closed, and nothing for one under way with nothing to record', () => {

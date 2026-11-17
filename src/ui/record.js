@@ -70,7 +70,6 @@ import {
  * @property {true} done
  * @property {number} closed months it closed
  * @property {string[]} left months still as the offer has them
- * @property {boolean} asksComplete the review came from «Cerrar el registro» and no month is left: «¿Están apuntados todos los cobros?» comes next
  *
  * @typedef {object} RecordContext
  * @property {'underway' | 'finished'} phase
@@ -94,8 +93,7 @@ import {
  * @property {boolean} noPay the job began with no pay told: what was cobrado has nothing agreed to be compared with
  * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
  * @property {boolean} recording «No todo» was answered: the cobros are being recorded
- * @property {{ date: string } | null} complete the record closed with every month closed: the figures are firm
- * @property {boolean} asking «¿Están apuntados todos los cobros?» waits for its answer
+ * @property {{ date: string } | null} complete no cobro is missing, said, and every month closed: the figures are firm
  * @property {import('../model/settle.js').OfferRecord} record
  * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
  * @property {CalendarContext | null} calendar under way: the month on the calendar; finished: the month open in the registro, if any
@@ -109,14 +107,9 @@ const ui = {
   /** A question that waits for a second tap: reopening a month, removing a cobro. */
   ask: /** @type {{ type: string, id?: string } | null} */ (null),
   /** «Repasar los meses»: the months to go through and where it is. */
-  review:
-    /** @type {{ offerId: string, keys: string[], index: number, closed: number, thenComplete: boolean } | null} */ (
-      null
-    ),
+  review: /** @type {{ offerId: string, keys: string[], index: number, closed: number } | null} */ (null),
   /** The month open in the registro of a job finished, by offer: one at a time, its calendar right below its row. */
   opened: /** @type {Record<string, string | null>} */ ({}),
-  /** «Cerrar el registro» asking whether every cobro is recorded, by offer. */
-  completing: /** @type {Record<string, boolean>} */ ({}),
   fresh: /** @type {string | null} */ (null),
   /** «¿Empezó el trabajo?» asked for another date, by offer. */
   startOther: /** @type {Record<string, boolean>} */ ({}),
@@ -298,7 +291,6 @@ export function recordContext(o, r) {
             done: true,
             closed,
             left: keys.filter((k) => rowOf(k) && !rowOf(k).closed),
-            asksComplete: ui.review.thenComplete && !keys.some((k) => rowOf(k) && !rowOf(k).closed),
           }
         : calendarOf(keys[at], 'review', at, keys.length);
   }
@@ -319,7 +311,6 @@ export function recordContext(o, r) {
     recording: Boolean(ui.recording[o.id]),
     // Every month closed as well: a month reopened or added after it makes the figures estimates again
     complete: record.complete && !standing.unclosed.length ? record.complete : null,
-    asking: Boolean(ui.completing[o.id]),
     record,
     cards: cardsOf(o, phase, settled, today, {
       asked: ui.end[o.id],
@@ -517,7 +508,7 @@ export const recordActions = {
     const key = b.dataset.key;
     // A month tapped opens alone; «Revisar los meses» goes through the ones not closed
     const keys = key ? [key] : open;
-    ui.review = { offerId: o.id, keys, index: 0, closed: 0, thenComplete: b.dataset.after === 'complete' };
+    ui.review = { offerId: o.id, keys, index: 0, closed: 0 };
     ui.ask = null;
     openReview();
     callbacks.paint();
@@ -537,28 +528,9 @@ export const recordActions = {
     closeReview();
     callbacks.paint();
   },
-  /** «Cerrar el registro»: the months not closed are reviewed first, then it asks whether every cobro is recorded. */
-  closeRecord() {
-    const o = active();
-    if (settleOffer(o).rows.some((row) => !row.closed))
-      return recordActions.reviewStart({ dataset: { after: 'complete' } });
-    ui.completing[o.id] = true;
-    callbacks.paint();
-  },
-  /** «Sí, cerrar»: every cobro is recorded. From the end of the review it also leaves the review. */
-  completeYes() {
-    const o = active();
-    delete ui.completing[o.id];
-    offers.completeRecord(o);
-    if (ui.review) recordActions.reviewEnd();
-    else callbacks.paint();
-  },
-  completeNo() {
-    delete ui.completing[active().id];
-    callbacks.paint();
-  },
-  reopenRecord() {
-    offers.reopenRecord(active());
+  /** «No, están todos»: no cobro is missing. */
+  cobrosComplete() {
+    offers.completeRecord(active());
     callbacks.paint();
   },
   /** «¿Empezó el trabajo?»: yes, as the offer says. */
