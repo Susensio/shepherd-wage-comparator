@@ -157,6 +157,7 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await page.locator('#payMore').click();
     await expect(page.locator('#paySheet')).toBeVisible();
     await expect(page.locator('#payDone')).toContainText('Apuntado: 1.000,00 €');
+    await expect(page.locator('#payCancel')).toHaveText('Hecho');
     await expect(page.locator('#payAmount')).toHaveValue('');
     await page.locator('#payAmount').fill('500');
     await page.locator('#payApprox').check();

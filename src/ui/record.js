@@ -356,6 +356,7 @@ function sheetElements() {
     approx: /** @type {HTMLInputElement} */ ($('#payApprox')),
     error: $('#payError'),
     done: $('#payDone'),
+    cancel: $('#payCancel'),
     title: $('#payTitle'),
     more: $('#payMore'),
   };
@@ -390,6 +391,7 @@ function openPaySheet(payment = null) {
   sheet.more.hidden = Boolean(payment);
   sheet.error.textContent = '';
   sheet.done.textContent = '';
+  sheet.cancel.textContent = 'Cancelar';
   sheet.dialog.showModal();
   sheet.amount.focus();
 }
@@ -422,6 +424,7 @@ function savePayment(event) {
     sheet.note.value = '';
     sheet.approx.checked = false;
     sheet.done.textContent = `Apuntado: ${fE(amount, 2)}. Se puede apuntar otro.`;
+    sheet.cancel.textContent = 'Hecho';
     sheet.amount.focus();
   } else sheet.dialog.close();
   ui.fresh = payment.id;

@@ -5179,3 +5179,11 @@ body.reviewing .ficha > .back {
 .past-doc .fld > .hint {
   display: inline;
 }
+/* «Apuntado: X €» after «Guardar y apuntar otro»: a confirmation the eye finds */
+#payDone:not(:empty) {
+  font-weight: 700;
+  color: var(--c-pay, var(--ink));
+  background: color-mix(in srgb, var(--c-pay, var(--ink)) 14%, var(--surface));
+  border-radius: 8px;
+  padding: 8px 10px;
+}
