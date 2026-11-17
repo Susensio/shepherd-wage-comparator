@@ -766,7 +766,7 @@ export const recordActions = {
     offers.setPaid(active(), 'asAgreed');
     callbacks.paint();
   },
-  /** «Una parte»: the accounts open and the cobro to record, right there. */
+  /** «Otra cantidad»: the accounts open and the cobro to record, right there. */
   paidSome() {
     ui.recording[active().id] = true;
     ui.ask = null;

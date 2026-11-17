@@ -85,7 +85,7 @@ function uniqueName(base) {
   return name;
 }
 
-/** The cobros typed under «Una parte» that have an amount: `{ amount, date, approx }`, the date empty when not typed. */
+/** The cobros typed under «Otra cantidad» that have an amount: `{ amount, date, approx }`, the date empty when not typed. */
 function cobrosTyped() {
   return [...document.querySelectorAll('#pastForm .past-cobro')]
     .map((row) => ({

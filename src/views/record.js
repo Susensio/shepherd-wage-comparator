@@ -81,8 +81,8 @@ export function paidQuestion(c) {
     </div>`;
   return html`<div class="tcard-q" role="group" aria-label="¿Se cobró este trabajo?">
     <h3>¿Se cobró este trabajo?</h3>
-    <p class="hint">«Todo lo pactado» da por cobrado lo acordado.</p>
-    <div class="choices"><button type="button" data-action="paidAll">Todo lo pactado</button><button type="button" data-action="paidSome">Una parte</button><button type="button" data-action="paidNoneAsk">Nada</button></div>
+    <p class="hint">«Otra cantidad»: más o menos de lo pactado, en uno o varios cobros.</p>
+    <div class="choices"><button type="button" data-action="paidAll">Lo pactado</button><button type="button" data-action="paidSome">Otra cantidad</button><button type="button" data-action="paidNoneAsk">Nada</button></div>
   </div>`;
 }
 

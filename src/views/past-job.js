@@ -2,7 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 
-/** One cobro of «Una parte»: its amount, date (the last day by default) and whether it is approximate. */
+/** One cobro of «Otra cantidad»: its amount, date (the last day by default) and whether it is approximate. */
 const cobroRow = ({ id, amount, date, approx }, _index, { length }) => html`<div class="past-cobro" data-cobro=${id}>
   <label class="fld">Cantidad<span class="amount"><input type="text" class="n pastAmount" inputmode="decimal" autocomplete="off" placeholder="0" .value=${amount}><span>€</span></span></label>
   <label class="fld">Fecha<input type="date" class="pastWhen" .value=${date}></label>
@@ -11,14 +11,14 @@ const cobroRow = ({ id, amount, date, approx }, _index, { length }) => html`<div
 </div>`;
 
 const HOW = [
-  ['all', 'Todo lo pactado'],
-  ['part', 'Una parte'],
+  ['all', 'Lo pactado'],
+  ['part', 'Otra cantidad'],
   ['none', 'Nada'],
 ];
 
 /**
  * @param {{ error: string, how: string, min: boolean, rows: { id: string, amount: string, date: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
- * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `min`: the pay agreed is the minimum wage; `rows`: the cobros listed under «Una parte»
+ * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `min`: the pay agreed is the minimum wage; `rows`: the cobros listed under «Otra cantidad»
  */
 export function pastJobView({ error, how, min, rows }) {
   return html`<form class="dossier-doc past-doc" id="pastForm" novalidate>
