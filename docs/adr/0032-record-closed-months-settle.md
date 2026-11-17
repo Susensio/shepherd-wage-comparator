@@ -53,3 +53,5 @@ Weighed and discarded:
 15 November 2026, after three reviews (round 15). The owner left the call to the main agent («si crees que está mal, cámbialo»):
 - Days off at the edges of a closed month no longer lie outside the job. Inside the offer's dates the job is whole: two libres on 27–28 February leave February whole, since rest days are part of the job, and trimming them made the shepherd owe days. This replaces the trimming in the 13 November amendment.
 - One `jobEnd(offer, record)` in `model/phase.js` decides the end for both the phase and `settle`: an end stated in the record, or a day worked after the offer's end, extends the job; the extension days count as worked unless marked otherwise.
+
+17 November 2026: ADR-0036 replaces closing the record. `record.complete` now means «no more payment is expected», one answer to «¿Se espera algún pago más?»; closing a month stays the only lock.

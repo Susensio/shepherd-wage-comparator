@@ -63,3 +63,5 @@ Weighed and discarded:
 
 - The question about what was paid answers «Todo lo pactado», «Una parte» or «Nada»; «Una parte» opens the cobro sheet at once, which can add several in a row. Cobros live on the ficha of any job that has them, not on the Registro page. «Trabajo ya hecho» takes a list of cobros instead of one total.
 - A job without a contract is asked about vacation too: taken or paid apart owes nothing; «dentro del pago» still owes it, since a job measured as fijo cannot fold vacation into the pay (ET 38.1).
+
+17 November 2026: the question «¿Falta algún cobro por apuntar?» and «Todo cobrado» on the card, noted above, were replaced by ADR-0036 («¿Se espera algún pago más?»; cards Por confirmar, Esperando cobro, Debe el ganadero, Saldado) in saved format 9.

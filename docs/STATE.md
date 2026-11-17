@@ -1,5 +1,9 @@
 # State
 
+## Record and money state (ADR-0036, accepted 17 November 2026)
+
+Done on the branch: the review's items 1–9 (ficha order, «Lo pactado» · «Otra cantidad» · «Nada», «Trabajo ya hecho» cobros Nómina/En mano, calendar and sheet polish) and ADR-0036 in format 9. Next: master (owner said yes; backup first). Later: a «no es sueldo» amount in a cobro (transport plus), which needs a format change.
+
 ## One job with two sides: what was agreed and what happened (ADR-0035, accepted 15 November 2026)
 
 Proposed 15 November 2026 from the owner's idea («una oferta y un registro son la misma cosa: una promesa de futuro y un hecho del pasado») and three reviews. Accepted by the owner with all decisions below as recommended, plus: lax entry with few required fields (a past job by its conditions only, by what happened only, or both), hours not required. Correctness fixes (round 15) done 15 November 2026 (pushed on the branch, not on master); phase A starts from them.
