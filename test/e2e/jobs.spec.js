@@ -462,6 +462,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await page.locator('.pastApprox').nth(1).check();
     await page.getByRole('button', { name: '+ Otro cobro' }).click();
     await page.locator('.pastAmount').nth(2).fill('300');
+    await page.locator('.pastVia').nth(2).selectOption('cash');
     // Removing the first leaves the others as typed
     await page.locator('.past-cobro').nth(0).getByRole('button', { name: 'Quitar' }).click();
     await expect(page.locator('.past-cobro')).toHaveCount(2);
@@ -470,10 +471,14 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.locator('.pastAmount').nth(1)).toHaveValue('300');
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     const record = await recordOf(page);
-    expect(record.payments.map((p) => [p.amount, p.date, Boolean(p.approx)])).toEqual([
-      [700, '2026-08-31', true],
-      [300, '2026-08-31', false],
+    expect(record.payments.map((p) => [p.amount, p.date, Boolean(p.approx), p.via])).toEqual([
+      [700, '2026-08-31', true, 'payroll'],
+      [300, '2026-08-31', false, 'cash'],
     ]);
+    // It ended as agreed: the ficha does not ask how
+    expect(record.end).toEqual({ how: 'agreed', date: '2026-08-31' });
+    await expect(page.getByRole('group', { name: '¿Cómo acabó?' })).toHaveCount(0);
+    await expect(page.locator('#result .cobros .via.cash')).toHaveCount(1);
     expect(record.paid).toBeUndefined();
     expect(record.complete).toBeTruthy();
     await expect(page.locator('#result .cobros .pr')).toHaveCount(2);

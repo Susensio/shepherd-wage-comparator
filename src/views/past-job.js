@@ -3,9 +3,14 @@
 import { html, nothing } from 'lit-html';
 
 /** One cobro of «Otra cantidad»: its amount, date (the last day by default) and whether it is approximate. */
-const cobroRow = ({ id, amount, date, approx }, _index, { length }) => html`<div class="past-cobro" data-cobro=${id}>
+const cobroRow = (
+  { id, amount, date, via, approx },
+  _index,
+  { length },
+) => html`<div class="past-cobro" data-cobro=${id}>
   <label class="fld">Cantidad<span class="amount"><input type="text" class="n pastAmount" inputmode="decimal" autocomplete="off" placeholder="0" .value=${amount}><span>€</span></span></label>
   <label class="fld">Fecha<input type="date" class="pastWhen" .value=${date}></label>
+  <label class="fld">Forma de pago<select class="pastVia"><option value="payroll" ?selected=${via !== 'cash'}>Nómina</option><option value="cash" ?selected=${via === 'cash'}>En mano</option></select></label>
   <label class="check"><input type="checkbox" class="pastApprox" .checked=${approx}> Es una cifra aproximada</label>
   ${length > 1 ? html`<button type="button" class="linkbtn" data-action="pastRemoveCobro" data-id=${id}>Quitar</button>` : nothing}
 </div>`;
@@ -17,7 +22,7 @@ const HOW = [
 ];
 
 /**
- * @param {{ error: string, how: string, min: boolean, rows: { id: string, amount: string, date: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
+ * @param {{ error: string, how: string, min: boolean, rows: { id: string, amount: string, date: string, via: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
  * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `min`: the pay agreed is the minimum wage; `rows`: the cobros listed under «Otra cantidad»
  */
 export function pastJobView({ error, how, min, rows }) {

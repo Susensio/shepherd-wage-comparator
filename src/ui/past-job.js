@@ -12,12 +12,12 @@ const ui = {
   error: '',
   how: '',
   min: false,
-  rows: /** @type {{ id: string, amount: string, date: string, approx: boolean }[]} */ ([]),
+  rows: /** @type {{ id: string, amount: string, date: string, via: string, approx: boolean }[]} */ ([]),
   next: 0,
 };
 export const pastJobState = () => ({ error: ui.error, how: ui.how, min: ui.min, rows: ui.rows });
 
-const newRow = () => ({ id: `r${ui.next++}`, amount: '', date: '', approx: false });
+const newRow = () => ({ id: `r${ui.next++}`, amount: '', date: '', via: 'payroll', approx: false });
 
 /** Takes what is typed in the cobros into `ui.rows`, so a repaint that adds or removes one keeps the rest. */
 function syncRows() {
@@ -26,6 +26,7 @@ function syncRows() {
     ...row,
     amount: /** @type {HTMLInputElement} */ (typed[i]?.querySelector('.pastAmount'))?.value ?? row.amount,
     date: /** @type {HTMLInputElement} */ (typed[i]?.querySelector('.pastWhen'))?.value ?? row.date,
+    via: /** @type {HTMLSelectElement} */ (typed[i]?.querySelector('.pastVia'))?.value ?? row.via,
     approx: /** @type {HTMLInputElement} */ (typed[i]?.querySelector('.pastApprox'))?.checked ?? row.approx,
   }));
 }
@@ -85,12 +86,13 @@ function uniqueName(base) {
   return name;
 }
 
-/** The cobros typed under «Otra cantidad» that have an amount: `{ amount, date, approx }`, the date empty when not typed. */
+/** The cobros typed under «Otra cantidad» that have an amount: `{ amount, date, via, approx }`, the date empty when not typed. */
 function cobrosTyped() {
   return [...document.querySelectorAll('#pastForm .past-cobro')]
     .map((row) => ({
       amount: num(/** @type {HTMLInputElement} */ (row.querySelector('.pastAmount')).value),
       date: /** @type {HTMLInputElement} */ (row.querySelector('.pastWhen')).value,
+      via: /** @type {'payroll' | 'cash'} */ (/** @type {HTMLSelectElement} */ (row.querySelector('.pastVia')).value),
       approx: /** @type {HTMLInputElement} */ (row.querySelector('.pastApprox')).checked,
     }))
     .filter((cobro) => cobro.amount > 0);
@@ -136,6 +138,8 @@ export function savePastJob() {
   if (state.placeholderId) offers.chooseTemplate(job);
   else offers.add(job);
   offers.editTerms(job, defaultVacation);
+  // It ended as agreed, on its last day: the ficha does not ask how it ended
+  offers.setEnd(job, { how: 'agreed', date: end });
 
   // What happened: the days as counts and what was paid; with no answer to «¿Se cobró?», what was agreed was received
   if (days !== '')
@@ -146,7 +150,7 @@ export function savePastJob() {
     );
   if (how === 'part')
     for (const cobro of cobros)
-      offers.addPayment(job, { date: cobro.date || end, amount: cobro.amount, via: 'payroll', approx: cobro.approx });
+      offers.addPayment(job, { date: cobro.date || end, amount: cobro.amount, via: cobro.via, approx: cobro.approx });
   else if (how === 'none') offers.setPaid(job, 'none');
   else if (how === 'all' || (how === '' && (pay > 0 || min))) offers.setPaid(job, 'asAgreed');
   const recorded = days !== '' || how !== '' || pay > 0 || min;

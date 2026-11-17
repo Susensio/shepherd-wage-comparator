@@ -171,6 +171,13 @@ test.describe('the account button', () => {
     await expect(page.locator('[data-panel=account]')).toBeHidden();
   });
 
+  test('the welcome has a second way in: «Apuntar un trabajo ya hecho»', async ({ openApp }) => {
+    const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
+    await expect(page.locator('#welcomeStart')).toHaveClass(/pri/);
+    await page.getByRole('button', { name: 'Apuntar un trabajo ya hecho' }).click();
+    await expect(page.locator('#pastPage')).toBeVisible();
+  });
+
   test('the app bar is on the welcome too, and a stored «settings» tab opens Trabajos', async ({ openApp }) => {
     const page = await openApp({ init: installFake, arg: { signedOut: true }, beforeLoad: withProject });
     await expect(page.locator('#welcome')).toBeVisible();
