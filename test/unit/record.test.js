@@ -573,12 +573,17 @@ describe('the law, from the record: facts only', () => {
     assert.equal('expecting' in record, false, 'nothing recorded of the money any more');
   });
 
-  test('«Lo pactado» and «Nada» say no cobro is missing; taking the answer back with no cobro takes that away', () => {
+  test('«Lo pactado» says no more cobro is expected, «Nada» leaves that to answer; taking the answer back with no cobro takes it away', () => {
     const record = emptyRecord();
     assert.equal(setPaid(record, 'asAgreed', '2026-11-12'), true);
     assert.deepEqual(record.complete, { date: '2026-11-12' });
     assert.equal(setPaid(record, undefined, '2026-11-13'), true);
     assert.equal('complete' in record, false);
+    assert.equal(setPaid(record, 'none', '2026-11-12'), true);
+    assert.equal('complete' in record, false, '«Nada» does not say that nothing more is expected');
+    expectPayment(record, '2026-12-15');
+    assert.equal(setPaid(record, undefined, '2026-11-13'), true);
+    assert.equal('expecting' in record, false, 'no cobro and no answer: what was said of the cobros to come goes');
     addPayment(record, { date: '2026-07-05', amount: 100, via: 'payroll' });
     completeRecord(record, '2026-11-12');
     setPaid(record, 'none', '2026-11-13');

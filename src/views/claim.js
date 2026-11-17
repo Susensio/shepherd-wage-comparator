@@ -219,8 +219,9 @@ function deadlineLine(c, withButton) {
 /**
  * The block, or nothing where nothing is owed and nobody was dismissed.
  * @param {ClaimContext | null} c
+ * @param {'settled' | 'owed' | 'expecting' | 'unconfirmed'} money while a cobro is expected the talk leads, open: the ganadero promised to pay, and the formal claim waits
  */
-export function claimView(c) {
+export function claimView(c, money) {
   if (!c || c.ladder.mode === 'settled') return nothing;
   const { ladder } = c;
   const step = (id) => ladder.steps.find((s) => s.id === id);
@@ -235,6 +236,7 @@ export function claimView(c) {
             talk,
             'Hablar con el ganadero',
             html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
+            { open: money === 'expecting' },
           )
         : talk
           ? stepFold(

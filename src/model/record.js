@@ -342,8 +342,9 @@ export function clearEnd(record) {
 
 /**
  * «¿Se cobró este trabajo?» as one answer, not a payment: `asAgreed` (Lo pactado) or `none` (Nada); undefined takes the
- * answer back and the cobros speak again. An answer says no cobro is missing (`complete`, dated `today`); taking it
- * back with no cobro recorded takes that away too. Returns whether it changed.
+ * answer back and the cobros speak again. «Lo pactado» says no more cobro is expected (`complete`, dated `today`); «Nada»
+ * leaves «¿Se espera algún pago más?» to be answered, since a job nobody paid yet may still be paid. Taking the answer
+ * back with no cobro recorded takes what was said of the cobros to come away too. Returns whether it changed.
  * @param {OfferRecord} record
  * @param {'asAgreed' | 'none' | undefined} paid
  * @param {string} [today] ISO date
@@ -352,7 +353,7 @@ export function setPaid(record, paid, today) {
   if (paid === record.paid) return false;
   if (paid) {
     record.paid = paid;
-    completeRecord(record, today);
+    if (paid === 'asAgreed') completeRecord(record, today);
   } else {
     delete record.paid;
     if (!record.payments?.length) clearExpectation(record);

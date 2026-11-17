@@ -237,17 +237,38 @@ const reviewLink = (open) =>
     : nothing;
 
 /**
- * «¿Falta algún cobro por apuntar?»: asked under the cobros of a job finished until the shepherd answers. «No, están
- * todos» is `record.complete`; «Sí» opens the sheet for the next cobro.
+ * «¿Se espera algún pago más?»: asked under the cobros of a job finished with Falta above 0 until the shepherd answers.
+ * «Sí, quedó en pagarlo» (`record.expecting`) asks for the day, which may be left out; «No» is `record.complete`. Once
+ * answered, one line with «Cambiar»: the answer, or that the day promised passed.
  * @param {RecordContext} c
  */
-function missingCobrosQuestion(c) {
-  if (c.phase !== 'finished' || !(c.payments.length || c.paid) || c.record.complete) return nothing;
-  return html`<div class="tcard-q" role="group" aria-label="¿Falta algún cobro por apuntar?">
-    <h3>¿Falta algún cobro por apuntar?</h3>
-    <div class="choices"><button type="button" class="sm" data-action="cobrosComplete">No, están todos</button><button type="button" class="sm" data-action="openPaySheet">Sí</button></div>
-  </div>`;
+function expectationView(c) {
+  const { standing: s, record } = c;
+  if (c.phase !== 'finished' || !(s.falta > 0) || !(c.payments.length || c.paid)) return nothing;
+  if (!record.complete && !record.expecting)
+    return html`<div class="tcard-q" role="group" aria-label="¿Se espera algún pago más?">
+      <h3>¿Se espera algún pago más?</h3>
+      <div class="choices"><button type="button" class="sm" data-action="expectYes" aria-pressed=${String(c.expectOpen)}>Sí, quedó en pagarlo</button><button type="button" class="sm" data-action="expectNo">No</button></div>
+      ${
+        c.expectOpen
+          ? html`<label class="fld">¿Para cuándo?<input type="date" data-expect-by min=${c.today}></label>
+            <button type="button" class="sm" data-action="expectNoDate">Sin fecha</button>`
+          : nothing
+      }
+    </div>`;
+  const by = record.expecting?.by;
+  const line = record.complete
+    ? 'No se espera más pago.'
+    : c.money === 'owed'
+      ? `Quedó en pagar el ${fWhen(/** @type {string} */ (by), c.today)} y no ha llegado.`
+      : by
+        ? `Se espera un pago para el ${fWhen(by, c.today)}.`
+        : 'Se espera un pago.';
+  return html`<p class="expect-line">${line} <button type="button" class="linkbtn tapfull" data-action="expectChange">Cambiar</button></p>`;
 }
+
+/** The headline of Falta by where the money stands: never «Debe el ganadero» while it is not known that nothing more is expected. */
+const HEAD = { owed: 'Debe el ganadero', expecting: 'Esperando cobro', unconfirmed: 'Falta', settled: 'Falta' };
 
 /** What is cobrado reaches the pay agreed (or is taken as agreed) and still falls short of what the law requires. */
 const belowLegalMinimum = (c) => {
@@ -283,7 +304,7 @@ function result(c) {
   // The headline says Falta, or Corresponde where nothing is recorded: the tiles do not repeat it
   const debt = s.hasPayments && !settled && !told;
   return html`<div class="block result">
-    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : 'Debe el ganadero'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}`}</span></span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
+    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : HEAD[c.money]}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}`}</span></span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c, { withoutFalta: debt })}
     ${notes(c, { over: '' })}
@@ -452,11 +473,11 @@ function cuentas(c) {
     ${unanswered ? paidQuestion(c) : nothing}
     ${showCobros(c) ? cobrosView(c) : nothing}
     ${result(c)}
-    ${missingCobrosQuestion(c)}
+    ${expectationView(c)}
     ${daysRow(c)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
-    ${claimView(c.claim)}`;
+    ${claimView(c.claim, c.money)}`;
 }
 
 /** «Trabajo real»: only where the days marked make the work run otherwise than the offer's dates say. */

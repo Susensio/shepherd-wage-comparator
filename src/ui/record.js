@@ -17,7 +17,15 @@ import { $ } from '../dom.js';
 import { fDate, fE, fInputValue, num } from '../format.js';
 import { conciliationOffice } from '../law.js';
 import { cents } from '../ledger.js';
-import { addableMonth, balanceOf, minimumNote, monthAccounts, spanOf, standingOf } from '../model/accounts.js';
+import {
+  addableMonth,
+  balanceOf,
+  minimumNote,
+  moneyState,
+  monthAccounts,
+  spanOf,
+  standingOf,
+} from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
 import { lawFromRecord } from '../model/compliance.js';
 import { monthSpan } from '../model/days.js';
@@ -94,7 +102,9 @@ import {
  * @property {boolean} noPay the job began with no pay told: what was cobrado has nothing agreed to be compared with
  * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
  * @property {boolean} recording «No todo» was answered: the cobros are being recorded
- * @property {{ date: string } | null} complete no cobro is missing, said, and every month closed: the figures are firm
+ * @property {ReturnType<typeof moneyState>} money where the money of the job stands (a job finished; settled while under way)
+ * @property {boolean} expectOpen «Sí, quedó en pagarlo» was tapped and the date is being asked
+ * @property {{ date: string } | null} complete no more cobro is expected, said, and every month closed: the figures are firm
  * @property {import('../model/settle.js').OfferRecord} record
  * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
  * @property {CalendarContext | null} calendar under way: the month on the calendar; finished: the month open in the registro, if any
@@ -122,6 +132,8 @@ const ui = {
   endLater: /** @type {Record<string, boolean>} */ ({}),
   /** «No todo» answered to «¿Se cobró este trabajo?»: the accounts open to record the cobros, by offer. */
   recording: /** @type {Record<string, boolean>} */ ({}),
+  /** «Sí, quedó en pagarlo» tapped, asking «¿Para cuándo?», by offer. */
+  expecting: /** @type {Record<string, boolean>} */ ({}),
   /** The date a request asks to pay by, by offer; without one, a fortnight on. */
   payBy: /** @type {Record<string, string>} */ ({}),
 };
@@ -313,6 +325,8 @@ export function recordContext(o, r) {
     recording: Boolean(ui.recording[o.id]),
     // Every month closed as well: a month reopened or added after it makes the figures estimates again
     complete: record.complete && !standing.unclosed.length ? record.complete : null,
+    money: phase === 'finished' ? moneyState({ falta: standing.falta, record, today }) : 'settled',
+    expectOpen: Boolean(ui.expecting[o.id]),
     record,
     cards: cardsOf(o, phase, settled, today, {
       asked: ui.end[o.id],
@@ -539,9 +553,27 @@ export const recordActions = {
     closeReview();
     callbacks.paint();
   },
-  /** «No, están todos»: no cobro is missing. */
-  cobrosComplete() {
+  /** «Sí, quedó en pagarlo»: asks for the date. */
+  expectYes() {
+    ui.expecting[active().id] = true;
+    callbacks.paint();
+  },
+  /** «Sin fecha»: a cobro is expected, with no date promised. */
+  expectNoDate() {
+    delete ui.expecting[active().id];
+    offers.expectPayment(active());
+    callbacks.paint();
+  },
+  /** «No»: no more cobro is expected. */
+  expectNo() {
+    delete ui.expecting[active().id];
     offers.completeRecord(active());
+    callbacks.paint();
+  },
+  /** «Cambiar»: the question again. */
+  expectChange() {
+    delete ui.expecting[active().id];
+    offers.clearExpectation(active());
     callbacks.paint();
   },
   /** «¿Empezó el trabajo?»: yes, as the offer says. */
@@ -806,6 +838,11 @@ export function onClaimInput(e) {
     callbacks.paint();
   } else if (el.matches('[data-promise]')) {
     offers.setPromise(active(), el.value);
+    callbacks.paint();
+  } else if (el.matches('[data-expect-by]')) {
+    if (!el.value) return;
+    delete ui.expecting[active().id];
+    offers.expectPayment(active(), el.value);
     callbacks.paint();
   } else if (el.matches('[data-pay-by]')) {
     ui.payBy[active().id] = el.value || defaultPayBy(todayISO());
