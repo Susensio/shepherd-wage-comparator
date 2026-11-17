@@ -208,41 +208,28 @@ test('extra pays are asked only for a monthly amount with a payslip', async ({ p
   await expect(page.locator('#payTold')).toContainText('dos pagas extra aparte');
 });
 
-test('«Las libro, cobrando» is not offered on a temporary contract of 120 days or less, nor on one of a month or less', async ({
-  page,
-}) => {
+test('«Se libran, cobrando» is offered on every contract: casual, a month or less, and the rest', async ({ page }) => {
   await newOffer(page, '3');
   await answer(page, 'contract', 'temporary');
   const taken = page.locator('input[name=vacation][value=taken]');
-  await expect(taken).toBeHidden();
-  await expect(page.locator('#vacationHint')).toContainText('En contratos temporales de hasta 120 días');
-  await setDuration(page, '5');
   await expect(taken).toBeVisible();
   await setDuration(page, '120', 'days');
-  await expect(taken).toBeHidden();
-  await setDuration(page, '121');
   await expect(taken).toBeVisible();
-  // Only temporary contracts have the casual minimum: the others can take their vacation
-  await setDuration(page, '60');
-  await expect(taken).toBeHidden();
+  await expect(page.locator('#vacationHint')).toContainText('se pueden librar o cobrar al acabar');
+  await setDuration(page, '5');
+  await expect(taken).toBeVisible();
   await answer(page, 'contract', 'seasonal');
-  await expect(taken).toBeVisible();
-  // A contract of a month or less, of any kind, ends before the vacation could be taken
   await setDuration(page, '30');
-  await expect(taken).toBeHidden();
-  await expect(page.locator('#vacationHint')).toContainText('En contratos de un mes o menos');
-});
-
-test('an offer that already takes its vacation keeps it, shown with a hint, when the contract is short', async ({
-  page,
-}) => {
-  await newOffer(page, '6');
+  await expect(taken).toBeVisible();
+  // A casual contract can choose it, and it is kept
   await answer(page, 'contract', 'temporary');
-  await answer(page, 'vacation', 'taken');
   await setDuration(page, '2');
+  await answer(page, 'vacation', 'taken');
   expect((await terms(page)).vacation).toBe('taken');
-  await expect(page.locator('input[name=vacation][value=taken]')).toBeChecked();
-  await expect(page.locator('#vacationHint')).toContainText('elige otra opción');
+  await expect(taken).toBeChecked();
+  // A self-employed job has no vacation to ask
+  await answer(page, 'payroll', 'self');
+  await expect(taken).toBeHidden();
 });
 
 /** Changes the duration on its step and comes back to the pay. */

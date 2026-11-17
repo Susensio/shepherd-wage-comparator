@@ -158,7 +158,7 @@ test('card: starts with the offer name and shows the verdict line', () => {
     const lines = cardText(o, resultOf(o)).split('\n');
     assert.equal(lines[0], o.mine.name);
     assert.ok(
-      lines.some((l) => l.startsWith('✘ No cumple: ')),
+      lines.some((l) => l.startsWith('✘ No cumple: ') || l === '✔ Cumple lo básico'),
       `verdict of ${o.mine.name}`,
     );
   }

@@ -60,7 +60,7 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
   const vacationDay = realPay
     ? vacationDayOf(terms, time, wage, withCash)
     : (wage.annual / LAW.smiDaysPerYear) * partTime;
-  const vacation = casual || terms.vacation !== 'taken' ? vacationDays * vacationDay : 0;
+  const vacation = terms.vacation !== 'taken' ? vacationDays * vacationDay : 0;
   // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
   const stay = terms.overnight === 'yes';
   const agreement = stay ? overnightOf(terms.province) : null;

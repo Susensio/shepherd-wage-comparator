@@ -82,6 +82,17 @@ test('a 100-day temporary contract uses the casual-worker daily minimum', () => 
   assert.ok(r.debt.total < 1, 'nothing owed');
 });
 
+test('a casual contract can take its vacation: paid days off, no vacation owed', () => {
+  const casual = { contract: 'temporary', duration: 90, durationUnit: 'days', payAmount: 1500, payUnit: 'month' };
+  const taken = figures({ ...casual, vacation: 'taken' });
+  const apart = figures({ ...casual, vacation: 'paidAtEnd' });
+  assert.ok(taken.min.casual);
+  assert.equal(taken.min.vacation, 0);
+  assert.equal(taken.debt.vacation, 0);
+  assert.ok(taken.time.vacationTaken > 0, 'the days are paid days off');
+  assert.ok(apart.min.vacation > 0);
+});
+
 test('a net amount asked for is the net calculated', () => {
   const r = figures({ payType: 'net', payAmount: 1500, payUnit: 'month', extraPays: 'included' });
   near(r.pay.net / 12, 1500, 0.5, 'net a month');

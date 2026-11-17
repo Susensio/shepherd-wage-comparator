@@ -43,8 +43,7 @@ const SHOW = {
   onPayroll: (o) => ['all', 'part'].includes(answersOf(o.terms).payroll),
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
-  // «Las libro» makes no sense when the vacation may be paid instead; one already saved with it keeps showing, with a hint
-  vacationTaken: (o, r) => !vacationPayable(o.terms, r.time) || o.terms.vacation === 'taken',
+  vacationTaken: (o) => o.terms.contract !== 'selfEmployed',
   overnight: (o) => o.terms.overnight === 'yes',
   showRent: (o) => o.terms.housing === 'yes',
   showMeals: (o) => mealsGiven(o.terms).length > 0,
@@ -158,13 +157,11 @@ function vacationHint(o, r) {
   if (o.terms.contract === 'none' && !['taken', 'paidAtEnd'].includes(o.terms.vacation))
     return `${NO_CONTRACT_VACATION}.`;
   if (!vacationPayable(o.terms, r.time)) return '';
-  const why = isCasual(o.terms, r.time)
-    ? `En contratos temporales de hasta ${LAW.casualMaxDays} días no se libran`
-    : 'En contratos de un mes o menos no se libran';
-  if (o.terms.vacation === 'taken') return `${why}: elige otra opción.`;
   if (o.terms.vacationAuto && o.terms.vacation === 'paidAtEnd')
     return 'Puesto por defecto: en contratos de un mes o menos lo normal es cobrarlas al acabar.';
-  return `${why}.`;
+  return isCasual(o.terms, r.time)
+    ? `En contratos temporales de hasta ${LAW.casualMaxDays} días se pueden librar o cobrar al acabar.`
+    : 'En contratos de un mes o menos se pueden librar o cobrar al acabar.';
 }
 
 /** An amount typed in the form, as an input shows it. */

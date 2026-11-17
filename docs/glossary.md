@@ -17,7 +17,7 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | vacaciones | | `terms.vacation`, `p.vacationPay` | ET art. 38 | |
 | vacaciones aparte, al acabar | worked and paid on top at the end; also without a contract, where it is the only way to pay them in money (`r.vacationApart`) | `vacation: 'paidAtEnd'` | | pagadas aparte |
 | vacaciones dentro | worked, and already inside the pay. Without a contract they do not discharge the vacation: «Sin contrato se mide como un trabajo fijo: las vacaciones no pueden ir dentro del pago (Estatuto, art. 38.1)» | `vacation: 'included'` | | incluidas |
-| vacaciones libradas | days off, paid | `vacation: 'taken'` | | disfrutadas |
+| vacaciones libradas | days off, paid; «Se libran, cobrando» is offered on every contract but self-employed work, short and casual ones included | `vacation: 'taken'` | | disfrutadas |
 | duración del contrato | | `terms.duration`, `terms.durationUnit` | | |
 
 ## Money
