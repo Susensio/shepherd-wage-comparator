@@ -19,14 +19,14 @@ import { toAnswerable } from './pay-answers.js';
  * Version of the format written to the account and to backups; other users' pages read shared rows (ADR-0006).
  * Raise it only with a database migration that rewrites the rows and an `upgrade` entry for the old version.
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /**
  * Version of this page's code, compared with the database's `min_page_version`: raise it by hand when a change makes
  * older pages unsafe to write (a new `SCHEMA_VERSION`, a changed meaning of a field), and raise the database's in the
  * same release.
  */
-export const PAGE_VERSION = 7;
+export const PAGE_VERSION = 8;
 
 /** Keys that are in neither DEF_MINE nor DEF_TERMS are legacy and dropped (`vacationAuto` is a flag set at runtime, so it stays). */
 const TERM_KEYS = new Set([...Object.keys(DEF_TERMS), 'vacationAuto']);
@@ -80,6 +80,9 @@ const withoutLawFigures = (cfg) =>
  * 8: `record.paid` (`asAgreed` | `none`; absent: unknown) replaces `record.nothingPaid`; a month may hold `count`
  *    (`{ work, off, sick }`) instead of per-day marks; a cobro may be `approx` (ADR-0035). The migration of 15 November
  *    2026 rewrote every account row's `nothingPaid`; `normalizeRecord` keeps unknown fields, so `upgrade[7]` deletes it.
+ * 9: `record.expecting = { by? }`, the shepherd said a cobro is still expected (with the date it was promised), the
+ *    counterpart of `record.complete`: none is expected. Optional; the upgrader is the identity and the version keeps pages
+ *    that do not know the field from writing (migration of 17 November 2026).
  */
 export const upgrade = {
   1: { offer: fromFlat, cfg: withoutLawFigures },
@@ -89,6 +92,7 @@ export const upgrade = {
   5: { offer: withClaim },
   6: { offer: (offer) => offer },
   7: { offer: withPaid },
+  8: { offer: (offer) => offer },
 };
 
 /** Version 2 to 3: `offerOnly` and `place` move from `mine` to `terms` (ADR-0028). */
@@ -126,7 +130,18 @@ const END_HOWS = new Set(['agreed', 'dismissed', 'quit']);
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 const isIsoDate = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 
-const KNOWN_RECORD_KEYS = ['months', 'payments', 'end', 'started', 'paid', 'complete', 'sick', 'recall', 'evidence'];
+const KNOWN_RECORD_KEYS = [
+  'months',
+  'payments',
+  'end',
+  'started',
+  'paid',
+  'complete',
+  'expecting',
+  'sick',
+  'recall',
+  'evidence',
+];
 
 /** The fields of `saved` this page does not know, copied: what a newer page wrote there stays when this one writes back. */
 const unknownOf = (saved, known) =>
@@ -188,6 +203,11 @@ export function normalizeRecord(saved) {
   if (saved.paid === 'asAgreed' || saved.paid === 'none') record.paid = saved.paid;
   if (isObject(saved.complete) && isIsoDate(saved.complete.date))
     record.complete = { ...unknownOf(saved.complete, ['date']), date: saved.complete.date };
+  if (isObject(saved.expecting))
+    record.expecting = {
+      ...unknownOf(saved.expecting, ['by']),
+      ...(isIsoDate(saved.expecting.by) ? { by: saved.expecting.by } : {}),
+    };
   if (isObject(saved.sick) && isIsoDate(saved.sick.from))
     record.sick = {
       ...unknownOf(saved.sick, ['from', 'to']),

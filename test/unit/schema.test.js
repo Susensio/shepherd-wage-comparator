@@ -126,8 +126,8 @@ test('the village, its codes, the head counts and whether it was worked are term
   }
 });
 
-test('the account schema is at version 8', () => {
-  assert.equal(SCHEMA_VERSION, 8);
+test('the account schema is at version 9', () => {
+  assert.equal(SCHEMA_VERSION, 9);
 });
 
 describe('upgrade chain', () => {
@@ -509,9 +509,9 @@ describe('fields the page does not know', () => {
   });
 
   test('a newer version is read without them and keeps its version, so it is never written', () => {
-    const { offers, cfg } = ingestSaved(fixture('v9-future'), { fallbackCfg });
+    const { offers, cfg } = ingestSaved(fixture('v10-future'), { fallbackCfg });
     const [offer] = offers;
-    assert.equal(offer.schema_version, 9);
+    assert.equal(offer.schema_version, 10);
     assert.equal('newTerm' in offer.terms, false);
     assert.equal('newMine' in offer.mine, false);
     assert.equal('newTop' in offer, false);
@@ -521,14 +521,14 @@ describe('fields the page does not know', () => {
   });
 
   test('an offer of a newer version keeps its stamp when ingested again from the browser copy', () => {
-    const first = ingestSaved(fixture('v9-future'), { fallbackCfg });
+    const first = ingestSaved(fixture('v10-future'), { fallbackCfg });
     const again = ingestSaved(first, { fallbackCfg });
-    assert.equal(again.offers[0].schema_version, 9);
+    assert.equal(again.offers[0].schema_version, 10);
   });
 
   test('a shared row of a newer version is read without them', () => {
     const shared = ingestShared({
-      offer: { id: 'a', schema_version: 9, terms: { payAmount: 5, newTerm: 'x' } },
+      offer: { id: 'a', schema_version: 10, terms: { payAmount: 5, newTerm: 'x' } },
       sharer: { name: 'Ana' },
     });
     assert.equal(shared?.o.terms.payAmount, 5);
@@ -644,5 +644,42 @@ describe('version 8: paid, counts of days, approximate cobros (ADR-0035)', () =>
     assert.deepEqual(saved.months['2026-07'].count, { work: 22, off: 8, sick: 1 });
     assert.equal(saved.payments[1].approx, true);
     assert.deepEqual(ingestSaved({ schema_version: 8, offers }, { fallbackCfg }).offers[0].mine.record, saved);
+  });
+});
+
+describe('version 9: a cobro expected', () => {
+  const record = (saved) =>
+    ingestSaved({ schema_version: 9, offers: [{ id: 'a', terms: {}, mine: { record: saved } }] }, { fallbackCfg })
+      .offers[0].mine.record;
+
+  test('upgrade[8] is the identity', () => {
+    const offer = {
+      id: 'a',
+      terms: {},
+      mine: { record: { months: {}, payments: [], expecting: { by: '2026-12-15' } } },
+    };
+    assert.equal(upgrade[8].offer(offer), offer);
+    const { offers } = ingestSaved({ schema_version: 8, offers: [offer] }, { fallbackCfg });
+    assert.deepEqual(offers[0].mine.record.expecting, { by: '2026-12-15' });
+  });
+
+  test('expecting keeps a valid date and its unknown fields; a bad date is dropped and the answer stays', () => {
+    assert.deepEqual(record({ expecting: { by: '2026-12-15', extra: 1 } }).expecting, { by: '2026-12-15', extra: 1 });
+    assert.deepEqual(record({ expecting: {} }).expecting, {});
+    for (const bad of ['mañana', '2026-12', 5, null, true])
+      assert.deepEqual(record({ expecting: { by: bad } }).expecting, {}, JSON.stringify(bad));
+  });
+
+  test('anything that is not an object is no answer', () => {
+    for (const bad of [true, 'x', 1, null, []]) assert.equal('expecting' in record({ expecting: bad }), false);
+  });
+
+  test('the version-9 fixture comes through whole, and normalising it again changes nothing', () => {
+    const { offers } = ingestSaved(fixture('v9'), { fallbackCfg });
+    const saved = offers[0].mine.record;
+    assert.deepEqual(saved.expecting, { by: '2026-12-15', futureExpectingField: true });
+    assert.equal(saved.payments[1].approx, true);
+    assert.equal(offers[0].mine.futureMineField, 7);
+    assert.deepEqual(ingestSaved({ schema_version: 9, offers }, { fallbackCfg }).offers[0].mine.record, saved);
   });
 });
