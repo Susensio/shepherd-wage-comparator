@@ -59,6 +59,8 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     for (const name of ['Lo pactado', 'Otra cantidad', 'Nada'])
       await expect(question(page).getByRole('button', { name })).toBeVisible();
     await expect(page.locator('#result h2.analysis-title')).toBeVisible();
+    // Nothing left to negotiate on a finished job
+    await expect(page.locator('#result')).not.toContainText('Para negociar');
     await expect(page.locator('#result h2.mode')).toHaveCount(0);
     await expect(page.locator('#result .block.result')).toHaveCount(0);
     await expect(page.locator('#result')).not.toContainText('Aún no hay cobros apuntados');

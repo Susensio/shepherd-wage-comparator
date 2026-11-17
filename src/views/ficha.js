@@ -62,9 +62,14 @@ export function fichaView(o, r, places, record = null) {
       )}</div>
     </details>`;
   const analysisTitle = analysis ? html`<h2 class="analysis-title">Análisis</h2>${analysis}` : nothing;
+  // A job finished has nothing left to negotiate: the same analysis without «Para negociar»
+  const finishedAnalysis =
+    analysis && sections
+      ? html`<h2 class="analysis-title">Análisis</h2>${sections.breakdown}${sections.legal}${sections.seasonEnd}${sections.workings}`
+      : nothing;
   // A job finished with nothing recorded leads with what the offer said, and asks only whether it was paid
   if (record?.bare)
-    return html`${conditions}${endQuestion(record.cards, record.today)}${endLine(record.record)}${realPeriod(record)}${paidQuestion(record)}${head}${analysisTitle}`;
+    return html`${conditions}${endQuestion(record.cards, record.today)}${endLine(record.record)}${realPeriod(record)}${paidQuestion(record)}${head}${finishedAnalysis}`;
   return html`${conditions}
     ${record ? recordView(record) : head}
     ${record?.phase === 'finished' && sections ? referenceFold(head, sections) : record && sections ? closedAnalysis(head, sections) : analysisTitle}`;
