@@ -2,20 +2,23 @@
 
 import { $ } from '../dom.js';
 import { num } from '../format.js';
+import { standingOf } from '../model/accounts.js';
 import { daysInclusive, defaultVacation, makeOffer, parseDate, todayISO } from '../offer.js';
 import { offers } from '../offers.js';
-import { settleOffer, state } from '../state.js';
+import { calcOffer, settleOffer, state } from '../state.js';
 import { closePastJob, openPastJob, pastJobToFicha } from './navigation.js';
 
 /** What the screen remembers while open: what is wrong with it, the answer to «¿Se cobró?» and the cobros listed. */
 const ui = {
   error: '',
   how: '',
+  /** The answer to «¿Se espera algún pago más?»: '' (not answered), `yes` or `no`. */
+  expect: '',
   min: false,
   rows: /** @type {{ id: string, amount: string, date: string, via: string, approx: boolean }[]} */ ([]),
   next: 0,
 };
-export const pastJobState = () => ({ error: ui.error, how: ui.how, min: ui.min, rows: ui.rows });
+export const pastJobState = () => ({ error: ui.error, how: ui.how, expect: ui.expect, min: ui.min, rows: ui.rows });
 
 const newRow = () => ({ id: `r${ui.next++}`, amount: '', date: '', via: 'payroll', approx: false });
 
@@ -41,6 +44,7 @@ export function setUpPastJob(given) {
 export function showPastJob() {
   ui.error = '';
   ui.how = '';
+  ui.expect = '';
   ui.min = false;
   ui.rows = [newRow()];
   openPastJob();
@@ -57,6 +61,11 @@ export const pastJobActions = {
   pastHow(b) {
     syncRows();
     ui.how = b.value;
+    callbacks.paint();
+  },
+  pastExpect(b) {
+    syncRows();
+    ui.expect = b.value;
     callbacks.paint();
   },
   pastMin(b) {
@@ -121,6 +130,8 @@ export function savePastJob() {
   const { how, min } = ui;
   const pay = min ? 0 : num(value('pastPay'));
   const cobros = how === 'part' ? cobrosTyped() : [];
+  const expectBy =
+    ui.expect === 'yes' ? /** @type {HTMLInputElement | null} */ (document.querySelector('#pastExpectBy'))?.value : '';
   ui.error = problemOf({ start, end, days, duration, how, min, pay, cobros });
   if (ui.error) {
     syncRows();
@@ -157,7 +168,18 @@ export function savePastJob() {
   if (recorded) {
     for (const row of settleOffer(job).rows)
       offers.closeMonth(job, { key: row.month, from: row.calendarFrom, to: row.calendarTo });
-    offers.completeRecord(job);
+    // Said of what is missing (only where a «Nada» or «Otra cantidad» left Falta): unanswered it stays «Por confirmar»
+    const falta = standingOf(
+      settleOffer(job),
+      todayISO(),
+      'finished',
+      job.mine.record.payments,
+      calcOffer(job).netFactor,
+      job.mine.record.paid,
+    ).falta;
+    const asked = (how === 'part' || how === 'none') && falta > 0;
+    if (asked && ui.expect === 'yes') offers.expectPayment(job, expectBy);
+    else if (!asked || ui.expect === 'no') offers.completeRecord(job);
   }
   ui.error = '';
   callbacks.showSelected();

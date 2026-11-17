@@ -483,7 +483,9 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.getByRole('group', { name: '¿Cómo acabó?' })).toHaveCount(0);
     await expect(page.locator('#result .cobros .via.cash')).toHaveCount(1);
     expect(record.paid).toBeUndefined();
-    expect(record.complete).toBeTruthy();
+    // Falta is above 0 and «¿Se espera algún pago más?» was not answered: Por confirmar
+    expect(record.complete).toBeUndefined();
+    expect(record.expecting).toBeUndefined();
     await expect(page.locator('#result .cobros .pr')).toHaveCount(2);
   });
 
@@ -503,7 +505,89 @@ test.describe('«Trabajo ya hecho»', () => {
     const record = await recordOf(page);
     expect(record.paid).toBe('none');
     expect(record.payments ?? []).toEqual([]);
+    expect(record.complete).toBeUndefined();
+    expect(record.expecting).toBeUndefined();
+  });
+
+  const question = (page) => page.getByRole('radiogroup', { name: '¿Se espera algún pago más?' });
+  const how = (page, value) => page.locator(`#pastForm input[name=pastHow][value=${value}]`).check();
+  const saveWith = async (page, setUp) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastPay').fill('1500');
+    await setUp();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    return recordOf(page);
+  };
+
+  test('«Lo pactado» asks nothing; «Nada» and «Otra cantidad» ask «¿Se espera algún pago más?», its day only after «Sí»', async ({
+    page,
+  }) => {
+    await open(page);
+    await how(page, 'all');
+    await expect(question(page)).toHaveCount(0);
+    await how(page, 'none');
+    await expect(question(page)).toBeVisible();
+    await expect(page.locator('#pastExpectBy')).toHaveCount(0);
+    await question(page).getByLabel('Sí, quedó en pagarlo').check();
+    await expect(page.locator('#pastExpectBy')).toBeVisible();
+  });
+
+  test('«Nada» and «Sí» with a day: expecting, up to that day', async ({ page }) => {
+    const record = await saveWith(page, async () => {
+      await how(page, 'none');
+      await question(page).getByLabel('Sí, quedó en pagarlo').check();
+      await page.locator('#pastExpectBy').fill('2026-12-15');
+    });
+    expect(record.expecting).toEqual({ by: '2026-12-15' });
+    expect(record.complete).toBeUndefined();
+    await expect(page.locator('#result .expect-line')).toContainText('Se espera un pago para el 15 dic.');
+  });
+
+  test('«Nada» and «Sí» without a day: expecting, with no day', async ({ page }) => {
+    const record = await saveWith(page, async () => {
+      await how(page, 'none');
+      await question(page).getByLabel('Sí, quedó en pagarlo').check();
+    });
+    expect(record.expecting).toEqual({});
+  });
+
+  test('«Nada» and «No»: no more cobro is expected', async ({ page }) => {
+    const record = await saveWith(page, async () => {
+      await how(page, 'none');
+      await question(page).getByLabel('No', { exact: true }).check();
+    });
     expect(record.complete).toBeTruthy();
+    expect(record.expecting).toBeUndefined();
+    await expect(page.locator('#result .expect-line')).toContainText('No se espera más pago.');
+  });
+
+  test('«Otra cantidad» and «Sí»: expecting', async ({ page }) => {
+    const record = await saveWith(page, async () => {
+      await how(page, 'part');
+      await page.locator('.pastAmount').fill('100');
+      await question(page).getByLabel('Sí, quedó en pagarlo').check();
+    });
+    expect(record.expecting).toEqual({});
+  });
+
+  test('the answer is ignored where the cobros leave nothing missing: the job is simply complete', async ({ page }) => {
+    await open(page);
+    await dates(page, '2026-06-01', '2026-08-31');
+    await page.locator('#pastMin').check();
+    const net = await minimumNet(page);
+    await page.locator('#pastForm input[name=pastHow][value=part]').check();
+    await page.locator('.pastAmount').fill(String(net).replace('.', ','));
+    await page
+      .getByRole('radiogroup', { name: '¿Se espera algún pago más?' })
+      .getByLabel('Sí, quedó en pagarlo')
+      .check();
+    await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
+    await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
+    const record = await recordOf(page);
+    expect(record.complete).toBeTruthy();
+    expect(record.expecting).toBeUndefined();
   });
 
   test('with only the dates, the job is saved bare and asks whether it was paid', async ({ page }) => {

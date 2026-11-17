@@ -21,11 +21,16 @@ const HOW = [
   ['none', 'Nada'],
 ];
 
+const EXPECT = [
+  ['yes', 'Sí, quedó en pagarlo'],
+  ['no', 'No'],
+];
+
 /**
- * @param {{ error: string, how: string, min: boolean, rows: { id: string, amount: string, date: string, via: string, approx: boolean }[] }} state `error`: what is wrong with what was typed, or ''; `how`:
+ * @param {{ error: string, how: string, min: boolean, expect: string, rows: { id: string, amount: string, date: string, via: string, approx: boolean }[] }} state `expect`: the answer to «¿Se espera algún pago más?» ('', `yes` or `no`); `error`: what is wrong with what was typed, or ''; `how`:
  * the answer to «¿Se cobró este trabajo?» ('' while unanswered); `min`: the pay agreed is the minimum wage; `rows`: the cobros listed under «Otra cantidad»
  */
-export function pastJobView({ error, how, min, rows }) {
+export function pastJobView({ error, how, expect, min, rows }) {
   return html`<form class="dossier-doc past-doc" id="pastForm" novalidate>
     <h1>Trabajo ya hecho</h1>
     <p class="hint">Se apunta lo que se recuerde: solo hacen falta las fechas.</p>
@@ -62,6 +67,18 @@ export function pastJobView({ error, how, min, rows }) {
           : nothing
       }
     </section>
+    ${
+      how === 'part' || how === 'none'
+        ? html`<section class="block">
+      <div class="fld" role="radiogroup" aria-label="¿Se espera algún pago más?">
+        <span class="ask">¿Se espera algún pago más?</span>
+        <div class="seg">${EXPECT.map(([value, label]) => html`<label><input type="radio" name="pastExpect" value=${value} data-action="pastExpect" ?checked=${expect === value}>${label}</label>`)}</div>
+      </div>
+      ${expect === 'yes' ? html`<label class="fld">¿Para cuándo? (opcional)<input type="date" id="pastExpectBy"></label>` : nothing}
+      <p class="hint">Solo cuenta si queda algo por cobrar. Sin responder, el trabajo queda «Por confirmar».</p>
+    </section>`
+        : nothing
+    }
     ${error ? html`<p class="hint bad" role="alert">${error}</p>` : nothing}
     <button type="button" class="pri" data-action="savePastJob">Guardar el trabajo</button>
   </form>`;
