@@ -4307,7 +4307,7 @@ body.loading-account .ficha > :not(.ficha-skeleton) {
 }
 .cal.closed .day {
   border-style: solid;
-  cursor: default;
+  cursor: pointer;
 }
 .cal.closed .day.work {
   background: color-mix(in srgb, var(--c-pay) 40%, var(--surface));

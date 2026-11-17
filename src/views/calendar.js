@@ -22,6 +22,15 @@ const stateOf = (acc, now) =>
       ? html`<span class="state now">En curso</span>`
       : html`<span class="state">Según la oferta</span>`;
 
+/** Under the month title: how to change a day; for a closed month, once a day is tapped, the way to reopen it. */
+function tapHint(cal) {
+  const { acc } = cal;
+  if (!acc.row.closed) return html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`;
+  if (!cal.tapped) return nothing;
+  const name = monthName(acc.row.month);
+  return html`<div class="confirm" role="status"><span>${capital(name)} está cerrado. ¿Reabrir ${name} para cambiar los días?</span><div class="btns"><button type="button" data-action="reopenYes" data-key=${acc.row.month}>Reabrir ${name}</button></div></div>`;
+}
+
 /** The days, in weeks that start on Monday. A day outside the offer's dates is not tappable. */
 function grid(cal) {
   const { acc } = cal;
@@ -48,7 +57,7 @@ function grid(cal) {
     const cls = `day ${mark.outside ? 'away' : mark.kind}${inProgress && date === cal.today ? ' today' : ''}${inProgress && date > cal.today ? ' ahead' : ''}${mark.holiday ? ' fest' : ''}`;
     cells.push(
       closed
-        ? html`<button type="button" class=${cls} aria-disabled="true" tabindex="-1" aria-label=${label} title=${mark.holiday || nothing}>${d}<small>${note}</small></button>`
+        ? html`<button type="button" class=${cls} data-action="closedDay" data-key=${acc.row.month} aria-label=${label} title=${mark.holiday || nothing}>${d}<small>${note}</small></button>`
         : html`<button type="button" class=${cls} data-action="toggleDay" data-key=${acc.row.month} data-day=${day} aria-label=${label} title=${mark.holiday || nothing}>${d}<small>${note}</small></button>`,
     );
   }
@@ -112,10 +121,10 @@ function month(cal) {
     : acc.counts;
   return html`<div class=${acc.row.closed ? 'cal closed' : 'cal'}>
     <div class="mh"><h3>${capital(monthName(acc.row.month))} ${y}</h3>${stateOf(acc, now)}</div>
+    ${tapHint(cal)}
     ${grid(cal)}
     ${holidays(cal)}
     <div class="counts">${now ? html`<span class="upto">hasta hoy</span>` : nothing}<span><i class="work"></i>${plural(counts.work, 'jornada', 'jornadas')}</span><span><i></i>${plural(counts.off, 'libranza', 'libranzas')}</span>${counts.sick ? html`<span><i class="sick"></i>${counts.sick} de baja</span>` : nothing}</div>
-    ${acc.row.closed ? nothing : html`<p class="hint">Toca un día para pasarlo de jornada a libre, o al revés.</p>`}
     ${acc.marks.some((m) => m.outside) ? html`<p class="hint">Si se marca un día «fuera» como jornada, el trabajo se prolonga hasta él.</p>` : nothing}
     ${money(cal)}
     ${actions(cal)}

@@ -63,6 +63,7 @@ import {
  * @property {boolean} inJob the month is part of the job: a month that can be added is not until a day is worked in it
  * @property {boolean} current the month is the one in progress
  * @property {boolean} asking whether «Reabrir» is waiting for its confirmation
+ * @property {boolean} tapped a day of the closed month was tapped: the inline offer to reopen it shows
  * @property {boolean} canClose only a month that has ended can be closed
  *
  * @typedef {object} ReviewDone the review has gone through every month
@@ -273,6 +274,7 @@ export function recordContext(o, r) {
     // A month not in the job (the one that can be added) has nothing to close, and says how it joins
     ...monthFlags(rowOf(key), today),
     asking: ui.ask?.type === 'reopen' && ui.ask.id === key,
+    tapped: ui.ask?.type === 'closedDay' && ui.ask.id === key,
   });
   const key = monthOnCalendar(ui.months[o.id], settled.rows, today, phase, addable);
   const picked = ui.opened[o.id];
@@ -466,6 +468,12 @@ export const recordActions = {
   selectMonth(b) {
     ui.months[active().id] = b.dataset.key;
     ui.ask = null;
+    callbacks.paint();
+  },
+  /** A day of a closed month was tapped: the calendar says it is closed and offers to reopen it. */
+  closedDay(b) {
+    stayOn(b.dataset.key);
+    ui.ask = { type: 'closedDay', id: b.dataset.key };
     callbacks.paint();
   },
   closeMonth(b) {

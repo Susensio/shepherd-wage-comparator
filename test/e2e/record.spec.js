@@ -736,7 +736,19 @@ test.describe('finished: Cuentas', () => {
     const body = page.locator('.monthbody');
     await expect(body.locator('.cal .state')).toHaveText('Cerrado');
     await expect(body.locator('.cal .counts')).toHaveText(counts ?? '');
-    await expect(body.locator('.cal .day[data-action]')).toHaveCount(0);
+    await expect(body.locator('.cal .day[data-action=toggleDay]')).toHaveCount(0);
+    // Tapping a day says the month is closed, under the title, and offers to reopen it
+    await body.locator('.cal .day.work').first().click();
+    await expect(body.locator('.cal .mh + .confirm')).toContainText(
+      'Junio está cerrado. ¿Reabrir junio para cambiar los días?',
+    );
+    await body.getByRole('button', { name: 'Reabrir junio' }).click();
+    await expect(body.locator('.cal .state')).toHaveText('Según la oferta');
+    await expect(body.locator('.cal .mh + .hint')).toContainText('Toca un día');
+    await body
+      .locator('.cal')
+      .getByRole('button', { name: /^Cerrar junio$/ })
+      .click();
     await page.getByRole('button', { name: 'Reabrir' }).click();
     await expect(body.locator('.cal .confirm')).toContainText('¿Reabrir junio?');
     await page.locator('[data-action=reopenNo]').click();
