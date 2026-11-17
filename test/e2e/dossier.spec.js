@@ -1,10 +1,10 @@
 // The «Expediente» (ADR-0034): a printable page with its own history entry; its totals are the tiles'.
 
-import { closeRegistro, expect, loadOffers, openLegalPage, openRegistro, sample, test } from './fixtures.js';
+import { closeRegistro, expect, loadOffers, openLegalPage, openRegistro, sample, test, tileOf } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
 const amount = (text) => Number.parseFloat(text.replace(/[^\d,]/g, '').replace(',', '.'));
-const tile = (page, name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+const tile = tileOf;
 const addPayments = (page, list) =>
   page.evaluate(async (list) => {
     const { offers } = await import('./src/offers.js');

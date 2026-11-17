@@ -149,15 +149,15 @@ const minimumLine = (m) => {
 /** Said once, next to the title of Registro and Cuentas: every amount on them is net. */
 const NET = html` <span class="net">en neto</span>`;
 
-/** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta. */
-function tiles(c) {
+/** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta; `withoutFalta` where the headline above already says it. */
+function tiles(c, { withoutFalta = false } = {}) {
   const s = c.standing;
   // Cobrado and Falta follow the cobros: one told as approximate makes both approximate
   const about = c.approx ? '≈ ' : '';
-  return html`<div class="sofar">
+  return html`<div class=${withoutFalta ? 'sofar two' : 'sofar'}>
     <div><span>Corresponde</span><b>${c.noPay ? '—' : whole(s.corresponde)}</b></div>
     <div><span>Cobrado</span><b>${about}${whole(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
-    <div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments && !c.noPay ? about + whole(s.falta) : '—'}</b></div>
+    ${withoutFalta ? nothing : html`<div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments && !c.noPay ? about + whole(s.falta) : '—'}</b></div>`}
   </div>`;
 }
 
@@ -277,13 +277,12 @@ function result(c) {
             : open
               ? `${open} ${open === 1 ? 'mes' : 'meses'} según la oferta: la cifra no es firme hasta cerrarlos.`
               : '';
+  // The headline says Falta, or Corresponde where nothing is recorded: the tiles do not repeat it
+  const debt = s.hasPayments && !settled && !told;
   return html`<div class="block result">
-    <div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : s.hasPayments ? 'Debe el ganadero' : 'Corresponde'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${s.hasPayments && c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.hasPayments ? s.falta : s.corresponde)}`}</span>${
-      // A debt reads as one: the stamp, like «Ilegal» on the offer's headline
-      s.hasPayments && !settled && !told ? html`<span class="stamp">Falta</span>` : nothing
-    }</span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
+    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : 'Debe el ganadero'}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}`}</span></span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
-    ${tiles(c)}
+    ${tiles(c, { withoutFalta: debt })}
     ${notes(c, { over: '' })}
   </div>${lapsedLine(c.claim)}`;
 }

@@ -1,6 +1,6 @@
 // The job as one thing with two sides (ADR-0035, phase C): the screens for what happened, whatever the terms say.
 
-import { addJob, closeRegistro, expect, loadOffers, openRegistro, sample, test } from './fixtures.js';
+import { addJob, closeRegistro, expect, loadOffers, openRegistro, sample, test, tileOf } from './fixtures.js';
 
 test.describe('thin terms', () => {
   test.use({ today: '2026-11-15' });
@@ -49,7 +49,7 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     contract: 'temporary',
   };
   const question = (page) => page.getByRole('group', { name: '¿Se cobró este trabajo?' });
-  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+  const tile = tileOf;
   const recordOf = (page) => page.evaluate(() => app.active().mine.record);
 
   test('leads with the analysis and asks only whether it was paid: no accounts, no debt', async ({ page }) => {
@@ -348,7 +348,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     expect(await termsOf(page)).toMatchObject({ payrollMin: true, cashMode: 'amount', cashAmount: '' });
-    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    const tile = (name) => tileOf(page, name);
     await expect(tile('Falta')).not.toHaveText('—');
     const short = await tile('Falta').textContent();
     expect(Number.parseFloat(short.replace(/\./g, '').replace(',', '.'))).toBeLessThan(1);
@@ -363,7 +363,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await page.locator('.pastAmount').fill(String(Math.round(net - 300)));
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
-    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    const tile = (name) => tileOf(page, name);
     const short = await tile('Falta').textContent();
     const missing = Number.parseFloat(short.replace(/\./g, '').replace(',', '.'));
     expect(missing).toBeGreaterThan(250);
@@ -409,7 +409,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await page.locator('.pastAmount').fill('4000');
     await page.locator('.pastApprox').check();
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
-    const tile = (name) => page.locator('#result .sofar > div', { hasText: name }).locator('b');
+    const tile = (name) => tileOf(page, name);
     await expect(tile('Cobrado')).toContainText('≈');
     // No pay agreed: nothing to compare the cobros with
     await expect(tile('Falta')).toHaveText('—');

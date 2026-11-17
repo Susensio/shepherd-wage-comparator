@@ -9,6 +9,7 @@ import {
   openRegistro,
   sample,
   test,
+  tileOf,
 } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
@@ -247,7 +248,7 @@ test.describe('under way: Registro', () => {
 test.describe('finished: Cuentas', () => {
   test.use({ today: '2026-11-12' });
 
-  const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+  const tile = tileOf;
   /** Whether the first element matching `a` comes before the first matching `b`; `h2:text` picks a heading by its text. */
   const after = (page, a, b) =>
     page.evaluate(
@@ -304,16 +305,18 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#secEmployer')).toHaveCount(0);
   });
 
-  test('«Debe el ganadero» carries a stamp «Falta», like the offer’s «Ilegal»; no stamp without a debt', async ({
+  test('«Debe el ganadero» says Falta once: no stamp and no Falta tile beside it; nothing recorded has no headline', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await expect(page.locator('.block.result .stamp')).toHaveCount(0); // no cobro yet: only Corresponde
+    await expect(page.locator('.block.result .tag')).toHaveCount(0); // no cobro yet: only the tiles
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
-    await expect(page.locator('.block.result .tag .stamp')).toHaveText('Falta');
+    await expect(page.locator('.block.result .stamp')).toHaveCount(0);
+    await expect(page.locator('.block.result .sofar > div')).toHaveCount(2);
     await addPayments(page, [{ date: '2026-07-06', amount: 50000, via: 'payroll' }]);
-    await expect(page.locator('.block.result .stamp')).toHaveCount(0); // all cobrado: calm
+    await expect(page.locator('.block.result .sofar > div')).toHaveCount(3); // all cobrado: calm, with its green tile
+    await expect(page.locator('.sofar .f')).toHaveClass(/ok/);
   });
 
   test('Corresponde − Cobrado = Falta, in net, and the headline «Debe el ganadero» is Falta', async ({ page }) => {
@@ -419,7 +422,7 @@ test.describe('finished: Cuentas', () => {
   test('no cobros: Corresponde and a prompt, no debt, the first step only and no deadline', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Corresponde');
+    await expect(page.locator('.block.result .tag')).toHaveCount(0);
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).not.toContainText('Plazo más cercano');
     const ask = page.locator('#result .ask');

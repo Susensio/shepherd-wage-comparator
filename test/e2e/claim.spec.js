@@ -1,6 +1,6 @@
 // «Pedir lo que falta» (ADR-0034): asking the ganadero first and the one line with the deadline; the legal path is the page «Vía legal».
 
-import { expect, loadOffers, openAccounts, openLegalPage, sample, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, openLegalPage, sample, test, tileOf } from './fixtures.js';
 import { ledgerProblems } from './ledger.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
@@ -11,7 +11,7 @@ const addPayments = (page, list) =>
     for (const p of list) offers.addPayment(app.active(), p);
     app.select(app.active().id);
   }, list);
-const tile = (page, name) => page.locator('.sofar > div', { hasText: name }).locator('b');
+const tile = tileOf;
 const PAID = [{ date: '2026-07-05', amount: 1000, via: 'payroll' }];
 
 test.describe('the ladder', () => {

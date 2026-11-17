@@ -56,6 +56,17 @@ export async function openAccounts(page) {
   await page.locator('#paySheet [data-action=payCancel]').click();
 }
 
+/**
+ * A figure of the result: a tile by its name. «Falta» is the headline's figure while a debt shows («Debe el ganadero»,
+ * «Falta hasta el mínimo legal»), which the tiles do not repeat.
+ */
+export const tileOf = (page, name, scope = '#result') =>
+  name === 'Falta'
+    ? page
+        .locator(`${scope} .sofar .f b`)
+        .or(page.locator(`${scope} .block.result .tag:has(.lbl:text-matches("^(Debe|Falta)")) .big`))
+    : page.locator(`${scope} .sofar > div`, { hasText: name }).locator('b');
+
 /** On a first visit, leaves the welcome for the templates; nothing to do anywhere else. */
 export async function leaveWelcome(page) {
   const start = page.locator('#welcomeStart');
