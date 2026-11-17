@@ -23,13 +23,16 @@ import { answersOf, askExtraPays, isAnswerable, isCasual, vacationPayable } from
 import { placeOfTerms } from '../places.js';
 import { NO_CONTRACT_VACATION, overnightHint } from '../rights.js';
 import { areaLine, VACATION_SAYS } from '../text.js';
-import { isUnderAMonth } from '../units.js';
 
 /** «El salario mínimo» chosen as the pay itself: no amount, all of it on payroll at the minimum. */
 const isAllMinimum = (a) => a.payroll === 'min' && !(num(a.amount) > 0);
 
-/** The minimum's gross payslip: per month, or the whole contract's under a month (a monthly figure would be an extrapolation). */
-const minimumGross = (r) => (isUnderAMonth(r) ? r.min.salary : r.min.salary / r.time.months);
+/** The minimum as the agreed pay, gross per month: the monthly minimum with its extra pays prorated. */
+const minimumGross = (r) => r.min.monthly;
+
+/** How that figure comes about: the monthly minimum, the pays it is paid in and the twelve it is shared over. */
+const minimumHow = (r) =>
+  `${fE(r.wage.annual / LAW.paymentsPerYear)} × ${LAW.paymentsPerYear} pagas / 12${r.min.monthly < r.wage.annual / 12 - 0.5 ? ', por las horas' : ''}`;
 
 /** When each block of the form shows: the data-show attribute in the HTML. */
 const SHOW = {
@@ -251,7 +254,7 @@ function payHint(o, r) {
   }
   if (o.terms.payrollMin) {
     const gross = minimumGross(r);
-    return `Unos ${fE(gross)} brutos ${isUnderAMonth(r) ? 'en todo el contrato' : 'al mes'}, ${fE(gross * r.netFactor)} netos.${isAllMinimum(a) ? ' Todo va en nómina.' : ''}`;
+    return `${fE(gross)} brutos al mes (${minimumHow(r)}), unos ${fE(gross * r.netFactor)} netos.${isAllMinimum(a) ? ' Todo va en nómina.' : ''}`;
   }
   if (!(num(o.terms.payAmount) > 0)) return '';
   const per = { day: '/día trabajado', month: '/mes', year: '/año', total: ' en total' }[o.terms.payUnit];

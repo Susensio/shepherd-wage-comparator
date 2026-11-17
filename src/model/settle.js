@@ -206,17 +206,13 @@ export function settle(offer, record, today, r) {
     // days worked alone (the vacation taken is inside the total), so the total scales with them
     const casual = min.casual && time.daysWorked > 0;
     const minimumSalary = casual ? (min.salary * worked) / time.daysWorked : min.salary * w;
-    // The minimum as the agreed pay follows the days as its own minimum does, so a casual month of more days than the
-    // offer counted agrees what the law demands for them and adds up
     const payroll = r.noContract
       ? 0
-      : terms.payrollMin && !totalPerDay
-        ? minimumSalary + pay.extraPays * w
-        : totalPerDay
-          ? (pay.base / time.daysWorked) * worked + pay.extraPays * w
-          : perDay
-            ? dayRate * paid + pay.extraPays * w
-            : pay.salary * w;
+      : totalPerDay
+        ? (pay.base / time.daysWorked) * worked + pay.extraPays * w
+        : perDay
+          ? dayRate * paid + pay.extraPays * w
+          : pay.salary * w;
     const cashGross = cash * cashRatio;
     const wage = payroll + cashGross;
     return { share, key, closed, counts, open, worked, wage, payroll, cash, cashGross, minimumSalary };

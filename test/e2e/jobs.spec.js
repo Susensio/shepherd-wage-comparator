@@ -325,7 +325,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await expect(page.locator('#offersList')).toBeVisible();
   });
 
-  /** What the payslips of the minimum bring in net (salary and vacation), plus the severance of the temporary contract, for the job below. */
+  /** What the minimum brings in net for the job below: the payslips (salary and vacation), the salary up to the per-jornada floor a short temporary is judged by, and the severance. */
   const minimumNet = (page) =>
     page.evaluate(async () => {
       const { makeOffer } = await import('./src/offer.js');
@@ -336,7 +336,8 @@ test.describe('«Trabajo ya hecho»', () => {
       app.state.offers.push(job);
       const r = app.calcOffer(job);
       app.state.offers.pop();
-      return Math.round((r.pay.net + r.employer.severance) * 100) / 100;
+      const upToFloor = Math.max(0, r.min.salary - r.pay.salary) * r.netFactor;
+      return Math.round((r.pay.net + upToFloor + r.employer.severance) * 100) / 100;
     });
 
   test('the agreed pay is the minimum: cobros that add up show nothing short', async ({ page }) => {

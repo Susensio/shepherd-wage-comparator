@@ -53,7 +53,9 @@ test('«El mínimo» with no amount: all on payroll, nothing en negro, and the h
   await answer(page, 'payroll', 'min');
   expect(await terms(page)).toMatchObject({ payrollMin: true, cashMode: 'amount', cashAmount: '', totalAmount: '' });
   await expect(page.locator('#payTold')).toContainText('Pago el salario mínimo · todo en nómina · contrato');
-  await expect(page.locator('#payHint')).toContainText(/^Unos [\d.]+\s€ brutos al mes, [\d.]+\s€ netos\./);
+  await expect(page.locator('#payHint')).toContainText(
+    /^[\d.]+\s€ brutos al mes \([\d.]+\s€ × 14 pagas \/ 12\), unos [\d.]+\s€ netos\./,
+  );
   await expect(page.locator('#payCash')).toBeHidden();
   await expect(page.locator('[data-required=pay]')).toHaveText('');
   // an amount typed first, then «El salario mínimo» as the payslip, is «the minimum on payroll, the rest en negro»
@@ -94,6 +96,23 @@ test('«El salario mínimo» under the amount: all on payroll at the minimum, ke
   expect(await terms(page)).toMatchObject({ payrollMin: false });
   await page.fill('#payTotal', '1500');
   expect(await terms(page)).toMatchObject({ payrollMin: false, payAmount: 1500 });
+});
+
+test('«El salario mínimo» on a short temporary is the monthly minimum with its extra pays, not the per-day one', async ({
+  page,
+}) => {
+  await newOffer(page, '3');
+  await answer(page, 'contract', 'temporary');
+  await setDuration(page, '60', 'days');
+  await page.check('#payMinimum');
+  const { casual, monthly } = await page.evaluate(async () => {
+    const { fE } = await import('./src/format.js');
+    const r = app.calcOffer(app.active());
+    return { casual: r.min.casual, monthly: fE(r.wage.annual / 12) };
+  });
+  expect(casual).toBe(true);
+  await expect(page.locator('#payTotal')).toHaveValue(`${monthly} brutos`);
+  await expect(page.locator('#payHint')).toContainText(`${monthly} brutos al mes (`);
 });
 
 test('a wage per day split before step 4 gives no en negro figure; it appears once the hours are answered', async ({

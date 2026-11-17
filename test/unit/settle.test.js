@@ -833,11 +833,14 @@ test('the agreed minimum, monthly: all on payroll, no cash, and the net payslips
   near(short.totals.owed, 100 / r.netFactor, 'what is short, gross', 0.05);
 });
 
-test('the agreed minimum, casual daily rate: agreed follows the days worked as the minimum does', () => {
-  const offer = minimumOffer({ start: '2026-02-01', duration: 28, hoursPerDay: 8, daysOff: 0 });
+test('the agreed minimum, casual: the monthly minimum with its extra pays prorated, above the daily floor it is judged by', () => {
+  const offer = minimumOffer({ start: '2026-02-01', duration: 28, hoursPerDay: 8, daysOff: 2, daysOffUnit: 'week' });
   const r = calc(offer, ctx);
   assert.equal(r.min.casual, true);
+  near(r.pay.salary, (r.wage.annual / 12) * r.time.months, 'agreed is the monthly minimum over the months', 0.01);
+  assert.ok(r.pay.salary > r.min.salary, 'more than the casual daily minimum');
   const x = settle(offer, { paid: 'asAgreed' }, '2026-04-15', r);
-  near(x.totals.items.salary.agreed, x.totals.items.salary.minimum, 'agreed is the minimum', 0.01);
+  near(x.totals.items.salary.agreed, r.pay.salary, 'settle agrees the monthly minimum', 0.01);
+  near(x.totals.items.salary.minimum, r.min.salary, 'the floor stays the casual one', 0.01);
   assert.equal(x.totals.items.salary.shortfall, 0);
 });

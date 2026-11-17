@@ -82,6 +82,22 @@ test('a 100-day temporary contract uses the casual-worker daily minimum', () => 
   assert.ok(r.debt.total < 1, 'nothing owed');
 });
 
+test('the minimum as the agreed pay is the monthly one, extra pays prorated, even in a casual contract', () => {
+  const r = figures({
+    contract: 'temporary',
+    duration: 30,
+    durationUnit: 'days',
+    payrollMin: true,
+    payAmount: '',
+    vacation: 'paidAtEnd',
+  });
+  assert.ok(r.min.casual);
+  near(r.min.monthly, r.wage.annual / 12, 0.001, 'monthly minimum with its pays');
+  near(r.pay.salary, r.min.agreed, 0.001, 'agreed pay is the monthly figure over the months');
+  assert.ok(r.pay.salary > r.min.salary, 'above the casual per-day figure the job is judged by');
+  assert.equal(r.debt.salary, 0);
+});
+
 test('a casual contract can take its vacation: paid days off, no vacation owed', () => {
   const casual = { contract: 'temporary', duration: 90, durationUnit: 'days', payAmount: 1500, payUnit: 'month' };
   const taken = figures({ ...casual, vacation: 'taken' });

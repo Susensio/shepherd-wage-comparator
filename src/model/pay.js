@@ -53,9 +53,10 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
   const { noDuration, months, hoursPerDay, workFrac, natDays, vacationDays, daysWorked } = time;
   const partTime = Math.min(1, (workFrac * 7 * hoursPerDay) / LAW.weeklyHours);
   const casual = !noDuration && terms.contract === 'temporary' && natDays <= LAW.casualMaxDays;
-  const salary = casual
-    ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours)
-    : ((wage.annual * months) / 12) * partTime;
+  // «El salario mínimo» as the agreed pay is always the monthly one with the extra pays prorated, casual or not
+  const monthly = (wage.annual / 12) * partTime;
+  const agreed = monthly * months;
+  const salary = casual ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours) : agreed;
   // «Included» vacation is carved out of the pay agreed (`payroll`), so its minimum stays a day at the minimum wage
   const vacationDay = realPay
     ? vacationDayOf(terms, time, wage, withCash)
@@ -69,6 +70,9 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
   return {
     casual,
     salary,
+    /** The minimum as the agreed pay: a month at the monthly minimum with its extra pays prorated, and over the whole contract. */
+    monthly,
+    agreed,
     overnight,
     vacation,
     /** One day of vacation: the real daily pay, or the minimum wage's if higher. */
@@ -163,7 +167,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
 
 /**
  * The offer as it is calculated.
- * · «Usar el salario mínimo»: the payroll is the applicable minimum wage, with the vacation you do not take paid at the minimum.
+ * · «Usar el salario mínimo»: the payroll is the monthly minimum wage, extra pays prorated (`min.agreed`: not the casual daily figure the law judges a short temporary by), with the vacation you do not take paid at the minimum.
  * · «Total pactado»: the cash part is the agreed total (payroll, vacation and cash together) minus what reaches you on
  *   payroll, net. If the total does not even reach that, nothing is left in cash. `split` explains that subtraction.
  * @returns {{terms: object, split: object | null}}
@@ -181,7 +185,7 @@ export function effectiveOffer(terms, mine, ctx, schedule) {
       ...x,
       vacation: x.vacation === 'included' ? 'paidAtEnd' : x.vacation,
       payType: 'gross',
-      payAmount: min.salary,
+      payAmount: min.agreed,
       payUnit: 'total',
       extraPays: 'included',
       vacationGross: min.vacation,
