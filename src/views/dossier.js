@@ -7,7 +7,7 @@
 
 import { html, nothing } from 'lit-html';
 import { jobDates } from '../claim-text.js';
-import { fDate, fE } from '../format.js';
+import { fDate, fE, joinAnd } from '../format.js';
 import { fSumE } from '../ledger.js';
 import { monthDays } from '../model/days.js';
 import { parseDate } from '../offer.js';
@@ -70,6 +70,9 @@ export function dossierView(d, o, r, places) {
   const { record, parties, ladder, data } = d;
   const net = data.totals.net;
   const gross = data.totals.gross;
+  const answeredOn = record.complete?.date;
+  const later = answeredOn ? record.payments.filter((p) => p.date > answeredOn) : [];
+  const lateCobros = later.length ? later.map((p) => fIso(p.date)) : null;
   return html`<article class="dossier-doc">
     <header class="dhead"><h1>Expediente</h1><p>${o.mine.name || 'Sin nombre'} · ${fIso(d.today)}</p></header>
 
@@ -97,12 +100,13 @@ export function dossierView(d, o, r, places) {
       }
     </section>
 
-    <section class="dsum"><h2>Cuentas</h2>
+    <section class="dsum"><h2>Cuentas a ${fIso(d.today)}</h2>
       <div class="sofar dtiles">
         <div><span>Corresponde</span><b>${whole(net.due)}</b></div>
         <div><span>Cobrado</span><b>${whole(net.received)}</b></div>
         <div><span>Falta</span><b>${whole(net.owed)}</b></div>
       </div>
+      ${lateCobros ? html`<p>Se respondió «No» a «¿Se espera algún pago más?» el ${fIso(/** @type {string} */ (record.complete?.date))}. Cobros fechados después: ${joinAnd(lateCobros)}.</p>` : nothing}
       <h3>En neto, por meses</h3>
       <table class="dtable">${HEAD}${data.months.map((m) => html`<tr><th>${capital(monthName(m.month))}</th>${figures(m.net, whole)}</tr>`)}
         ${net.extra >= 1 ? html`<tr><th>Cobrado por encima de lo calculado</th><td></td><td>${whole(net.extra)}</td><td></td></tr>` : nothing}

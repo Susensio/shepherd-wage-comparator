@@ -89,7 +89,7 @@ test.describe('the dossier', () => {
       'Condiciones',
       'Calendario',
       'Cobros',
-      'Cuentas',
+      'Cuentas a 12 nov 2026',
       'Plazos',
       'Lo que el registro no puede probar',
       'Pasos hechos',
@@ -106,6 +106,30 @@ test.describe('the dossier', () => {
     await expect(doc).toContainText('Hablar con el ganadero: 10 nov 2026');
     await expect(doc).toContainText('Meses sin cerrar');
     await expect(doc).toContainText('no asesoramiento legal');
+  });
+
+  test('a cobro dated after «No» was answered is told in Cuentas', async ({ page }) => {
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.completeRecord(app.active());
+      app.active().mine.record.complete = { date: '2026-08-25' };
+      offers.addPayment(app.active(), { date: '2026-11-05', amount: 100, via: 'payroll' });
+    });
+    await page.locator('#fichaMenu').click();
+    await page.locator('#offerMenu [data-menu=dossier]').click();
+    const accounts = page.locator('#dossier .dsum');
+    await expect(accounts).toContainText('Se respondió «No» a «¿Se espera algún pago más?» el 25 ago 2026.');
+    await expect(accounts).toContainText('Cobros fechados después: 5 nov 2026.');
+  });
+
+  test('without a cobro after «No», Cuentas tells nothing of it', async ({ page }) => {
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.completeRecord(app.active());
+    });
+    await page.locator('#fichaMenu').click();
+    await page.locator('#offerMenu [data-menu=dossier]').click();
+    await expect(page.locator('#dossier .dsum')).not.toContainText('Se respondió');
   });
 
   test('notes added in Registro appear in the dossier, dated', async ({ page }) => {
