@@ -4,6 +4,8 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 
 ## The offer
 
+- **Folds of the entry** (owner, 18 November 2026): the pay step keeps «Más del pago» (IRPF, extra pays) closed, the offer step «Más datos (opcional)» (the herd) and «o poner la fecha de fin» (the end date, always start + duration) closed, Coche y gastos shows only the km home and the trips home with «Más gastos» (km at work, km rate, other expenses) closed, and Comparar's «Filtros» holds «Incluir las de solo oferta» and «Sin desplazamientos…». A fold opens by itself where it holds something not at its default. They are plain `<details class="more">`; the saved format does not change.
+
 - An offer is `{ id, terms, mine }` (ADR-0007), plus `cmp`, the Comparar toggle, which is a view choice and stays at the top.
 - `terms` is what the employer offers and the only part ever shared: dates, duration, hours, days off, contract, pay, extra pays, vacation, cash, agreed total, overnight, housing, meals given, the km rate paid, where the job is (the village `place`, INE municipality code and province code), whether it was only an offer and never worked (`offerOnly`) (both since schema version 3, ADR-0028) and the herd (head counts of sheep, goats and cattle). `DEF_TERMS` in `src/offer.js` lists them.
 - `mine` is the worker's own figures for that offer: `name`, distance and trips, car, commute, other expenses, the rent override and the IRPF choice. `DEF_MINE` lists them. A field belongs to exactly one of the two.

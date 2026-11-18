@@ -386,3 +386,26 @@ test('the Puerto template keeps the pernocta question', async ({ page }) => {
   await startOffer(page, 'day', 'summer');
   await expect(page.getByText('¿Hay pernocta en el monte?')).toBeVisible();
 });
+
+test('the folds of the entry: «Más del pago», «Más datos (opcional)», the end date and «Más gastos»', async ({
+  page,
+}) => {
+  await startOffer(page, 'trip', 'summer');
+  // Coche y gastos: only the km home and the trips home show; the rest is folded
+  await expect(page.locator('#kmHome')).toBeVisible();
+  await expect(page.locator('#tripsHome')).toBeVisible();
+  await expect(page.locator('#kmWorkPerDay')).toBeHidden();
+  await expect(page.locator('#expenses')).toBeHidden();
+  await page.locator('#tripMore > summary').click();
+  await expect(page.locator('#expenses')).toBeVisible();
+  await goStep(page, 'pay');
+  await expect(page.locator('input[name=irpfMode]').first()).toBeHidden();
+  await expect(page.locator('input[name=extraPays]').first()).toBeHidden();
+  await page.locator('#payMoreFold > summary').click();
+  await expect(page.locator('input[name=irpfMode]').first()).toBeVisible();
+  await goStep(page, 'offer');
+  await expect(page.locator('#sheep')).toBeHidden();
+  await expect(page.locator('#end')).toBeHidden();
+  await page.locator('#endFold > summary').click();
+  await expect(page.locator('#end')).toBeVisible();
+});

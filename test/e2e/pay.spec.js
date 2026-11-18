@@ -214,6 +214,8 @@ test('a total with the duration cleared becomes a month of the same amount', asy
 test('extra pays are asked only for a monthly amount with a payslip', async ({ page }) => {
   await newOffer(page);
   const extra = page.locator('input[name=extraPays]').first();
+  await expect(extra).toBeHidden(); // behind «Más del pago»
+  await page.locator('#payMoreFold > summary').click();
   await answer(page, 'payroll', 'all');
   await expect(extra).toBeVisible();
   await answer(page, 'payroll', 'part');
@@ -403,6 +405,7 @@ test('without a contract no vacation is asked, and what was answered for another
 test('«La de la nómina, %» shows its field, and what is typed there is saved', async ({ page }) => {
   await newOffer(page);
   await expect(page.locator('#irpfManual')).toBeHidden();
+  await page.locator('#payMoreFold > summary').click(); // «Más del pago»
   await answer(page, 'irpfMode', 'manual');
   await page.fill('#irpfManual', '12');
   expect(await page.evaluate(() => app.active().mine)).toMatchObject({ irpfMode: 'manual', irpfManual: 12 });

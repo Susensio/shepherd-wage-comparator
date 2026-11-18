@@ -51,6 +51,8 @@ test('each field is written to its own side of the offer', async ({ page }) => {
 test('the end date sets the duration', async ({ page }) => {
   await startOffer(page, 'offer');
   await page.fill('#start', '2026-06-21');
+  await expect(page.locator('#end')).toBeHidden(); // behind «o poner la fecha de fin»
+  await page.locator('#endFold > summary').click();
   await page.fill('#end', '2026-09-30');
   await expect(page.locator('#duration')).toHaveValue('102');
   await expect(page.locator('input[name=durationUnit][value=days]')).toBeChecked();
@@ -191,6 +193,7 @@ test('head to head shows totals when both last about the same', async ({ loaded:
 
 test('Comparar can show the terms alone, without your travel and expenses', async ({ loaded: page }) => {
   await page.click('.tabs [data-tab=compare]');
+  await page.locator('.cmp-filters > summary').click(); // «Filtros»
   const rows = () => page.locator('#cmpBlk .lr .v').allTextContents();
   const full = await rows();
   await page.check('input[name=termsOnly]');
@@ -345,6 +348,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
   await expect(rows).toHaveCount(8);
   await expect(page.locator('#cmpBlk .lr.offer-only')).toHaveCount(2);
   await expect(page.locator('#cmpBlk .lr.offer-only[data-id=o1] .offer-only-tag')).toHaveText('solo oferta');
+  await page.locator('.cmp-filters > summary').click(); // «Filtros»
   const toggle = page.locator('input[name=showOfferOnly]');
   await toggle.uncheck();
   await expect(rows).toHaveCount(6);
@@ -357,6 +361,7 @@ test('Comparar shows the offers that were only offers apart, and can hide them',
 test('clearing the end date leaves the duration unknown', async ({ loaded: page }) => {
   await page.evaluate(() => app.select('o4'));
   await openStep(page, 'offer');
+  await page.locator('#endFold > summary').click();
   const clear = page.locator('[data-action=clearEnd]');
   await expect(clear).toBeVisible();
   await clear.click();

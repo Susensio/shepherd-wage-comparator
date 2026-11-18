@@ -250,6 +250,7 @@ test.describe('the read-only view', () => {
     await expect(row).toHaveClass(/offer-only/);
     await expect(row).toContainText('solo oferta');
     await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).not.toHaveClass(/offer-only/);
+    await page.locator('.cmp-filters > summary:visible').click();
     await page.locator('[name=others-showOfferOnly]').uncheck();
     await expect(row).toHaveCount(0);
     await expect(page.locator(`.lr.other[data-id="${sharedId(2)}"]`)).toBeVisible();

@@ -13,6 +13,7 @@ import {
   contractOf,
   endOf,
   foodPerDay,
+  HERD,
   implausible,
   isoOf,
   mealsGiven,
@@ -312,6 +313,15 @@ function yearHint(o, r) {
 export function paintForm(o, r, offers, places) {
   const cfg = r.cfg;
   const appeared = applyShow(o, r);
+  // The folds open on their own where they hold something that is not the default
+  const t = o.terms;
+  const opened = {
+    payMoreFold: o.mine.irpfMode === 'manual' || t.extraPays === 'separate',
+    offerMore: HERD.some(([f]) => t[f]),
+    tripMore: num(o.mine.kmWorkPerDay) > 0 || num(o.mine.expenses) > 0 || num(t.kmRate) > 0,
+  };
+  for (const [id, open] of Object.entries(opened))
+    if (open) /** @type {HTMLDetailsElement} */ ($(`#${id}`)).open = true;
   // Without a start date an offer is never counted as worked (`workedOffers`): it says so
   text('#offerOnlyHint', o.terms.start ? '' : `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.`);
   text('#vacationHint', vacationHint(o, r));

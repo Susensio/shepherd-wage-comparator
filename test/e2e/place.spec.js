@@ -31,6 +31,9 @@ test('the step has the field and three head counts', async ({ page }) => {
   await startOffer(page);
   await expect(page.locator('#entryTitle')).toHaveText('La oferta');
   await expect(page.getByRole('combobox', { name: 'Pueblo' })).toBeVisible();
+  // The herd is behind «Más datos (opcional)»
+  await expect(page.getByLabel('Ovejas')).toBeHidden();
+  await page.locator('#offerMore > summary').click();
   for (const name of ['Ovejas', 'Cabras', 'Vacas']) await expect(page.getByLabel(name)).toBeVisible();
 });
 
@@ -184,6 +187,7 @@ test('«Cambiar» drops the codes and selects the village to type over', async (
 test('head counts go to the terms, empty stays empty, and the summaries show them', async ({ page }) => {
   await startOffer(page);
   await pick(page, 'yebra de basa', /^Yebra de Basa/);
+  await page.locator('#offerMore > summary').click();
   await page.fill('#sheep', '600');
   await page.fill('#cattle', '1');
   let offer = await page.evaluate(() => app.active());

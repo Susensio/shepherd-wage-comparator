@@ -371,14 +371,6 @@
           <p class="hint" id="placeHint"></p>
         </div>
         <div class="fld full">
-          <span class="ask">¿Qué rebaño?</span>
-          <div class="herd">
-            <label>Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep" placeholder="0"></label>
-            <label>Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats" placeholder="0"></label>
-            <label>Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
-          </div>
-        </div>
-        <div class="fld full">
           <label class="ask" for="start">¿Cuándo empieza?</label>
           <div class="clearable">
             <input type="date" id="start" name="start">
@@ -398,6 +390,7 @@
           <p class="hint warn" data-required="duration"></p>
           <p class="hint">Sin duración se cuenta un mes.</p>
         </div>
+        <details class="more" id="endFold"><summary>o poner la fecha de fin</summary>
         <div class="fld full">
           <label for="end">Termina el</label>
           <div class="clearable">
@@ -407,6 +400,17 @@
           <p class="hint">Se calcula con la duración. Si se pone la fecha, la duración se ajusta.</p>
           <p class="hint overlap-warning" id="overlapHint"></p>
         </div>
+        </details>
+        <details class="more" id="offerMore"><summary>Más datos (opcional)</summary>
+        <div class="fld full">
+          <span class="ask">¿Qué rebaño?</span>
+          <div class="herd">
+            <label>Ovejas<input class="n" type="text" inputmode="numeric" id="sheep" name="sheep" placeholder="0"></label>
+            <label>Cabras<input class="n" type="text" inputmode="numeric" id="goats" name="goats" placeholder="0"></label>
+            <label>Vacas<input class="n" type="text" inputmode="numeric" id="cattle" name="cattle" placeholder="0"></label>
+          </div>
+        </div>
+        </details>
         </fieldset>
       </section>
       <section class="step" data-step="pay" hidden>
@@ -449,16 +453,6 @@
           <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que se cambie una respuesta.</p>
         </div>
         <div class="fld full" data-show="withContract">
-          <span class="ask">Retención de IRPF</span>
-          <div class="combo">
-            <div class="seg" role="radiogroup" aria-label="Modo IRPF">
-              <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
-              <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
-            </div>
-            <input type="text" inputmode="decimal" id="irpfManual" name="irpfManual" class="n pct" aria-label="Porcentaje de IRPF" data-show="irpfManual">
-          </div>
-        </div>
-        <div class="fld full" data-show="withContract">
           <span class="ask">¿Qué contrato?</span>
           <div class="seg" role="radiogroup" aria-label="Contrato">
             <label><input type="radio" name="contract" value="temporary">Temporal</label>
@@ -476,6 +470,17 @@
           <p class="hint warn" data-required="vacation"></p>
           <p class="hint" id="vacationHint"></p>
         </div>
+        <details class="more" id="payMoreFold" data-show="withContract"><summary>Más del pago</summary>
+        <div class="fld full" data-show="withContract">
+          <span class="ask">Retención de IRPF</span>
+          <div class="combo">
+            <div class="seg" role="radiogroup" aria-label="Modo IRPF">
+              <label><input type="radio" name="irpfMode" value="auto">Estimar</label>
+              <label><input type="radio" name="irpfMode" value="manual">La de la nómina, %</label>
+            </div>
+            <input type="text" inputmode="decimal" id="irpfManual" name="irpfManual" class="n pct" aria-label="Porcentaje de IRPF" data-show="irpfManual">
+          </div>
+        </div>
         <div class="fld full" data-show="hasExtraPays">
           <span class="ask">¿Y las pagas extra?</span>
           <div class="opts" role="radiogroup" aria-label="Pagas extra">
@@ -483,6 +488,7 @@
             <label class="opt"><input type="radio" name="extraPays" value="separate"><b>Dos pagas aparte</b></label>
           </div>
         </div>
+        </details>
         
         </fieldset>
       </section>
@@ -563,11 +569,13 @@
         </div>
         <label class="fld half" data-show="trips">Km a casa (solo ida)<input class="n" type="text" inputmode="decimal" id="kmHome" name="kmHome"></label>
         <label class="fld half" data-show="tripsHome">Bajadas a casa al mes<input class="n" type="text" inputmode="decimal" id="tripsHome" name="tripsHome"><span class="hint">Cada una, ida y vuelta.</span></label>
-        <label class="fld half" data-show="ownCar">Km con coche propio al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el rebaño o entre fincas.</span></label>
-        <label class="fld half" data-show="kmRate">Pago por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
         <p class="told full" id="carHint"></p>
         
+        <details class="more" id="tripMore"><summary>Más gastos</summary>
+        <label class="fld half" data-show="ownCar">Km con coche propio al día<input class="n" type="text" inputmode="decimal" id="kmWorkPerDay" name="kmWorkPerDay"><span class="hint">Con el rebaño o entre fincas.</span></label>
+        <label class="fld half" data-show="kmRate">Pago por km (€)<input class="n" type="text" inputmode="decimal" id="kmRate" name="kmRate"></label>
         <label class="fld full">Otros gastos propios (€/mes)<input class="n" type="text" inputmode="decimal" id="expenses" name="expenses" placeholder="móvil, pienso, ropa de trabajo"></label>
+        </details>
         </fieldset>
       </section>
     </form>

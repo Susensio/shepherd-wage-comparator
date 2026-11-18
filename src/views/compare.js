@@ -54,16 +54,18 @@ function viewSwitches({ scope, termsOnly, forced, showOfferOnly, offerOnlyCount,
   return html`<div class="cmp-opts">
     <div class="view"><span class="view-l">Ordenar</span><div class="seg" role="radiogroup" aria-label="Ordenar">${sortBy('paro', 'Con el paro')}${sortBy('money', 'Sin el paro')}</div></div>
     ${
-      offerOnlyCount
-        ? html`<label class="check"><input type="checkbox" name=${fieldName(scope, 'showOfferOnly')} .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
-        : nothing
-    }
-    ${
       scope === 'compare' && (realCount || agreedOnly)
         ? html`<label class="check"><input type="checkbox" name="agreedOnly" .checked=${agreedOnly}>Lo pactado</label>`
         : nothing
     }
-    <label class="check"><input type="checkbox" name=${fieldName(scope, 'termsOnly')} .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
+    <details class="more cmp-filters"><summary>Filtros</summary>
+      ${
+        offerOnlyCount
+          ? html`<label class="check"><input type="checkbox" name=${fieldName(scope, 'showOfferOnly')} .checked=${showOfferOnly}>Incluir las de solo oferta</label>`
+          : nothing
+      }
+      <label class="check"><input type="checkbox" name=${fieldName(scope, 'termsOnly')} .checked=${termsOnly} ?disabled=${forced}>Sin desplazamientos ni gastos propios</label>
+    </details>
   </div>${hint ? html`<p class="hint">${hint}</p>` : nothing}`;
 }
 
