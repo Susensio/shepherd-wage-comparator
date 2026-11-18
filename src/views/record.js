@@ -156,9 +156,11 @@ function tiles(c, { withoutFalta = false } = {}) {
   const s = c.standing;
   // Cobrado and Falta follow the cobros: one told as approximate makes both approximate
   const about = c.approx ? '≈ ' : '';
+  // The split only where the money came by both ways; one way alone is the figure itself
+  const bothWays = s.cobradoEnMano > 0 && s.cobrado - s.cobradoEnMano >= 0.5;
   return html`<div class=${withoutFalta ? 'sofar two' : 'sofar'}>
     <div><span>Corresponde</span><b>${c.noPay ? '—' : whole(s.corresponde)}</b></div>
-    <div><span>Cobrado</span><b>${about}${whole(s.cobrado)}</b>${s.cobradoEnMano > 0 ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
+    <div><span>Cobrado</span><b>${about}${whole(s.cobrado)}</b>${bothWays ? html`<small>de ello, en mano ${whole(s.cobradoEnMano)}</small>` : nothing}</div>
     ${withoutFalta ? nothing : html`<div class=${s.hasPayments && s.falta === 0 ? 'f ok' : 'f'}><span>Falta</span><b>${s.hasPayments && !c.noPay ? about + whole(s.falta) : '—'}</b></div>`}
   </div>`;
 }

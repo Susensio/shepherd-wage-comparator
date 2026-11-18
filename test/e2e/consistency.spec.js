@@ -38,9 +38,13 @@ async function invariantProblems() {
     if (read(big) !== ledger) problems.push(`headline ${big.textContent} ≠ breakdown «Total» ${ledger}`);
   }
   const onPayroll = r.pay.net + r.employer.severance;
-  const legend = document.querySelector('#secSeason .rc-legend');
-  if (legend && !r.noContract) {
-    const shown = Number.parseFloat(legend.querySelector('b').textContent.replace(/\./g, '').replace(',', '.'));
+  // On payroll: the legend where it also comes en negro, else the card's own figure
+  const legend = document.querySelector('#secSeason .rc-legend b');
+  const card = document.querySelector('#secSeason .figcard');
+  const fromCard = card && !legend && card.querySelector('.t b')?.textContent === 'En nómina';
+  const payrollFigure = legend ?? (fromCard ? card.querySelector('.big') : null);
+  if (payrollFigure && !r.noContract) {
+    const shown = Number.parseFloat(payrollFigure.textContent.replace(/\./g, '').replace(',', '.'));
     if (Math.abs(shown - onPayroll) > 2)
       problems.push(`season end: on payroll ${shown} ≠ net payroll ${Math.round(onPayroll)}`);
   }

@@ -198,7 +198,9 @@ export function summaries(o, r, places = null) {
         ? `Sin contrato: ${lines.b} en negro`
         : 'Sin contrato'
       : hasCash
-        ? `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`
+        ? o.terms.payrollMin || num(o.terms.payAmount) > 0
+          ? `${lines.payroll} · en negro: ${lowerFirst(lines.b)}`
+          : `En negro: ${lowerFirst(lines.b)}`
         : lines.payroll;
   return { ...lines, pay };
 }

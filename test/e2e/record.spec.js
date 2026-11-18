@@ -139,6 +139,29 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#result')).not.toContainText('Debe');
   });
 
+  test('Cobrado names a way only where the money came by two: all in hand is one plain figure', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'cash' }]);
+    await expect(tile(page, 'Cobrado')).toContainText('400');
+    await expect(page.locator('.sofar > div', { hasText: 'Cobrado' })).not.toContainText('en mano');
+    await addPayments(page, [{ date: '2026-07-20', amount: 300, via: 'payroll' }]);
+    await expect(page.locator('.sofar > div', { hasText: 'Cobrado' })).toContainText('de ello, en mano 400');
+  });
+
+  test('«Final de campaña» says «En nómina y en negro» only where the pay comes both ways', async ({ page }) => {
+    const title = page.locator('#secSeason .figcard .t b');
+    const legend = page.locator('#secSeason .rc-legend');
+    await loadOffers(page, sample, 1); // payroll and en negro
+    await expect(title).toHaveText('En nómina y en negro');
+    await expect(legend).toHaveCount(1);
+    await loadOffers(page, sample, 5); // payroll only
+    await expect(title).toHaveText('En nómina');
+    await expect(legend).toHaveCount(0);
+    await loadOffers(page, sample, 4); // no contract: all en negro
+    await expect(title).toHaveText('En negro');
+    await expect(legend).toHaveCount(0);
+  });
+
   test('Corresponde − Cobrado = Falta, in net; a cobro lowers Falta; the neutral line when it is exceeded', async ({
     page,
   }) => {

@@ -158,22 +158,21 @@ export function seasonEndSection(o, r, cobrado) {
     .join(' · ');
   const real = cobrado && cobrado.basis !== 'unknown';
   const dates = `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`;
+  // Named and split only where the pay comes by more than one way; one way alone is the figure
+  const byPayroll = payroll > 0.5 && !r.noContract;
+  const byCash = cash > 0.5;
+  const both = byPayroll && byCash;
+  const title = both ? 'En nómina y en negro' : byCash ? 'En negro' : 'En nómina';
   return html`<section class="season-end" id="secSeason" aria-label="Final de campaña"><h3 class="q">Final de campaña</h3>
-    <div class="received">${real ? figureCard(`${cobrado.approx ? '≈ ' : ''}${fE(cobrado.amount)}`, 'Cobrado', dates, '') : figureCard(fE(total), 'En nómina y en negro', dates, '')}${
-      !real && cash > 0.5 && payroll > 0.5
+    <div class="received">${real ? figureCard(`${cobrado.approx ? '≈ ' : ''}${fE(cobrado.amount)}`, 'Cobrado', dates, '') : figureCard(fE(total), title, dates, '')}${
+      !real && both
         ? html`<div class="rc-bar" aria-hidden="true"><i style="flex:${1 - cashShare}"></i><i class="b" style="flex:${cashShare}"></i></div>`
         : nothing
-    }<div class="rc-legend">${
-      real
-        ? nothing
-        : !r.noContract
-          ? html`<span><i class="sw" style="background:var(--c-pay)"></i>En nómina</span><b>${fE(payroll)}</b>`
-          : nothing
     }${
-      !real && cash > 0.5
-        ? html`<span><i class="sw" style="background:var(--c-cash)"></i>En negro${payroll > 0.5 ? html` <small>${fN(cashShare * 100)}\u00a0%</small>` : nothing}</span><b>${fE(cash)}</b>`
+      !real && both
+        ? html`<div class="rc-legend"><span><i class="sw" style="background:var(--c-pay)"></i>En nómina</span><b>${fE(payroll)}</b><span><i class="sw" style="background:var(--c-cash)"></i>En negro <small>${fN(cashShare * 100)}\u00a0%</small></span><b>${fE(cash)}</b></div>`
         : nothing
-    }</div><p class="hint">${capitalize(facts)}.</p></div>
+    }<p class="hint">${capitalize(facts)}.</p></div>
     ${simulator(o, r, months)}
   </section>`;
 }
