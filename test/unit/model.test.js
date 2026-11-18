@@ -399,9 +399,9 @@ test("Huesca's agreement hours change the hourly figures and nothing else of a j
 
 const NO_CONTRACT = { contract: 'none', durationUnit: 'days', payAmount: '', cashAmount: 1000, cashUnit: 'month' };
 
-test('without a contract and up to 120 days, each day worked has its own minimum (ADR-0037): the casual figure, SS of «none», no severance', () => {
+test('without a contract and up to four weeks (28 days), each day worked has its own minimum (ADR-0037): the casual figure, SS of «none», no severance', () => {
   const wage = minWageOf(2026);
-  for (const duration of [7, 60, LAW.casualMaxDays]) {
+  for (const duration of [7, LAW.noContractPerJornadaDays]) {
     const r = figures({ ...NO_CONTRACT, duration });
     assert.equal(r.min.casual, true, `${duration} days`);
     near(r.min.salary, wage.casual * r.time.daysWorked, 0.01, `${duration} days: per jornada worked`);
@@ -416,9 +416,20 @@ test('without a contract and up to 120 days, each day worked has its own minimum
   assert.ok(temporary.employer.severance > 0);
 });
 
-test('without a contract and over 120 days, the job is measured as a fixed one (ET 15.4): the monthly minimum', () => {
+test('the boundary: no contract is per jornada at 7 and 28 days and fijo from 29; a temporary keeps 120 days (ADR-0037)', () => {
+  const casual = (extra) => figures({ ...NO_CONTRACT, ...extra }).min.casual;
+  assert.equal(casual({ duration: 7 }), true);
+  assert.equal(casual({ duration: 28 }), true);
+  for (const duration of [29, 60, 100]) assert.equal(casual({ duration }), false, `${duration} days, no contract`);
+  const temporary = { contract: 'temporary', payAmount: 1000, cashAmount: '' };
+  assert.equal(casual({ ...temporary, duration: 100 }), true);
+  assert.equal(casual({ ...temporary, duration: LAW.casualMaxDays }), true);
+  assert.equal(casual({ ...temporary, duration: LAW.casualMaxDays + 1 }), false);
+});
+
+test('without a contract and over four weeks, the job is measured as a fixed one (ET 15.4): the monthly minimum', () => {
   const wage = minWageOf(2026);
-  const r = figures({ ...NO_CONTRACT, duration: LAW.casualMaxDays + 1 });
+  const r = figures({ ...NO_CONTRACT, duration: LAW.noContractPerJornadaDays + 1 });
   assert.equal(r.min.casual, false);
   near(
     r.min.salary,

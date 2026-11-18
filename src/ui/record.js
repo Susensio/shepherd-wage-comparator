@@ -200,7 +200,7 @@ function claimContext(o, r, settled, standing, today) {
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
     // Without a contract: the vacation accrued, as a right to say and never a debt
     vacationRight: r.noContract
-      ? { days: r.time.vacationDays, amount: Math.round(r.min.vacationRight * r.netFactor) }
+      ? { days: r.time.vacationDays, perJornada: r.min.casual, amount: Math.round(r.min.vacationRight * r.netFactor) }
       : null,
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',

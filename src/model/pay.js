@@ -51,9 +51,10 @@ function monthlyPayOf(terms, time) {
 export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vacation !== 'included' } = {}) {
   const { noDuration, months, hoursPerDay, workFrac, natDays, vacationDays, daysWorked } = time;
   const partTime = Math.min(1, (workFrac * 7 * hoursPerDay) / LAW.weeklyHours);
-  // Per jornada worked: a temporary contract, or no contract at all (ADR-0037), of up to `casualMaxDays`
-  const casual =
-    !noDuration && (terms.contract === 'temporary' || terms.contract === 'none') && natDays <= LAW.casualMaxDays;
+  // Per jornada worked: a temporary contract of up to `casualMaxDays`, or no contract of up to
+  // `noContractPerJornadaDays` (ADR-0037)
+  const perJornadaDays = { temporary: LAW.casualMaxDays, none: LAW.noContractPerJornadaDays }[terms.contract] ?? 0;
+  const casual = !noDuration && natDays <= perJornadaDays;
   // «El salario mínimo» as the agreed pay is always the monthly one with the extra pays prorated, casual or not
   const monthly = (wage.annual / 12) * partTime;
   const agreed = monthly * months;

@@ -97,7 +97,10 @@ export const articleUrl = (source, art) =>
 export const RULES = {
   weeklyHours: { value: 40, source: 'et', art: '34.1', note: 'ordinary hours per week' },
   workdayMaxHours: { value: 9, source: 'et', art: '34.3', note: 'ordinary hours per day at most' },
-  workdayHours: { value: 8, note: 'hours of an ordinary workday: the casual-worker daily minimum is for a full day' },
+  workdayHours: {
+    value: 8,
+    note: 'hours of an ordinary workday: 8 h is the Huesca agreement’s daily day (art. 25); the decree says «jornada legal» and pro rata for less (art. 1), without hours',
+  },
   maxWeekHours: { value: 60, source: 'rd1561', art: '5', note: 'livestock: 40 h plus up to 20 h' },
   maxDayHours: { value: 12, source: 'rd1561', art: '5', note: 'livestock: effective hours per day' },
   restBetweenDays: { value: 10, source: 'rd1561', art: '5', note: 'livestock: hours of rest between workdays' },
@@ -107,6 +110,12 @@ export const RULES = {
     source: 'rd1561',
     art: '5',
     note: 'livestock: only the half day of the weekly rest can accumulate, over up to this many weeks; the full day stays weekly (or two days per 14, ET 37.1)',
+  },
+  restAccumulateDays: {
+    value: 14,
+    source: 'et',
+    art: '37.1',
+    note: 'the weekly rest of a day and a half can accumulate over up to this many days',
   },
   holidaysPerYear: {
     value: 14,
@@ -153,7 +162,13 @@ export const RULES = {
   },
   casualMaxDays: {
     value: 120,
-    note: 'temporary contracts this long or shorter use the casual-worker daily minimum (each year’s minimum-wage decree)',
+    note: 'temporary contracts this long or shorter use the casual-worker daily minimum (each year’s minimum-wage decree, art. 4.1)',
+  },
+  noContractPerJornadaDays: {
+    value: 28,
+    source: 'et',
+    art: '8.2',
+    note: 'a job without a contract is measured per jornada worked up to four weeks (ET 8.2: longer without a written contract is presumed indefinite); beyond, as a fijo (ET 15.4 ¶2: unregistered, fijo after the trial period, at most one month for a fixed-term contract of six months or less, ET 14.1 ¶2) (ADR-0037)',
   },
   extraPaysPerYear: { value: 2, source: 'et', art: '31', note: 'two extra payments a year, one at Christmas' },
   paymentsPerYear: { value: 14, source: 'et', art: '31', note: '12 monthly payments plus the two extra pays' },
@@ -196,7 +211,7 @@ export const MIN_WAGE = {
     annual: 16576,
     casual: 56.08,
     decree: 'RD 87/2025',
-    url: 'https://www.mites.gob.es/fogasa/impresos/RD_SMI_2025.pdf',
+    url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-2576',
     ded: { max: 340, from: 16576, taper: 0.2 },
   },
   2026: {

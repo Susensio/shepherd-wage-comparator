@@ -5,7 +5,7 @@ import { fAbout, fDate, fDays, fDaysSpoken, fE, fN, joinAnd } from '../format.js
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
-import { NO_CONTRACT_VACATION } from '../rights.js';
+import { noContractVacation } from '../rights.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { claimView, lapsedLine, underwayTalk } from './claim.js';
@@ -398,7 +398,11 @@ function lawBlock(c) {
     html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
   const facts = law.facts.map((f) =>
     f.id === 'vacation'
-      ? mark('warn', 'Vacaciones', `${NO_CONTRACT_VACATION}: ${fDays(f.days)}, unos ${whole(f.amount)} netos.`)
+      ? mark(
+          'warn',
+          'Vacaciones',
+          `${noContractVacation(f.perJornada)}: ${fDays(f.days)}, unos ${whole(f.amount)} netos.`,
+        )
       : mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
   );
   const range = (f) =>

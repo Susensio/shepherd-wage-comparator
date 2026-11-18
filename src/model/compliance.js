@@ -16,7 +16,7 @@ import { ITEMS } from './settle.js';
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number, daysOffUnknown?: boolean }, min: { overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number, daysOffUnknown?: boolean }, min: { casual: boolean, overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -102,6 +102,7 @@ export function lawFromRecord(offer, record, settled, r, payments) {
           {
             id: /** @type {const} */ ('vacation'),
             days: r.time.vacationDays,
+            perJornada: r.min.casual,
             amount: cents(r.min.vacationRight * r.netFactor),
           },
         ]

@@ -5,7 +5,7 @@
 
 import { html, render } from 'lit-html';
 import { fN, joinAnd } from '../format.js';
-import { annualHoursOf, articleUrl, LAW, MIN_WAGE, overnightOf, SOURCES, ssOf } from '../law.js';
+import { agreementOf, annualHoursOf, articleUrl, LAW, MIN_WAGE, overnightOf, SOURCES, ssOf } from '../law.js';
 
 const decimals = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 2);
 const fPct = (x) => fN(x, decimals(x));
@@ -14,8 +14,16 @@ const eur = (x, d = 0) => `${fN(x, d)} €`;
 const link = (url, text) => html`<a href=${url} target="_blank" rel="noopener">${text}</a>`;
 const wages = Object.entries(MIN_WAGE);
 const latest = wages.at(-1)[1];
-/** Jornadas a year of a fijo with the weekly rest, the holidays and the vacation off. */
-const fijoJornadas = Math.round(365 - (365 * LAW.weeklyRest) / 7 - LAW.holidaysPerYear - LAW.vacationDaysPerYear);
+// The page's reading of the two minimums of a job without a contract (ADR-0037, kb/reports/minimum-wage/es-2026.md):
+// the decree gives no divisor. The per-jornada figure behaves as the daily minimum × the paid days a year (365 less the
+// vacation, plus the two extra pays) over the jornadas worked.
+const paidDays = 365 - LAW.vacationDaysPerYear + LAW.extraPaysPerYear * LAW.payrollMonthDays;
+const casualJornadas = Math.round(((latest.annual / LAW.smiDaysPerYear) * paidDays) / latest.casual);
+const casualWithVacation =
+  latest.casual + (LAW.vacationDaysPerYear * (latest.annual / LAW.smiDaysPerYear)) / casualJornadas;
+// A fijo's jornadas a year: from 250 (day and a half of rest, holidays and vacation off) to 270 (fewer rest days counted)
+const FIJO_JORNADAS = { few: 250, many: 270 };
+const gapPct = (jornadas) => ((latest.annual / jornadas / casualWithVacation - 1) * 100).toFixed(0);
 /** A list joined with commas and «y», as a template (for links). */
 const joinAndHtml = (items) => items.map((item, i) => html`${i ? (i === items.length - 1 ? ' y ' : ', ') : ''}${item}`);
 
@@ -41,10 +49,13 @@ const LAW_FIGURES = {
   annualHoursHuescaArt: annualHoursOf('HU').cite?.label.split(', ').at(-1) ?? '',
   casualMaxDays: fN(LAW.casualMaxDays),
   // The two minimums of a job without a contract (ADR-0037), of the latest year the page has
-  casualJornadas: fN(Math.round(latest.annual / latest.casual)),
-  fijoJornadas: fN(fijoJornadas),
-  fijoPerJornada: eur(latest.annual / fijoJornadas, 2),
-  casualWeeklyDays: fN(Math.round(((latest.annual / latest.casual) * 7) / 52)),
+  noContractPerJornadaDays: fN(LAW.noContractPerJornadaDays),
+  casualJornadas: fN(casualJornadas),
+  casualWithVacation: eur(casualWithVacation, 2),
+  fijoGapFrom: gapPct(FIJO_JORNADAS.many),
+  fijoGapTo: gapPct(FIJO_JORNADAS.few),
+  restAccumulateDays: fN(LAW.restAccumulateDays),
+  overtimeHuescaPct: fN(agreementOf('HU', 'overtime_premium_pct')?.value ?? 0),
   workDaysWeek: fN(7 - LAW.weeklyRest, 1),
   normalWorkday: fN(LAW.weeklyHours / (7 - LAW.weeklyRest), 1),
   // «en 2024, 15.876 € brutos al año (1.134 € en 14 pagas); en 2025, 16.576 € (1.184 €)…»

@@ -33,28 +33,29 @@ test.describe('figures that must agree', () => {
     await expect(page.locator('#result')).not.toContainText('El mínimo exigible supera lo pactado');
   });
 
-  test('without a contract the minimum says which rule measures it: per jornada up to 120 days, as a fijo beyond', async ({
+  test('without a contract the minimum says which rule measures it: per jornada up to four weeks, as a fijo beyond', async ({
     page,
   }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D); // 43 days
     const result = page.locator('#result');
-    await page.evaluate(() => {
-      for (const x of document.querySelectorAll('#result details')) x.open = true;
-    });
+    const setDuration = (days) =>
+      page.evaluate(async (duration) => {
+        const { offers } = await import('./src/offers.js');
+        offers.editTerms(app.active(), (t) => {
+          t.durationUnit = 'days';
+          t.duration = duration;
+        });
+        app.select(app.active().id);
+        for (const x of document.querySelectorAll('#result details')) x.open = true;
+      }, days);
+    await setDuration(14);
     await expect(result).toContainText(
-      'Sin contrato y hasta 120 días: cada día trabajado, al menos 57,82 € (Real Decreto del salario mínimo, art. 4)',
+      'Sin contrato y hasta cuatro semanas: cada día trabajado, al menos 57,82 € (Real Decreto del salario mínimo, art. 4.1)',
     );
     await expect(result).not.toContainText('se mide como un trabajo fijo');
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      offers.editTerms(app.active(), (t) => {
-        t.duration = 150;
-      });
-      app.select(app.active().id);
-      for (const x of document.querySelectorAll('#result details')) x.open = true;
-    });
+    await setDuration(29);
     await expect(result).toContainText(
-      'Sin contrato y más de 120 días: se mide como un trabajo fijo (Estatuto, art. 15.4)',
+      'Sin contrato más de cuatro semanas: se mide como un trabajo fijo (Estatuto, arts. 8.2 y 15.4)',
     );
   });
 
@@ -166,9 +167,7 @@ test.describe('Cuentas and Registro', () => {
     await expect(fact(/^Sin contrato$/).locator('.m')).toHaveText('✘');
     // The vacation is a right said once, with its days and amount, never a debt
     await expect(fact(/^Vacaciones$/)).toHaveCount(1);
-    await expect(fact(/^Vacaciones$/)).toContainText(
-      'Sin contrato se tiene derecho a vacaciones como en un trabajo fijo',
-    );
+    await expect(fact(/^Vacaciones$/)).toContainText('Por ley se deben vacaciones y se pueden reclamar');
     await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('?');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
     await expect(block).not.toContainText('Se comprobará cuando');
@@ -187,7 +186,7 @@ test.describe('Cuentas and Registro', () => {
     await openLegalPage(page);
     const section = page.locator('#legalPage .block', { has: page.getByRole('heading', { name: 'Vacaciones' }) });
     await expect(section).toContainText(
-      'Sin contrato se tiene derecho a vacaciones como en un trabajo fijo (Estatuto, art. 38)',
+      'Por ley se deben vacaciones y se pueden reclamar, aunque no entran en las cuentas: 30 días al año (Estatuto, art. 38)',
     );
     await expect(section).toContainText('no una deuda');
   });
