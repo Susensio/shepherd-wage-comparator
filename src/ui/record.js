@@ -402,11 +402,15 @@ function openPaySheet(payment = null) {
   const today = todayISO();
   editing = payment;
   sheet.form.reset();
-  sheet.date.value = payment?.date ?? today;
+  const o = active();
+  // A new cobro of a finished job is dated on the job's last day, never after today
+  const lastDay = phaseOf(o, today, o.mine.record) === 'finished' ? lastDayOf(settleOffer(o), today) : today;
+  sheet.date.value = payment?.date ?? lastDay;
   sheet.date.max = today;
   sheet.amount.value = payment ? fInputValue(payment.amount, 0, 2) : '';
   sheet.note.value = payment?.note ?? '';
   sheet.approx.checked = Boolean(payment?.approx);
+  /** @type {HTMLDetailsElement} */ ($('#payExtra')).open = Boolean(payment?.note || payment?.approx);
   setWay(payment?.via ?? lastWayOf(active().mine.record));
   sheet.title.textContent = payment ? 'Editar el cobro' : 'Cobro';
   sheet.more.hidden = Boolean(payment);

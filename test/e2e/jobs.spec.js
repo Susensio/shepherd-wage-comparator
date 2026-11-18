@@ -152,7 +152,10 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await addJob(page, { terms: FINISHED });
     await question(page).getByRole('button', { name: 'Otra cantidad', exact: true }).click();
     await expect(page.locator('#paySheet')).toBeVisible();
-    await expect(page.locator('#payDate')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+    // A finished job: the cobro is dated on the job's last day, and the note and «aproximada» are behind «Más datos»
+    await expect(page.locator('#payDate')).toHaveValue('2026-08-31');
+    await expect(page.locator('#payExtra')).not.toHaveAttribute('open', '');
+    await expect(page.locator('#payNote')).toBeHidden();
     // «Guardar y apuntar otro» keeps the sheet for the next one
     await page.locator('#payAmount').fill('1000');
     await page.locator('#paySheet [data-via=cash]').click();
@@ -162,6 +165,7 @@ test.describe('the ficha of a job finished with nothing recorded', () => {
     await expect(page.locator('#payCancel')).toHaveText('Hecho');
     await expect(page.locator('#payAmount')).toHaveValue('');
     await page.locator('#payAmount').fill('500');
+    await page.locator('#payExtra > summary').click(); // «Más datos»
     await page.locator('#payApprox').check();
     await page.locator('#payForm .btns .pri').click();
     await expect(page.locator('#paySheet')).toBeHidden();

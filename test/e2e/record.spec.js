@@ -159,6 +159,7 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#payError')).toContainText('cantidad');
     await page.locator('#payAmount').fill('300');
     await page.locator('#paySheet [data-via=cash]').click();
+    await page.locator('#payExtra > summary').click();
     await page.locator('#payNote').fill('adelanto');
     await page.locator('#payForm .btns .pri').click();
     await expect(page.locator('#paySheet')).toBeHidden();

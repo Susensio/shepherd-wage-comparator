@@ -5230,3 +5230,32 @@ button.linkbtn.tapfull {
   align-items: center;
   min-height: var(--tap);
 }
+
+/* A fold of the less used questions of a form («Más datos»): a quiet link that opens the fields in place */
+details.more {
+  grid-column: 1 / -1;
+}
+details.more > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 14px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+details.more > summary::-webkit-details-marker {
+  display: none;
+}
+details.more > summary::after {
+  content: "▾";
+  margin-left: 6px;
+  font-size: 12px;
+}
+details.more[open] > summary::after {
+  content: "▴";
+}
+details.more > .fld,
+details.more > .check {
+  margin-top: 8px;
+}
