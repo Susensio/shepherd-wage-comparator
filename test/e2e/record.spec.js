@@ -312,11 +312,15 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('.block.result .tag')).toHaveCount(0); // no cobro yet: only the tiles
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Falta'); // nothing is known to be owed yet
+    await expect(page.locator('.block.result .tag')).not.toHaveClass(/owed/); // yellow, not red
     await page
       .getByRole('group', { name: '¿Se espera algún pago más?' })
       .getByRole('button', { name: 'No', exact: true })
       .click();
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe');
+    await expect(page.locator('.block.result .tag')).toHaveClass(/owed/);
+    // red, the colour of the claim: not the yellow of the other states
+    await expect(page.locator('.block.result .tag')).toHaveCSS('background-color', 'rgb(176, 67, 45)');
     await expect(page.locator('.block.result .stamp')).toHaveCount(0);
     await expect(page.locator('.block.result .sofar > div')).toHaveCount(2);
     await addPayments(page, [{ date: '2026-07-06', amount: 50000, via: 'payroll' }]);

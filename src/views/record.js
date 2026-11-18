@@ -304,7 +304,7 @@ function result(c) {
   // The headline says Falta, or Corresponde where nothing is recorded: the tiles do not repeat it
   const debt = s.hasPayments && !settled && !told;
   return html`<div class="block result">
-    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : HEAD[c.money]}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}`}</span></span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
+    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : c.money === 'owed' && !told ? 'tag owed' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Todo cobrado' : belowMinimum ? 'Falta hasta el mínimo legal' : HEAD[c.money]}</span><span class="tag-row"><span class="big">${settled ? '✔' : `${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}`}</span></span>${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c, { withoutFalta: debt })}
     ${notes(c, { over: '' })}

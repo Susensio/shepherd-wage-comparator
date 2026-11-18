@@ -27,6 +27,7 @@
   --d-work: color-mix(in srgb, var(--c-pay) 22%, var(--surface));
   --d-sick: color-mix(in srgb, var(--neg) 20%, var(--surface));
   --neg: #b0432d;
+  --neg-ink: #fff8f5;
   --accent: #2e5e45;
   --accent-ink: #f8faf5;
   --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
@@ -55,6 +56,7 @@
     --c-food: #8f7f4e;
     --c-km: #9c92cc;
     --neg: #e2806a;
+    --neg-ink: #21100b;
     --accent: #8cc7a2;
     --accent-ink: #111713;
     color-scheme: dark;
@@ -79,6 +81,7 @@
   --c-food: #8f7f4e;
   --c-km: #9c92cc;
   --neg: #e2806a;
+  --neg-ink: #21100b;
   --accent: #8cc7a2;
   --accent-ink: #111713;
   color-scheme: dark;
@@ -5104,6 +5107,15 @@ body.reviewing .ficha > .back {
   font-size: 13px;
   font-weight: 700;
   color: var(--muted);
+}
+
+/* The ganadero owes (no more payment expected, or the promised day passed): the claim's red, not the yellow of waiting */
+.tag.owed {
+  background: var(--neg);
+  color: var(--neg-ink);
+}
+.tag.owed .tipl {
+  text-decoration-color: color-mix(in srgb, var(--neg-ink) 55%, transparent);
 }
 
 /* Everything cobrado: a calm block, no yellow and no red */
