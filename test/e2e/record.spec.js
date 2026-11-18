@@ -252,6 +252,31 @@ test.describe('under way: Registro', () => {
 test.describe('finished: Cuentas', () => {
   test.use({ today: '2026-11-12' });
 
+  test('«Días: como lo pactado · Cerrar los meses»: the months with their counts, and one tap closes them all as shown', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
+    const block = page.getByRole('group', { name: 'Cerrar los meses' });
+    await expect(block.locator('.ck')).toHaveText('Días: como lo pactado');
+    // The summary of the months comes before the button: junio to septiembre, with their counts
+    const months = block.locator('.closeall-months li');
+    await expect(months).toHaveCount(4);
+    await expect(months.first()).toContainText('Junio');
+    await expect(months.first()).toContainText(/\d+ jornadas? · \d+ libres?/);
+    // The law checks wait for closed months
+    await expect(page.locator('#result .lawcheck')).not.toContainText('Descanso semanal');
+    const before = await page.evaluate(() => Object.keys(app.active().mine.record.months));
+    expect(before).toEqual([]);
+    await block.getByRole('button', { name: 'Cerrar los meses' }).click();
+    await expect(block).toHaveCount(0);
+    const record = await page.evaluate(() => app.active().mine.record.months);
+    expect(Object.keys(record)).toEqual(['2026-06', '2026-07', '2026-08', '2026-09']);
+    for (const month of Object.values(record)) expect(month.closed).toBe(true);
+    await expect(page.locator('#result .registro-link')).toContainText('4 meses cerrados');
+    await expect(page.locator('#result .lawcheck')).toContainText('Descanso semanal');
+  });
+
   const tile = tileOf;
   /** Whether the first element matching `a` comes before the first matching `b`; `h2:text` picks a heading by its text. */
   const after = (page, a, b) =>

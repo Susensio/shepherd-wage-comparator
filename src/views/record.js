@@ -204,9 +204,25 @@ function daysSummary(c) {
     .join(' · ');
 }
 
+/**
+ * «Días: como lo pactado · Cerrar los meses»: the months that have ended and are not closed, each with its counts as the
+ * calendar shows it, and one button that closes them all as shown (a month is never closed blind, ADR-0032). Changing a
+ * day stays in the calendar.
+ * @param {RecordContext} c
+ */
+function closeAllBlock(c) {
+  if (!c.closeAll.length) return nothing;
+  const touched = c.closeAll.some((m) => m.kept);
+  return html`<div class="closeall" role="group" aria-label="Cerrar los meses">
+    <p class="ck">Días: ${touched ? 'como en el calendario' : 'como lo pactado'}</p>
+    <ul class="closeall-months">${c.closeAll.map((m) => html`<li><b>${capital(monthName(m.month))}</b> <span>${plural(m.work, 'jornada', 'jornadas')} · ${plural(m.off, 'libre', 'libres')}</span></li>`)}</ul>
+    <button type="button" class="sm" data-action="closeAllMonths">Cerrar los meses</button>
+  </div>`;
+}
+
 /** The row of the ficha that opens the page of the days, and the way to go through the months not closed. */
 const daysRow = (c) =>
-  html`<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Días</span><span class="cv">${daysSummary(c)}</span>${CHEVRON}</button>${reviewLink(c.standing.unclosed.length)}`;
+  html`${closeAllBlock(c)}<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Días</span><span class="cv">${daysSummary(c)}</span>${CHEVRON}</button>${reviewLink(c.standing.unclosed.length)}`;
 
 /**
  * A job under way: «Hasta hoy» in net, what waits to be closed, the questions of its turns, and the way to the Registro.

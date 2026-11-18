@@ -5260,3 +5260,36 @@ details.more > summary::after {
 details.more[open] > summary::after {
   content: "▴";
 }
+
+/* «Días: como lo pactado · Cerrar los meses»: the months not closed, with their counts, and the one button */
+.closeall {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.closeall .ck {
+  font-weight: 600;
+  margin: 0;
+}
+.closeall-months {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.closeall-months li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.closeall .sm {
+  align-self: flex-start;
+  min-height: 44px;
+}

@@ -85,6 +85,7 @@ import {
  * @property {'underway' | 'finished'} phase
  * @property {string} today
  * @property {ReturnType<typeof standingOf>} standing
+ * @property {{ month: string, work: number, off: number, kept: boolean }[]} closeAll the months that have ended and are not closed, with their counts as the calendar shows them
  * @property {ReturnType<typeof settleOffer>} settled
  * @property {import('../model/settle.js').Payment[]} payments newest first
  * @property {string | null} fresh the cobro just added
@@ -348,6 +349,16 @@ export function recordContext(o, r) {
     job: settled.job,
     minimum: minimumNote(o, settled, r),
     strip,
+    // The months that have ended and are not closed, with their days as the calendar shows them: what «Cerrar los meses» closes
+    closeAll: standing.unclosed.map((row) => {
+      const counts = monthAccounts(o, record, row.month, today, settled, r)?.counts;
+      return {
+        month: row.month,
+        work: counts?.work ?? 0,
+        off: counts?.off ?? 0,
+        kept: Boolean(record.months?.[row.month]),
+      };
+    }),
     nudge: waiting.length && phase === 'underway' ? { months: waiting } : null,
     // A job finished shows a calendar only for the month opened in its registro
     calendar:
@@ -502,6 +513,20 @@ export const recordActions = {
   closedDay(b) {
     stayOn(b.dataset.key);
     ui.ask = { type: 'closedDay', id: b.dataset.key };
+    callbacks.paint();
+  },
+  /** «Cerrar los meses»: every month that has ended is closed as the calendar shows it (the summary of their days is right above the button). */
+  closeAllMonths() {
+    const o = active();
+    for (const row of standingOf(
+      settleOffer(o),
+      todayISO(),
+      recordPhase(o, todayISO()) ?? 'finished',
+      o.mine.record.payments,
+      calcOffer(o).netFactor,
+      o.mine.record.paid,
+    ).unclosed)
+      offers.closeMonth(o, spanOfMonth(row.month));
     callbacks.paint();
   },
   closeMonth(b) {
