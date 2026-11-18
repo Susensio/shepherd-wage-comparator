@@ -8,7 +8,7 @@ import { parseDate } from '../offer.js';
 import { noContractHow, noContractMinimum } from '../rights.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
-import { claimView, lapsedLine, underwayTalk } from './claim.js';
+import { claimView, lapsedLine, negroFold, underwayTalk } from './claim.js';
 import { ledgerLines, row } from './parts.js';
 import { endLine, endQuestion, recallQuestion, startQuestion } from './transitions.js';
 
@@ -246,6 +246,7 @@ function registro(c, questions) {
     </div>
     ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
     ${notStarted ? nothing : questions}
+    ${negroFold(c.negro)}
     ${showCobros(c) ? cobrosView(c) : nothing}
     ${daysRow(c)}
     ${underwayTalk(c.talk)}`;
@@ -516,6 +517,7 @@ function cuentas(c, questions) {
     ${questions}
     ${unanswered ? paidQuestion(c) : nothing}
     ${expectationView(c)}
+    ${negroFold(c.negro)}
     ${showCobros(c) ? cobrosView(c) : nothing}
     ${daysRow(c)}
     ${balanceBlock(c)}

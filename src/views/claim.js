@@ -51,11 +51,18 @@ function textCard(kind, text, canShare) {
     <p class="hint copy-msg" role="status"></p></div>`;
 }
 
-/** «Lo que supuso el negro»: arguments for the talk, only where the job had cash or no contract. */
-function negroBlock(negro) {
+/**
+ * «Lo que supuso el negro»: a closed fold of the ficha for a job worked with cash or without a contract, to show the
+ * ganadero; money owed or not. «Copiar» copies its lines.
+ * @param {ReturnType<typeof import('../model/accounts.js').negroOf>} negro
+ */
+export function negroFold(negro) {
   if (!negro) return nothing;
-  return html`<div class="negro"><h4>${NEGRO_TITLE}</h4><ul>${negroLines(negro).map((line) => html`<li>${line}</li>`)}</ul>
-    <p class="hint">Según la oferta. Lo que se cobra en negro tampoco cuenta para la jubilación ni la baja.</p></div>`;
+  return html`<details class="plg negro" data-fold="negro"><summary>${NEGRO_TITLE}</summary>
+    <ul>${negroLines(negro).map((line) => html`<li>${line}</li>`)}</ul>
+    <p class="hint">Según lo pactado. Lo que se cobra en negro tampoco cuenta para la jubilación ni la baja.</p>
+    <div class="actions"><button type="button" class="copybtn" data-action="copyNegro" aria-label="Copiar lo que supuso el negro" title="Copiar">${COPY_ICON}</button></div>
+    <p class="hint copy-msg" role="status"></p></details>`;
 }
 
 /** The dismissal in Cuentas: its date as one short line, and the way to «Vía legal». */
@@ -194,14 +201,14 @@ export function legalPageView(c) {
 /**
  * «Hablar con el ganadero» under «Hasta hoy», for a job under way with months already unpaid: a closed fold with the
  * same summary.
- * @param {{ step: import('../model/claim.js').Step, summary: string, canShare: boolean, negro: ReturnType<typeof import('../model/accounts.js').negroOf> } | null} talk
+ * @param {{ step: import('../model/claim.js').Step, summary: string, canShare: boolean } | null} talk
  */
 export function underwayTalk(talk) {
   if (!talk) return nothing;
   return html`<div class="block ask">${stepFold(
     talk.step,
     'Hablar con el ganadero',
-    html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto.</p>${negroBlock(talk.negro)}${textCard('summary', talk.summary, talk.canShare)}`,
+    html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde hasta hoy, lo cobrado y lo que falta, en neto.</p>${textCard('summary', talk.summary, talk.canShare)}`,
   )}</div>`;
 }
 
@@ -243,7 +250,7 @@ export function claimView(c, money) {
         ? stepFold(
             talk,
             'Hablar con el ganadero',
-            html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${negroBlock(c.negro)}${textCard('summary', c.summary, c.canShare)}`,
+            html`<p>Se puede empezar hablando con el ganadero. Este resumen dice las jornadas y los libres de cada mes, lo que corresponde, lo cobrado y lo que falta, en neto.</p>${textCard('summary', c.summary, c.canShare)}`,
             { open: money === 'expecting' },
           )
         : talk

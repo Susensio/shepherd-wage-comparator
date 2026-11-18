@@ -11,6 +11,7 @@ import {
   defaultPayBy,
   employerSummaryText,
   inspectionText,
+  negroLines,
   paymentRequestText,
 } from '../claim-text.js';
 import { $ } from '../dom.js';
@@ -99,6 +100,7 @@ import {
  * @property {ReturnType<typeof balanceOf> | null} balance once the job is over: what it came to
  * @property {{ months: string[] } | null} nudge the months that have ended and wait to be closed, other than the one shown
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
+ * @property {ReturnType<typeof negroOf>} negro what paying en negro or without a contract meant, for either phase
  * @property {ReturnType<typeof talkContext> | null} talk under way with something unpaid: the summary to talk to the ganadero
  * @property {import('../model/settle.js').Paid | undefined} paid «Sí, todo» or «No se cobró nada» was said
  * @property {ReturnType<typeof cobradoOf>} cobrado what was cobrado, as every view reads it
@@ -202,7 +204,6 @@ function claimContext(o, r, settled, standing, today) {
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
-    negro: owed ? negroOf(r) : null,
     request: owed ? paymentRequestText(base) : '',
     inspection: owed ? inspectionText(base) : '',
     fields: owed || record.end?.how === 'dismissed' ? conciliationFields(base) : [],
@@ -263,7 +264,6 @@ function talkContext(o, r, settled, standing, today) {
     step,
     canShare: typeof navigator.share === 'function',
     summary: employerSummaryText({ o, r, settled, standing, record, parties, until: today }),
-    negro: negroOf(r),
   };
 }
 
@@ -324,6 +324,7 @@ export function recordContext(o, r) {
     fresh: ui.fresh,
     ask: ui.ask,
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
+    negro: negroOf(r),
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
     paid: record.paid,
     cobrado: cobradoOf(o, r, phase, standing),
@@ -760,6 +761,21 @@ export const recordActions = {
       ok: 'Texto copiado.',
       failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
       rows: 12,
+    });
+    if (copied)
+      setTimeout(() => {
+        msg.textContent = '';
+      }, 2000);
+  },
+  /** «Copiar» on «Lo que supuso el negro»: its lines as plain text. */
+  async copyNegro(b) {
+    const o = active();
+    const negro = recordContext(o, calcOffer(o))?.negro;
+    if (!negro) return;
+    const msg = /** @type {HTMLElement} */ (b.closest('.negro').querySelector('.copy-msg'));
+    const copied = await copyText(negroLines(negro).join('\n'), msg, {
+      ok: 'Texto copiado.',
+      failMsg: 'No se pudo copiar. Aquí está para seleccionarlo:',
     });
     if (copied)
       setTimeout(() => {
