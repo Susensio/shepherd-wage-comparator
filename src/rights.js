@@ -173,7 +173,9 @@ export function rightsOf(o, r, unit = 'month') {
           );
   }
 
-  if (r.rest.short >= 1)
+  if (r.time.daysOffUnknown) {
+    // not told: nothing is judged
+  } else if (r.rest.short >= 1)
     add(
       'rest',
       false,

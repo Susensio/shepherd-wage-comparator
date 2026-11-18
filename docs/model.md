@@ -113,6 +113,8 @@ Two rules, and each extra hour counts once.
 - A net pay is turned into the gross that gives it, because IRPF depends on the gross. The same conversion says what gross would bring the cash part net.
 - IRPF counts the worker's other worked offers in the same year. Those are calculated on their own to avoid circular references.
 
+- **«Trabajo ya hecho» asks the contract before what was agreed** (the five options, «No se sabe» first; a pay needs it, and nothing invents a temporary contract with payroll: «Sin contrato» saves the pay as cash, «Autónomo» as an invoice) and an optional «Libranzas al mes». **Days off not told** (`terms.daysOff` empty, `time.daysOffUnknown`): every day counts as worked, but the weekly rest is not judged: no short rest or jornadas de más in `calc` (`rest.short`, `extra.days` are 0), no row in «¿Es legal?», and none in «¿Se cumplió la ley?» unless a day was marked off in a closed month (`rest.unknown` in `lawFromRecord`). Overtime from the hours is still judged.
+
 ## Pay questions
 
 The «Pago» section of the form is a view over `terms`; it saves no fields of its own (`src/pay-answers.js`). It asks «¿Qué contrato?» first (Sin contrato · Temporal · Fijo discontinuo · Fijo · Autónomo, preselected by the template; the first and last write the `none` and `self` answers below, the others set `contract`), then «Lo que se paga» with its «El salario mínimo» checkbox, then «¿Cuánto va en nómina?» (Todo · El salario mínimo, y el resto en negro · Una parte) only with a contract. The saved encoding is unchanged. The first amount is in `unit` (day, month, or total when the offer has a duration).

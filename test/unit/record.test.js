@@ -626,6 +626,21 @@ describe('the law, from the record: facts only', () => {
     assert.ok(!withContract.facts.some((f) => f.id === 'vacation'));
   });
 
+  test('days off never told: the weekly rest and the days of more are not judged in the closed months', () => {
+    const blank = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'b', daysOff: '', duration: 120 });
+    const months = Object.fromEntries(
+      settledOf(blank, emptyRecord()).rows.map((row) => [row.month, { closed: true, days: {} }]),
+    );
+    const record = { ...emptyRecord(), months };
+    const x = lawFromRecord(blank, record, settledOf(blank, record), calc(blank, ctx), []);
+    assert.equal(x.rest.unknown, true);
+    assert.equal(x.rest.fails.length, 0);
+    assert.equal(x.days.extra, 0);
+    const told = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 't', daysOff: 0, duration: 120 });
+    const y = lawFromRecord(told, record, settledOf(told, record), calc(told, ctx), []);
+    assert.equal(y.rest.unknown, false);
+  });
+
   test('«Lo pactado» reads no payslip, so the minimum on payroll is not judged on 0 € cobrados', () => {
     const record = { ...emptyRecord(), paid: 'asAgreed' };
     const x = lawFromRecord(OFFER, record, settledOf(OFFER, record), calc(OFFER, ctx), []);

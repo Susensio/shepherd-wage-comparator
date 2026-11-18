@@ -394,8 +394,9 @@ function lawBlock(c) {
   const closedMonths = law.months.closed > 0;
   const counted = law.rest.counted;
   const countedText = `No se puede juzgar en ${plural(counted, 'mes apuntado', 'meses apuntados')} por totales: no se sabe qué días se libraron.`;
-  const rest =
-    counted && !law.rest.periods
+  const rest = law.rest.unknown
+    ? nothing
+    : counted && !law.rest.periods
       ? mark('warn', 'Descanso semanal', countedText)
       : !law.rest.periods
         ? mark('warn', 'Descanso semanal', `Aún no hay un periodo de ${weeks} semanas entero en meses cerrados.`)
@@ -411,8 +412,9 @@ function lawBlock(c) {
               `Se libra un día entero por semana (o dos cada 14 días) y ${fDaysSpoken(LAW.weeklyRest)} por semana de media en todos los periodos de ${weeks} semanas.${counted ? ` ${countedText}` : ''}`,
             );
   const extra = Math.round(law.days.extra);
-  const days =
-    extra >= 1
+  const days = law.rest.unknown
+    ? nothing
+    : extra >= 1
       ? mark(
           'bad',
           'Jornadas de más',

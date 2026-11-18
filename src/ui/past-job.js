@@ -108,12 +108,13 @@ function cobrosTyped() {
 }
 
 /** What is wrong with the dates and the figures typed, or ''. */
-function problemOf({ start, end, days, duration, how, min, pay, cobros }) {
+function problemOf({ start, end, days, duration, how, min, pay, cobros, contract }) {
   if (!start || !end) return 'Escribe el primer y el último día.';
   if (end < start) return 'El último día no puede ser anterior al primero.';
   if (end >= todayISO()) return 'El trabajo tiene que haber acabado antes de hoy.';
   if (days !== '' && !(Number.isInteger(num(days)) && num(days) >= 0 && num(days) <= duration))
     return `Los días trabajados tienen que ser un número entre 0 y ${duration}.`;
+  if ((pay > 0 || min) && !contract) return 'Para apuntar el pago, elige el contrato.';
   if (how === 'all' && !(pay > 0) && !min) return 'Para dar por cobrado lo pactado, escribe el pago.';
   if (how === 'part' && !cobros.length) return 'Escribe la cantidad de al menos un cobro.';
   if (cobros.some((cobro) => cobro.date && (cobro.date > todayISO() || cobro.date < start)))
@@ -128,22 +129,40 @@ export function savePastJob() {
   const days = value('pastDays');
   const duration = start && end && end >= start ? daysInclusive(parseDate(start), parseDate(end)) : 0;
   const { how, min } = ui;
+  const contract = value('pastContract');
   const pay = min ? 0 : num(value('pastPay'));
   const cobros = how === 'part' ? cobrosTyped() : [];
   const expectBy =
     ui.expect === 'yes' ? /** @type {HTMLInputElement | null} */ (document.querySelector('#pastExpectBy'))?.value : '';
-  ui.error = problemOf({ start, end, days, duration, how, min, pay, cobros });
+  ui.error = problemOf({ start, end, days, duration, how, min, pay, cobros, contract });
   if (ui.error) {
     syncRows();
     return callbacks.paint();
   }
 
+  const unit = value('pastUnit');
+  const off = value('pastOff');
+  // The contract is what was said, never one invented: «Sin contrato» is all cash, «Autónomo» an invoice
+  const pays =
+    contract === 'none'
+      ? pay > 0
+        ? { cashAmount: pay, cashUnit: unit }
+        : {}
+      : contract === 'selfEmployed'
+        ? pay > 0
+          ? { payAmount: pay, payUnit: unit, payType: 'gross' }
+          : {}
+        : {
+            ...(min ? { payrollMin: true } : {}),
+            ...(pay > 0 ? { payAmount: pay, payUnit: unit, payType: value('pastType') } : {}),
+          };
   const terms = {
     start,
     duration,
     durationUnit: 'days',
-    ...(min ? { payrollMin: true } : {}),
-    ...(pay > 0 ? { payAmount: pay, payUnit: value('pastUnit'), payType: value('pastType') } : {}),
+    ...(contract ? { contract } : {}),
+    ...(off !== '' ? { daysOff: num(off), daysOffUnit: 'month' } : {}),
+    ...pays,
   };
   const job = makeOffer(terms, { name: uniqueName(value('pastName') || 'Trabajo ya hecho') });
   if (state.placeholderId) offers.chooseTemplate(job);

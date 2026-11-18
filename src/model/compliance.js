@@ -16,7 +16,7 @@ import { ITEMS } from './settle.js';
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number }, min: { overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number, daysOffUnknown?: boolean }, min: { overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -34,12 +34,14 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   // Rest (ET 37.1, RD 1561/1995 art. 5.3): a full day off each week, or two per 14 days; only the half day accumulates,
   // over LAW.restPeriodWeeks weeks, so LAW.weeklyRest a week on average over the period. Only the periods wholly inside
   // closed months are judged
+  // Days off never told and none marked off in the closed months: nothing says there was a rest to judge
+  const restUnknown = Boolean(r.time.daysOffUnknown) && !days.some((x) => x.closed && x.kind === 'off');
   const length = LAW.restPeriodWeeks * 7;
   /** @type {{ from: string, to: string, off: number, due: number, weekly: boolean }[]} `weekly`: short of full days, whatever the total */
   const fails = [];
   let periods = 0;
   const offIn = (part) => part.filter((x) => x.kind === 'off').length;
-  for (let i = 0; i < days.length; i += length) {
+  for (let i = 0; i < (restUnknown ? 0 : days.length); i += length) {
     const part = days.slice(i, i + length);
     // (a last period shorter than the weeks it groups over says nothing: a day and a half a week cannot be told from a day)
     // (nor one with a month kept as counts: which day was off is not known)
@@ -113,8 +115,13 @@ export function lawFromRecord(offer, record, settled, r, payments) {
     months: { closed: closed.length, total: inJob.length },
     allClosed,
     /** `counted`: months of the job kept as counts, whose rest cannot be judged. */
-    rest: { periods, fails, counted: inJob.filter((row) => record.months?.[row.month]?.count).length },
-    days: { worked, due, extra: Math.max(0, worked - due) },
+    rest: {
+      unknown: restUnknown,
+      periods,
+      fails,
+      counted: inJob.filter((row) => record.months?.[row.month]?.count).length,
+    },
+    days: { worked, due, extra: restUnknown ? 0 : Math.max(0, worked - due) },
     holidays,
     overnight: {
       applicable: r.min.overnight > 0,

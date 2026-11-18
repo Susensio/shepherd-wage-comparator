@@ -72,6 +72,8 @@ export function schedule(terms) {
   // (without a contract no vacation is asked: it is a right of the job, never a day off the pay)
   const vacationTaken = terms.vacation === 'taken' && terms.contract !== 'none' ? Math.round(vacationDays) : 0;
   // Share of days you work. «En total»: days off over the whole contract, vacation aside
+  // Days off not told: every day counts as worked, but the weekly rest is not judged (no extra days, no short rest)
+  const daysOffUnknown = terms.daysOff === '' || terms.daysOff == null;
   const off = Math.max(0, num(terms.daysOff));
   const unit = noDuration && terms.daysOffUnit === 'total' ? 'month' : terms.daysOffUnit;
   const daysLeft = Math.max(0, natDays - vacationTaken);
@@ -100,6 +102,7 @@ export function schedule(terms) {
     natDays,
     hoursPerDay,
     hoursUnknown,
+    daysOffUnknown,
     workFrac,
     vacationDays,
     vacationTaken,
@@ -139,7 +142,7 @@ export function extraTime(time) {
       LAW.workdayMaxHours,
       LAW.weeklyHours / (daysWeek > 0 ? Math.min(WORK_DAYS_WEEK, daysWeek) : WORK_DAYS_WEEK),
     ) || NORMAL_WORKDAY;
-  const extraDays = Math.max(0, daysWorked - due);
+  const extraDays = time.daysOffUnknown ? 0 : Math.max(0, daysWorked - due);
   const overtime = daysWorked * Math.max(0, hoursPerDay - workday);
   const extraHours = extraDays * workday + overtime;
   return {

@@ -265,7 +265,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     min,
     /** Without a contract, the vacation paid apart at the end (gross): money on top of the cash, which discharges it. */
     debt: { salary: debtSalary, vacation: debtVacation, total: debtTotal, parts: debtParts, owed, minNetNoContract },
-    rest: { legal: restLegal, short: Math.max(0, restLegal - time.daysOffTotal) },
+    rest: { legal: restLegal, short: time.daysOffUnknown ? 0 : Math.max(0, restLegal - time.daysOffTotal) },
     extra: {
       ...extra,
       dayValue,

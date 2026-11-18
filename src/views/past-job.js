@@ -15,6 +15,15 @@ const cobroRow = (
   ${length > 1 ? html`<button type="button" class="linkbtn" data-action="pastRemoveCobro" data-id=${id}>Quitar</button>` : nothing}
 </div>`;
 
+/** The five contracts, as the pay step asks them. */
+const CONTRACTS = [
+  ['none', 'Sin contrato'],
+  ['temporary', 'Temporal'],
+  ['seasonal', 'Fijo discontinuo'],
+  ['permanent', 'Fijo'],
+  ['selfEmployed', 'Autónomo'],
+];
+
 const HOW = [
   ['all', 'Lo pactado'],
   ['part', 'Otra cantidad'],
@@ -40,10 +49,15 @@ export function pastJobView({ error, how, expect, min, rows }) {
       <label class="fld">Último día<input type="date" id="pastEnd" required></label>
     </div>
     <section class="block">
+      <div class="bh"><h2>Contrato</h2></div>
+      <label class="fld">¿Qué contrato?<select id="pastContract"><option value="">No se sabe</option>${CONTRACTS.map(([value, label]) => html`<option value=${value}>${label}</option>`)}</select></label>
+    </section>
+    <section class="block">
       <div class="bh"><h2>Lo pactado</h2></div>
       <p class="hint">Si se recuerdan las condiciones y no hay más datos, se da por cobrado lo pactado.</p>
       <label class="fld">Pago<span class="amount"><input type="text" class="n" id="pastPay" inputmode="decimal" autocomplete="off" placeholder="0" ?disabled=${min}><span>€</span></span></label>
       <label class="check"><input type="checkbox" id="pastMin" data-action="pastMin" ?checked=${min}> El pago es el salario mínimo</label>
+      <label class="fld">Libranzas al mes (opcional)<input type="text" class="n" id="pastOff" inputmode="decimal" autocomplete="off" placeholder="0"><small class="hint">Sin ellas no se juzga el descanso semanal.</small></label>
       <div class="past-dates">
         <label class="fld">Cada<select id="pastUnit" ?disabled=${min}><option value="month">mes</option><option value="day">día</option><option value="total">en total</option></select></label>
         <label class="fld">Es<select id="pastType" ?disabled=${min}><option value="net">neto</option><option value="gross">bruto</option></select></label>

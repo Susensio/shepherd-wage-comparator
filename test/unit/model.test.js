@@ -545,3 +545,14 @@ test('cash per day counts the paid days, the vacation taken included', () => {
   assert.equal(r.time.paidDays, 7);
   near(r.cash.total, 490, 0.001, 'cash agreed');
 });
+
+test('days off not told: every day counts as worked, but the weekly rest is not judged', () => {
+  const none = { ...NO_CONTRACT, duration: 30, daysOff: '' };
+  const told = figures({ ...none, daysOff: 0 });
+  const unknown = figures(none);
+  assert.equal(unknown.time.daysOffUnknown, true);
+  assert.equal(unknown.time.daysWorked, told.time.daysWorked); // none off, as before
+  assert.ok(told.rest.short > 0 && told.extra.days > 0, 'told as none: judged');
+  assert.equal(unknown.rest.short, 0);
+  assert.equal(unknown.extra.days, 0);
+});
