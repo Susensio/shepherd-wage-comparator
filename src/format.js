@@ -63,6 +63,11 @@ export const fDaysSpoken = (x) => {
   if (x === 2) return 'dos días';
   return `${fN(x, x % 1 ? 1 : 0)} días`;
 };
+/** «unas 3 jornadas»: an approximate count, with no «unas» before one or none. */
+export const fAbout = (x, one, many) => {
+  const n = fCount(x);
+  return n === '1' ? `1 ${one}` : n === '0' ? `0 ${many}` : `unas ${n} ${many}`;
+};
 export const fDays = (x) => `${fCount(x)} ${fCount(x) === '1' ? 'día' : 'días'}`;
 
 /** «21 jun 2026», or «21 jun» without the year. */

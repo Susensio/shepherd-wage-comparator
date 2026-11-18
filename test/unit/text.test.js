@@ -222,12 +222,14 @@ test('claim: without a contract it cites article 8 and the cash paid', () => {
   const o = byId('o5');
   const claim = claimText(o, resultOf(o));
   assert.match(claim, /Sin contrato ni alta en la Seguridad Social \(Estatuto, art\. 8\)/);
-  assert.match(claim, /Se pagan .* en negro en todo el contrato/);
+  assert.match(claim, /Se pagan .* en negro en todo el trabajo/);
 });
 
 test('claim: a compliant offer reports no pay shortfall', () => {
   const claim = claimText(COMPLIANT, resultOf(COMPLIANT));
-  assert.match(claim, /^Oferta: Cumplidora/);
+  assert.match(claim, /^Trabajo: Cumplidora/); // worked: not an offer anymore
+  const onlyOffer = { ...COMPLIANT, terms: { ...COMPLIANT.terms, offerOnly: true } };
+  assert.match(claimText(onlyOffer, resultOf(onlyOffer)), /^Oferta: Cumplidora/);
   assert.doesNotMatch(claim, /no llega al mínimo/);
 });
 
@@ -243,4 +245,12 @@ test('same-named sharers each get a detail, even when only one names a place', a
   const details = items.map(({ o }) => labels.get(o.id).detail);
   assert.ok(details.every(Boolean), `every offer has a detail: ${JSON.stringify(details)}`);
   assert.equal(new Set(details).size, 2);
+});
+
+test('singular, zero and plural of an approximate count: no «unas 1», «unas 0», «las unas 20»', async () => {
+  const { fAbout } = await import('../../src/format.js');
+  assert.equal(fAbout(1, 'jornada', 'jornadas'), '1 jornada');
+  assert.equal(fAbout(0, 'jornada', 'jornadas'), '0 jornadas');
+  assert.equal(fAbout(20, 'jornada', 'jornadas'), 'unas 20 jornadas');
+  assert.equal(fAbout(2.5, 'jornada', 'jornadas'), 'unas 2,5 jornadas');
 });

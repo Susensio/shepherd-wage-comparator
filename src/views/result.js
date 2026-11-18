@@ -2,7 +2,7 @@
 
 import { html, nothing } from 'lit-html';
 import { explanations } from '../explanations.js';
-import { euroDecimals, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
+import { euroDecimals, fAbout, fCount, fE, fN, fTyped, isWorthCounting, joinAnd, num } from '../format.js';
 import { LAW } from '../law.js';
 import { retaPct } from '../model/self-employed.js';
 import { actualYear, contractOf, DAYS_PER_MONTH, missing, payKnown } from '../offer.js';
@@ -64,7 +64,7 @@ const PILL_RANK = { bad: 0, warn: 1, '': 2, ok: 3 };
 /** The offer's pills: hours, days off, contract and cash, coloured like their right in «¿Es legal?». Wrong first. */
 function pills(o, r) {
   const hoursPerWeek = r.time.hoursPerWeek;
-  const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const overTxt = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
   const explain = explanations(o, r);
   const statusOf = Object.fromEntries((rightsOf(o, r, 'month') || []).map((right) => [right.id, right.status]));
   const color = (id, fallback) =>
@@ -79,7 +79,9 @@ function pills(o, r) {
       : fallback;
   const extra = joinAnd(
     [
-      r.extraDays.extra >= 1 && r.extra.daysValue > 0 && `unas ${fCount(r.extraDays.extra)} jornadas de más ${overTxt}`,
+      r.extraDays.extra >= 1 &&
+        r.extra.daysValue > 0 &&
+        `${fAbout(r.extraDays.extra, 'jornada', 'jornadas')} de más ${overTxt}`,
       r.extra.overtimePerWeek >= 0.5 && `unas ${fN(r.extra.overtimePerWeek)}\u00a0h extra a la semana`,
     ].filter(Boolean),
   );
@@ -129,7 +131,7 @@ function breakdown(o, r, unit) {
   const cfg = r.cfg;
   const p = r.earnings.parts;
   const money = moneyIn(r, unit);
-  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ` + lo que se cobra en negro` : ''}${p.housing > 0.5 || p.food > 0.5 ? ` + lo que se ahorra en casa y comida` : ''}${p.km > 0.5 ? ` + los km que se pagan` : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${r.expenses.total > 0.5 ? ` − los gastos de coche y otros` : ''}, ${{ hour: `repartido entre las horas que se trabajan`, day: `repartido entre los días que se trabajan`, month: 'repartido entre los meses del contrato', total: 'en todo el contrato' }[unit]}.`;
+  const earnTip = `Nómina neta${p.vacationPay > 0.5 ? ' + vacaciones pagadas' : ''}${r.cash.total > 0 ? ` + lo que se cobra en negro` : ''}${p.housing > 0.5 || p.food > 0.5 ? ` + lo que se ahorra en casa y comida` : ''}${p.km > 0.5 ? ` + los km que se pagan` : ''}${p.severance > 0.5 ? ' + la indemnización' : ''}${r.expenses.total > 0.5 ? ` − los gastos de coche y otros` : ''}, ${{ hour: `repartido entre las horas que se trabajan`, day: `repartido entre los días que se trabajan`, month: 'repartido entre los meses del contrato', total: r.noContract ? 'en todo el trabajo' : 'en todo el contrato' }[unit]}.`;
   // From gross to net payroll, on tapping «Nómina» (paid vacation has its own row)
   const netPay = p.base + p.extraPays;
   const grossPay = netPay / (r.pay.netFactor || 1);
@@ -160,7 +162,7 @@ function breakdown(o, r, unit) {
       ? 'Ida y vuelta cada día trabajado'
       : `Ida al empezar y vuelta al acabar${num(o.mine.tripsHome) > 0 ? `; ${fTyped(o.mine.tripsHome)} ${num(o.mine.tripsHome) === 1 ? 'bajada' : 'bajadas'} a casa al mes` : ''}`;
   const fuelPerKm = (num(cfg.fuelUse) / 100) * num(cfg.fuelPrice);
-  const carTip = `${fN(r.car.km)}\u00a0km ${r.time.noDuration ? 'al mes' : 'en todo el contrato'}. ${o.mine.car === 'noCar' ? '' : `${trip}: ${fN(num(o.mine.kmHome))}\u00a0km de ida y otros tantos de vuelta.`}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ` Más ${fN(num(o.mine.kmWorkPerDay))}\u00a0km por día trabajado en coche propio.` : ''} Cada km: ${fE(fuelPerKm, 2)} de gasolina (${fN(num(cfg.fuelUse), 1)} l/100 km a ${fE(num(cfg.fuelPrice), 2)}/l) + ${fE(num(cfg.wear), 2)} de desgaste. El coche se cambia en «Datos comunes».`;
+  const carTip = `${fN(r.car.km)}\u00a0km ${r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato'}. ${o.mine.car === 'noCar' ? '' : `${trip}: ${fN(num(o.mine.kmHome))}\u00a0km de ida y otros tantos de vuelta.`}${o.mine.car === 'own' && num(o.mine.kmWorkPerDay) > 0 ? ` Más ${fN(num(o.mine.kmWorkPerDay))}\u00a0km por día trabajado en coche propio.` : ''} Cada km: ${fE(fuelPerKm, 2)} de gasolina (${fN(num(cfg.fuelUse), 1)} l/100 km a ${fE(num(cfg.fuelPrice), 2)}/l) + ${fE(num(cfg.wear), 2)} de desgaste. El coche se cambia en «Datos comunes».`;
 
   // Rows that round to 0 € in both columns are not shown
   const cols = columns(r);
@@ -178,7 +180,7 @@ function breakdown(o, r, unit) {
   const received = moneyParts.map((part) => part.value(p));
   const earned = present.map((part) => part.value(p));
   const se = r.selfEmployed;
-  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const over = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
   const deductionTips = {
     Coche: carTip,
     'Cuota de autónomos': se

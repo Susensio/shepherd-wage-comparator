@@ -417,7 +417,9 @@ test.describe('finished: Cuentas', () => {
       return Math.round(x.totals.items.severance.due); // the severance is the same net and gross
     });
     expect(severance).toBeGreaterThan(50);
-    expect(amount(await tile(page, 'Falta').textContent())).toBeCloseTo(severance, 0);
+    // (the headline says what is missing: the severance, not «hasta el mínimo legal»)
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Indemnización por fin de contrato');
+    expect(amount(await page.locator('.block.result .tag .big').textContent())).toBeCloseTo(severance, 0);
     await expect(page.locator('#result')).toContainText('Indemnización');
     await expect(page.locator('.block.result .tag .lbl')).not.toHaveText('Saldado');
   });
@@ -442,7 +444,7 @@ test.describe('finished: Cuentas', () => {
     for (const gone of ['pagado de más']) await expect(page.locator('#result')).not.toContainText(gone);
     await expect(page.locator('.block.result .tag .sub')).not.toContainText('debe');
     await expect(page.locator('#result h2', { hasText: 'Pedir lo que falta' })).toHaveCount(0);
-    await expect(page.locator('#result h2.mode small')).toHaveText('Cuentas saldadas');
+    await expect(page.locator('#result h2.mode small')).toHaveCount(0); // no subtitle above «Saldado»
   });
 
   test('no cobros: Corresponde and a prompt, no debt, the first step only and no deadline', async ({ page }) => {

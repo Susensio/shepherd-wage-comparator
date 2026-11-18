@@ -36,7 +36,7 @@ function costDetails(o, r) {
   ].filter(Boolean);
   const parts = items.map(([, value]) => value);
   const inKind = r.inKind.total > 0.5;
-  return html`<details class="plg" data-fold="cost"><summary>Cuánto cuesta al ganadero</summary><p class="hint">Por día trabajado y ${cols.other === 'month' ? 'al mes' : 'en todo el contrato'}.</p>
+  return html`<details class="plg" data-fold="cost"><summary>Cuánto cuesta al ganadero</summary><p class="hint">Por día trabajado y ${cols.other === 'month' ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato'}.</p>
   <div class="rows">
     ${row('', cols.header, { cls: 'hd' })}
     ${items.map(([label, value, sub], i) => row(`${i ? '+ ' : ''}${label}`, cols.value(value), { sub }))}
@@ -66,7 +66,7 @@ function leversView(r, money) {
   if (!levers.length)
     return html`<div class="savings neutral"><p class="savings-t">No se ahorra nada a costa del pastor</p><p>Todo va en nómina, cotizando, y llega al mínimo.</p></div>`;
   const total = levers.reduce((sum, lever) => sum + lever.employer, 0);
-  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const over = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
   return html`<div class="levers">${levers.map(
     (lever) => html`<div class="lever" data-lever=${lever.id} data-stratum=${STRATUM[lever.id] ?? 3}>
         <p class="lever-t">${lever.title}</p>

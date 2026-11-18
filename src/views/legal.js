@@ -82,8 +82,6 @@ function owedCard(o, r, money) {
   if (r.noContract) {
     const lost = r.unemployment.lost;
     const reasons = [
-      isWorthCounting(r.debt.vacation) &&
-        `Las vacaciones que corresponden (${fDays(r.time.vacationDays)}) no se pagan aparte, y sin contrato no pueden ir dentro del pago (${citeOf('et', '38.1').label}): debe el ganadero unos ${money.netAll(r.debt.vacation)} netos.`,
       isWorthCounting(r.debt.salary) &&
         `Lo que se da no llega al salario mínimo: debe el ganadero ${money.net(r.debt.salary)} ${per}.`,
       'Sin jubilación ni bajas pagadas: en caso de enfermedad o accidente, no se cobra.',
@@ -113,7 +111,7 @@ function owedCard(o, r, money) {
   if (isWorthCounting(owed)) {
     const total =
       money.unit !== 'total' && !r.time.noDuration && money.netAll(owed) !== money.net(owed)
-        ? `${money.netAll(owed)} en todo el contrato`
+        ? `${money.netAll(owed)} ${r.noContract ? 'en todo el trabajo' : 'en todo el contrato'}`
         : '';
     const sub = [
       reasons.single && capitalize(reasons.single),
@@ -124,7 +122,7 @@ function owedCard(o, r, money) {
       .join(' · ');
     return html`<details class="owed" data-fold="owed"><summary>${figureCard(
       html`${withTip(money.net(owed), `Netos. En bruto: ${money.figure(owed)} ${per}.`)}${unitSuffix(money.unit)}`,
-      'Lo que debe el ganadero',
+      'Debe',
       sub,
       'Ilegal',
     )}</summary>${reasons.rows || minimumBar(r, money)}${claimDeadline(o, owed)}</details>`;
@@ -211,7 +209,7 @@ function extraTimeCards(r) {
   if (!(r.pay.gross > 0 || r.noContract)) return nothing;
   const x = r.extra;
   const days = r.extraDays.extra;
-  const over = r.time.noDuration ? 'En un mes' : 'En todo el contrato';
+  const over = r.time.noDuration ? 'En un mes' : r.noContract ? 'En todo el trabajo' : 'En todo el contrato';
   const cards = [];
   if (x.daysValue > 0 && days >= 1) {
     const status = payStatus(x.daysUnpaid, x.daysValue);

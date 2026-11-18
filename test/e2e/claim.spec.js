@@ -284,7 +284,7 @@ test.describe('without cobros, and when nothing is owed', () => {
   test('a dismissal with nothing owed still shows its line, and no steps', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
-    await expect(page.locator('#result h2.mode small')).toHaveText('Cuentas saldadas');
+    await expect(page.locator('#result h2.mode small')).toHaveCount(0); // no subtitle above «Saldado»
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       offers.setEnd(app.active(), { how: 'dismissed', date: '2026-11-06' });

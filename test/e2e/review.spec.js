@@ -38,12 +38,9 @@ test.describe('figures that must agree', () => {
   }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D); // 43 days
     const result = page.locator('#result');
-    await page
-      .locator('details[data-fold=workings], details[data-fold=reference]')
-      .first()
-      .evaluate((d) => {
-        for (const x of document.querySelectorAll('#result details')) x.open = true;
-      });
+    await page.evaluate(() => {
+      for (const x of document.querySelectorAll('#result details')) x.open = true;
+    });
     await expect(result).toContainText(
       'Sin contrato y hasta 120 días: cada día trabajado, al menos 57,82 € (Real Decreto del salario mínimo, art. 4)',
     );

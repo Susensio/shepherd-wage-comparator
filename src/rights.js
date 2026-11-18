@@ -77,10 +77,13 @@ export function rightsOf(o, r, unit = 'month') {
   const money = moneyIn(r, unit);
   const netWithTip = (x) => withTip(money.net(x), `${money.figure(x)} brutos en nómina`);
   const per = UNITS[unit].short;
-  const overTxt = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const overTxt = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
   const hoursPerDay = num(o.terms.hoursPerDay);
   const hoursPerWeek = r.time.hoursPerWeek;
-  const vacationDays = fCount(r.time.vacationDays);
+  // «1 día que corresponde», «los 2,5 días que corresponden»
+  const one = fCount(r.time.vacationDays) === '1';
+  const theDays = one ? 'el día' : `los ${fCount(r.time.vacationDays)} días`;
+  const corresponde = one ? 'corresponde' : 'corresponden';
   const agreement = r.min.overnightAgreement;
   const pct = agreement ? fN(agreement.pct) : '';
   const rights = [];
@@ -139,20 +142,20 @@ export function rightsOf(o, r, unit = 'month') {
       : ` Pero solo se pueden pagar en vez de disfrutar si el contrato acaba antes de poder librarlas: en un contrato así de largo, se tiene derecho a librarlas.`;
     const paid = r.pay.vacationPay >= r.min.vacation - 1;
     if (o.terms.vacation === 'taken')
-      add('vacation', true, 'Vacaciones', `Se libran los ${vacationDays} días que corresponden, cobrando.`);
+      add('vacation', true, 'Vacaciones', `Se libran ${theDays} que ${corresponde}, cobrando.`);
     else if (o.terms.vacation === 'paidAtEnd')
       paid
         ? add(
             'vacation',
             mayBePaid || 'warn',
             'Vacaciones',
-            `Se pagan al acabar los ${vacationDays} días que corresponden: unos ${money.netAll(r.pay.vacationPay)} netos.${onlyIfShort}`,
+            `Se pagan al acabar ${theDays} que ${corresponde}: unos ${money.netAll(r.pay.vacationPay)} netos.${onlyIfShort}`,
           )
         : add(
             'vacation',
             false,
             'Vacaciones',
-            `Por los ${vacationDays} días que corresponden se pagan unos ${money.netAll(r.pay.vacationPay)} netos, y el mínimo es ${money.netAll(r.min.vacation)}.`,
+            `Por ${theDays} que ${corresponde} se pagan unos ${money.netAll(r.pay.vacationPay)} netos, y el mínimo es ${money.netAll(r.min.vacation)}.`,
           );
     else
       paid
@@ -160,7 +163,7 @@ export function rightsOf(o, r, unit = 'month') {
             'vacation',
             mayBePaid || 'warn',
             'Vacaciones',
-            `Van dentro del jornal: de lo que se paga, unos ${money.netAll(r.pay.vacationPay)} netos son los ${vacationDays} días de vacaciones que corresponden.${onlyIfShort.replace('pagar en vez', 'cobrar en vez')}`,
+            `Van dentro del jornal: de lo que se paga, unos ${money.netAll(r.pay.vacationPay)} netos son ${theDays}${one ? '' : ' de vacaciones'} que ${corresponde}.${onlyIfShort.replace('pagar en vez', 'cobrar en vez')}`,
           )
         : add(
             'vacation',

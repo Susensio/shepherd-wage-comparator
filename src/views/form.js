@@ -245,7 +245,7 @@ function payHint(o, r) {
   const se = r.selfEmployed;
   if (se) {
     if (!(se.invoiced > 0)) return '';
-    const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+    const over = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
     return `${o.terms.vatIncluded ? `Sin el IVA (${fN(LAW.selfEmployed.vatPct)}\u00a0%), se facturan ${fE(se.invoiced)} ${over}. ` : ''}Se pagan unos ${fE(se.quota)} de cuota de autónomos y ${fE(se.irpf)} de IRPF por módulos ${over}.`;
   }
   if (o.terms.payrollMin) {
@@ -282,7 +282,7 @@ function daysOffHint(o, r) {
       .filter(Boolean)
       .map((x, i) => `${i ? ' y ' : ', más '}${x}`)
       .join('');
-    return `En todo el contrato, unos ${fN(t.daysWorked)} días de trabajo y ${fCount(t.daysOffTotal)} libres${more}. ${hours}`;
+    return `En todo el ${o.terms.contract === 'none' ? 'trabajo' : 'contrato'}, unos ${fN(t.daysWorked)} días de trabajo y ${fCount(t.daysOffTotal)} libres${more}. ${hours}`;
   }
   return `Al mes, unos ${fN(t.workedPerMonth)} días de trabajo y ${fCount(t.daysOffMonth)} libres${o.terms.holidays === 'yes' ? ', más los festivos' : ''}. ${hours}`;
 }

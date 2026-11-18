@@ -26,7 +26,7 @@ const HOURS_UNKNOWN_FULL_DAY = `Sin horas apuntadas se mide como jornada complet
 
 function timeSection(o, r) {
   const t = r.time;
-  const days = (x) => `${fCount(x)} días`;
+  const days = fDays;
   return section('Tiempo', [
     row('Duración', t.noDuration ? '1 mes' : days(t.natDays)),
     // Self-employed has no paid vacation: nothing «corresponds»
@@ -108,7 +108,7 @@ function minimumSection(o, r, net) {
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
       ? `${r.noContract ? `${noContractRule(r)}. ` : ''}${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${fullDay}`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${noContractRule(r)}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual / 12)} al mes (${fE(r.wage.annual)} al año) × ${fN(r.time.months, 1)} ${r.time.months === 1 ? 'mes' : 'meses'}${r.noContract ? `. ${noContractRule(r)}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));
@@ -190,7 +190,7 @@ function extraDaysSection(o, r, net) {
   return section(
     'Jornadas de más',
     [
-      row('Días del contrato', fCount(contract)),
+      row(r.noContract ? 'Días del trabajo' : 'Días del contrato', fCount(contract)),
       vacation >= half && row('− Vacaciones que se libran', fCount(vacation)),
       row('− Descanso semanal', fCount(rest), { sub: `${fDaysSpoken(LAW.weeklyRest)} por semana` }),
       holidays >= half && row('− Festivos', fCount(holidays)),
@@ -233,7 +233,7 @@ function overtimeSection(r, net) {
       row(`= Por encima de ${LAW.weeklyHours}`, hours(week.over), { cls: restDays ? '' : 'strong' }),
       restDays && row('− Ya en «Jornadas de más»', hours(week.restDays), { sub: 'días de descanso trabajados' }),
       restDays && row('= Horas extra', hours(week.beyond), { cls: 'strong', sub: 'a la semana' }),
-      row('En todo el contrato', `${fN(x.overtime)} h`),
+      row(r.noContract ? 'En todo el trabajo' : 'En todo el contrato', `${fN(x.overtime)} h`),
       row('Valen al salario mínimo', fE(x.overtimeValue), { sub: `${fE(r.min.hourly, 2)} la hora` }),
       paid > 0.5 && row('− Se paga, de lo que sobra tras las jornadas', fE(paid)),
       unpaidRow('= Sin pagar', unpaid, net),

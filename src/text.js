@@ -16,6 +16,7 @@ import {
   num,
 } from './format.js';
 import { citeOf, LAW } from './law.js';
+import { isWorked } from './model/phase.js';
 import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
@@ -327,7 +328,7 @@ export function claimText(o, r) {
   const lines = [];
   const add = (...l) => lines.push(...l);
 
-  add(`Oferta: ${o.mine.name || 'sin nombre'}`);
+  add(`${isWorked(o) ? 'Trabajo' : 'Oferta'}: ${o.mine.name || 'sin nombre'}`);
   add(`Condiciones: ${s.time}. ${s.payroll}.${cash > 0 ? ` En negro: ${lowerFirst(s.b)}.` : ''} ${s.housing}.`);
   add(
     `Días trabajados: ${fN(r.time.daysWorked)} · Horas: ${fN(r.time.hours)} (${fN(r.time.hoursPerWeek)}\u00a0h a la semana).`,
@@ -337,10 +338,10 @@ export function claimText(o, r) {
   add('SALARIO');
   if (r.noContract) {
     add(
-      `Sin contrato ni alta en la Seguridad Social (${citeOf('et', '8').label}). Se pagan ${fE(cash)} en negro en todo el contrato${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
+      `Sin contrato ni alta en la Seguridad Social (${citeOf('et', '8').label}). Se pagan ${fE(cash)} en negro en todo el trabajo${r.time.months >= 1 ? ` (${fE(cash / r.time.months)} al mes)` : ''}, sin cotizar.`,
     );
     add(
-      `Mínimo en todo el contrato: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (salario mínimo ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(r.min.overnightAgreement?.pct ?? 0)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
+      `Mínimo en todo el trabajo: ${fE(r.min.salary + r.min.overnight)} brutos, unos ${fE(r.debt.minNetNoContract)} netos (salario mínimo ${r.year}, ${r.wage.decree}${r.min.overnight > 0 ? `, más el ${fN(r.min.overnightAgreement?.pct ?? 0)}\u00a0% por pernoctar fuera por pastoreo` : ''}).`,
     );
     if (isWorthCounting(r.debt.vacation))
       add(
@@ -351,7 +352,7 @@ export function claimText(o, r) {
     add(
       `Tipo de contrato: ${contractOf(o.terms).phrase}. Nómina bruta en todo el contrato: ${fE(r.pay.gross)} (unos ${fE(r.pay.net)} netos).`,
     );
-    add(`Mínimo en todo el contrato, contado por meses: ${fE(r.min.total)} brutos.`);
+    add(`Mínimo en todo el ${r.noContract ? 'trabajo' : 'contrato'}, contado por meses: ${fE(r.min.total)} brutos.`);
     add(
       `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.${r.noContract ? ` ${noContractRule(r)}.` : ''}${wageYearNote(r) ? ` ${wageYearNote(r)}` : ''}`,
     );
@@ -434,7 +435,7 @@ export function leversOf(r) {
   const s = r.savings;
   const x = r.extra;
   const net = (v) => fE(v * r.netFactor);
-  const over = r.time.noDuration ? 'al mes' : 'en todo el contrato';
+  const over = r.time.noDuration ? 'al mes' : r.noContract ? 'en todo el trabajo' : 'en todo el contrato';
   const lost = r.unemployment.lost;
   const paroLost = isWorthCounting(lost.euros);
   /** @type {[string, string][]} */

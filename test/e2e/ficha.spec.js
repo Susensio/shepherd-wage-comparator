@@ -39,7 +39,7 @@ test('«Para negociar»: en negro as a lever with both sides, and what it means 
 
   await loadOffers(page, sample, OFFER.sinContratoD);
   await expect(cash.locator('.lever-t')).toHaveText('Sin contrato');
-  await expect(cash.locator('.save small')).toContainText('en todo el contrato'); // no contract: the same wording
+  await expect(cash.locator('.save small')).toContainText('en todo el trabajo'); // no contract: it says the job
   await expect(cash).toContainText(/Paro unos 552\s€ menos/);
 });
 

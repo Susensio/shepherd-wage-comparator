@@ -1,7 +1,7 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fDate, fDays, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
+import { fAbout, fDate, fDays, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
@@ -313,7 +313,7 @@ function result(c) {
   // The headline says Falta, or Corresponde where nothing is recorded: the tiles do not repeat it
   const debt = s.hasPayments && !settled && !told;
   return html`<div class="block result">
-    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : c.money === 'owed' && !told ? 'tag owed' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Saldado' : belowMinimum ? 'Falta hasta el mínimo legal' : HEAD[c.money]}</span>${settled ? nothing : html`<span class="tag-row"><span class="big">${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}</span></span>`}${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
+    ${s.hasPayments ? html`<div class=${settled ? 'tag saldadas' : c.money === 'owed' && !told ? 'tag owed' : 'tag'}><span class="lbl">${told ? 'Cobrado' : settled ? 'Saldado' : belowMinimum ? (s.legalItems.every((x) => x.key === 'severance') ? 'Indemnización por fin de contrato' : 'Falta hasta el mínimo legal') : HEAD[c.money]}</span>${settled ? nothing : html`<span class="tag-row"><span class="big">${c.approx ? '≈ ' : ''}${whole(told ? s.cobrado : s.falta)}</span></span>`}${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>` : nothing}
     ${belowMinimum ? minimumLine(c.minimum) : nothing}
     ${tiles(c, { withoutFalta: debt })}
     ${notes(c, { over: '' })}
@@ -416,12 +416,12 @@ function lawBlock(c) {
       ? mark(
           'bad',
           'Jornadas de más',
-          `${law.days.worked} jornadas; corresponden unas ${Math.round(law.days.due)} con descanso, festivos y vacaciones: unas ${extra} de más.`,
+          `${law.days.worked} jornadas; con descanso, festivos y vacaciones corresponden ${fAbout(Math.round(law.days.due), 'jornada', 'jornadas')}: ${fAbout(extra, 'jornada', 'jornadas')} de más.`,
         )
       : mark(
           'ok',
           'Jornadas de más',
-          `${law.days.worked} jornadas, dentro de las unas ${Math.round(law.days.due)} que corresponden.`,
+          `${law.days.worked} jornadas, dentro de ${fAbout(Math.round(law.days.due), 'jornada', 'jornadas')} que ${Math.round(law.days.due) === 1 ? 'corresponde' : 'corresponden'}.`,
         );
   // Only where the place has verified holidays for every closed month's year; nothing otherwise
   const fests = law.holidays;
@@ -483,9 +483,8 @@ function lawBlock(c) {
  * @param {import('lit-html').TemplateResult} questions how it ended and the real period, which come right after the result
  */
 function cuentas(c, questions) {
-  const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
   const unanswered = !c.payments.length && !c.paid && (!c.recording || c.ask?.type === 'paidNone');
-  return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
+  return html`<h2 class="mode small">Cuentas${NET}</h2>
     ${result(c)}
     ${questions}
     ${unanswered ? paidQuestion(c) : nothing}
