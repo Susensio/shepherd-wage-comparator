@@ -267,8 +267,8 @@ function expectationView(c) {
   return html`<p class="expect-line">${line} <button type="button" class="linkbtn tapfull" data-action="expectChange">Cambiar</button></p>`;
 }
 
-/** The headline of Falta by where the money stands: never «Debe el ganadero» while it is not known that nothing more is expected. */
-const HEAD = { owed: 'Debe el ganadero', expecting: 'Esperando cobro', unconfirmed: 'Falta', settled: 'Falta' };
+/** The headline of Falta by where the money stands: never «Debe» while it is not known that nothing more is expected. */
+const HEAD = { owed: 'Debe', expecting: 'Esperando cobro', unconfirmed: 'Falta', settled: 'Falta' };
 
 /** What is cobrado reaches the pay agreed (or is taken as agreed) and still falls short of what the law requires. */
 const belowLegalMinimum = (c) => {

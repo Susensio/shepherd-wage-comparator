@@ -352,7 +352,7 @@ test.describe('the status of a card in Trabajos', () => {
     await list(page);
     expect(await page.locator('#cards .year-head b').allTextContents()).not.toContain('Para reclamar');
     await expect(card(page)).toHaveClass(/st-red/);
-    await expect(card(page).locator('.oc-status')).toContainText(/Debe el ganadero [\d.]+\s€/);
+    await expect(card(page).locator('.oc-status')).toContainText(/Debe [\d.]+\s€/);
     // The long «Siguiente: … · plazo legal» line is gone: the deadline lives in the ficha
     await expect(card(page)).not.toContainText('Siguiente');
     await expect(card(page)).not.toContainText('plazo legal');
@@ -400,7 +400,7 @@ test.describe('the status of a card in Trabajos', () => {
     await expect(card(page).locator('.oc-status')).toHaveText('Saldado');
   });
 
-  test('with Falta, the card is grey Por confirmar until the shepherd says what is expected, then amber Esperando cobro or red Debe el ganadero; a lapsed promise turns red', async ({
+  test('with Falta, the card is grey Por confirmar until the shepherd says what is expected, then amber Esperando cobro or red Debe; a lapsed promise turns red', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -426,10 +426,10 @@ test.describe('the status of a card in Trabajos', () => {
     await expect(card(page).locator('.oc-status')).toContainText('Esperando cobro');
     await status('no');
     await expect(card(page)).toHaveClass(/st-red/);
-    await expect(card(page).locator('.oc-status')).toContainText('Debe el ganadero');
+    await expect(card(page).locator('.oc-status')).toContainText('Debe');
     await status('lapsed');
     await expect(card(page)).toHaveClass(/st-red/);
-    await expect(card(page).locator('.oc-status')).toContainText('Debe el ganadero');
+    await expect(card(page).locator('.oc-status')).toContainText('Debe');
   });
 
   test('a job not worked has no status', async ({ page }) => {
@@ -562,7 +562,7 @@ test.describe('a promise to pay', () => {
     const card = page.locator('#cards .ocwrap', { hasText: 'Puerto A, otra cuenta' }).first();
     await expect(card).toHaveClass(/./);
     await expect(card).not.toContainText('Prometió');
-    await expect(card.locator('.oc-status')).toContainText('Debe el ganadero');
+    await expect(card.locator('.oc-status')).toContainText('Debe');
   });
 
   test('the Petición says that its months are not reviewed', async ({ page }) => {
@@ -594,7 +594,7 @@ test.describe('an old job: every month past its deadline', () => {
     await expect(card.locator('.oc-status')).toHaveClass(/grey/);
     await expect(card).toHaveClass(/st-grey/);
     await expect(card).not.toHaveClass(/st-red/);
-    await expect(card.locator('.oc-status')).not.toContainText('Debe el ganadero');
+    await expect(card.locator('.oc-status')).not.toContainText('Debe');
   });
 });
 

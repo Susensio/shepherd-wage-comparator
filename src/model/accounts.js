@@ -320,7 +320,7 @@ export function jobStatus({
     if (finished && money === 'unconfirmed') return { tone: 'grey', text: 'Por confirmar', owed, ...about };
     return {
       tone: 'red',
-      text: finished ? 'Debe el ganadero' : 'Falta',
+      text: finished ? 'Debe' : 'Falta',
       owed,
       ...about,
       ...(finished && claim ? { claim } : {}),

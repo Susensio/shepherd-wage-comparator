@@ -1135,14 +1135,14 @@ describe('the status of a job on its card', () => {
   const job = (changes) => jobStatus({ phase: 'finished', hasPayments: true, owed: 0, unclosed: 0, ...changes });
 
   test('red where the ganadero owes, in a finished job and under way', () => {
-    assert.deepEqual(job({ owed: 120 }), { tone: 'red', text: 'Debe el ganadero', owed: 120 });
+    assert.deepEqual(job({ owed: 120 }), { tone: 'red', text: 'Debe', owed: 120 });
     assert.equal(job({ phase: 'underway', owed: 50 })?.text, 'Falta');
     assert.equal(job({ hasPayments: false, owed: 500 })?.tone, 'amber', 'nothing is owed that was not said');
   });
 
   test('a finished job that owes says until when it can be claimed, or that the deadline passed', () => {
     const claim = { by: '2027-03-31', lapsed: false };
-    assert.deepEqual(job({ owed: 120, claim }), { tone: 'red', text: 'Debe el ganadero', owed: 120, claim });
+    assert.deepEqual(job({ owed: 120, claim }), { tone: 'red', text: 'Debe', owed: 120, claim });
     assert.equal(job({ phase: 'underway', owed: 50, claim })?.claim, undefined);
   });
 
@@ -1159,7 +1159,7 @@ describe('the status of a job on its card', () => {
     assert.equal(job({ owed: 120 })?.approx, undefined);
   });
 
-  test('with Falta, what the shepherd expects colours the card: grey Por confirmar, amber Esperando cobro, red Debe el ganadero', () => {
+  test('with Falta, what the shepherd expects colours the card: grey Por confirmar, amber Esperando cobro, red Debe', () => {
     const claim = { by: '2027-03-31', lapsed: false };
     assert.deepEqual(job({ owed: 120, claim, money: 'unconfirmed' }), {
       tone: 'grey',
@@ -1173,7 +1173,7 @@ describe('the status of a job on its card', () => {
     });
     assert.deepEqual(job({ owed: 120, claim, money: 'owed' }), {
       tone: 'red',
-      text: 'Debe el ganadero',
+      text: 'Debe',
       owed: 120,
       claim,
     });

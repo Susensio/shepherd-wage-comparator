@@ -57,7 +57,7 @@ export async function openAccounts(page) {
 }
 
 /**
- * A figure of the result: a tile by its name. «Falta» is the headline's figure while a debt shows («Debe el ganadero»,
+ * A figure of the result: a tile by its name. «Falta» is the headline's figure while a debt shows («Debe»,
  * «Falta hasta el mínimo legal»), which the tiles do not repeat.
  */
 export const tileOf = (page, name, scope = '#result') =>

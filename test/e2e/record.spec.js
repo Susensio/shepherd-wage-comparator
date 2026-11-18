@@ -133,7 +133,7 @@ test.describe('under way: Registro', () => {
     await expect(tile(page, 'Falta')).toHaveText('—');
     await expect(page.locator('#result')).toContainText('Aún no hay cobros apuntados');
     await expect(page.locator('#result')).not.toContainText('mínimo legal');
-    await expect(page.locator('#result')).not.toContainText('Debe el ganadero');
+    await expect(page.locator('#result')).not.toContainText('Debe');
   });
 
   test('Corresponde − Cobrado = Falta, in net; a cobro lowers Falta; the neutral line when it is exceeded', async ({
@@ -169,7 +169,7 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#result')).toContainText(
       'más de lo que corresponde hasta hoy: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.',
     );
-    for (const gone of ['de más', 'adelantado', 'Debe el ganadero'])
+    for (const gone of ['de más', 'adelantado', 'Debe'])
       await expect(page.locator('#result .block').first()).not.toContainText(gone);
   });
 
@@ -305,7 +305,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#secEmployer')).toHaveCount(0);
   });
 
-  test('«Debe el ganadero» says Falta once: no stamp and no Falta tile beside it; nothing recorded has no headline', async ({
+  test('«Debe» says Falta once: no stamp and no Falta tile beside it; nothing recorded has no headline', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -316,7 +316,7 @@ test.describe('finished: Cuentas', () => {
       .getByRole('group', { name: '¿Se espera algún pago más?' })
       .getByRole('button', { name: 'No', exact: true })
       .click();
-    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe');
     await expect(page.locator('.block.result .stamp')).toHaveCount(0);
     await expect(page.locator('.block.result .sofar > div')).toHaveCount(2);
     await addPayments(page, [{ date: '2026-07-06', amount: 50000, via: 'payroll' }]);
@@ -407,7 +407,7 @@ test.describe('finished: Cuentas', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
-    // Calm: a green «Todo cobrado», no yellow «Debe el ganadero», no red tile, no prompt for cash, no «no es firme»
+    // Calm: a green «Todo cobrado», no yellow «Debe», no red tile, no prompt for cash, no «no es firme»
     await expect(page.locator('.block.result .tag')).toHaveClass(/saldadas/);
     await expect(page.locator('.block.result .tag .lbl')).toHaveText('Todo cobrado');
     await expect(page.locator('.block.result .tag .big')).toHaveText('✔');
@@ -684,7 +684,7 @@ test.describe('finished: Cuentas', () => {
       app.select(app.active().id);
     });
     await expect(page.locator('#result .expect-line')).toContainText('Quedó en pagar el 10 nov y no ha llegado.');
-    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe el ganadero');
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Debe');
     await page.evaluate(() => app.showTab('offers'));
     await expect(page.locator('#cards .ocard', { hasText: 'Puerto A, otra cuenta' })).toHaveClass(/st-red/);
     await page.evaluate(() => app.select(app.active().id));
