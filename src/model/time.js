@@ -66,9 +66,10 @@ export function schedule(terms) {
   // (ET art. 12.4.a requires part time in writing).
   const hoursUnknown = terms.hoursPerDay == null || terms.hoursPerDay === '';
   const hoursPerDay = hoursUnknown ? LAW.workdayHours : Math.max(0, num(terms.hoursPerDay));
-  // Vacation: 2.5 days per month, rounded to whole days, as on payslips (8.33 → 8)
-  const vacationDays = Math.round((num(LAW.vacationDaysPerYear) * months) / 12);
-  const vacationTaken = terms.vacation === 'taken' ? vacationDays : 0;
+  // Vacation accrues pro rata, 2.5 days a month, exactly (a job of 20 days earns 1.67). The days taken off are whole:
+  // the calendar has no half days.
+  const vacationDays = (num(LAW.vacationDaysPerYear) * months) / 12;
+  const vacationTaken = terms.vacation === 'taken' ? Math.round(vacationDays) : 0;
   // Share of days you work. «En total»: days off over the whole contract, vacation aside
   const off = Math.max(0, num(terms.daysOff));
   const unit = noDuration && terms.daysOffUnit === 'total' ? 'month' : terms.daysOffUnit;

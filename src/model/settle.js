@@ -275,9 +275,7 @@ export function settle(offer, record, today, r) {
   // The offer's days taken are its last ones (the calendar lays them out so), so those after the real end were not taken.
   const endedEarly = !openEnded && terms.vacation === 'taken' && realEnd < isoOf(/** @type {Date} */ (offerEnd));
   const untakenDays = () => {
-    const accrued = Math.round(
-      (LAW.vacationDaysPerYear * time.months * shares.reduce((t, x) => t + x.fullWeight, 0)) / 12,
-    );
+    const accrued = (LAW.vacationDaysPerYear * time.months * shares.reduce((t, x) => t + x.fullWeight, 0)) / 12;
     const afterEnd = daysInclusive(parseDate(realEnd), /** @type {Date} */ (offerEnd)) - 1;
     const taken = time.vacationTaken - Math.min(time.vacationTaken, afterEnd);
     return Math.max(0, accrued - taken);

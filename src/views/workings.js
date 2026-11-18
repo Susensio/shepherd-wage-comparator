@@ -136,7 +136,8 @@ function minimumSection(o, r, net) {
   const surplus = shownEuros(pay.salary) - shownEuros(min.salary) - bonusShown;
   const vacationShort = vacation ? Math.max(0, shownDiff(min.vacation, pay.vacationPay)) : 0;
   const shortTotal = (isWorthCounting(payShort) ? payShort : 0) + (isWorthCounting(vacationShort) ? vacationShort : 0);
-  const cashCover = Math.min(shortTotal, shownEuros(Math.min(debt.total, r.cash.grossEq)));
+  // Cash that covers all the debt covers the shortfall as shown, so «Debe» does not show a euro the sums leave over
+  const cashCover = debt.total <= r.cash.grossEq ? shortTotal : Math.min(shortTotal, shownEuros(r.cash.grossEq));
   const covered = isWorthCounting(debt.total) && r.cash.total > 0;
   return section(
     'Mínimo legal, contado por meses',

@@ -88,6 +88,7 @@ The code in `src/model/` is the exact version, and `src/law.js` holds every lega
 
 Two rules, and each extra hour counts once.
 
+- **Vacation accrues pro rata, exactly**: `time.vacationDays` is `LAW.vacationDaysPerYear × months / 12` with no rounding to whole days (a job of 20 days earns 1,67), in the money and in the early-end accrual of `settle`. The days taken off (`time.vacationTaken`) are whole, because the calendar has no half days.
 - **Paid days:** a wage «al día» is paid for the whole days worked (`daysWorked`, rounded) plus the public holidays and vacation taken off, which are paid too (`paidDays` in `model/time.js`). With nothing taken off, pay per day worked is exactly the daily wage.
 - **Extra days:** days worked above the due workdays (the contract's days minus weekly rest, public holidays and vacation taken). Each is valued as a normal workday at the minimum wage.
 - **Overtime:** hours above the normal workday, on every day worked, valued at the minimum hourly wage. No agreement premium is added (Huesca's art. 35, +75 % / +100 % on holidays, is a verified row but not modelled: it is a claim above the minimum that the model does not make).

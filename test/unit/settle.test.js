@@ -54,6 +54,13 @@ const payment = (id, date, gross, via = 'payroll') => ({ id, date, amount: gross
 const perDay = (changes = {}) =>
   offerWith({ payUnit: 'day', payAmount: 100, vacation: 'paidAtEnd', daysOff: 0, ...changes });
 
+test('vacation accrues pro rata, exactly: 2.5 days a month, no rounding to whole days', () => {
+  const offer = offerWith({ contract: 'temporary', payAmount: 1500, duration: 20 });
+  const { time } = calc(offer, ctx);
+  near(time.vacationDays, (30 * time.months) / 12, 'days accrued', 1e-9);
+  assert.ok(Math.abs(time.vacationDays - Math.round(time.vacationDays)) > 0.01, 'not a whole number');
+});
+
 test('with an empty record, settle gives the ficha’s figures for every sample offer', () => {
   let checked = 0;
   for (const offer of offers) {
@@ -77,7 +84,7 @@ test('with an empty record, settle gives the ficha’s figures for every sample 
       T.salary.agreed + T.overnight.agreed + T.vacation.agreed,
       cents(agreedSalary + r.pay.vacationPay + r.vacationApart),
       `${name}: agreed salary and vacation`,
-      0.01,
+      0.02, // each item is rounded to the cent on its own
     );
     near(T.salary.minimum, cents(r.min.salary), `${name}: minimum salary`);
     near(T.overnight.minimum, cents(r.min.overnight), `${name}: minimum overnight`);

@@ -9,7 +9,7 @@ const OFFER = { puertoA: 0, campanaB: 2, invernadaC: 3, sinContratoD: 4, tempora
 test('under the headline: the paro the offer generates, or why it generates none', async ({ page }) => {
   await loadOffers(page, sample, OFFER.puertoA);
   await expect(page.locator('#result .tag .paro')).toHaveText(
-    /^Y genera 37 días de paro: unos 1\.427\s€, que se cobran más adelante\.$/,
+    /^Y genera 37 días de paro: unos 1\.431\s€, que se cobran más adelante\.$/,
   );
   await loadOffers(page, sample, OFFER.sinContratoD);
   await expect(page.locator('#result .tag .paro')).toHaveText('Sin contrato no genera paro.');
@@ -17,7 +17,7 @@ test('under the headline: the paro the offer generates, or why it generates none
 
 test('the headline and the Desglose leave the paro out', async ({ page }) => {
   await loadOffers(page, sample, OFFER.puertoA);
-  await expect(page.locator('#result .tag .big')).toHaveText(/^2\.311\s€$/);
+  await expect(page.locator('#result .tag .big')).toHaveText(/^2\.317\s€$/);
   await page.locator('details[data-fold=breakdown2] > summary').click();
   await expect(page.locator('details[data-fold=breakdown2]')).not.toContainText('Paro');
 });

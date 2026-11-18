@@ -327,7 +327,12 @@ test.describe('whose voice an offer speaks in', () => {
   });
 
   test("another shepherd's ranking rows say «Falta para el mínimo», like own rows", async ({ openApp }) => {
-    const others = sample.offers.map((o, i) => ({ id: sharedId(i + 1), user_id: OTHER, terms: o.terms }));
+    // (one pays below the minimum: the sample's own shortfall was a rounding of the vacation days)
+    const others = sample.offers.map((o, i) => ({
+      id: sharedId(i + 1),
+      user_id: OTHER,
+      terms: o.mine.name === 'Temporada E' ? { ...o.terms, payAmount: 1300 } : o.terms,
+    }));
     const page = await openOthers(openApp, { others });
     await include(page);
     const theirs = (await page.locator('.lr.other').allTextContents()).join('\n');

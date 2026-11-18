@@ -14,8 +14,8 @@ const ranked = (page) => page.locator('#cmpBlk .lr .nm b').allTextContents();
 test('ranked by money plus paro: each row shows both, or «sin paro»', async ({ page }) => {
   await compareByMonth(page);
   expect(await ranked(page)).toEqual([
-    'Sin contrato G',
     'Puerto A',
+    'Sin contrato G',
     'Puerto A, otra cuenta',
     'Campaña B',
     'Temporada F',
@@ -24,8 +24,8 @@ test('ranked by money plus paro: each row shows both, or «sin paro»', async ({
     'Invernada C',
   ]);
   const first = page.locator('#cmpBlk .lr').filter({ has: page.locator('.nm b', { hasText: /^Puerto A$/ }) });
-  await expect(first.locator('.v')).toContainText(/2\.311\s€\/mes/);
-  await expect(first.locator('.paro')).toHaveText(/^\+ 428\s€ de paro$/);
+  await expect(first.locator('.v')).toContainText(/2\.317\s€\/mes/);
+  await expect(first.locator('.paro')).toHaveText(/^\+ 429\s€ de paro$/);
   await expect(first.locator('.paro')).toHaveClass(/ok/);
   const noContract = page.locator('#cmpBlk .lr', { hasText: 'Sin contrato G' });
   await expect(noContract.locator('.paro')).toHaveText('sin paro');
@@ -73,7 +73,7 @@ test('head to head compares the paro in the unit Comparar is in', async ({ page 
   await page.locator('#cmpBlk .lr', { hasText: 'Puerto A, otra' }).click();
   await page.locator('#cmpBlk .lr', { hasText: 'Temporada F' }).click();
   const pair = page.locator('#pairBlk');
-  await expect(pair.locator('tr', { hasText: 'Paro que genera al mes' })).toContainText(/428\s€/);
+  await expect(pair.locator('tr', { hasText: 'Paro que genera al mes' })).toContainText(/429\s€/);
   await expect(pair.locator('tr', { hasText: 'Paro que genera al mes' })).toContainText(/405\s€/);
 });
 
