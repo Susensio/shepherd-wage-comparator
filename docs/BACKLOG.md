@@ -62,3 +62,5 @@
 - Saved no-contract offers carry a vacation answer that was hidden until 16 November 2026 (often `taken` or `paidAtEnd` by default); they now owe no vacation silently. The screen shows the answer, so the shepherd can correct it; a migration was not judged worth it.
 - The Pago summary in Condiciones does not show the vacation answer for a job without a contract.
 - Vacation taken without a contract: the cash is paid per day worked, so the days off taken as vacation are not valued as paid.
+- Pension contribution lost by cash pay: «Lo que supuso el negro» names it without a figure; the model has none.
+- «Lo que supuso el negro» uses the agreed figures (`negroOf` reads the offer analysis), not the record's days.
