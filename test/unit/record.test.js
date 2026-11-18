@@ -1295,3 +1295,30 @@ describe('the status of a job on its card', () => {
     assert.equal(job({ phase: 'underway', unclosed: 2 })?.text, '2 meses sin cerrar');
   });
 });
+
+describe('a month whose calendar has not ended is never pending to close', () => {
+  const standing = (today, phase) => {
+    const record = emptyRecord();
+    const r = calc(OFFER, ctx);
+    return standingOf(settle(OFFER, record, today, r), today, phase, [], r.netFactor);
+  };
+
+  test('under way: the month in progress is not among the months to close', () => {
+    assert.deepEqual(
+      standing('2026-08-12', 'underway').unclosed.map((row) => row.month),
+      ['2026-06', '2026-07'],
+    );
+  });
+
+  test('a job already finished by its dates, with its last calendar month still running, does not list it', () => {
+    // the offer ends on 31 August: on 31 August itself the month has not ended
+    assert.deepEqual(
+      standing('2026-08-31', 'finished').unclosed.map((row) => row.month),
+      ['2026-06', '2026-07'],
+    );
+    assert.deepEqual(
+      standing('2026-09-01', 'finished').unclosed.map((row) => row.month),
+      ['2026-06', '2026-07', '2026-08'],
+    );
+  });
+});

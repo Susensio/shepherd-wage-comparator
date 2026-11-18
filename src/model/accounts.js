@@ -146,7 +146,7 @@ export function monthAccounts(offer, record, key, today, settled, r) {
  * - `lines`: `corresponde` as ledger lines (salary, overnight bonus, vacation once over, «En negro»).
  * - `nearest` and `deadlines`: when the claim of what is missing lapses. The payments are assigned oldest first, to date
  *   it and for nothing else; nothing when nothing is missing.
- * - `unclosed`: the months not closed, among those that have ended.
+ * - `unclosed`: the months not closed, among those whose calendar month has ended.
  * @param {ReturnType<typeof settle>} settled
  * @param {string} today ISO date
  * @param {'underway' | 'finished'} phase
@@ -256,7 +256,8 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
     /** The month in progress, counted up to today, or null. */
     running: current ? { month: current.month } : null,
     lines,
-    unclosed: ended.filter((row) => !row.closed),
+    // A month whose calendar has not ended cannot be closed: it is «en curso», never listed as pending
+    unclosed: ended.filter((row) => !row.closed && (row.calendarTo ?? row.to) < today),
     /** Every month counted, with its state and, for dating a claim, what the oldest-first assignment leaves open of it. */
     months: ended.map((row) => ({
       month: row.month,

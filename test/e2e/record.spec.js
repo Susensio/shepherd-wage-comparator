@@ -139,6 +139,21 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#result')).not.toContainText('Debe');
   });
 
+  test('the month in progress reads «en curso»: not pending, not in «Cerrar los meses», not closable', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await expect(page.locator('#result .registro-link .cv')).toHaveText('2 meses por cerrar · 1 mes en curso');
+    const months = page.getByRole('group', { name: 'Cerrar los meses' }).locator('.closeall-months li');
+    await expect(months).toHaveCount(2);
+    await expect(months.filter({ hasText: 'Agosto' })).toHaveCount(0);
+    await openRegistro(page);
+    await expect(strip(page, '2026-08')).toContainText('en curso');
+    await strip(page, '2026-08').click();
+    await expect(page.locator('[data-action=closeMonth]')).toHaveCount(0);
+    await expect(page.locator('#registroPage')).toContainText('Se podrá cerrar cuando acabe el mes.');
+  });
+
   test('Cobrado names a way only where the money came by two: all in hand is one plain figure', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'cash' }]);

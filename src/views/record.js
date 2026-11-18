@@ -198,10 +198,12 @@ const CHEVRON = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 /** What the row «Días» says: the months closed, and those still to close. */
 function daysSummary(c) {
   const open = c.standing.unclosed.length;
-  const closed = c.strip.filter((m) => m.state !== 'add' && m.state !== 'later').length - open;
+  const closed = c.strip.filter((m) => m.state === 'closed').length;
+  const current = c.strip.filter((m) => m.state === 'now').length;
   return [
     closed && (closed === 1 ? '1 mes cerrado' : `${closed} meses cerrados`),
     open && (open === 1 ? '1 mes por cerrar' : `${open} meses por cerrar`),
+    current && (current === 1 ? '1 mes en curso' : `${current} meses en curso`),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -363,7 +365,7 @@ function monthsList(c) {
   const months = c.strip.filter((m) => m.state !== 'add');
   // The calendar of a finished job is only there while a month is open
   const shown = c.calendar?.acc.row.month ?? null;
-  return html`<div class="tocl">${months.map((m) => monthRow(m.month, shown === m.month, html`<span><b>${capital(monthName(m.month))}</b> <small>${m.state === 'closed' ? 'cerrado' : 'según la oferta'}</small></span>`, c.calendar))}</div>
+  return html`<div class="tocl">${months.map((m) => monthRow(m.month, shown === m.month, html`<span><b>${capital(monthName(m.month))}</b> <small>${{ closed: 'cerrado', now: 'en curso' }[m.state] ?? 'según la oferta'}</small></span>`, c.calendar))}</div>
     ${c.addable ? monthRow(c.addable, shown === c.addable, html`<span>+ Añadir ${monthName(c.addable)}</span>`, c.calendar, 'linkbtn addmonth') : nothing}`;
 }
 
