@@ -6,7 +6,7 @@
  */
 
 import { html, nothing } from 'lit-html';
-import { fDate, fDays, fE } from '../format.js';
+import { fDate, fE } from '../format.js';
 import { citeOf, LAW, SOURCES } from '../law.js';
 import { daysBetween } from '../model/days.js';
 import { parseDate } from '../offer.js';
@@ -181,7 +181,7 @@ export function legalPageView(c) {
     ${c.cash ? cashNote : nothing}
     ${
       c.vacationRight
-        ? html`<section class="block"><div class="bh"><h2>Vacaciones</h2></div><p>${noContractVacation(c.vacationRight.perJornada)}: ${fDays(c.vacationRight.days)}, unos ${fE(c.vacationRight.amount, 0)} netos. Es un derecho del trabajo, no una deuda que figure en estas cuentas.</p></section>`
+        ? html`<section class="block"><div class="bh"><h2>Vacaciones</h2></div><p>${noContractVacation(c.vacationRight)} Es un derecho del trabajo, no una deuda que figure en estas cuentas.</p></section>`
         : nothing
     }
     ${closingBlock}

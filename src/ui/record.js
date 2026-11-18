@@ -27,7 +27,7 @@ import {
   standingOf,
 } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
-import { lawFromRecord } from '../model/compliance.js';
+import { lawFromRecord, vacationTest } from '../model/compliance.js';
 import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
 import {
@@ -150,6 +150,12 @@ export function setUpRecord(given) {
   sheet.form.addEventListener('submit', savePayment);
 }
 
+/** The vacation test of a job without a contract, where it falls short; null otherwise. */
+function vacationShort(record, settled, r) {
+  const test = vacationTest(record, settled, r);
+  return test && !test.covered ? test : null;
+}
+
 /**
  * The text «Copiar reclamación» copies for an offer, or null where the entry is hidden: decided by `claimToCopy` from
  * the phase (menu availability and the copy itself both read it).
@@ -198,10 +204,8 @@ function claimContext(o, r, settled, standing, today) {
     canShare: typeof navigator.share === 'function',
     // Money agreed en negro, or no contract at all: the page says that it is salary too
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
-    // Without a contract: the vacation accrued, as a right to say and never a debt
-    vacationRight: r.noContract
-      ? { days: r.time.vacationDays, perJornada: r.min.casual, amount: Math.round(r.min.vacationRight * r.netFactor) }
-      : null,
+    // Without a contract: the vacation as a right only where what was paid falls short of the minimum plus it
+    vacationRight: vacationShort(record, settled, r),
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',

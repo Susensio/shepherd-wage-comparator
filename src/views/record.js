@@ -1,7 +1,7 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fAbout, fDate, fDays, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
+import { fAbout, fDate, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
@@ -398,11 +398,7 @@ function lawBlock(c) {
     html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
   const facts = law.facts.map((f) =>
     f.id === 'vacation'
-      ? mark(
-          'warn',
-          'Vacaciones',
-          `${noContractVacation(f.perJornada)}: ${fDays(f.days)}, unos ${whole(f.amount)} netos.`,
-        )
+      ? mark(f.covered ? 'ok' : 'warn', 'Vacaciones', noContractVacation(f))
       : mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
   );
   const range = (f) =>

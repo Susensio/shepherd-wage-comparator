@@ -165,10 +165,10 @@ test.describe('Cuentas and Registro', () => {
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     const fact = (title) => block.locator('.lawcheck > div').filter({ has: page.locator('b', { hasText: title }) });
     await expect(fact(/^Sin contrato$/).locator('.m')).toHaveText('✘');
-    // The vacation is a right said once, with its days and amount, never a debt
+    // The cash agreed covers the minimum and the vacation: one calm line, no warning
     await expect(fact(/^Vacaciones$/)).toHaveCount(1);
-    await expect(fact(/^Vacaciones$/)).toContainText('Por ley se deben vacaciones y se pueden reclamar');
-    await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('?');
+    await expect(fact(/^Vacaciones$/)).toContainText('Lo cobrado (2.709 €) cubre el mínimo y la parte de vacaciones');
+    await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('✔');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
     await expect(block).not.toContainText('Se comprobará cuando');
     await expect(block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
@@ -180,14 +180,19 @@ test.describe('Cuentas and Registro', () => {
     await expect(block.locator('.lawcheck > div', { hasText: 'Parte en negro' }).locator('.m')).toHaveText('✘');
   });
 
-  test('Vía legal says the vacation of a job without a contract once, as a right and not a debt', async ({ page }) => {
+  test('Vía legal says the vacation of a job without a contract where what was paid falls short, as a right and not a debt', async ({
+    page,
+  }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
-    await addPayments(page, [{ date: '2026-03-01', amount: 100, via: 'cash' }]);
-    await openLegalPage(page);
     const section = page.locator('#legalPage .block', { has: page.getByRole('heading', { name: 'Vacaciones' }) });
-    await expect(section).toContainText(
-      'Por ley se deben vacaciones y se pueden reclamar, aunque no entran en las cuentas: 30 días al año (Estatuto, art. 38)',
-    );
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.setPaid(app.active(), 'none');
+      app.select(app.active().id);
+    });
+    await openLegalPage(page);
+    await expect(section).toContainText('Lo cobrado no llega al mínimo más la parte de vacaciones: faltan unos');
+    await expect(section).toContainText('(Estatuto, art. 38)');
     await expect(section).toContainText('no una deuda');
   });
 

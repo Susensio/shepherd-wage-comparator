@@ -24,16 +24,20 @@ export const noContractRule = (r) =>
     : `Sin contrato más de cuatro semanas: se mide como un trabajo fijo (Estatuto, arts. 8.2 y 15.4)`;
 
 /**
- * Said once, where the law is checked and in Vía legal: the right, never a debt of the money. Owed by law and claimable,
- * not a figure of the accounts.
- * @param {boolean} perJornada the job is measured per jornada (RD art. 4.1 ¶2), not as a fijo (ET 38)
+ * The vacation of a job without a contract, said in «¿Se cumplió la ley?» and Vía legal as an economic test (owner, 18
+ * November 2026): one calm line where what was paid covers the minimum plus the vacation, the shortfall where not.
+ * Per jornada the figures are per day worked, as a fijo's are in total.
+ * @param {{ perJornada: boolean, covered: boolean, paid: number, required: number, shortfall: number, days: number }} t `vacationTest` in `model/compliance.js`
  */
-export const noContractVacation = (perJornada) =>
-  `Por ley se deben vacaciones y se pueden reclamar, aunque no entran en las cuentas: ${
-    perJornada
-      ? `la parte de ${LAW.vacationDaysPerYear} días del salario mínimo diario que corresponde a los días del trabajo (Real Decreto del salario mínimo, art. 4.1)`
-      : `${LAW.vacationDaysPerYear} días al año (${citeOf('et', '38').label})`
-  }`;
+export function noContractVacation(t) {
+  if (!t.covered) {
+    const cite = t.perJornada ? 'Real Decreto del salario mínimo, art. 4.1' : citeOf('et', '38').label;
+    return `Lo cobrado no llega al mínimo más la parte de vacaciones: faltan unos ${fE(t.shortfall, 0)} (${cite}).`;
+  }
+  const perDay = t.perJornada && t.days > 0;
+  const figure = (x) => (perDay ? `${fE(x / t.days, 0)} al día` : fE(x, 0));
+  return `Lo cobrado (${figure(t.paid)}) cubre el mínimo y la parte de vacaciones (${figure(t.required)}).`;
+}
 
 /** Where the law says each right, to link it. */
 export const LAW_SOURCE = {
