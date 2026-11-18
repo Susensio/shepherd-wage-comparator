@@ -175,7 +175,7 @@ test('«Cancelar» puts the offer back as it was', async ({ loaded: page }) => {
   const before = await active(page);
   await openStep(page, 'pay');
   await page.fill('#payTotal', '999');
-  await page.check('input[name=payroll][value=none]');
+  await page.check('input[name=contract][value=none]');
   expect((await active(page)).terms).not.toEqual(before.terms);
   await page.locator('#entryClose').click();
   await expect(page.locator('#ficha')).toBeVisible();

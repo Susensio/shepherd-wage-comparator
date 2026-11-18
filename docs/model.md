@@ -115,7 +115,7 @@ Two rules, and each extra hour counts once.
 
 ## Pay questions
 
-The «Pago» section of the form is a view over `terms`; it saves no fields of its own (`src/pay-answers.js`). The first amount is in `unit` (day, month, or total when the offer has a duration).
+The «Pago» section of the form is a view over `terms`; it saves no fields of its own (`src/pay-answers.js`). It asks «¿Qué contrato?» first (Sin contrato · Temporal · Fijo discontinuo · Fijo · Autónomo, preselected by the template; the first and last write the `none` and `self` answers below, the others set `contract`), then «Lo que se paga» with its «El salario mínimo» checkbox, then «¿Cuánto va en nómina?» (Todo · El salario mínimo, y el resto en negro · Una parte) only with a contract. The saved encoding is unchanged. The first amount is in `unit` (day, month, or total when the offer has a duration).
 
 | Answer | Fields |
 |---|---|

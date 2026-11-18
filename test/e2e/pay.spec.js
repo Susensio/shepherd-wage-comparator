@@ -161,9 +161,9 @@ for (const [type, label] of [
   });
 }
 
-test('«Sin contrato»: everything is en negro and the contract questions go', async ({ page }) => {
+test('«Sin contrato»: everything is en negro and the payslip questions go', async ({ page }) => {
   await newOffer(page);
-  await answer(page, 'payroll', 'none');
+  await answer(page, 'contract', 'none');
   expect(await terms(page)).toMatchObject({
     contract: 'none',
     cashMode: 'amount',
@@ -171,13 +171,15 @@ test('«Sin contrato»: everything is en negro and the contract questions go', a
     cashUnit: 'month',
   });
   await expect(page.locator('#payCash')).toHaveText('Todo en negro: 2.100 € al mes.');
-  await expect(page.locator('input[name=contract]').first()).toBeHidden();
+  await expect(page.locator('input[name=contract][value=none]')).toBeChecked();
+  await expect(page.locator('input[name=payroll]').first()).toBeHidden(); // no payslip: nothing to ask about it
   // No vacation is asked without a contract: it is a right, said where the law is checked
   await expect(page.locator('input[name=vacation]').first()).toBeHidden();
   expect((await terms(page)).vacation).toBe('');
-  // Leaving it brings the contract back
-  await answer(page, 'payroll', 'all');
+  // Choosing a contract again brings the payslip questions back
+  await answer(page, 'contract', 'temporary');
   expect((await terms(page)).contract).toBe('temporary');
+  await expect(page.locator('input[name=payroll]').first()).toBeVisible();
   await expect(page.locator('input[name=contract][value=temporary]')).toBeChecked();
 });
 
@@ -222,8 +224,9 @@ test('extra pays are asked only for a monthly amount with a payslip', async ({ p
   await expect(extra).toBeVisible();
   await answer(page, 'payroll', 'min');
   await expect(extra).toBeHidden();
-  await answer(page, 'payroll', 'none');
+  await answer(page, 'contract', 'none');
   await expect(extra).toBeHidden();
+  await answer(page, 'contract', 'temporary');
   await answer(page, 'payroll', 'all');
   await answer(page, 'payPer', 'day');
   await expect(extra).toBeHidden();
@@ -253,7 +256,7 @@ test('«Se libran, cobrando» is offered on every contract: casual, a month or l
   expect((await terms(page)).vacation).toBe('taken');
   await expect(taken).toBeChecked();
   // A self-employed job has no vacation to ask
-  await answer(page, 'payroll', 'self');
+  await answer(page, 'contract', 'selfEmployed');
   await expect(taken).toBeHidden();
 });
 
@@ -359,10 +362,10 @@ const EXPECTED = {
   },
   'Campaña B': { payroll: 'min', total: '63', per: 'day', contract: 'seasonal' },
   'Invernada C': { payroll: 'all', total: '1430', per: 'month', type: 'gross', contract: 'temporary' },
-  'Sin contrato D': { payroll: 'none', total: '63', per: 'day' },
+  'Sin contrato D': { total: '63', per: 'day', contract: 'none' },
   'Temporada E': { payroll: 'all', total: '1450', per: 'total', contract: 'seasonal' },
   'Temporada F': { payroll: 'all', total: '78,75', per: 'day', contract: 'seasonal' },
-  'Sin contrato G': { payroll: 'none', total: '63', per: 'day' },
+  'Sin contrato G': { total: '63', per: 'day', contract: 'none' },
 };
 
 sample.offers.forEach((offer, index) => {
@@ -370,7 +373,7 @@ sample.offers.forEach((offer, index) => {
     await loadOffers(page, sample, index);
     await openStep(page, 'pay');
     const want = EXPECTED[offer.mine.name];
-    await expect(page.locator(`input[name=payroll][value=${want.payroll}]`)).toBeChecked();
+    if (want.payroll) await expect(page.locator(`input[name=payroll][value=${want.payroll}]`)).toBeChecked();
     await expect(page.locator(`input[name=payPer][value=${want.per}]`)).toBeChecked();
     if (want.total) await expect(page.locator('#payTotal')).toHaveValue(want.total);
     if (want.part) {
@@ -392,13 +395,13 @@ test('without a contract no vacation is asked, and what was answered for another
   await expect(vacation('taken')).toBeVisible();
   await answer(page, 'vacation', 'taken');
   expect(await terms(page)).toMatchObject({ vacation: 'taken' });
-  await answer(page, 'payroll', 'none');
+  await answer(page, 'contract', 'none');
   await expect(vacation('taken')).toBeHidden();
   await expect(vacation('paidAtEnd')).toBeHidden();
   expect(await terms(page)).toMatchObject({ contract: 'none', vacation: '' });
   expect(await page.evaluate(() => 'vacationAuto' in app.active().terms)).toBe(false);
   // A self-employed job has no vacation to ask either
-  await answer(page, 'payroll', 'self');
+  await answer(page, 'contract', 'selfEmployed');
   await expect(vacation('taken')).toBeHidden();
 });
 
@@ -428,8 +431,38 @@ test('«Todo» can be told gross: «1.300 € brutos al mes», and no contract o
   await expect(gross).toBeVisible();
   await answer(page, 'payroll', 'all');
   await expect(page.locator('input[name=payType][value=net]')).toBeAttached();
-  await answer(page, 'payroll', 'none');
+  await answer(page, 'contract', 'none');
   await expect(gross).toBeHidden();
-  await answer(page, 'payroll', 'self');
+  await answer(page, 'contract', 'selfEmployed');
   await expect(gross).toBeHidden();
+});
+
+test('the contract is asked first, with five options, and «¿Cuánto va en nómina?» only with a contract', async ({
+  page,
+}) => {
+  await newOffer(page);
+  const ask = (text) => page.getByText(text, { exact: true });
+  const order = await page.locator('#entry .step[data-step=pay] .ask:visible').allTextContents();
+  expect(order.slice(0, 3)).toEqual(['¿Qué contrato?', 'Lo que se paga', '¿Cuánto va en nómina?']);
+  await expect(page.locator('input[name=contract]')).toHaveCount(5);
+  expect(await page.locator('.seg[aria-label=Contrato] label').allTextContents()).toEqual([
+    'Sin contrato',
+    'Temporal',
+    'Fijo discontinuo',
+    'Fijo',
+    'Autónomo',
+  ]);
+  await expect(page.locator('input[name=contract][value=seasonal]')).toBeChecked(); // as the template (Puerto) has it
+  await expect(page.locator('input[name=payroll]')).toHaveCount(3); // Todo · El salario mínimo, y el resto en negro · Una parte
+  await expect(page.getByText('El salario mínimo, y el resto en negro')).toBeVisible();
+  await answer(page, 'contract', 'none');
+  await expect(ask('¿Cuánto va en nómina?')).toBeHidden();
+  await answer(page, 'contract', 'selfEmployed');
+  await expect(ask('¿Cuánto va en nómina?')).toBeHidden();
+  expect((await terms(page)).contract).toBe('selfEmployed');
+  await answer(page, 'contract', 'permanent');
+  await expect(ask('¿Cuánto va en nómina?')).toBeVisible();
+  expect((await terms(page)).contract).toBe('permanent');
+  // The checkbox under «Lo que se paga» stays
+  await expect(page.locator('#payMinimum')).toBeVisible();
 });

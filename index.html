@@ -417,6 +417,16 @@
         <fieldset aria-label="Pago">
         <p class="told full" id="payTold" aria-live="polite"></p>
         <div class="fld full">
+          <span class="ask">¿Qué contrato?</span>
+          <div class="seg" role="radiogroup" aria-label="Contrato">
+            <label><input type="radio" name="contract" data-answer="contract" value="none">Sin contrato</label>
+            <label><input type="radio" name="contract" data-answer="contract" value="temporary">Temporal</label>
+            <label><input type="radio" name="contract" data-answer="contract" value="seasonal">Fijo discontinuo</label>
+            <label><input type="radio" name="contract" data-answer="contract" value="permanent">Fijo</label>
+            <label><input type="radio" name="contract" data-answer="contract" value="selfEmployed">Autónomo</label>
+          </div>
+        </div>
+        <div class="fld full">
           <label class="ask" for="payTotal">Lo que se paga</label>
           <div class="combo">
             <input class="n" type="text" inputmode="decimal" id="payTotal" data-answer="amount">
@@ -430,13 +440,11 @@
           <p class="hint warn" data-required="pay"></p>
         </div>
         <div class="fld full">
-          <span class="ask" data-show="payrollAsk">¿Cuánto va en nómina?</span>
-          <div class="opts" role="radiogroup" aria-label="En nómina" data-show="payrollAsk">
+          <span class="ask" data-show="payrollQuestion">¿Cuánto va en nómina?</span>
+          <div class="opts" role="radiogroup" aria-label="En nómina" data-show="payrollQuestion">
             <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="all"><b>Todo</b></label>
-            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="min"><b>El salario mínimo</b></label>
+            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="min"><b>El salario mínimo, y el resto en negro</b></label>
             <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="part"><b>Una parte</b></label>
-            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="none"><b>Nada, sin contrato</b></label>
-            <label class="opt"><input type="radio" name="payroll" data-answer="payroll" value="self"><b>Nada: se factura como autónomo</b></label>
           </div>
           <label class="check" data-show="selfEmployed"><input type="checkbox" name="vatIncluded">La cantidad lleva el IVA dentro</label>
           <div class="combo" data-show="payPart">
@@ -451,14 +459,6 @@
           <p class="hint" id="payHint"></p>
           <p class="cashline" id="payCash" hidden></p>
           <p class="hint" data-show="payLegacy">Guardada con el formato anterior: las cifras no cambian hasta que se cambie una respuesta.</p>
-        </div>
-        <div class="fld full" data-show="withContract">
-          <span class="ask">¿Qué contrato?</span>
-          <div class="seg" role="radiogroup" aria-label="Contrato">
-            <label><input type="radio" name="contract" value="temporary">Temporal</label>
-            <label><input type="radio" name="contract" value="seasonal">Fijo discontinuo</label>
-            <label><input type="radio" name="contract" value="permanent">Fijo</label>
-          </div>
         </div>
         <div class="fld full" data-show="withContract">
           <span class="ask">¿Y las vacaciones?</span>

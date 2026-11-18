@@ -39,6 +39,8 @@ const minimumHow = (r) =>
 const SHOW = {
   // With «El salario mínimo» as the pay the question has one answer, so it is not asked
   payrollAsk: (o) => !isAllMinimum(answersOf(o.terms)),
+  // «¿Cuánto va en nómina?» only where there is a payslip
+  payrollQuestion: (o) => !isAllMinimum(answersOf(o.terms)) && !['none', 'selfEmployed'].includes(o.terms.contract),
   withDuration: (o) => o.terms.durationUnit !== 'unknown',
   hasStart: (o) => !!o.terms.start,
   hasEnd: (o) => !!endOf(o.terms),

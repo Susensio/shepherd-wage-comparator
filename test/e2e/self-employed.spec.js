@@ -14,13 +14,14 @@ async function newSelfEmployed(page) {
   await goStep(page, 'pay');
   await page.fill('#payTotal', '2000');
   await page.check('input[name=payPer][value=month]');
-  await page.check('input[name=payroll][value=self]');
+  await page.check('input[name=contract][value=selfEmployed]');
 }
 
-test('«se factura como autónomo» hides the contract questions and asks about the IVA', async ({ page }) => {
+test('«Autónomo» hides the payslip questions and asks about the IVA', async ({ page }) => {
   await newSelfEmployed(page);
   expect(await terms(page)).toMatchObject({ contract: 'selfEmployed', payAmount: 2000, payUnit: 'month' });
-  await expect(page.locator('input[name=contract]').first()).toBeHidden();
+  await expect(page.locator('input[name=contract][value=selfEmployed]')).toBeChecked();
+  await expect(page.locator('input[name=payroll]').first()).toBeHidden();
   await expect(page.locator('input[name=vacation]').first()).toBeHidden();
   const vat = page.locator('input[name=vatIncluded]');
   await expect(vat).toBeVisible();
@@ -29,7 +30,7 @@ test('«se factura como autónomo» hides the contract questions and asks about 
   expect((await terms(page)).vatIncluded).toBe(true);
   await expect(page.locator('#payHint')).toContainText('Sin el IVA');
   // Back to a payslip: an ordinary contract again
-  await page.check('input[name=payroll][value=all]');
+  await page.check('input[name=contract][value=temporary]');
   expect((await terms(page)).contract).toBe('temporary');
 });
 

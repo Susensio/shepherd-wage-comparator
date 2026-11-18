@@ -103,7 +103,17 @@ function payAnswerTyped(el, o) {
   else if (el.dataset.answer === 'amount') answers.amount = amount;
   else if (el.dataset.answer === 'part') answers.part = amount;
   else if (el.dataset.answer === 'unit') answers.unit = /** @type {'day' | 'month' | 'total'} */ (el.value);
-  else {
+  else if (el.dataset.answer === 'contract') {
+    // The contract first: «sin contrato» and «autónomo» are the answers that have no payslip
+    const kind = { none: 'none', selfEmployed: 'self' }[el.value];
+    if (kind) answers.payroll = /** @type {'none' | 'self'} */ (kind);
+    else if (['none', 'self'].includes(answers.payroll)) answers.payroll = 'all';
+    offers.editTerms(o, (terms) => {
+      writeAnswers(terms, answers);
+      if (!kind) terms.contract = el.value;
+    });
+    return;
+  } else {
     answers.payroll = /** @type {'all' | 'min' | 'part' | 'none'} */ (el.value);
     // The part starts empty, as a payslip amount told about everything is not a part of it
     if (answers.payroll === 'part') Object.assign(answers, { part: '', partType: 'net' });
