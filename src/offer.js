@@ -25,7 +25,7 @@ export const DEF_TERMS = {
   vatIncluded: false, // self-employed: the agreed amount has the IVA inside
   payUnit: 'month', // day · month · year · total
   extraPays: 'included', // included · separate
-  vacation: 'included', // included · taken · paidAtEnd
+  vacation: '', // included · taken · paidAtEnd; no preset: `defaultVacation` sets it for short contracts, otherwise it is asked
   cashMode: 'amount', // amount · total (cash = agreed total − payroll)
   cashAmount: '',
   cashUnit: 'month', // day · month · total

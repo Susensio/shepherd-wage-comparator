@@ -180,7 +180,8 @@ export function effectiveOffer(terms, mine, ctx, schedule) {
   if (terms.payrollMin)
     x = {
       ...x,
-      vacation: x.vacation === 'included' ? 'paidAtEnd' : x.vacation,
+      // the minimum payroll pays the vacation not taken at the minimum, whether it was «inside», unanswered or apart
+      vacation: x.vacation === 'taken' ? 'taken' : 'paidAtEnd',
       payType: 'gross',
       payAmount: min.agreed,
       payUnit: 'total',

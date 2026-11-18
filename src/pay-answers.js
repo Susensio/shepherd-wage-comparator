@@ -37,6 +37,9 @@ export function answersOf(t) {
 export function writeAnswers(t, { payroll, amount, unit, part, partType }) {
   if (payroll === 'none') {
     Object.assign(t, { contract: 'none', payrollMin: false, cashMode: 'amount', cashAmount: amount, cashUnit: unit });
+    // no contract, no vacation answer: nothing set for another contract stays behind (nor the automatic one)
+    t.vacation = '';
+    delete t.vacationAuto;
     return;
   }
   if (payroll === 'self') {

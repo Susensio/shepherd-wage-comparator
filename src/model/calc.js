@@ -120,7 +120,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   };
   const min = legalMinimum(t, ctx, time, {
     gross: dayPay,
-    realPay: noContract || offer.terms.vacation !== 'included',
+    // (the minimum payroll that replaces the pay, like a vacation inside it, keeps a day at the minimum wage)
+    realPay: noContract || (offer.terms.vacation !== 'included' && !offer.terms.payrollMin),
   });
   // Without a contract: the vacation paid apart, at the end, is cash on top of the pay (a fixed job's vacation cannot go
   // inside the pay, ET 38.1); inside it, or unanswered, it is still owed (`debtVacation`)

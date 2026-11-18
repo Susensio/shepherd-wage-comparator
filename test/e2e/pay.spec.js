@@ -265,8 +265,9 @@ test('«Una parte» without the part is missing, and the mark points at it', asy
   await page.evaluate(() => app.openFicha());
   await expect(page.locator('.crow[data-step=pay]')).toContainText('Falta lo que va en nómina');
   await page.locator('#result .empty [data-action=complete]').click();
-  await expect(page.locator('.fld.missing')).toContainText('Sin la parte en nómina no se puede calcular');
-  await expect(page.locator('.fld.missing')).toContainText('¿Cuánto va en nómina?');
+  // (the vacation, unanswered, is missing too)
+  const part = page.locator('.fld.missing', { hasText: '¿Cuánto va en nómina?' });
+  await expect(part).toContainText('Sin la parte en nómina no se puede calcular');
 });
 
 test('with the vacation inside the total, the sentence says what is left so the parts add up', async ({ page }) => {
@@ -336,8 +337,8 @@ test('what is missing points at the amount', async ({ page }) => {
   await goStep(page, 'trip');
   await page.locator('#entryNext').click();
   await page.locator('#result [data-action=complete]').click();
-  await expect(page.locator('.fld.missing')).toContainText('Sin el pago no se puede calcular');
-  await expect(page.locator('.fld.missing')).toContainText('Lo que se paga');
+  const pay = page.locator('.fld.missing', { hasText: 'Lo que se paga' });
+  await expect(pay).toContainText('Sin el pago no se puede calcular');
 });
 
 const EXPECTED = {

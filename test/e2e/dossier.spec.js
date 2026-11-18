@@ -183,9 +183,7 @@ test.describe('the dossier', () => {
 test.describe('the dossier of a job answered «Lo pactado»', () => {
   test.use({ today: '2026-11-12' });
 
-  test('says everything agreed was cobrado, not that no cobro was noted', async ({
-    page,
-  }) => {
+  test('says everything agreed was cobrado, not that no cobro was noted', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
