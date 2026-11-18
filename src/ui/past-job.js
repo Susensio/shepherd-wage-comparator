@@ -129,7 +129,8 @@ export function savePastJob() {
   const days = value('pastDays');
   const duration = start && end && end >= start ? daysInclusive(parseDate(start), parseDate(end)) : 0;
   const { how, min } = ui;
-  const contract = value('pastContract');
+  const contract =
+    /** @type {HTMLInputElement | null} */ (document.querySelector('#pastContract input:checked'))?.value ?? '';
   const pay = min ? 0 : num(value('pastPay'));
   const cobros = how === 'part' ? cobrosTyped() : [];
   const expectBy =

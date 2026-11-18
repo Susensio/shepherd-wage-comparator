@@ -447,10 +447,10 @@ test('the contract is asked first, with five options, and «¿Cuánto va en nóm
   await expect(page.locator('input[name=contract]')).toHaveCount(5);
   expect(await page.locator('.seg[aria-label=Contrato] label').allTextContents()).toEqual([
     'Sin contrato',
+    'Autónomo',
     'Temporal',
     'Fijo discontinuo',
     'Fijo',
-    'Autónomo',
   ]);
   await expect(page.locator('input[name=contract][value=seasonal]')).toBeChecked(); // as the template (Puerto) has it
   await expect(page.locator('input[name=payroll]')).toHaveCount(3); // Todo · El salario mínimo, y el resto en negro · Una parte
@@ -465,4 +465,25 @@ test('the contract is asked first, with five options, and «¿Cuánto va en nóm
   expect((await terms(page)).contract).toBe('permanent');
   // The checkbox under «Lo que se paga» stays
   await expect(page.locator('#payMinimum')).toBeVisible();
+});
+
+test('the contract options sit in two rows at 375 px: «Sin contrato · Autónomo», then «Temporal · Fijo discontinuo · Fijo»', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await newOffer(page);
+  const boxes = await page.locator('.seg[aria-label=Contrato] label').evaluateAll((labels) =>
+    labels.map((el) => {
+      const b = el.getBoundingClientRect();
+      return { text: el.textContent, left: b.left, right: b.right, top: Math.round(b.top), height: b.height };
+    }),
+  );
+  const rows = [...new Set(boxes.map((b) => b.top))];
+  expect(rows).toHaveLength(2);
+  const first = boxes.filter((b) => b.top === rows[0]).map((b) => b.text);
+  expect(first).toEqual(['Sin contrato', 'Autónomo']);
+  expect(boxes.filter((b) => b.top === rows[1]).map((b) => b.text)).toEqual(['Temporal', 'Fijo discontinuo', 'Fijo']);
+  // Every option fits the screen and the row is as tall for all of them, «Fijo discontinuo» wrapping in its cell
+  for (const b of boxes) expect(b.left >= 0 && b.right <= 375).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });

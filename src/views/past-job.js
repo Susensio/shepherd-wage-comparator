@@ -15,14 +15,23 @@ const cobroRow = (
   ${length > 1 ? html`<button type="button" class="linkbtn" data-action="pastRemoveCobro" data-id=${id}>Quitar</button>` : nothing}
 </div>`;
 
-/** The five contracts, as the pay step asks them. */
+/** The five contracts, as the pay step asks them: those without a contract on the first row, the others on the second. */
 const CONTRACTS = [
   ['none', 'Sin contrato'],
+  ['selfEmployed', 'Autónomo'],
   ['temporary', 'Temporal'],
   ['seasonal', 'Fijo discontinuo'],
   ['permanent', 'Fijo'],
-  ['selfEmployed', 'Autónomo'],
 ];
+
+/** A radio cannot be unchecked: tapping the one chosen takes the answer back, which is «No se sabe». */
+const untick = (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+  for (const other of input.closest('.seg')?.querySelectorAll('input') ?? [])
+    other.dataset.was = other === input && other.dataset.was !== '1' ? '1' : '0';
+  if (input.dataset.was === '0') input.checked = false;
+};
 
 const HOW = [
   ['all', 'Lo pactado'],
@@ -50,7 +59,9 @@ export function pastJobView({ error, how, expect, min, rows }) {
     </div>
     <section class="block">
       <div class="bh"><h2>Contrato</h2></div>
-      <label class="fld">¿Qué contrato?<select id="pastContract"><option value="">No se sabe</option>${CONTRACTS.map(([value, label]) => html`<option value=${value}>${label}</option>`)}</select></label>
+      <div class="fld full"><span class="ask">¿Qué contrato?</span>
+        <div class="seg rows" id="pastContract" role="radiogroup" aria-label="Contrato" @click=${untick}>${CONTRACTS.map(([value, label]) => html`<label><input type="radio" name="pastContract" value=${value}>${label}</label>`)}</div>
+        <small class="hint">Sin elegir, no se sabe. Tocar otra vez la opción elegida la quita.</small></div>
     </section>
     <section class="block">
       <div class="bh"><h2>Lo pactado</h2></div>

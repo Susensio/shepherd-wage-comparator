@@ -309,7 +309,7 @@ test.describe('«Trabajo ya hecho»', () => {
     await open(page);
     await page.locator('#pastName').fill('Verano en Yebra');
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastPay').fill('1500');
     await page.locator('#pastType').selectOption('gross');
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
@@ -331,19 +331,24 @@ test.describe('«Trabajo ya hecho»', () => {
   }) => {
     await open(page);
     await expect(page.locator('#pastPage .block h2').first()).toHaveText('Contrato');
-    expect(await page.locator('#pastContract option').allTextContents()).toEqual([
-      'No se sabe',
+    // Two rows, as in the pay step; nothing chosen is «No se sabe»
+    expect(await page.locator('#pastContract label').allTextContents()).toEqual([
       'Sin contrato',
+      'Autónomo',
       'Temporal',
       'Fijo discontinuo',
       'Fijo',
-      'Autónomo',
     ]);
+    await expect(page.locator('#pastContract input:checked')).toHaveCount(0);
+    await page.check('#pastContract input[value=temporary]');
+    await page.locator('#pastContract input[value=temporary]').click({ force: true });
+    await expect(page.locator('#pastContract input:checked')).toHaveCount(0);
+
     await dates(page, '2026-06-01', '2026-08-31');
     await page.locator('#pastPay').fill('1500');
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     await expect(page.locator('#pastPage [role=alert]')).toContainText('elige el contrato');
-    await page.selectOption('#pastContract', 'none');
+    await page.check('#pastContract input[value=none]');
     await page.locator('#pastPay').fill('60');
     await page.selectOption('#pastUnit', 'day');
     await page.locator('#pastOff').fill('2');
@@ -362,7 +367,7 @@ test.describe('«Trabajo ya hecho»', () => {
   test('without «Libranzas al mes» the weekly rest is not judged', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'none');
+    await page.check('#pastContract input[value=none]');
     await page.locator('#pastPay').fill('60');
     await page.selectOption('#pastUnit', 'day');
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
@@ -392,7 +397,7 @@ test.describe('«Trabajo ya hecho»', () => {
   test('the agreed pay is the minimum: cobros that add up show nothing short', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastMin').check();
     await expect(page.locator('#pastPay')).toBeDisabled();
     const net = await minimumNet(page);
@@ -410,7 +415,7 @@ test.describe('«Trabajo ya hecho»', () => {
   test('the agreed pay is the minimum: cobros that fall short show what is missing', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastMin').check();
     const net = await minimumNet(page);
     await page.locator('#pastForm input[name=pastHow][value=part]').check();
@@ -429,7 +434,7 @@ test.describe('«Trabajo ya hecho»', () => {
   }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastMin').check();
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
@@ -489,7 +494,7 @@ test.describe('«Trabajo ya hecho»', () => {
   test('both: the pay agreed and what happened', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastPay').fill('1500');
     await page.locator('#pastDays').fill('80');
     await page.locator('#pastForm input[name=pastHow][value=part]').check();
@@ -508,7 +513,7 @@ test.describe('«Trabajo ya hecho»', () => {
   }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastPay').fill('1500');
     await expect(page.locator('.past-cobro')).toHaveCount(0);
     await page.locator('#pastForm input[name=pastHow][value=part]').check();
@@ -569,7 +574,7 @@ test.describe('«Trabajo ya hecho»', () => {
   const saveWith = async (page, setUp) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastPay').fill('1500');
     await setUp();
     await page.getByRole('button', { name: 'Guardar el trabajo' }).click();
@@ -631,7 +636,7 @@ test.describe('«Trabajo ya hecho»', () => {
   test('the answer is ignored where the cobros leave nothing missing: the job is simply complete', async ({ page }) => {
     await open(page);
     await dates(page, '2026-06-01', '2026-08-31');
-    await page.selectOption('#pastContract', 'temporary');
+    await page.check('#pastContract input[value=temporary]');
     await page.locator('#pastMin').check();
     const net = await minimumNet(page);
     await page.locator('#pastForm input[name=pastHow][value=part]').check();

@@ -580,6 +580,25 @@ summary:focus-visible,
 .seg label:last-child {
   border-right: 0;
 }
+/* Two rows of choices (the contract): two on the first, three on the second; a long label wraps inside its cell */
+.seg.rows {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+.seg.rows label {
+  grid-column: span 2;
+  border-top: 1px solid var(--line);
+  text-wrap: balance;
+  line-height: 1.2;
+}
+.seg.rows label:nth-child(-n + 2) {
+  grid-column: span 3;
+  border-top: 0;
+}
+.seg.rows label:nth-child(2),
+.seg.rows label:nth-child(5) {
+  border-right: 0;
+}
 /* Very narrow screens: less side padding, so four short choices still fit one line */
 @media (max-width: 359px) {
   .seg label {
