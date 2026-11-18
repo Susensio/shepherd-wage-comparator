@@ -363,3 +363,26 @@ test('«Ver la ficha» is in the footer from the pay step on, as soon as nothing
   await expect(page.locator('#ficha')).toBeVisible();
   await expect(page.locator('#entry')).toBeHidden();
 });
+
+test('«¿Hay pernocta en el monte?» is asked only where an agreement pays it, or with the Puerto template', async ({
+  page,
+}) => {
+  const ask = page.getByText('¿Hay pernocta en el monte?');
+  await startOffer(page, 'day', 'harvest');
+  await expect(ask).toBeHidden(); // no place, no agreement: nothing to ask
+  await page.evaluate(() => {
+    app.active().terms.province = 'HU';
+    app.select(app.active().id);
+  });
+  await expect(ask).toBeVisible(); // Huesca's agreement pays it
+  await page.evaluate(() => {
+    app.active().terms.province = 'Z';
+    app.select(app.active().id);
+  });
+  await expect(ask).toBeHidden();
+});
+
+test('the Puerto template keeps the pernocta question', async ({ page }) => {
+  await startOffer(page, 'day', 'summer');
+  await expect(page.getByText('¿Hay pernocta en el monte?')).toBeVisible();
+});

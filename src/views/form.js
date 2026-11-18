@@ -6,7 +6,7 @@
 import { html, render } from 'lit-html';
 import { $, $$ } from '../dom.js';
 import { fCount, fE, fEntered, fInputValue, fN, isWorthCounting, joinAnd, num } from '../format.js';
-import { LAW } from '../law.js';
+import { LAW, overnightOf } from '../law.js';
 import { overlapsOf } from '../model/phase.js';
 import {
   actualYear,
@@ -47,6 +47,8 @@ const SHOW = {
   payLegacy: (o) => !isAnswerable(o.terms),
   hasExtraPays: (o) => askExtraPays(o.terms),
   vacationTaken: (o) => o.terms.contract !== 'selfEmployed',
+  // Asked only where an agreement pays it (the place's province) or where it was already said (the Puerto template)
+  askOvernight: (o) => o.terms.overnight === 'yes' || Boolean(overnightOf(o.terms.province)),
   overnight: (o) => o.terms.overnight === 'yes',
   showRent: (o) => o.terms.housing === 'yes',
   showMeals: (o) => mealsGiven(o.terms).length > 0,
