@@ -18,7 +18,7 @@ export function vacationDayOf(terms, time, wage, withCash = true) {
   const cash = withCash ? num(terms.cashAmount) : 0;
   // Every unit reduces to the month, as the pay does, so the same offer in another unit is worth the same
   const cashTotal =
-    terms.cashUnit === 'month' ? cash * time.months : terms.cashUnit === 'day' ? cash * time.daysWorked : cash;
+    terms.cashUnit === 'month' ? cash * time.months : terms.cashUnit === 'day' ? cash * time.paidDays : cash;
   const cashMonthly = time.months > 0 ? cashTotal / time.months : cash;
   const payDay = (monthlyPayOf(terms, time) + cashMonthly) / LAW.payrollMonthDays;
   const partTime = Math.min(1, (time.workFrac * 7 * time.hoursPerDay) / LAW.weeklyHours);
@@ -95,7 +95,7 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
 export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
   const amount = num(terms.payAmount);
   // «Total»: on payroll over the whole contract (without a duration, one month). Per day: the daily wage is also paid on
-  // the vacation and public holidays you take off (paid days, ET art. 37.2 and 38); in cash, only the days you work.
+  // the vacation and public holidays you take off (paid days, ET art. 37.2 and 38), in cash too.
   const monthly = monthlyPayOf(terms, time);
   // Per day: the daily wage for each paid day (`paidDays`). With a date, months are counted as on the payslip and do
   // not have 30.4 days: multiplying by months would inflate or shrink the pay.

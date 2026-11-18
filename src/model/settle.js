@@ -196,10 +196,11 @@ export function settle(offer, record, today, r) {
     // how a real month pays them.
     const paid = worked + (vacationTaken + holidaysOff) * time.workFrac * w;
 
-    // The agreed cash of the month, net as handed: per day worked it follows the days (the facts of a closed month
-    // included), else it is the month's share like the pay
+    // The agreed cash of the month, net as handed: per day it follows the paid days (the facts of a closed month
+    // included; a net total per day, the days worked alone), else it is the month's share like the pay
+    const cashDays = r.split?.unit === 'day' ? [time.daysWorked, worked] : [time.paidDays, paid];
     const cash =
-      r.cash.unit === 'day' && time.daysWorked > 0 ? (r.cash.total / time.daysWorked) * worked : r.cash.total * w;
+      r.cash.unit === 'day' && cashDays[0] > 0 ? (r.cash.total / cashDays[0]) * cashDays[1] : r.cash.total * w;
     // The payroll pay, plus the cash as the gross that would bring it net (what `calc` credits): without a contract the
     // pay is only that. Both go to the one pool that covers the minimum salary first, then the overnight bonus.
     // A net total agreed per day is that much for each day worked, payroll and cash together: the payroll follows the

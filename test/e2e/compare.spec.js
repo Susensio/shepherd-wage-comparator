@@ -19,8 +19,8 @@ test('ranked by money plus paro: each row shows both, or «sin paro»', async ({
     'Puerto A, otra cuenta',
     'Campaña B',
     'Temporada F',
-    'Temporada E',
     'Sin contrato D',
+    'Temporada E',
     'Invernada C',
   ]);
   const first = page.locator('#cmpBlk .lr').filter({ has: page.locator('.nm b', { hasText: /^Puerto A$/ }) });
@@ -47,8 +47,8 @@ test('«Ordenar: Sin el paro» ranks by money alone and hides the paro lines', a
     'Puerto A',
     'Campaña B',
     'Puerto A, otra cuenta',
-    'Temporada F',
     'Sin contrato D',
+    'Temporada F',
     'Temporada E',
     'Invernada C',
   ]);

@@ -511,3 +511,22 @@ test('without a contract, the vacation answer decides whether it is owed', () =>
   assert.equal(apart.pay.gross, 0, 'still no payroll');
   assert.equal(included.vacationApart, 0);
 });
+
+// Cash per day pays the vacation days taken too, as the payslip's daily wage does: 7 days with 1 of them vacation = 7 × 70
+test('cash per day counts the paid days, the vacation taken included', () => {
+  const r = figures({
+    contract: 'none',
+    payAmount: 0,
+    cashAmount: 70,
+    cashUnit: 'day',
+    start: '2026-11-09',
+    duration: 7,
+    durationUnit: 'days',
+    daysOff: '',
+    holidays: 'no',
+    vacation: 'taken',
+  });
+  assert.equal(r.time.vacationTaken, 1);
+  assert.equal(r.time.paidDays, 7);
+  near(r.cash.total, 490, 0.001, 'cash agreed');
+});

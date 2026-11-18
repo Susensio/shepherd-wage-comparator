@@ -114,7 +114,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   // Cash, housing and food, expenses
   const cashAmount = num(t.cashAmount);
   const cash =
-    t.cashUnit === 'month' ? cashAmount * months : t.cashUnit === 'day' ? cashAmount * daysWorked : cashAmount;
+    t.cashUnit === 'month' ? cashAmount * months : t.cashUnit === 'day' ? cashAmount * time.paidDays : cashAmount;
   const housing = cfg.inKind && t.housing === 'yes' ? rentPerMonth(mine, cfg) * months : 0;
   const food = cfg.inKind ? foodPerDay(t, cfg) * daysWorked : 0;
   const otherExpenses = num(mine.expenses) * months;
