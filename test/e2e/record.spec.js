@@ -37,6 +37,13 @@ test.describe('under way: Registro', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     // Until the start is confirmed the pill does not say the job is under way
     await expect(page.locator('#fichaPhase')).toHaveText('Por empezar');
+    // Nothing is known yet: the question leads, before the figures
+    expect(
+      await page
+        .locator('#result > :not(.conditions)')
+        .first()
+        .evaluate((e) => e.matches('.tcard-q')),
+    ).toBe(true);
     await page
       .getByRole('group', { name: '¿Empezó el trabajo?' })
       .getByRole('button', { name: 'Sí', exact: true })
@@ -44,6 +51,14 @@ test.describe('under way: Registro', () => {
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     await expect(page.locator('#result h2.mode')).toContainText('Hasta hoy');
     await expect(page.locator('.conditions')).toBeVisible(); // every mode starts with the agreed conditions
+    // Under way, the figures come first: the title and its tiles, then the days
+    expect(
+      await page
+        .locator('#result > :not(.conditions)')
+        .first()
+        .evaluate((e) => e.matches('h2.mode')),
+    ).toBe(true);
+    expect(await page.locator('#result > .block').first().locator('.sofar').count()).toBe(1);
     await at(page, '2026-05-01');
     await reselect(page);
     await expect(page.locator('#fichaPhase')).toHaveText('Por decidir');
@@ -262,7 +277,7 @@ test.describe('finished: Cuentas', () => {
       [a, b],
     );
 
-  test('the result first: the yellow block right after the conditions, then what the work left, the law, the claim and the chores', async ({
+  test('the result first: the yellow block right after the conditions, then the cobros, what the work left, the law, the claim and the chores', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 800 });
@@ -274,11 +289,13 @@ test.describe('finished: Cuentas', () => {
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
     await expect(page.locator('#result h2.mode')).toContainText('Cuentas');
     await expect(page.locator('.conditions')).toBeVisible();
-    // The cobros come first, then the yellow block
-    expect(await after(page, '.conditions', '#result .block.cobros')).toBe(true);
-    const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('cobros'));
+    // The result block is the first thing after the conditions, then the questions, the cobros and the days
+    const first = await page.evaluate(() => document.querySelector('#result .block')?.classList.contains('result'));
     expect(first).toBe(true);
-    expect(await after(page, '#result .block.cobros', '#result .block.result')).toBe(true);
+    expect(await after(page, '.conditions', '#result .block.result')).toBe(true);
+    expect(await after(page, '#result .block.result', '#result .block.cobros')).toBe(true);
+    expect(await after(page, '#result .block.result', '#result .tcard-q')).toBe(true); // ¿Cómo acabó?
+    expect(await after(page, '#result .block.cobros', '.registro-link')).toBe(true);
     // The order of the rest
     const order = [
       '#result .result',

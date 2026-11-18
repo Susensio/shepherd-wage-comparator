@@ -207,17 +207,23 @@ function daysSummary(c) {
 const daysRow = (c) =>
   html`<button type="button" class="registro-link" data-action="openRegistro"><span class="ck">Días</span><span class="cv">${daysSummary(c)}</span>${CHEVRON}</button>${reviewLink(c.standing.unclosed.length)}`;
 
-/** A job under way: «Hasta hoy» in net, what waits to be closed, and the way to the Registro. */
-function registro(c) {
+/**
+ * A job under way: «Hasta hoy» in net, what waits to be closed, the questions of its turns, and the way to the Registro.
+ * @param {RecordContext} c
+ * @param {import('lit-html').TemplateResult} questions the questions at the turns of the job, which go first while it is not known to have started
+ */
+function registro(c, questions) {
   const { today } = c;
-  return html`<h2 class="mode">Hasta hoy${NET}<small>Lo que va del trabajo.</small></h2>
-    ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
+  const notStarted = Boolean(c.cards?.start);
+  return html`${notStarted ? questions : nothing}<h2 class="mode">Hasta hoy${NET}<small>Lo que va del trabajo.</small></h2>
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
       ${tiles(c)}
       ${notes(c, { over: ' hasta hoy' })}
       ${minimumLine(c.minimum)}
     </div>
+    ${c.nudge ? html`<div class="nudge"><span>${nudgeText(c.nudge.months)}</span><button type="button" class="linkbtn" data-action="openRegistro" data-key=${c.nudge.months[0]}>Abrir${c.nudge.months.length > 1 ? ` ${monthName(c.nudge.months[0])}` : ''}</button></div>` : nothing}
+    ${notStarted ? nothing : questions}
     ${showCobros(c) ? cobrosView(c) : nothing}
     ${daysRow(c)}
     ${underwayTalk(c.talk)}`;
@@ -467,15 +473,21 @@ function lawBlock(c) {
   </div>`;
 }
 
-/** «Cuentas»: the result first, the chores last. The offer's own analysis, for reference, is the fold the ficha adds after it. */
-function cuentas(c) {
+/**
+ * «Cuentas»: the result first, then the questions and the cobros, the chores last. The offer's own analysis, for
+ * reference, is the fold the ficha adds after it.
+ * @param {RecordContext} c
+ * @param {import('lit-html').TemplateResult} questions how it ended and the real period, which come right after the result
+ */
+function cuentas(c, questions) {
   const settled = c.standing.hasPayments && c.standing.falta === 0 && !c.noPay;
   const unanswered = !c.payments.length && !c.paid && (!c.recording || c.ask?.type === 'paidNone');
   return html`<h2 class="mode small">Cuentas${NET}${settled ? html`<small>Cuentas saldadas</small>` : nothing}</h2>
-    ${unanswered ? paidQuestion(c) : nothing}
-    ${showCobros(c) ? cobrosView(c) : nothing}
     ${result(c)}
+    ${questions}
+    ${unanswered ? paidQuestion(c) : nothing}
     ${expectationView(c)}
+    ${showCobros(c) ? cobrosView(c) : nothing}
     ${daysRow(c)}
     ${balanceBlock(c)}
     ${lawBlock(c)}
@@ -492,11 +504,12 @@ export function realPeriod(c) {
 }
 
 /**
- * The top of the ficha of a job under way or finished: the block of its phase, then «Cobros» and the calendar.
+ * The top of the ficha of a job under way or finished: the block of its phase with its result, then the questions, «Cobros» and the days.
  * During «Repasar los meses» it is the review alone.
  * @param {RecordContext} c
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  return html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today)}${endLine(c.record)}${realPeriod(c)}${c.phase === 'finished' ? cuentas(c) : registro(c)}`;
+  const questions = html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today)}${endLine(c.record)}${realPeriod(c)}`;
+  return c.phase === 'finished' ? cuentas(c, questions) : registro(c, questions);
 }
