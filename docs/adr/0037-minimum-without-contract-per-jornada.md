@@ -35,3 +35,7 @@ Weighed and discarded:
 - The four-week boundary can move a job's minimum by a few euros; the ficha names the rule that applies.
 - The Leyes page explains the two minimums with the report's figures, marked as the page's reading where the decree is silent.
 - The Huesca overtime premium remains to be modelled (BACKLOG).
+
+## Amendment (18 November 2026, owner)
+
+Without a contract the vacation is an economic test: if what was paid covers the minimum plus the vacation's value, the page says so in one line; only a shortfall is shown, as a right with the difference, still outside Corresponde and Falta. The ET 38.1 rule (a fijo's vacation is taken, not paid, while the job lasts; paid in money only at its end) is stated on the Leyes page only.
