@@ -20,7 +20,7 @@ import { hoursWeek } from './model/time.js';
 import { contractOf, datesText, HERD, mealsGiven, mealsList } from './offer.js';
 import { answersOf, isAnswerable } from './pay-answers.js';
 import { fold, placeOfTerms } from './places.js';
-import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT } from './rights.js';
+import { failuresOf, H_MAX, isFullyUnpaid, LAW_SHORT, noContractRule } from './rights.js';
 import { earnedShown, isUnderAMonth, moneyIn, offerUnit, UNIT_TEXT, UNITS } from './units.js';
 
 /** What `missing()` can report, as the sentence names it. */
@@ -353,7 +353,7 @@ export function claimText(o, r) {
     );
     add(`Mínimo en todo el contrato, contado por meses: ${fE(r.min.total)} brutos.`);
     add(
-      `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.${r.noContract ? ' Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4).' : ''}${wageYearNote(r) ? ` ${wageYearNote(r)}` : ''}`,
+      `- Salario mínimo ${r.year} (${r.wage.decree})${r.min.casual ? `, ${fE(r.wage.casual, 2)} por jornada (contratos temporales de ${LAW.casualMaxDays} días o menos)` : `, ${fE(r.wage.annual)} al año para ${LAW.weeklyHours} h semanales`}: ${fE(r.min.salary)}.${r.noContract ? ` ${noContractRule(r)}.` : ''}${wageYearNote(r) ? ` ${wageYearNote(r)}` : ''}`,
     );
     if (r.min.overnight > 0)
       add(

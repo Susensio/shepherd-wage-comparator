@@ -4,7 +4,7 @@
 
 import { html } from 'lit-html';
 import { explanations } from './explanations.js';
-import { fCount, fDaysSpoken, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
+import { fCount, fDaysSpoken, fE, fN, isWorthCounting, num, WORTH_COUNTING_ABOVE } from './format.js';
 import { citeOf, LAW, overnightOf } from './law.js';
 import { vacationPayable } from './pay-answers.js';
 import { moneyIn, UNITS } from './units.js';
@@ -15,6 +15,15 @@ export const H_ORDINARY = LAW.weeklyHours + 0.5;
 export const H_MAX = LAW.maxWeekHours + 0.5;
 
 /** Why a vacation without a contract is still owed when it goes «dentro del pago» or is not answered. */
+/**
+ * The rule that measures a job without a contract (ADR-0037), in one line: per jornada up to `LAW.casualMaxDays`, fijo beyond.
+ * @param {{ min: { casual: boolean }, wage: { casual: number } }} r
+ */
+export const noContractRule = (r) =>
+  r.min.casual
+    ? `Sin contrato y hasta ${LAW.casualMaxDays} días: cada día trabajado, al menos ${fE(r.wage.casual, 2)} (Real Decreto del salario mínimo, art. 4)`
+    : `Sin contrato y más de ${LAW.casualMaxDays} días: se mide como un trabajo fijo (Estatuto, art. 15.4)`;
+
 /** Said once, where the law is checked and in Vía legal: the right, never a debt of the money. */
 export const NO_CONTRACT_VACATION = `Sin contrato se tiene derecho a vacaciones como en un trabajo fijo (${citeOf('et', '38').label})`;
 

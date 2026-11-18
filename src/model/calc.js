@@ -92,8 +92,8 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
           ...(isSelfEmployed ? { cashAmount: 0 } : {}),
           vacation: 'included',
           extraPays: 'included',
-          // Without a contract the job is measured as a fixed one (ET 15.4: a worker not registered in Social Security is
-          // presumed permanent): the monthly minimum, the rates of `ssOf('none')`, no severance, the vacation as permanent.
+          // Without a contract: up to `casualMaxDays` the minimum is per jornada worked, longer it is measured as a fixed
+          // one (ADR-0037, ET 15.4): the monthly minimum. Either way the rates of `ssOf('none')` and no severance.
           // An invoice (autónomo) keeps the temporary figures, which it does not use.
           contract: isSelfEmployed ? 'temporary' : 'none',
         }

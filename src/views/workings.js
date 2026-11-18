@@ -6,6 +6,7 @@ import { LAW } from '../law.js';
 import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
 import { retaPct } from '../model/self-employed.js';
 import { hoursWeek } from '../model/time.js';
+import { noContractRule } from '../rights.js';
 import { wageYearNote } from '../text.js';
 import { row } from './parts.js';
 
@@ -21,7 +22,6 @@ const unpaidRow = (label, unpaid, net, cls = 'tot') =>
   });
 
 /** Why a job without a contract is measured against the monthly minimum. */
-const NO_CONTRACT_FIXED = 'Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4)';
 const HOURS_UNKNOWN_FULL_DAY = `Sin horas apuntadas se mide como jornada completa, ${LAW.workdayHours} h al día`;
 
 function timeSection(o, r) {
@@ -107,8 +107,8 @@ function minimumSection(o, r, net) {
   const fullDay = r.time.hoursUnknown ? `. ${HOURS_UNKNOWN_FULL_DAY}` : '';
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
-      ? `${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${fullDay}`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${NO_CONTRACT_FIXED}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
+      ? `${r.noContract ? `${noContractRule(r)}. ` : ''}${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${fullDay}`
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual)} al año × ${fN(r.time.months, 1)} meses${r.noContract ? `. ${noContractRule(r)}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));

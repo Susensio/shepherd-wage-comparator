@@ -33,12 +33,32 @@ test.describe('figures that must agree', () => {
     await expect(page.locator('#result')).not.toContainText('El mínimo exigible supera lo pactado');
   });
 
-  test('without a contract the minimum says it is measured as a fixed job', async ({ page }) => {
-    await loadOffers(page, sample, SIN_CONTRATO_D);
-    await expect(page.locator('#result')).toContainText(
-      'Sin contrato se mide como un trabajo fijo (Estatuto, art. 15.4)',
+  test('without a contract the minimum says which rule measures it: per jornada up to 120 days, as a fijo beyond', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, SIN_CONTRATO_D); // 43 days
+    const result = page.locator('#result');
+    await page
+      .locator('details[data-fold=workings], details[data-fold=reference]')
+      .first()
+      .evaluate((d) => {
+        for (const x of document.querySelectorAll('#result details')) x.open = true;
+      });
+    await expect(result).toContainText(
+      'Sin contrato y hasta 120 días: cada día trabajado, al menos 57,82 € (Real Decreto del salario mínimo, art. 4)',
     );
-    await expect(page.locator('#result')).not.toContainText('por jornada ×');
+    await expect(result).not.toContainText('se mide como un trabajo fijo');
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.editTerms(app.active(), (t) => {
+        t.duration = 150;
+      });
+      app.select(app.active().id);
+      for (const x of document.querySelectorAll('#result details')) x.open = true;
+    });
+    await expect(result).toContainText(
+      'Sin contrato y más de 120 días: se mide como un trabajo fijo (Estatuto, art. 15.4)',
+    );
   });
 
   test('«Copiar reclamación» on a job worked copies the Petición de pago; on one still to decide, the offer’s', async ({

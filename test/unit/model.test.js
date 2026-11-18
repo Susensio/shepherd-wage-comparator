@@ -397,33 +397,39 @@ test("Huesca's agreement hours change the hourly figures and nothing else of a j
   near(huesca.min.hourly, huesca.wage.annual / 1760, 1e-9, 'annual wage over 1,760 hours');
 });
 
-test('without a contract the job is measured as a fixed one (ET 15.4): monthly minimum, SS of «none», no severance', () => {
-  // 60 days: a temporary contract this short would be measured against the casual daily figure
-  const none = {
-    contract: 'none',
-    duration: 60,
-    durationUnit: 'days',
-    payAmount: '',
-    cashAmount: 1000,
-    cashUnit: 'month',
-  };
-  const r = figures(none);
+const NO_CONTRACT = { contract: 'none', durationUnit: 'days', payAmount: '', cashAmount: 1000, cashUnit: 'month' };
+
+test('without a contract and up to 120 days, each day worked has its own minimum (ADR-0037): the casual figure, SS of «none», no severance', () => {
   const wage = minWageOf(2026);
-  const months = r.time.months;
+  for (const duration of [7, 60, LAW.casualMaxDays]) {
+    const r = figures({ ...NO_CONTRACT, duration });
+    assert.equal(r.min.casual, true, `${duration} days`);
+    near(r.min.salary, wage.casual * r.time.daysWorked, 0.01, `${duration} days: per jornada worked`);
+    assert.equal(r.pay.rates.workerPct, ssOf('none').workerPct);
+    assert.equal(r.employer.severance, 0);
+    assert.equal(r.min.vacation, 0, 'the vacation is a right, not counted');
+  }
+  // a week every day: about 405 € gross, as a casual temporary's
+  near(figures({ ...NO_CONTRACT, duration: 7, daysOff: '' }).min.salary, wage.casual * 7, 0.01, 'seven days');
+  const temporary = figures({ ...NO_CONTRACT, duration: 60, contract: 'temporary', payAmount: 1000, cashAmount: '' });
+  assert.equal(temporary.min.casual, true);
+  assert.ok(temporary.employer.severance > 0);
+});
+
+test('without a contract and over 120 days, the job is measured as a fixed one (ET 15.4): the monthly minimum', () => {
+  const wage = minWageOf(2026);
+  const r = figures({ ...NO_CONTRACT, duration: LAW.casualMaxDays + 1 });
   assert.equal(r.min.casual, false);
   near(
     r.min.salary,
-    ((wage.annual * months) / 12) * Math.min(1, (r.time.workFrac * 7 * 8) / 40),
+    ((wage.annual * r.time.months) / 12) * Math.min(1, (r.time.workFrac * 7 * 8) / 40),
     0.01,
-    'the monthly minimum, not the daily one',
+    'the monthly minimum',
   );
   assert.equal(r.pay.rates.workerPct, ssOf('none').workerPct);
-  assert.notEqual(r.pay.rates.workerPct, ssOf('temporary').workerPct);
   assert.equal(r.employer.severance, 0);
-  // the same 60 days with a temporary contract: the casual minimum, a severance
-  const temporary = figures({ ...none, contract: 'temporary', payAmount: 1000, cashAmount: '', cashUnit: 'month' });
-  assert.equal(temporary.min.casual, true);
-  assert.ok(temporary.employer.severance > 0);
+  // no duration: counted as one month, measured as fijo
+  assert.equal(figures({ ...NO_CONTRACT, durationUnit: 'unknown', duration: '' }).min.casual, false);
 });
 
 test('jobs of 2022 and 2023 are checked against their own minimum wage (RD 152/2022, RD 99/2023); earlier years say so', () => {
