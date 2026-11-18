@@ -6,23 +6,22 @@ import { DAYS_PER_MONTH, fromTotal } from '../offer.js';
 import { bisect, irpfAdded } from './tax.js';
 
 /**
- * What one vacation day is worth, gross: the job's real daily pay (a wage per day as agreed, or the month's pay over
- * 30 as payslips do) with the cash agreed as well (owner decision, 15 November 2026), and never less than a day at the
- * minimum wage. The legal claim may only reach the payroll's part.
+ * What one vacation day is worth, gross: the job's real daily pay (the month's pay over 30 as payslips do) and never
+ * less than a day at the minimum wage. With `gross` the cash agreed counts too (owner decision, 15 November 2026), both
+ * as gross, the basis of the minimum wage; without it, the pay as entered: the payslip's own part, which cannot depend
+ * on the cash, derived from it. The legal claim may only reach the payroll's part.
  * @param {object} terms
  * @param {ReturnType<import('./time.js').schedule>} time
  * @param {{ annual: number }} wage
- * @param {boolean} [withCash] false for the payroll's own part: the payslip cannot depend on the cash, which is derived from it
+ * @param {{ payScale: number, cash: number }} [gross] `payScale`: what turns the pay as entered into gross (a net pay is entered net); `cash`: the cash over the whole contract, as the gross that brings it net
  */
-export function vacationDayOf(terms, time, wage, withCash = true) {
-  const cash = withCash ? num(terms.cashAmount) : 0;
+export function vacationDayOf(terms, time, wage, gross) {
   // Every unit reduces to the month, as the pay does, so the same offer in another unit is worth the same
-  const cashTotal =
-    terms.cashUnit === 'month' ? cash * time.months : terms.cashUnit === 'day' ? cash * time.paidDays : cash;
-  const cashMonthly = time.months > 0 ? cashTotal / time.months : cash;
-  const payDay = (monthlyPayOf(terms, time) + cashMonthly) / LAW.payrollMonthDays;
+  const monthly = gross
+    ? monthlyPayOf(terms, time) * gross.payScale + (time.months > 0 ? gross.cash / time.months : gross.cash)
+    : monthlyPayOf(terms, time);
   const partTime = Math.min(1, (time.workFrac * 7 * time.hoursPerDay) / LAW.weeklyHours);
-  return Math.max(payDay, (wage.annual / LAW.smiDaysPerYear) * partTime);
+  return Math.max(monthly / LAW.payrollMonthDays, (wage.annual / LAW.smiDaysPerYear) * partTime);
 }
 
 /** The payroll pay of a month as entered, whatever the unit (a wage per day: the days worked in a month). */
@@ -47,9 +46,9 @@ function monthlyPayOf(terms, time) {
  * @param {object} terms the offer's terms
  * @param {object} ctx `{wage}`: the minimum wage of the offer's year
  * @param {ReturnType<import('./time.js').schedule>} time
- * @param {{ withCash?: boolean, realPay?: boolean }} [how] `realPay`: a vacation day is worth the real daily pay (cash too unless `withCash` is false), not only the minimum wage's: false for a vacation agreed inside the pay, whose carve-out is the agreed value, and for the minimum payroll that replaces the pay
+ * @param {{ gross?: { payScale: number, cash: number }, realPay?: boolean }} [how] `realPay`: a vacation day is worth the real daily pay (`gross`: the cash too), not only the minimum wage's: false for a vacation agreed inside the pay, whose carve-out is the agreed value, and for the minimum payroll that replaces the pay
  */
-export function legalMinimum(terms, { wage }, time, { withCash = true, realPay = terms.vacation !== 'included' } = {}) {
+export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vacation !== 'included' } = {}) {
   const { noDuration, months, hoursPerDay, workFrac, natDays, vacationDays, daysWorked } = time;
   const partTime = Math.min(1, (workFrac * 7 * hoursPerDay) / LAW.weeklyHours);
   const casual = !noDuration && terms.contract === 'temporary' && natDays <= LAW.casualMaxDays;
@@ -58,9 +57,7 @@ export function legalMinimum(terms, { wage }, time, { withCash = true, realPay =
   const agreed = monthly * months;
   const salary = casual ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours) : agreed;
   // «Included» vacation is carved out of the pay agreed (`payroll`), so its minimum stays a day at the minimum wage
-  const vacationDay = realPay
-    ? vacationDayOf(terms, time, wage, withCash)
-    : (wage.annual / LAW.smiDaysPerYear) * partTime;
+  const vacationDay = realPay ? vacationDayOf(terms, time, wage, gross) : (wage.annual / LAW.smiDaysPerYear) * partTime;
   const vacation = terms.vacation !== 'taken' ? vacationDays * vacationDay : 0;
   // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
   const stay = terms.overnight === 'yes';
@@ -105,7 +102,7 @@ export function payroll(terms, mine, { cfg, wage, irpfShares }, time) {
       ? (monthly * LAW.extraPaysPerYear * time.months) / 12
       : 0;
   // A vacation day on the payslip: the payroll's daily pay, never below a day at the minimum wage (`vacationDayOf`)
-  const vacationDay = vacationDayOf(terms, time, wage, false);
+  const vacationDay = vacationDayOf(terms, time, wage);
   // vacationGross: with «the minimum on payroll», the legal-minimum vacation
   let vacationPay =
     terms.vacation === 'paidAtEnd'

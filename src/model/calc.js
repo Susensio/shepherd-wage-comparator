@@ -104,17 +104,29 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const se = isSelfEmployed ? selfEmployed(effective, time, ctx) : null;
   const pay = payroll(t, mine, ctx, time);
   const car = travel(t, mine, time, cfg);
-  const min = legalMinimum(t, ctx, time, { realPay: noContract || offer.terms.vacation !== 'included' });
   const { months, natDays, daysWorked, hours, noDuration } = time;
-  // Without a contract: the vacation paid apart, at the end, is cash on top of the pay (a fixed job's vacation cannot go
-  // inside the pay, ET 38.1); inside it, or unanswered, it is still owed (`debtVacation`)
-  const vacationApart = noContract && effective.vacation === 'paidAtEnd' ? min.vacation : 0;
   const noContractFactor = pay.netFactor > 0 ? pay.netFactor : 1 - pay.rates.workerPct / 100;
 
-  // Cash, housing and food, expenses
+  // Cash as handed (net), and the gross that would bring it net on payroll
   const cashAmount = num(t.cashAmount);
   const cash =
     t.cashUnit === 'month' ? cashAmount * months : t.cashUnit === 'day' ? cashAmount * time.paidDays : cashAmount;
+  const netPayroll = pay.netOf(pay.gross);
+  const cashGrossEq = cash > 0 ? bisect((x) => pay.netOf(pay.gross + x) - netPayroll, cash, cash, cash * 3, 50) : 0;
+  // A vacation day is worth the job's daily pay, payroll and cash on the same, gross, basis
+  const dayPay = {
+    payScale: num(t.payAmount) > 0 ? pay.entered.gross / num(t.payAmount) : 1,
+    cash: noContract ? cash / noContractFactor : cashGrossEq,
+  };
+  const min = legalMinimum(t, ctx, time, {
+    gross: dayPay,
+    realPay: noContract || offer.terms.vacation !== 'included',
+  });
+  // Without a contract: the vacation paid apart, at the end, is cash on top of the pay (a fixed job's vacation cannot go
+  // inside the pay, ET 38.1); inside it, or unanswered, it is still owed (`debtVacation`)
+  const vacationApart = noContract && effective.vacation === 'paidAtEnd' ? min.vacation : 0;
+
+  // Housing and food, expenses
   const housing = cfg.inKind && t.housing === 'yes' ? rentPerMonth(mine, cfg) * months : 0;
   const food = cfg.inKind ? foodPerDay(t, cfg) * daysWorked : 0;
   const otherExpenses = num(mine.expenses) * months;
@@ -122,8 +134,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   // Unemployment benefit you generate; and the gross that would bring the cash part net, on payroll
   const contribDays = pay.gross > 0 ? natDays + (vacationPaid(t) ? time.vacationDays : 0) : 0;
   const benefit = unemploymentBenefit(pay.gross, contribDays);
-  const netPayroll = pay.netOf(pay.gross);
-  const cashGrossEq = cash > 0 ? bisect((x) => pay.netOf(pay.gross + x) - netPayroll, cash, cash, cash * 3, 50) : 0;
 
   // The benefit that payroll plus the cash's gross equivalent would give, minus the one generated (zero at the maximum)
   const lostDays = contribDays > 0 ? contribDays : noDuration ? DAYS_PER_MONTH : natDays;

@@ -14,8 +14,8 @@ const ranked = (page) => page.locator('#cmpBlk .lr .nm b').allTextContents();
 test('ranked by money plus paro: each row shows both, or «sin paro»', async ({ page }) => {
   await compareByMonth(page);
   expect(await ranked(page)).toEqual([
-    'Puerto A',
     'Sin contrato G',
+    'Puerto A',
     'Puerto A, otra cuenta',
     'Campaña B',
     'Temporada F',
