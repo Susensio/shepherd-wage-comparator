@@ -34,7 +34,7 @@ test('«Para negociar»: the figure of what cash saves is the largest, then extr
   if (cash) expect(cash.size).toBeGreaterThanOrEqual(30);
 });
 
-test('the arrow of «Condiciones» lies inside the card, with the padding of its text, and is centred on its row', async ({
+test('the arrow of «Condiciones» lies inside the card, with the padding of its text, and stays level with the title', async ({
   loaded: page,
 }) => {
   for (const width of [375, 1280]) {
@@ -56,7 +56,7 @@ test('the arrow of «Condiciones» lies inside the card, with the padding of its
       };
     });
     expect(m.reach, `the arrow lies inside the card at ${width}px`).toBeGreaterThanOrEqual(m.padLeft - 1);
-    expect(m.alignSelf).toBe('center');
+    expect(m.alignSelf, 'anchored at the top: the line that goes when it opens does not move it').toBe('flex-start');
   }
 });
 

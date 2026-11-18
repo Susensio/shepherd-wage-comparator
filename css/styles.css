@@ -1284,10 +1284,18 @@ div.welcome .pri {
 .conditions[open] > summary .cs {
   display: none;
 }
+/* The arrow stays level with the title, which does not move, and turns about the middle of its own stroke: neither the
+   line that goes nor the turn shifts it. */
 .conditions > summary::after {
   margin-left: 0;
   margin-right: 0;
-  align-self: center;
+  margin-top: 4px;
+  align-self: flex-start;
+  transform: rotate(45deg);
+  transform-origin: 59% 59%;
+}
+.conditions[open]:not(.closing) > summary::after {
+  transform: rotate(225deg);
 }
 .crows {
   display: flex;
