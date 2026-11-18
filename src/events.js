@@ -23,7 +23,17 @@ import { cardText, leversOf } from './text.js';
 import { accountActions, loadOthers, onSharingToggled } from './ui/account-section.js';
 import { copyBackup, downloadBackup, loadBackup } from './ui/backup.js';
 import { copyText } from './ui/dom.js';
-import { back, close, editStep, leaveWelcome, next, pickTemplate, startEntry, stepOfMissing } from './ui/entry.js';
+import {
+  back,
+  close,
+  editStep,
+  leaveWelcome,
+  next,
+  pickTemplate,
+  startEntry,
+  stepOfMissing,
+  toFicha,
+} from './ui/entry.js';
 import { saveFold } from './ui/folds.js';
 import { scrollToElement, toggleFold } from './ui/motion.js';
 import {
@@ -328,6 +338,7 @@ const OFFER_ACTIONS = {
   editStep: (b) => editStep(b.dataset.step, b.classList.contains('missing')),
   complete: () => editStep(stepOfMissing(active().terms), true),
   entryNext: next,
+  entryFicha: toFicha,
   entryBack: back,
   entryClose: close,
   /** Without an end date the duration is not known. */

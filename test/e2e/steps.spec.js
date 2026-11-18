@@ -345,3 +345,21 @@ test('each step fits a phone: nothing wider than the screen', async ({ page }) =
     await page.locator('#entryClose').click();
   }
 });
+
+test('«Ver la ficha» is in the footer from the pay step on, as soon as nothing required is missing', async ({
+  page,
+}) => {
+  await startOffer(page, 'offer');
+  await expect(page.locator('#entryFicha')).toBeHidden(); // before the pay step
+  await page.fill('#duration', '4');
+  await goStep(page, 'pay');
+  await expect(page.locator('#entryFicha')).toBeHidden(); // the pay is missing
+  await page.fill('#payTotal', '1500');
+  await page.locator('input[name=vacation][value=taken]').check({ force: true });
+  await expect(page.locator('#entryFicha')).toBeVisible();
+  await goStep(page, 'day');
+  await expect(page.locator('#entryFicha')).toBeVisible(); // the day keeps its defaults: 8 hours
+  await page.locator('#entryFicha').click();
+  await expect(page.locator('#ficha')).toBeVisible();
+  await expect(page.locator('#entry')).toBeHidden();
+});

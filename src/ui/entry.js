@@ -152,6 +152,13 @@ export function next() {
   callbacks.paint();
 }
 
+/** «Ver la ficha» from the pay step on: what is left (the day and the trip) keeps its defaults. */
+export function toFicha() {
+  if (entry.editing) return;
+  entryToFicha();
+  callbacks.paint();
+}
+
 /** «Empezar»: from the welcome to the templates. */
 export function leaveWelcome() {
   Object.assign(entry, { started: true, welcomed: true });
@@ -188,6 +195,13 @@ export function paintEntry(o, r) {
   $('#entryBar').style.width = `${Math.round(((index + 1) / STEPS.length) * 100)}%`;
   $('#entryNext').hidden = pending;
   $('#entryNext').textContent = edit ? 'Guardar' : index === STEPS.length - 1 ? 'Ver la ficha' : 'Siguiente';
+  // Once nothing required is missing (from the pay step on) the ficha is one tap away; the next steps keep their defaults
+  $('#entryFicha').hidden =
+    edit ||
+    pending ||
+    index < STEPS.findIndex((x) => x.id === 'pay') ||
+    index === STEPS.length - 1 ||
+    missing(o.terms).length > 0;
   $('.strip').hidden = pending;
   const unit = offerUnit(r, o.terms);
   $('#stripLabel').textContent = `Se gana ${unit === 'day' ? 'al día' : 'al mes'}, por ahora`;
