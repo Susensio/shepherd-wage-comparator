@@ -1,6 +1,6 @@
 // Fixes from the UI review of 14 November 2026: figures that contradicted each other, wording, tap targets, layout.
 
-import { expect, loadOffers, openAccounts, openRegistro, sample, startOffer, test } from './fixtures.js';
+import { expect, loadOffers, openAccounts, openLegalPage, openRegistro, sample, startOffer, test } from './fixtures.js';
 
 const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026, 17 h of overtime a week
 const SIN_CONTRATO_D = 4; // 30 January to 12 March 2026
@@ -145,7 +145,14 @@ test.describe('Cuentas and Registro', () => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
     await openAccounts(page);
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
-    await expect(block.locator('.lawcheck > div', { hasText: 'Sin contrato' }).locator('.m')).toHaveText('✘');
+    const fact = (title) => block.locator('.lawcheck > div').filter({ has: page.locator('b', { hasText: title }) });
+    await expect(fact(/^Sin contrato$/).locator('.m')).toHaveText('✘');
+    // The vacation is a right said once, with its days and amount, never a debt
+    await expect(fact(/^Vacaciones$/)).toHaveCount(1);
+    await expect(fact(/^Vacaciones$/)).toContainText(
+      'Sin contrato se tiene derecho a vacaciones como en un trabajo fijo',
+    );
+    await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('?');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
     await expect(block).not.toContainText('Se comprobará cuando');
     await expect(block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
@@ -155,6 +162,17 @@ test.describe('Cuentas and Registro', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
     await expect(block.locator('.lawcheck > div', { hasText: 'Parte en negro' }).locator('.m')).toHaveText('✘');
+  });
+
+  test('Vía legal says the vacation of a job without a contract once, as a right and not a debt', async ({ page }) => {
+    await loadOffers(page, sample, SIN_CONTRATO_D);
+    await addPayments(page, [{ date: '2026-03-01', amount: 100, via: 'cash' }]);
+    await openLegalPage(page);
+    const section = page.locator('#legalPage .block', { has: page.getByRole('heading', { name: 'Vacaciones' }) });
+    await expect(section).toContainText(
+      'Sin contrato se tiene derecho a vacaciones como en un trabajo fijo (Estatuto, art. 38)',
+    );
+    await expect(section).toContainText('no una deuda');
   });
 
   test('«Balance del trabajo» does not repeat the tiles; the days contributed say they include the vacation', async ({

@@ -58,7 +58,9 @@ export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vac
   const salary = casual ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours) : agreed;
   // «Included» vacation is carved out of the pay agreed (`payroll`), so its minimum stays a day at the minimum wage
   const vacationDay = realPay ? vacationDayOf(terms, time, wage, gross) : (wage.annual / LAW.smiDaysPerYear) * partTime;
-  const vacation = terms.vacation !== 'taken' ? vacationDays * vacationDay : 0;
+  // Without a contract the vacation is a right of the job, said once as such (`vacationRight`), not a debt of the money
+  const vacationRight = vacationDays * vacationDay;
+  const vacation = terms.vacation !== 'taken' && terms.contract !== 'none' ? vacationRight : 0;
   // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
   const stay = terms.overnight === 'yes';
   const agreement = stay ? overnightOf(terms.province) : null;
@@ -72,6 +74,8 @@ export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vac
     agreed,
     overnight,
     vacation,
+    /** What the vacation accrued comes to, owed or not: without a contract it is only a right, said in the texts. */
+    vacationRight,
     /** One day of vacation: the real daily pay, or the minimum wage's if higher. */
     vacationDay,
     total: salary + overnight + vacation,

@@ -318,8 +318,8 @@ describe('use (c): a past job known only by what happened, with thin terms', () 
   });
 });
 
-describe('«Lo pactado» counts as received only the money the terms agreed', () => {
-  // A job without a contract with 60 € a day in cash and a vacation «paid apart» that nobody agreed in money
+describe('«Lo pactado» without a contract: no vacation in Corresponde, Cobrado or Falta', () => {
+  // 60 € a day in cash for 7 days, and an old «paid apart» vacation answer that nobody agreed in money
   const NONE = {
     ...JOB,
     contract: 'none',
@@ -330,16 +330,15 @@ describe('«Lo pactado» counts as received only the money the terms agreed', ()
     vacation: 'paidAtEnd',
   };
 
-  test('the vacation paid apart is not cobrado: it stays in Falta', () => {
+  test('everything agreed is cobrado and nothing is missing', () => {
     const offer = offerOf(NONE);
     setPaid(offer.mine.record, 'asAgreed');
     const r = rOf(offer);
-    assert.ok(r.vacationApart > 0, 'the case has a vacation paid apart');
     const settled = settle(offer, offer.mine.record, TODAY, r);
-    assert.equal(settled.totals.items.vacation.received, 0);
-    assert.ok(settled.totals.items.vacation.owed > 0);
+    assert.equal(settled.totals.items.vacation.due, 0);
     const standing = standingOf(settled, TODAY, 'finished', [], r.netFactor, 'asAgreed');
-    near(standing.falta, settled.totals.items.vacation.owed * r.netFactor, 'Falta is the vacation', 0.02);
+    near(standing.cobrado, r.cash.total, 'Cobrado is the cash agreed', 0.05);
+    assert.ok(standing.falta < 1, 'Falta');
     near(standing.cobrado + standing.falta, standing.corresponde, 'Cobrado + Falta', 0.011);
   });
 });

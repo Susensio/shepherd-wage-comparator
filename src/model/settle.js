@@ -268,10 +268,7 @@ export function settle(offer, record, today, r) {
         : index === shares.length - 1
           ? shares.reduce((t, x) => t + x.fullWeight, 0)
           : 0;
-  // (without a contract, `vacationApart`: the vacation paid at the end on top of the cash)
-  const vacationAgreedOf = (index) =>
-    labour ? cents((pay.vacationPay + r.vacationApart) * vacationShareOf(index)) : 0;
-  const vacationApartOf = (index) => (labour ? cents(r.vacationApart * vacationShareOf(index)) : 0);
+  const vacationAgreedOf = (index) => (labour ? cents(pay.vacationPay * vacationShareOf(index)) : 0);
   // Vacation taken, but the job ended before the days were: the days accrued and not taken are owed at the end (ET 38.1).
   // The offer's days taken are its last ones (the calendar lays them out so), so those after the real end were not taken.
   const endedEarly = !openEnded && terms.vacation === 'taken' && realEnd < isoOf(/** @type {Date} */ (offerEnd));
@@ -408,9 +405,8 @@ export function settle(offer, record, today, r) {
     for (const item of ITEMS) {
       const x = row.items[item];
       if (asAgreed) {
-        // «Lo pactado» is the money the terms agreed: a vacation paid apart that nobody agreed in money is not received
-        x.received = item === 'vacation' ? cents(x.agreed - vacationApartOf(index)) : x.agreed;
-        x.declared = cents(x.received * Math.min(1, payrollShare));
+        x.received = x.agreed;
+        x.declared = cents(x.agreed * Math.min(1, payrollShare));
       } else {
         // The pool is gross-equivalent; the severance is paid net as it is, so it takes its due in net from the pool
         const k = item === 'severance' ? r.netFactor : 1;

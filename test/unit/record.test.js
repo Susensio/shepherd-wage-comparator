@@ -615,6 +615,17 @@ describe('the law, from the record: facts only', () => {
     assert.equal(x.overnight.applicable, calc(none, ctx).min.overnight > 0);
   });
 
+  test('without a contract the vacation is said once, as a right with its days and amount', () => {
+    const none = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'n', contract: 'none', payAmount: 0, cashAmount: 2000 });
+    const r = calc(none, ctx);
+    const x = lawFromRecord(none, emptyRecord(), settledOf(none, emptyRecord()), r, []);
+    const fact = x.facts.find((f) => f.id === 'vacation');
+    assert.ok(fact && 'days' in fact && fact.days > 0 && fact.amount > 0);
+    assert.equal(x.facts.filter((f) => f.id === 'vacation').length, 1);
+    const withContract = lawFromRecord(OFFER, emptyRecord(), settledOf(OFFER, emptyRecord()), calc(OFFER, ctx), []);
+    assert.ok(!withContract.facts.some((f) => f.id === 'vacation'));
+  });
+
   test('«Lo pactado» reads no payslip, so the minimum on payroll is not judged on 0 € cobrados', () => {
     const record = { ...emptyRecord(), paid: 'asAgreed' };
     const x = lawFromRecord(OFFER, record, settledOf(OFFER, record), calc(OFFER, ctx), []);
@@ -916,23 +927,23 @@ describe('why Corresponde is more than the pay agreed', () => {
     assert.ok(total.total > total.agreed);
   });
 
-  test('an item short while the pay agreed is above the minimum as a whole: the item says so, except vacation without a contract', () => {
+  test('an item short while the pay agreed is above the minimum as a whole: the item says so; without a contract no vacation is owed', () => {
     const saved = JSON.parse(readFileSync(new URL('../fixtures/offers.json', import.meta.url), 'utf8'));
     const offers = ingestSaved(saved, { fallbackCfg: { ...DEF_CFG } }).offers;
     const found = offers.find((o) => o.mine.name === 'Sin contrato D');
     const d = { ...found, terms: { ...found.terms, vacation: 'included' } };
-    // «Las vacaciones no se pagan aparte» adds nothing where there is no contract: no line
+    // Without a contract the vacation is a right, not an item owed: no line
     assert.equal(note(d), null);
-    // The same figures as if there were a contract: the item that falls short is named
     const settled = settle(d, emptyRecord(), '2026-11-12', calc(d, ctx));
-    const x = minimumNote(d, settled, { ...calc(d, ctx), noContract: false });
-    assert.ok(x);
-    assert.equal(x.exceeds, false);
-    assert.deepEqual(
-      x.short.map((s) => s.key),
-      ['vacation'],
+    assert.equal(settled.totals.items.vacation.due, 0);
+    // With a contract the item that falls short is named
+    const withContract = { ...found, terms: { ...found.terms, contract: 'permanent', vacation: 'paidAtEnd' } };
+    const x = minimumNote(
+      withContract,
+      settle(withContract, emptyRecord(), '2026-11-12', calc(withContract, ctx)),
+      calc(withContract, ctx),
     );
-    assert.ok(x.short[0].amount > 0);
+    assert.ok(x === null || x.short.every((s) => s.amount > 0));
   });
 
   test('a pay above the minimum has no line', () => {

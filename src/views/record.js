@@ -1,10 +1,11 @@
 /** What the record says about a job under way or finished (ADR-0032): «Hasta hoy», «Cuentas» and «Cobros». */
 
 import { html, nothing } from 'lit-html';
-import { fDate, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
+import { fDate, fDays, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
+import { NO_CONTRACT_VACATION } from '../rights.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { claimView, lapsedLine, underwayTalk } from './claim.js';
@@ -380,7 +381,9 @@ function lawBlock(c) {
   const mark = (kind, title, text) =>
     html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
   const facts = law.facts.map((f) =>
-    mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
+    f.id === 'vacation'
+      ? mark('warn', 'Vacaciones', `${NO_CONTRACT_VACATION}: ${fDays(f.days)}, unos ${whole(f.amount)} netos.`)
+      : mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
   );
   const range = (f) =>
     `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${

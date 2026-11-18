@@ -69,7 +69,8 @@ export function schedule(terms) {
   // Vacation accrues pro rata, 2.5 days a month, exactly (a job of 20 days earns 1.67). The days taken off are whole:
   // the calendar has no half days.
   const vacationDays = (num(LAW.vacationDaysPerYear) * months) / 12;
-  const vacationTaken = terms.vacation === 'taken' ? Math.round(vacationDays) : 0;
+  // (without a contract no vacation is asked: it is a right of the job, never a day off the pay)
+  const vacationTaken = terms.vacation === 'taken' && terms.contract !== 'none' ? Math.round(vacationDays) : 0;
   // Share of days you work. «En total»: days off over the whole contract, vacation aside
   const off = Math.max(0, num(terms.daysOff));
   const unit = noDuration && terms.daysOffUnit === 'total' ? 'month' : terms.daysOffUnit;

@@ -197,6 +197,10 @@ function claimContext(o, r, settled, standing, today) {
     canShare: typeof navigator.share === 'function',
     // Money agreed en negro, or no contract at all: the page says that it is salary too
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
+    // Without a contract: the vacation accrued, as a right to say and never a debt
+    vacationRight: r.noContract
+      ? { days: r.time.vacationDays, amount: Math.round(r.min.vacationRight * r.netFactor) }
+      : null,
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',

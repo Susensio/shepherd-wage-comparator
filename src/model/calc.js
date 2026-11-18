@@ -90,8 +90,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
           ...effective,
           payAmount: 0,
           ...(isSelfEmployed ? { cashAmount: 0 } : {}),
-          // Only «taken» changes the days; the other answers are settled below (`vacationApart`, `debtVacation`)
-          vacation: noContract && effective.vacation === 'taken' ? 'taken' : 'included',
+          vacation: 'included',
           extraPays: 'included',
           // Without a contract the job is measured as a fixed one (ET 15.4: a worker not registered in Social Security is
           // presumed permanent): the monthly minimum, the rates of `ssOf('none')`, no severance, the vacation as permanent.
@@ -123,9 +122,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     // (the minimum payroll that replaces the pay, like a vacation inside it, keeps a day at the minimum wage)
     realPay: noContract || (offer.terms.vacation !== 'included' && !offer.terms.payrollMin),
   });
-  // Without a contract: the vacation paid apart, at the end, is cash on top of the pay (a fixed job's vacation cannot go
-  // inside the pay, ET 38.1); inside it, or unanswered, it is still owed (`debtVacation`)
-  const vacationApart = noContract && effective.vacation === 'paidAtEnd' ? min.vacation : 0;
 
   // Housing and food, expenses
   const housing = cfg.inKind && t.housing === 'yes' ? rentPerMonth(mine, cfg) * months : 0;
@@ -153,7 +149,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   const parts = {
     base: pay.base * pay.netFactor,
     extraPays: pay.extraPays * pay.netFactor,
-    vacationPay: pay.vacationPay * pay.netFactor + vacationApart * noContractFactor,
+    vacationPay: pay.vacationPay * pay.netFactor,
     b: cash,
     housing,
     food,
@@ -167,7 +163,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
 
   // What you are owed, counted by months: what is missing in each item separately (a surplus in one does not cover another)
   let debtSalary = se ? 0 : Math.max(0, min.salary + min.overnight - pay.salary);
-  let debtVacation = se || t.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
+  const debtVacation = se || t.vacation === 'taken' ? 0 : Math.max(0, min.vacation - pay.vacationPay);
   let minNetNoContract = 0;
   if (noContract) {
     // What you are paid in cash against the minimum wage with bonus, through the same net↔gross factor as the rest
@@ -175,7 +171,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     const minSalary = min.salary + min.overnight;
     minNetNoContract = minSalary * factor;
     debtSalary = Math.max(0, minSalary - cash / factor);
-    debtVacation = vacationApart > 0 || t.vacation === 'taken' ? 0 : min.vacation;
   }
   const debtTotal = debtSalary + debtVacation;
   const coveredByCash = cash > 0 ? cashGrossEq : 0;
@@ -190,7 +185,7 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
   // Casual workers are paid the minimum per day worked, so only the due days count against it.
   const extra = extraTime(time);
   const normalShare = min.casual && daysWorked > 0 ? Math.min(1, extra.due / daysWorked) : 1;
-  const normalPay = (min.salary + min.overnight) * normalShare + (vacationApart > 0 ? 0 : min.vacation);
+  const normalPay = (min.salary + min.overnight) * normalShare + min.vacation;
   const dayValue = min.hourly * extra.workday * (1 + min.overnightRate);
   const paidAbove = pay.gross > 0 || noContract ? Math.max(0, pay.gross - normalPay + coveredByCash) : 0;
   const daysValue = extra.days >= 0.5 ? extra.days * dayValue : 0;
@@ -269,7 +264,6 @@ export function calc(offer, { cfg, offers = [], alone = false }) {
     selfEmployed: se,
     min,
     /** Without a contract, the vacation paid apart at the end (gross): money on top of the cash, which discharges it. */
-    vacationApart,
     debt: { salary: debtSalary, vacation: debtVacation, total: debtTotal, parts: debtParts, owed, minNetNoContract },
     rest: { legal: restLegal, short: Math.max(0, restLegal - time.daysOffTotal) },
     extra: {

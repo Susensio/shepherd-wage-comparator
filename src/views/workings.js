@@ -6,7 +6,6 @@ import { LAW } from '../law.js';
 import { dayRounder, fSumE, shownDiff, shownEuros } from '../ledger.js';
 import { retaPct } from '../model/self-employed.js';
 import { hoursWeek } from '../model/time.js';
-import { NO_CONTRACT_VACATION } from '../rights.js';
 import { wageYearNote } from '../text.js';
 import { row } from './parts.js';
 
@@ -123,12 +122,7 @@ function minimumSection(o, r, net) {
       bonus,
       row('− Se paga en negro, pasado a bruto', fE(r.cash.total / factor)),
       salaryShort(cashShort, ''),
-      debt.vacation > 0.5 &&
-        row('Vacaciones sin pagar', fE(debt.vacation), {
-          sub: `${fDays(r.time.vacationDays)}. ${NO_CONTRACT_VACATION}`,
-          cls: 'strong',
-        }),
-      unpaidRow('Debe el ganadero', cashShort + (debt.vacation > 0.5 ? shownEuros(debt.vacation) : 0), net),
+      unpaidRow('Debe el ganadero', cashShort, net),
     ]);
   }
   const vacation = min.vacation > 0.5 && o.terms.vacation !== 'taken';

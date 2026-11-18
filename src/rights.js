@@ -15,7 +15,8 @@ export const H_ORDINARY = LAW.weeklyHours + 0.5;
 export const H_MAX = LAW.maxWeekHours + 0.5;
 
 /** Why a vacation without a contract is still owed when it goes «dentro del pago» or is not answered. */
-export const NO_CONTRACT_VACATION = `Sin contrato se mide como un trabajo fijo: las vacaciones no pueden ir dentro del pago (${citeOf('et', '38.1').label})`;
+/** Said once, where the law is checked and in Vía legal: the right, never a debt of the money. */
+export const NO_CONTRACT_VACATION = `Sin contrato se tiene derecho a vacaciones como en un trabajo fijo (${citeOf('et', '38').label})`;
 
 /** Where the law says each right, to link it. */
 export const LAW_SOURCE = {
@@ -85,22 +86,6 @@ export function rightsOf(o, r, unit = 'month') {
       'Salario mínimo',
       `Se pagan ${money.figure(r.cash.total)} en negro ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${r.min.overnight > 0 ? ', con el plus de pernocta' : ''}.`,
     );
-    if (o.terms.vacation === 'taken')
-      add('vacation', true, 'Vacaciones', `Se libran los ${vacationDays} días que corresponden, cobrando.`);
-    else if (r.vacationApart > 0)
-      add(
-        'vacation',
-        true,
-        'Vacaciones',
-        `Se pagan aparte, al acabar, los ${vacationDays} días que corresponden: unos ${money.netAll(r.vacationApart)} netos.`,
-      );
-    else if (isWorthCounting(r.debt.vacation))
-      add(
-        'vacation',
-        false,
-        'Vacaciones',
-        `${NO_CONTRACT_VACATION}. Corresponden ${vacationDays} días: unos ${money.netAll(r.debt.vacation)} netos.`,
-      );
   } else {
     add(
       'salary',

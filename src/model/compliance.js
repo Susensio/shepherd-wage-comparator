@@ -16,7 +16,7 @@ import { ITEMS } from './settle.js';
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, min: { overnight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ noContract?: boolean, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number }, min: { overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -94,6 +94,16 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   // agreed is pay off the payslip (the whole pay, without a contract, so it is said once)
   const facts = [
     ...(r.noContract ? [{ id: /** @type {const} */ ('noContract') }] : []),
+    // the vacation accrued is a right of the job, said once as such and never as a debt
+    ...(r.noContract && r.time.vacationDays > 0
+      ? [
+          {
+            id: /** @type {const} */ ('vacation'),
+            days: r.time.vacationDays,
+            amount: cents(r.min.vacationRight * r.netFactor),
+          },
+        ]
+      : []),
     ...(!r.noContract && (r.cash?.total ?? 0) >= 1
       ? [{ id: /** @type {const} */ ('cash'), amount: settled.totals.agreedCash }]
       : []),

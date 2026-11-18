@@ -191,7 +191,7 @@ test('IRPF in 2026, with the minimum-wage deduction', () => {
   near(Math.max(0, ded.max - (20048.45 - ded.from) * ded.taper), 0, 0.01, 'the deduction ends at 20,048.45 €');
 });
 
-test('without a contract: paid the minimum, only the vacation is owed', () => {
+test('without a contract: paid the minimum, nothing is owed, and the vacation is a right, not a debt', () => {
   const minimum = figures({ contract: 'none', payAmount: 0, cashAmount: 0, duration: 1 }).debt.minNetNoContract;
   const r = figures({
     contract: 'none',
@@ -202,7 +202,8 @@ test('without a contract: paid the minimum, only the vacation is owed', () => {
     vacation: 'included',
   });
   assert.ok(r.debt.salary < 1, 'no salary owed');
-  assert.ok(r.debt.vacation > 1, 'vacation owed');
+  assert.equal(r.debt.vacation, 0, 'no vacation owed');
+  assert.ok(r.min.vacationRight > 1, 'the right is told, with its amount');
 });
 
 test('sleeping out: the 25 % overnight bonus is owed', () => {
@@ -473,7 +474,10 @@ test('a vacation day owed or paid is worth the real daily pay, cash included, or
     0.01,
     'no contract: the cash day, as the gross that brings it net',
   );
-  assert.ok(none.debt.vacation > none.time.vacationDays * smiDay, 'above a day at the minimum wage');
+  assert.ok(
+    none.min.vacationRight > none.time.vacationDays * smiDay,
+    'the right is worth above a day at the minimum wage',
+  );
   // never below the minimum wage's day
   const low = figures({ payAmount: 400, vacation: 'paidAtEnd', holidays: 'no' });
   near(low.min.vacationDay, smiDay, 0.01, 'the minimum wage’s day');
@@ -493,8 +497,8 @@ test('without a duration an offer is counted as one month, as step 2 says', () =
   assert.deepEqual(missing(offerOf({ ...BASE, durationUnit: 'unknown', duration: '' }).terms), []);
 });
 
-// Without a contract the job is measured as a fixed one: its vacation cannot go inside the pay (ET 38.1, 15.4)
-test('without a contract, the vacation answer decides whether it is owed', () => {
+// Without a contract no vacation is asked: whatever an old answer says, it owes nothing and takes no day off the pay
+test('without a contract, the vacation is never asked: no debt, no days off, whatever the old answer', () => {
   const none = (vacation) =>
     figures({
       contract: 'none',
@@ -506,25 +510,22 @@ test('without a contract, the vacation answer decides whether it is owed', () =>
       holidays: 'no',
       vacation,
     });
-  const included = none('included');
-  assert.ok(included.debt.vacation > 100, 'inside the pay: still owed');
-  near(none('').debt.vacation, included.debt.vacation, 0.001, 'no answer: owed as inside the pay');
-  assert.equal(none('taken').debt.vacation, 0, 'taken: nothing owed');
-  assert.equal(none('taken').min.vacation, 0);
-  assert.ok(none('taken').time.vacationTaken > 0, 'taken: the days are off');
-  const apart = none('paidAtEnd');
-  assert.equal(apart.debt.vacation, 0, 'paid apart: nothing owed');
-  near(apart.vacationApart, apart.min.vacation, 0.001, 'paid apart: at the minimum vacation');
-  assert.ok(apart.earnings.parts.vacationPay > 0, 'paid apart: it is money received');
-  assert.equal(apart.pay.gross, 0, 'still no payroll');
-  assert.equal(included.vacationApart, 0);
+  for (const vacation of ['included', '', 'taken', 'paidAtEnd']) {
+    const r = none(vacation);
+    assert.equal(r.debt.vacation, 0, `${vacation}: nothing owed`);
+    assert.equal(r.min.vacation, 0);
+    assert.equal(r.time.vacationTaken, 0, `${vacation}: no day off`);
+    assert.equal(r.earnings.parts.vacationPay, 0);
+    assert.ok(r.min.vacationRight > 100, 'the right is told with an amount');
+  }
+  assert.equal(none('taken').time.daysWorked, none('').time.daysWorked);
 });
 
-// Cash per day pays the vacation days taken too, as the payslip's daily wage does: 7 days with 1 of them vacation = 7 × 70
+// Cash per day pays the vacation days taken too, as the payroll's daily wage does (with a contract: 1 of 7 days is vacation)
 test('cash per day counts the paid days, the vacation taken included', () => {
   const r = figures({
-    contract: 'none',
-    payAmount: 0,
+    payAmount: 40,
+    payUnit: 'day',
     cashAmount: 70,
     cashUnit: 'day',
     start: '2026-11-09',
