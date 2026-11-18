@@ -76,13 +76,17 @@ async function invariantProblems() {
   }
   const employerSlip = document.querySelector('#secSeason table.ps-emp');
   if (employerSlip) {
-    const totals = [...employerSlip.querySelectorAll('tfoot td')].map(number);
+    const totals = [...employerSlip.querySelectorAll('tfoot tr.contrib td')].map(number);
+    const grosses = [...employerSlip.querySelectorAll('tfoot tr.gross td')].map(number);
+    const costs = [...employerSlip.querySelectorAll('tfoot tr.cost td')].map(number);
     const rows = [...employerSlip.querySelectorAll('tbody tr')];
     const perMonth = rows.length / totals.length;
     totals.forEach((total, i) => {
       const sum = rows.slice(i * perMonth, (i + 1) * perMonth).reduce((s, row) => s + number(row.lastElementChild), 0);
       if (Math.abs(sum - total) > 0.001)
         problems.push(`employer payslip ${i + 1}: rows give ${sum.toFixed(2)}, total ${total}`);
+      if (Math.abs(grosses[i] + total - costs[i]) > 0.001)
+        problems.push(`employer payslip ${i + 1}: cost ${costs[i]} ≠ ${grosses[i]} + ${total}`);
     });
   }
   const pill = [...document.querySelectorAll('#result .pill')]

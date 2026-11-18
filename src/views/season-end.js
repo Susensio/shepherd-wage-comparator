@@ -40,6 +40,7 @@ function shownFigures(x, r) {
   const severance = x.severance > 0.5 ? cents(x.severance) : 0;
   const deductions = sum([irpf, ...contributions.map(([, amount]) => amount)]);
   const employer = r.pay.rates.employer.map(([concept, p]) => [concept, cents((gross * p) / 100)]);
+  const employerContributions = sum(employer.map(([, amount]) => amount));
   return {
     base,
     extraPays,
@@ -51,7 +52,8 @@ function shownFigures(x, r) {
     deductions,
     net: sum([gross, severance], [deductions]),
     employer,
-    employerTotal: sum(employer.map(([, amount]) => amount)),
+    employerContributions,
+    employerCost: sum([gross, employerContributions]),
   };
 }
 
@@ -106,7 +108,14 @@ function payslipTables(r, months, shown) {
             html`<tr class=${cls(m)}><th>${concept}</th><td class="det">${pct(p)}</td><td>${e2(shownMonths[m].employer[i][1])}</td></tr>`,
         ),
       )}</tbody>
-      <tfoot>${months.map((_x, m) => html`<tr class=${cls(m)}><th colspan="2">Total empresa</th><td>${e2(shownMonths[m].employerTotal)}</td></tr>`)}</tfoot></table></div>`;
+      <tfoot>${months.map(
+        (
+          _x,
+          m,
+        ) => html`<tr class=${cls(m, 'contrib')}><th colspan="2">Total aportaciones</th><td>${e2(shownMonths[m].employerContributions)}</td></tr>
+        <tr class=${cls(m, 'gross')}><th colspan="2">Salario bruto</th><td>${e2(shownMonths[m].gross)}</td></tr>
+        <tr class=${cls(m, 'cost')}><th colspan="2">= Coste total para la empresa</th><td>${e2(shownMonths[m].employerCost)}</td></tr>`,
+      )}</tfoot></table></div>`;
 }
 
 /** The simulator: pick a month and its payslip shows, like a real one. */

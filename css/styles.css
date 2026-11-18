@@ -3637,9 +3637,10 @@ details.plg > summary .stat.dt b {
   background: color-mix(in srgb, var(--c-pay) 12%, transparent);
   color: var(--c-pay);
 }
-.paper .ps-emp tfoot th,
-.paper .ps-emp tfoot td {
+.paper .ps-emp tfoot tr.cost th,
+.paper .ps-emp tfoot tr.cost td {
   background: color-mix(in srgb, var(--c-cash) 10%, transparent);
+  font-weight: 650;
 }
 /* Cuánto le cuestas: the total, highlighted */
 [data-fold="cost"] .row.tot {
