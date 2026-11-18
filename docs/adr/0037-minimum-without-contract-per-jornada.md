@@ -14,7 +14,7 @@ What the law says (report, with quotes):
 - Vacation of those workers, art. 4.1 ¶2: paid on top («conjuntamente»), as the share of the 30 legal days of the daily SMI for the time under contract (about 3,35 € per calendar day in 2026, an inference).
 - A fixed-term job of more than four weeks without a written contract is presumed indefinite and full time unless the employer proves it temporary (ET 8.2). A temporary worker not registered becomes fijo after a time equal to the trial period (ET 15.4 ¶2): at most one month for a fixed-term contract of six months or less (ET 14.1 ¶2), one month for a pastor in the Huesca agreement (art. 39). No Supreme Court ruling after the 2021 reform was found on either point.
 - Weekly rest is a day and a half, accumulable up to 14 days (ET 37.1); in livestock work the half day can be accumulated over four weeks (RD 1561/1995 art. 5.3). Hours over the ordinary maximum are overtime (ET 35.1), at least the ordinary hour or rest; the Huesca agreement pays them +75 % (+100 % on holidays, art. 35).
-- Inference, not decree text: the per-jornada figure behaves as the daily SMI × 395 paid days / 278 jornadas (a six-day week, holidays and vacation off). A fijo who rests a day and a half earns more per day worked; with the temporero's vacation counted, the gap is about 2–9 %.
+- Inference, not decree text: the per-jornada figure behaves as the daily SMI × 395 paid days / 278 jornadas (a six-day week, holidays and vacation off). A fijo who rests a day and a half earns more per day worked; with the temporero's vacation counted, the gap is about 2–10 %.
 
 Weighed and discarded:
 - Always fijo (the round-15 rule): states more than ET 15.4 says for the shortest jobs.

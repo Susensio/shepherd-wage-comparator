@@ -95,7 +95,7 @@ export function isAnswerable(t) {
 
 /**
  * Whether the model counts the contract as casual: temporary, lasting `LAW.casualMaxDays` calendar days or less (RD
- * 126/2026 art. 4: the minimum per day excludes vacation, so it cannot be taken). Not known without a duration.
+ * 126/2026 art. 4.1: the minimum per day excludes vacation, which is paid on top unless it is taken). Not known without a duration.
  * @param {object} terms
  * @param {{natDays: number, noDuration: boolean}} time the schedule the model computed
  */
@@ -104,7 +104,7 @@ export const isCasual = (terms, time) =>
 
 /**
  * Whether the vacation may be paid instead of taken: the contract ends before it could be taken (a month or less, any
- * contract), or it is casual (RD 126/2026 art. 4). The one rule for offering «Las libro» and for whether paying it is legal.
+ * contract), or it is casual (RD 126/2026 art. 4.1 ¶2). The rule for whether paying it instead of taking it is legal.
  * @param {object} terms
  * @param {{natDays: number, noDuration: boolean}} time the schedule the model computed
  */
