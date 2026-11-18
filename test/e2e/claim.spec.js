@@ -43,6 +43,24 @@ test.describe('the ladder', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shown);
   });
 
+  test('«Lo que supuso el negro» is in the talk fold where the job had cash, and not where all went on payroll', async ({
+    page,
+  }) => {
+    const fold = page.locator('details.step[data-step=talk]');
+    await fold.locator(':scope > summary').click();
+    const block = fold.locator('.negro');
+    await expect(block.locator('h4')).toHaveText('Lo que supuso el negro');
+    await expect(block).toContainText('El ganadero se ahorró unos');
+    await expect(block).toContainText('de Seguridad Social.');
+    await expect(fold.locator('.claim-text')).toContainText('Lo que supuso el negro:');
+    // Nothing of it for a job all on payroll
+    await loadOffers(page, sample, 5);
+    await addPayments(page, [{ date: '2026-06-05', amount: 100, via: 'payroll' }]);
+    await expect(fold).toHaveCount(1);
+    await expect(fold.locator('.negro')).toHaveCount(0);
+    await expect(fold.locator('.claim-text')).not.toContainText('Lo que supuso el negro');
+  });
+
   test('without the share sheet there is no «Compartir»; with it, the text goes to it', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Compartir' })).toHaveCount(0);
     await page.evaluate(() => {

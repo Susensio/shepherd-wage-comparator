@@ -3,6 +3,7 @@
  * Built from `settle` and the record; nothing is calculated again. Amounts are gross, as `settle` has them. No DOM.
  */
 
+import { isWorthCounting } from '../format.js';
 import { cents, spreadTo, sum } from '../ledger.js';
 import { daysBetween, monthSpan } from './days.js';
 import { countsOf, defaultMarks, marksOf } from './record.js';
@@ -364,6 +365,20 @@ export function balanceOf(offer, record, settled, r) {
     paroDays: r.unemployment.days,
     paroEuros: r.unemployment.euros,
   };
+}
+
+/**
+ * What paying en negro or without a contract meant, for the talk with the ganadero: the Social Security he saved and the
+ * paro that was not generated, as the offer's analysis has them (the real payslip is not recorded). Null where the job had
+ * neither cash nor a missing contract, or the saving is nothing.
+ * @param {{ noContract?: boolean, cash: { total: number }, savings: { cash: number }, unemployment: { lost: { days: number, euros: number } } }} r the offer's figures
+ * @returns {{ saved: number, paroDays: number, paroEuros: number } | null}
+ */
+export function negroOf(r) {
+  if (!(r.noContract || r.cash.total > 0.5) || !isWorthCounting(r.savings.cash)) return null;
+  const { days, euros } = r.unemployment.lost;
+  const paro = Math.round(days) >= 1 && isWorthCounting(euros);
+  return { saved: r.savings.cash, paroDays: paro ? Math.round(days) : 0, paroEuros: paro ? euros : 0 };
 }
 
 /**

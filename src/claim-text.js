@@ -7,7 +7,7 @@
 
 import { capitalize, fDate, fE, joinAnd } from './format.js';
 import { fSumE, spreadTo } from './ledger.js';
-import { spanOf } from './model/accounts.js';
+import { negroOf, spanOf } from './model/accounts.js';
 import { countsOf, defaultMarks, marksOf } from './model/record.js';
 import { ITEMS, netOfRow } from './model/settle.js';
 import { isoOf, parseDate } from './offer.js';
@@ -102,6 +102,20 @@ const cobrosLines = (payments) =>
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((p) => `· ${fIso(p.date)}: ${fSumE(p.amount)} ${WAY[p.via]}${p.note ? ` (${p.note})` : ''}`);
 
+/** The title of what paying en negro meant, in the page and in the summary. */
+export const NEGRO_TITLE = 'Lo que supuso el negro';
+
+/**
+ * The lines of «Lo que supuso el negro», impersonal: what the ganadero saved and the paro not generated.
+ * @param {NonNullable<ReturnType<typeof negroOf>>} n
+ */
+export const negroLines = (n) => [
+  `El ganadero se ahorró unos ${fE(n.saved, 0)} de Seguridad Social.`,
+  ...(n.paroDays > 0
+    ? [`Se dejaron de generar ${n.paroDays} ${n.paroDays === 1 ? 'día' : 'días'} de paro, unos ${fE(n.paroEuros, 0)}.`]
+    : []),
+];
+
 /**
  * «Resumen para el ganadero»: what the job came to and what is still missing, in net, by month and item, for talking
  * to the ganadero; it ends asking when it can be paid. No citations.
@@ -143,6 +157,8 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
       '',
       `${capitalize(joinAnd(standing.unclosed.map((row) => monthName(row.month))))}: calculado según lo pactado, sin cerrar.`,
     );
+  const negro = negroOf(r);
+  if (negro) out.push('', `${NEGRO_TITLE}:`, ...negroLines(negro));
   out.push('', '¿Cuándo se puede pagar?');
   return out.join('\n');
 }

@@ -23,6 +23,7 @@ import {
   minimumNote,
   moneyState,
   monthAccounts,
+  negroOf,
   spanOf,
   standingOf,
 } from '../model/accounts.js';
@@ -201,6 +202,7 @@ function claimContext(o, r, settled, standing, today) {
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
+    negro: owed ? negroOf(r) : null,
     request: owed ? paymentRequestText(base) : '',
     inspection: owed ? inspectionText(base) : '',
     fields: owed || record.end?.how === 'dismissed' ? conciliationFields(base) : [],
@@ -261,6 +263,7 @@ function talkContext(o, r, settled, standing, today) {
     step,
     canShare: typeof navigator.share === 'function',
     summary: employerSummaryText({ o, r, settled, standing, record, parties, until: today }),
+    negro: negroOf(r),
   };
 }
 

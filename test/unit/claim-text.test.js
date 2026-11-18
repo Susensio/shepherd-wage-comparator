@@ -9,12 +9,13 @@ import {
   defaultPayBy,
   employerSummaryText,
   inspectionText,
+  negroLines,
   owedNet,
   paymentRequestText,
 } from '../../src/claim-text.js';
 import { fE } from '../../src/format.js';
 import { fSumE, spreadTo, sum } from '../../src/ledger.js';
-import { standingOf } from '../../src/model/accounts.js';
+import { negroOf, standingOf } from '../../src/model/accounts.js';
 import { calc } from '../../src/model/calc.js';
 import { marksOf, toggleDay } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
@@ -364,5 +365,28 @@ describe('the months of «Plazos» are in whole euros that add up to Falta, as t
       checked++;
     }
     assert.ok(checked > 0);
+  });
+});
+
+describe('«Lo que supuso el negro»', () => {
+  const byName = (name) => worked.find((o) => o.mine.name === name);
+
+  test('a job with cash or without a contract says what the ganadero saved and the paro not generated, in the summary', () => {
+    for (const name of ['Puerto A, otra cuenta', 'Sin contrato D']) {
+      const c = contextOf(byName(name), 300);
+      const text = employerSummaryText(c);
+      const negro = negroOf(c.r);
+      assert.ok(negro && negro.saved > 0, name);
+      assert.ok(text.includes('Lo que supuso el negro:'), name);
+      assert.ok(text.includes(`El ganadero se ahorró unos ${fE(negro.saved, 0)} de Seguridad Social.`), name);
+      assert.ok(text.indexOf('Lo que supuso el negro') < text.indexOf('¿Cuándo se puede pagar?'), name);
+      for (const line of negroLines(negro)) assert.ok(!/\b(tú|perdiste|tu|tus)\b/i.test(line), line);
+    }
+  });
+
+  test('a job all on payroll has nothing of it', () => {
+    const c = contextOf(byName('Temporada E'), 300);
+    assert.equal(negroOf(c.r), null);
+    assert.ok(!employerSummaryText(c).includes('Lo que supuso el negro'));
   });
 });
