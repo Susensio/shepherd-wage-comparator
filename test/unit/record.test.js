@@ -614,6 +614,14 @@ describe('the law, from the record: facts only', () => {
     const x = lawFromRecord(none, emptyRecord(), settledOf(none, emptyRecord()), calc(none, ctx), []);
     assert.equal(x.overnight.applicable, calc(none, ctx).min.overnight > 0);
   });
+
+  test('«Lo pactado» reads no payslip, so the minimum on payroll is not judged on 0 € cobrados', () => {
+    const record = { ...emptyRecord(), paid: 'asAgreed' };
+    const x = lawFromRecord(OFFER, record, settledOf(OFFER, record), calc(OFFER, ctx), []);
+    assert.equal(x.minimum.applicable, false);
+    const cobros = lawFromRecord(OFFER, emptyRecord(), settledOf(OFFER, emptyRecord()), calc(OFFER, ctx), []);
+    assert.equal(cobros.minimum.applicable, true);
+  });
 });
 
 describe('the public holidays of the offer’s place on the calendar', () => {

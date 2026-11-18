@@ -317,3 +317,29 @@ describe('use (c): a past job known only by what happened, with thin terms', () 
     near((h?.money.due ?? 0) - 3000, h?.money.missing ?? 0, 'Falta', 0.011);
   });
 });
+
+describe('«Lo pactado» counts as received only the money the terms agreed', () => {
+  // A job without a contract with 60 € a day in cash and a vacation «paid apart» that nobody agreed in money
+  const NONE = {
+    ...JOB,
+    contract: 'none',
+    payAmount: 0,
+    cashAmount: 60,
+    cashUnit: 'day',
+    duration: 7,
+    vacation: 'paidAtEnd',
+  };
+
+  test('the vacation paid apart is not cobrado: it stays in Falta', () => {
+    const offer = offerOf(NONE);
+    setPaid(offer.mine.record, 'asAgreed');
+    const r = rOf(offer);
+    assert.ok(r.vacationApart > 0, 'the case has a vacation paid apart');
+    const settled = settle(offer, offer.mine.record, TODAY, r);
+    assert.equal(settled.totals.items.vacation.received, 0);
+    assert.ok(settled.totals.items.vacation.owed > 0);
+    const standing = standingOf(settled, TODAY, 'finished', [], r.netFactor, 'asAgreed');
+    near(standing.falta, settled.totals.items.vacation.owed * r.netFactor, 'Falta is the vacation', 0.02);
+    near(standing.cobrado + standing.falta, standing.corresponde, 'Cobrado + Falta', 0.011);
+  });
+});

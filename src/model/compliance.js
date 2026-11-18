@@ -115,6 +115,13 @@ export function lawFromRecord(offer, record, settled, r, payments) {
       missing: cents(overnight.owed * r.netFactor),
     },
     // Without a contract there is no payroll: the facts say it, and the minimum on payroll does not apply
-    minimum: { known, applicable: !r.noContract, minimumNet, payroll, short: cents(Math.max(0, floor - payroll)) },
+    // («Lo pactado» reads no payslips: what the minimum adds is already in Falta)
+    minimum: {
+      known,
+      applicable: !r.noContract && record.paid !== 'asAgreed',
+      minimumNet,
+      payroll,
+      short: cents(Math.max(0, floor - payroll)),
+    },
   };
 }

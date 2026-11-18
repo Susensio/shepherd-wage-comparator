@@ -118,6 +118,16 @@ describe('«Resumen para el ganadero»', () => {
   test('with nothing cobrado it says so', () => {
     assert.match(employerSummaryText(contextOf(worked[0], 0)), /Cobrado: nada hasta ahora\./);
   });
+
+  test('«Lo pactado» says what was agreed was cobrado, not nothing', () => {
+    const c = contextOf(worked[0], 0);
+    const record = { months: {}, payments: [], paid: 'asAgreed' };
+    const settled = settle(c.o, record, TODAY, calc(c.o, ctx));
+    const standing = standingOf(settled, TODAY, 'finished', [], c.r.netFactor, 'asAgreed');
+    const text = employerSummaryText({ ...c, record, settled, standing });
+    assert.match(text, /Cobrado: lo pactado, [\d.]+\s€ netos\./);
+    assert.doesNotMatch(text, /Cobrado: nada/);
+  });
 });
 
 describe('«Petición de pago»', () => {

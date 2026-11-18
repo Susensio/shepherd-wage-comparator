@@ -131,7 +131,8 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   const payments = record.payments ?? [];
   if (payments.length) {
     out.push(`Cobrado: ${whole(standing.cobrado)} netos.`, ...cobrosLines(payments));
-  } else out.push('Cobrado: nada hasta ahora.');
+  } else if (record.paid === 'asAgreed') out.push(`Cobrado: lo pactado, ${whole(standing.cobrado)} netos.`);
+  else out.push('Cobrado: nada hasta ahora.');
   out.push('', `Falta: ${whole(falta)} netos.`);
   for (const m of owedNet(settled, falta, r.netFactor, 1, standing.counted))
     out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)}`);

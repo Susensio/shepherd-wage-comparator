@@ -186,14 +186,16 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
   const corresponde = sum(lines.map((x) => x.due));
   // «Sí, todo»: what the offer agreed was received, so what is missing is only what the minimum adds to it (and the
   // severance, which the offer does not promise); «No se cobró nada», and the payments are not read
+  // (under «Lo pactado» what is missing is what is owed: the minimum's shortfall and what nobody agreed in money)
+  const lack = paid === 'asAgreed' ? 'owed' : 'shortfall';
   const shortOf = (item) =>
     item === 'vacation'
-      ? sum(rows.map((row) => row.items.vacation.shortfall)) * accrual
+      ? sum(rows.map((row) => row.items.vacation[lack])) * accrual
       : item === 'severance'
         ? finished
-          ? sum(rows.map((row) => row.items.severance.shortfall))
+          ? sum(rows.map((row) => row.items.severance[lack]))
           : 0
-        : sum(counted.map((row) => row.items[item].shortfall));
+        : sum(counted.map((row) => row.items[item][lack]));
   const shortNet = sum(ITEMS.map((item) => netOfItem(item, shortOf(item), netFactor)));
   const cobrado =
     paid === 'asAgreed'
