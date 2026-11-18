@@ -59,7 +59,9 @@ function endCard(end, today) {
   return html`<div class="tcard-q" role="group" aria-label="¿Cómo acabó?">
     <h3>¿Cómo acabó?</h3>
     <div class="choices">${end.early ? nothing : html`<button type="button" class="sm" data-action="pickEnd" data-how="agreed">${end.seasonal ? 'Fin de campaña' : 'Al final pactado'}</button>`}${ENDS.map(([how, text]) => html`<button type="button" class="sm" data-action="pickEnd" data-how=${how}>${text}</button>`)}<button type="button" class="sm" data-action="pickEnd" data-how="sick">Baja médica o accidente</button>${
-      end.early ? nothing : html`<button type="button" class="sm" data-action="endLonger">Sigue, se alargó</button>`
+      end.early && !end.defaulted
+        ? nothing
+        : html`<button type="button" class="sm" data-action="endLonger">Sigue, se alargó</button>`
     }</div>
     ${end.early ? html`<div class="actions"><button type="button" class="linkbtn" data-action="endCancel">Cancelar</button></div>` : nothing}
   </div>`;
@@ -89,9 +91,13 @@ export const endQuestion = (/** @type {Cards | null} */ cards, today) =>
 /** «¿Se llamó para la campaña de <año>?», of a fijo discontinuo, at the top. */
 export const recallQuestion = (/** @type {Cards | null} */ cards, today) => recallCard(cards?.recall ?? null, today);
 
-/** «Acabó el 6 nov 2026: …» with a way to change it, or the sick leave, once said. */
-export function endLine(record) {
+/** «Acabó el 6 nov 2026: …» with a way to change it (by default, «al final pactado»), or the sick leave, once said. */
+export function endLine(record, endDefault = null) {
   const out = [];
+  if (!record?.end && endDefault)
+    out.push(
+      html`<p class="real">Acabó el ${fIso(endDefault.date)}: ${END_TEXT.agreed}. <button type="button" class="linkbtn tapfull" data-action="endedEarly">Cambiar</button></p>`,
+    );
   if (record?.end)
     out.push(
       html`<p class="real">Acabó el ${fIso(record.end.date)}: ${END_TEXT[record.end.how]}. <button type="button" class="linkbtn tapfull" data-action="endedEarly">Cambiar</button></p>`,

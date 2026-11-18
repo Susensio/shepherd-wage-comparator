@@ -60,30 +60,35 @@ test.describe('the start of a job', () => {
 test.describe('«¿Cómo acabó?»', () => {
   test.use({ today: '2026-11-12' });
   const card = (page) => page.getByRole('group', { name: '¿Cómo acabó?' });
+  const change = (page) => page.locator('#result .real').getByRole('button', { name: 'Cambiar' }).click();
 
-  test('asked of a finished job (a fijo discontinuo says «Fin de campaña»); it takes the last day of the job, and it is said on a line', async ({
-    page,
-  }) => {
+  test('a finished job ended as agreed: one line with «Cambiar», nothing is asked', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
+    await expect(card(page)).toHaveCount(0);
+    await expect(page.locator('#result .real', { hasText: 'Acabó el 30 sept 2026' })).toContainText('al final pactado');
+    expect((await record(page)).end).toBeUndefined(); // a default, not an answer
+  });
+
+  test('«Cambiar» offers the other endings, one tap away', async ({ page }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await openAccounts(page);
+    await change(page);
     await expect(card(page).locator('h3')).toHaveText('¿Cómo acabó?');
     for (const way of [
-      'Fin de campaña',
       'Despido, o el ganadero lo acabó antes',
       'Lo dejó el pastor o la pastora',
       'Baja médica o accidente',
       'Sigue, se alargó',
     ])
       await expect(card(page).getByRole('button', { name: way })).toBeVisible();
-    await card(page).getByRole('button', { name: 'Fin de campaña' }).click();
-    await expect(card(page)).toHaveCount(0);
-    expect((await record(page)).end).toEqual({ how: 'agreed', date: '2026-09-30' });
-    await expect(page.locator('#result .real', { hasText: 'Acabó el 30 sept 2026' })).toContainText('al final pactado');
+    await expect(card(page).getByRole('button', { name: 'Fin de campaña' })).toHaveCount(0);
   });
 
   test('a dismissal asks the day, and the ladder shows its date', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
+    await change(page);
     await card(page).getByRole('button', { name: 'Despido, o el ganadero lo acabó antes' }).click();
     await expect(card(page).locator('h3')).toContainText('¿Qué día acabó?');
     // The day starts empty and is required, between the job's start and today
@@ -103,6 +108,7 @@ test.describe('«¿Cómo acabó?»', () => {
   test('«Sigue, se alargó» goes to the next month’s calendar and the card is put off', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
+    await change(page);
     await card(page).getByRole('button', { name: 'Sigue, se alargó' }).click();
     await expect(page.locator('.cal h3')).toHaveText('Octubre 2026');
     expect((await record(page)).end).toBeUndefined();
@@ -147,6 +153,7 @@ test.describe('baja médica: a status, not an end', () => {
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
+    await page.locator('#result .real').getByRole('button', { name: 'Cambiar' }).click();
     await card(page).getByRole('button', { name: 'Baja médica o accidente' }).click();
     await card(page).locator('#endDate').fill('2026-09-20');
     await card(page).getByRole('button', { name: 'Guardar' }).click();
@@ -160,7 +167,8 @@ test.describe('baja médica: a status, not an end', () => {
     await expect(card(page)).toHaveCount(0);
     // The job can still end later, and the leave can be closed
     await line.getByRole('button', { name: 'Volver al trabajo' }).click();
-    await expect(card(page)).toHaveCount(1); // the question comes back once the leave is closed
+    // the agreed end comes back as a line once the leave is closed
+    await expect(page.locator('#result .real', { hasText: 'al final pactado' })).toBeVisible();
     expect((await record(page)).sick).toEqual({ from: '2026-09-20', to: '2026-11-11' });
     await expect(page.locator('#result .real', { hasText: 'De baja del 20 sept 2026 al 11 nov 2026' })).toBeVisible();
   });
@@ -173,7 +181,6 @@ test.describe('fijo discontinuo: called back for the next season', () => {
   test.beforeEach(async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await openAccounts(page);
-    await page.getByRole('group', { name: '¿Cómo acabó?' }).getByRole('button', { name: 'Fin de campaña' }).click();
   });
 
   test('asked from the season’s expected start; «Sí» is the end of the question', async ({ page }) => {
@@ -181,7 +188,6 @@ test.describe('fijo discontinuo: called back for the next season', () => {
     await recall(page).getByRole('button', { name: 'Sí' }).click();
     await expect(recall(page)).toHaveCount(0);
     expect((await record(page)).recall).toEqual({ 2027: 'yes' });
-    expect((await record(page)).end.how).toBe('agreed');
   });
 
   test('«No» is a dismissal from the day it was known, asked and validated', async ({ page }) => {

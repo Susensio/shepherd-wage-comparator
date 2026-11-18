@@ -74,20 +74,26 @@ describe('the questions at the turns of a job', () => {
     assert.equal(cardsOf(o, 'underway', settled, TODAY, { asked: { how: null } }).start, null);
   });
 
-  test('«¿Cómo acabó?» for a finished job with no end, unless put off; its date is never after today', () => {
+  test('«Cómo acabó» defaults to the agreed end as a line; the ways to end are one tap away; its date is never after today', () => {
     const o = jobOf();
     const day = '2026-12-01';
     const settled = settledOf(o, day);
-    // Nothing recorded: not asked, unless by hand or once «No todo» opens the record
+    // Nothing recorded: nothing is said of the end
     assert.equal(cardsOf(o, 'finished', settled, day, {}), null);
-    const end = cardsOf(o, 'finished', settled, day, { recording: true }).end;
+    // Once «No todo» opens the record, it ended as agreed: a line, not a question
+    const defaulted = cardsOf(o, 'finished', settled, day, { recording: true });
+    assert.equal(defaulted.end, null);
+    assert.ok(defaulted.endDefault && defaulted.endDefault.date <= day);
+    assert.equal(cardsOf(o, 'finished', settled, day, { recording: true, endLater: true }), null);
+    // Asked by hand («Cambiar»): the ways to end
+    const end = cardsOf(o, 'finished', settled, day, { asked: { how: null } }).end;
     assert.equal(end.min, '2026-06-01');
     assert.ok(end.agreedDate <= day);
-    assert.equal(cardsOf(o, 'finished', settled, day, { recording: true, endLater: true }), null);
     assert.equal(cardsOf(o, 'finished', settled, day, { endLater: true, asked: { how: 'quit' } }).end.how, 'quit');
-    // Something recorded: asked on its own
+    // Something recorded: the same default line
     addPayment(o.mine.record, { date: '2026-09-01', amount: 100, via: 'cash' });
-    assert.equal(cardsOf(o, 'finished', settled, day, {}).end.how, null);
+    assert.equal(cardsOf(o, 'finished', settled, day, {}).end, null);
+    assert.ok(cardsOf(o, 'finished', settled, day, {}).endDefault);
   });
 
   test('a job finished with nothing recorded is bare, until «No todo» is answered', () => {

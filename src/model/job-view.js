@@ -3,7 +3,7 @@
  * open (ADR-0035). No DOM, no templates: `ui/record.js` supplies what the page remembers and paints the result.
  */
 
-import { isoOf, parseDate, payKnown } from '../offer.js';
+import { endOf, isoOf, parseDate, payKnown } from '../offer.js';
 import { jobStatus, moneyState, standingOf } from './accounts.js';
 import { hasFacts, jobStart, phaseOf } from './phase.js';
 
@@ -56,11 +56,12 @@ export function nextSeasonStart(o) {
  */
 export function recallOf(o, today, answer) {
   const record = o.mine.record;
-  if (o.terms.contract !== 'seasonal' || record.end?.how !== 'agreed' || !o.terms.start) return null;
+  // a finished job with no end said ended as agreed
+  if (o.terms.contract !== 'seasonal' || (record.end && record.end.how !== 'agreed') || !o.terms.start) return null;
   const from = nextSeasonStart(o);
   const year = from.slice(0, 4);
   if (today < from || record.recall?.[year]) return null;
-  return { year, no: Boolean(answer?.no), error: answer?.error ?? '', min: record.end.date };
+  return { year, no: Boolean(answer?.no), error: answer?.error ?? '', min: record.end?.date ?? isoOf(endOf(o.terms)) };
 }
 
 /**
@@ -81,11 +82,15 @@ export function cardsOf(o, phase, settled, today, pending) {
   const onLeave = Boolean(record.sick && !record.sick.to);
   // A finished job with nothing recorded is not asked how it ended: that is for one with a record to close
   const recorded = hasFacts(record) || Boolean(pending.recording);
-  const open = asked || (phase === 'finished' && recorded && !record.end && !onLeave && !pending.endLater);
+  // «¿Cómo acabó?» is not asked: a finished job with a record ended as agreed unless said otherwise (`endDefault`, a line)
+  const defaultEnd = phase === 'finished' && recorded && !record.end && !onLeave && !pending.endLater;
+  const open = Boolean(asked);
   const end = open
     ? {
         how: asked?.how ?? null,
         early: Boolean(asked),
+        /** No end said yet: «Cambiar» on the line of the agreed end, so «Sigue, se alargó» is still one of the ways. */
+        defaulted: !record.end,
         seasonal: o.terms.contract === 'seasonal',
         /** The first day an end or a leave can have: the job's start. */
         min: jobStart(o),
@@ -95,7 +100,8 @@ export function cardsOf(o, phase, settled, today, pending) {
       }
     : null;
   const recall = recallOf(o, today, pending.recall);
-  return start || end || recall ? { start, end, recall } : null;
+  const endDefault = defaultEnd && !asked ? { date: lastDayOf(settled, today) } : null;
+  return start || end || recall || endDefault ? { start, end, recall, endDefault } : null;
 }
 
 /** The last day of the job, never after today. */

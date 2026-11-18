@@ -512,6 +512,6 @@ export function realPeriod(c) {
  */
 export function recordView(c) {
   if (c.review) return calendarView(c.review);
-  const questions = html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today)}${endLine(c.record)}${realPeriod(c)}`;
+  const questions = html`${startQuestion(c.cards, c.today)}${recallQuestion(c.cards, c.today)}${endQuestion(c.cards, c.today)}${endLine(c.record, c.cards?.endDefault)}${realPeriod(c)}`;
   return c.phase === 'finished' ? cuentas(c, questions) : registro(c, questions);
 }

@@ -108,7 +108,7 @@ import {
  * @property {boolean} expectOpen «Sí, quedó en pagarlo» was tapped and the date is being asked
  * @property {{ date: string } | null} complete no more cobro is expected, said, and every month closed: the figures are firm
  * @property {import('../model/settle.js').OfferRecord} record
- * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
+ * @property {{ start: { date: string, other: boolean } | null, end: { how: string | null, early: boolean, defaulted: boolean, seasonal: boolean, min: string, error: string, agreedDate: string } | null, recall: { year: string, no: boolean, error: string, min: string } | null, endDefault: { date: string } | null } | null} cards the questions at the turns of the job: whether it began, and how it ended
  * @property {CalendarContext | null} calendar under way: the month on the calendar; finished: the month open in the registro, if any
  * @property {CalendarContext | ReviewDone | null} review
  */

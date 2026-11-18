@@ -950,9 +950,9 @@ test.describe('the month in progress, the days outside the job and what the mini
     const counts = (await page.locator('.cal .counts').textContent()) ?? '';
     const [jornadas, libranzas] = counts.match(/\d+/g).map(Number);
     expect(jornadas + libranzas).toBe(12); // 1 to 12 August: up to today, the 14th is still to come
-    await expect(page.locator('.real')).toHaveCount(0);
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveCount(0);
     await page.locator('.cal .day.away', { hasText: '20' }).first().click();
-    await expect(page.locator('.real')).toContainText('al 20 ago 2026');
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toContainText('al 20 ago 2026');
     await expect(page.locator('.cal .day.away')).toHaveCount(11); // 21 to 31 August
   });
 
@@ -1042,7 +1042,7 @@ test.describe('the real period of the work', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA); // the offer ends on 30 September
     await addPayments(page, [{ date: '2026-07-05', amount: 1000, via: 'payroll' }]);
     const before = amount(await tile(page, 'Corresponde').textContent());
-    await expect(page.locator('.real')).toHaveCount(0);
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveCount(0);
     await openRegistro(page);
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await expect(page.locator('.monthbody .cal h3')).toContainText('Octubre 2026');
@@ -1051,7 +1051,7 @@ test.describe('the real period of the work', () => {
     await expect(page.locator('[data-action=closeMonth], [data-action=reviewClose]')).toHaveCount(0);
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="02"]').click();
-    await expect(page.locator('.real')).toHaveText(
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveText(
       /^Trabajo real: del 21 jun 2026 al 2 oct 2026 \(oferta: 30 sept 2026\)\.$/,
     );
     expect(amount(await tile(page, 'Corresponde').textContent())).toBeGreaterThan(before);
@@ -1075,7 +1075,7 @@ test.describe('the real period of the work', () => {
     await page.getByRole('button', { name: '+ Añadir octubre' }).click();
     await page.locator('.cal .day[data-day="01"]').click();
     await page.locator('.cal .day[data-day="01"]').click(); // marked and unmarked again
-    await expect(page.locator('.real')).toHaveCount(0);
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveCount(0);
     await expect(page.locator('.tocl')).not.toContainText('Octubre');
     await expect(page.locator('#fichaPhase')).toHaveText('Acabada');
   });
@@ -1096,7 +1096,7 @@ test.describe('the real period of the work', () => {
       offers.closeMonth(o, { key: '2026-09', from: '2026-09-01', to: '2026-09-30' });
       app.select(o.id);
     });
-    await expect(page.locator('.real')).toHaveCount(0);
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toHaveCount(0);
     expect(amount(await tile(page, 'Corresponde').textContent())).toBe(before);
     await page.evaluate(() => {
       app.active().mine.record.end = { how: 'agreed', date: '2026-09-10' };
@@ -1126,7 +1126,7 @@ test.describe('the real period of the work', () => {
     await openRegistro(page);
     await expect(page.locator('.monthstrip button')).toHaveCount(5);
     await expect(page.locator('.monthstrip button[data-key="2026-10"]')).toContainText('en curso');
-    await expect(page.locator('.real')).toContainText('al 5 oct 2026');
+    await expect(page.locator('.real', { hasText: 'Trabajo real' })).toContainText('al 5 oct 2026');
   });
 });
 
