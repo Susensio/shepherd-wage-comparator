@@ -93,6 +93,8 @@ test('the entry has no «Luego» button, on any step', async ({ page }) => {
 
 test('the hours warning shows under the question while it is empty, and goes when it is filled', async ({ page }) => {
   await startOffer(page, 'day');
+  await expect(page.locator('#hoursPerDay')).toHaveValue('8'); // prefilled, visible and editable: the step never blocks
+  await page.fill('#hoursPerDay', '');
   const warning = page.locator('[data-required=hoursPerDay]');
   await expect(warning).toHaveText('Sin las horas no se puede calcular cuánto se gana.');
   await expect(warning).toBeHidden(); // nothing is said before the field has been left

@@ -38,3 +38,10 @@ test('missing() reports only listed ids, across the pay shapes', () => {
     for (const id of missing({ ...DEF_TERMS, ...shape }))
       assert.ok(MISSING_IDS.includes(id), `${id} in ${JSON.stringify(shape)}`);
 });
+
+test('a new offer has 8 hours a day prefilled, so the hours are never what blocks the figures', async () => {
+  const { DEF_TERMS } = await import('../../src/offer.js');
+  assert.equal(DEF_TERMS.hoursPerDay, 8);
+  assert.ok(!missing({ ...DEF_TERMS, duration: 3, contract: 'none', cashAmount: 50 }).includes('hoursPerDay'));
+  assert.ok(missing({ ...DEF_TERMS, hoursPerDay: '', duration: 3 }).includes('hoursPerDay'), 'cleared: asked again');
+});

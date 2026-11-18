@@ -16,7 +16,7 @@ test.describe('thin terms', () => {
   });
 
   test('an offer not yet started still asks for hours and pay', async ({ page }) => {
-    await addJob(page, { terms: { start: '2026-12-01', duration: 3, durationUnit: 'months' } });
+    await addJob(page, { terms: { start: '2026-12-01', duration: 3, durationUnit: 'months', hoursPerDay: '' } });
     await expect(page.locator('#result .empty')).toContainText('las horas por día');
   });
 });

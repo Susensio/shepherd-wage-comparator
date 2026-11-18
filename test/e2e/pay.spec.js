@@ -120,6 +120,9 @@ test('a wage per day split before step 4 gives no en negro figure; it appears on
 }) => {
   await startOffer(page, 'offer');
   await page.fill('#duration', '4');
+  await goStep(page, 'day');
+  await expect(page.locator('#hoursPerDay')).toHaveValue('8'); // prefilled
+  await page.fill('#hoursPerDay', ''); // the hours not answered
   await goStep(page, 'pay');
   await page.fill('#payTotal', '60');
   await answer(page, 'payPer', 'day');

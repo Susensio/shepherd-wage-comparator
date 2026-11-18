@@ -14,7 +14,7 @@ export const DEF_TERMS = {
   year: '',
   duration: '',
   durationUnit: 'months', // months · days · unknown
-  hoursPerDay: '',
+  hoursPerDay: 8, // prefilled, visible and editable: the step never blocks on hours
   daysOff: '',
   daysOffUnit: 'month', // week · month · total
   holidays: 'no', // yes: public holidays are taken off too
