@@ -167,7 +167,7 @@ test.describe('Cuentas and Registro', () => {
     await expect(fact(/^Sin contrato$/).locator('.m')).toHaveText('✘');
     // The cash agreed covers the minimum and the vacation: one calm line, no warning
     await expect(fact(/^Vacaciones$/)).toHaveCount(1);
-    await expect(fact(/^Vacaciones$/)).toContainText('Lo cobrado (2.709 €) cubre el mínimo y la parte de vacaciones');
+    await expect(fact(/^Vacaciones$/)).toContainText('cubre el mínimo y la parte de vacaciones: ');
     await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('✔');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
     await expect(block).not.toContainText('Se comprobará cuando');

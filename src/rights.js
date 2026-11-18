@@ -27,7 +27,7 @@ export const noContractRule = (r) =>
  * The vacation of a job without a contract, said in «¿Se cumplió la ley?» and Vía legal as an economic test (owner, 18
  * November 2026): one calm line where what was paid covers the minimum plus the vacation, the shortfall where not.
  * Per jornada the figures are per day worked, as a fijo's are in total.
- * @param {{ perJornada: boolean, covered: boolean, paid: number, required: number, shortfall: number, days: number }} t `vacationTest` in `model/compliance.js`
+ * @param {{ perJornada: boolean, covered: boolean, paid: number, required: number, shortfall: number, days: number, gross: { paid: number, minimum: number, vacation: number } }} t `vacationTest` in `model/compliance.js`
  */
 export function noContractVacation(t) {
   if (!t.covered) {
@@ -35,8 +35,10 @@ export function noContractVacation(t) {
     return `Lo cobrado no llega al mínimo más la parte de vacaciones: faltan unos ${fE(t.shortfall, 0)} (${cite}).`;
   }
   const perDay = t.perJornada && t.days > 0;
-  const figure = (x) => (perDay ? `${fE(x / t.days, 0)} al día` : fE(x, 0));
-  return `Lo cobrado (${figure(t.paid)}) cubre el mínimo y la parte de vacaciones (${figure(t.required)}).`;
+  const each = (x, digits) => (perDay ? `${fE(x / t.days, digits)}` : fE(x, digits));
+  const per = perDay ? ' al día' : '';
+  const { gross } = t;
+  return `Lo cobrado (unos ${each(gross.paid, 0)} brutos${per}, ${each(t.paid, 0)} netos) cubre el mínimo y la parte de vacaciones: ${each(gross.minimum + gross.vacation, 2)} brutos${per} (${each(gross.minimum, 2)} + ${each(gross.vacation, 2)}).`;
 }
 
 /** Where the law says each right, to link it. */

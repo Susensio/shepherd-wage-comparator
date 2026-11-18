@@ -49,6 +49,8 @@ export function vacationTest(record, settled, r) {
     paid: net(paid),
     required: net(required),
     shortfall: net(Math.max(0, required - paid)),
+    /** The same, gross, as the law states them: the minimum and the vacation share apart. */
+    gross: { paid: cents(paid), minimum: cents(required - vacation), vacation: cents(vacation) },
     /** Days worked, to say the figures per day in a job measured per jornada. */
     days: worked,
   };
