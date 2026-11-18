@@ -5,7 +5,7 @@ import { LAW } from '../law.js';
 import { DAY_MS, DAYS_PER_MONTH, endOf, parseDate } from '../offer.js';
 
 /** Days in a normal working week: the week minus the legal weekly rest (5.5). */
-const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
+export const WORK_DAYS_WEEK = 7 - LAW.weeklyRest;
 /** The normal workday: 40 h over 5.5 days (7.27 h). */
 const NORMAL_WORKDAY = LAW.weeklyHours / WORK_DAYS_WEEK;
 
@@ -181,5 +181,5 @@ export function hoursWeek(extra) {
   const normal = Math.min(days, WORK_DAYS_WEEK) * workday;
   const restDays = Math.max(0, days - WORK_DAYS_WEEK) * workday;
   const beyond = Math.max(0, total - normal - restDays);
-  return { days, hoursPerDay, total, normal, restDays, beyond, over: restDays + beyond };
+  return { days, hoursPerDay, total, normal, restDays, beyond, workday, over: restDays + beyond };
 }

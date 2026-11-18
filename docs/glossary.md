@@ -7,10 +7,10 @@ One term on screen per concept. Use the Spanish term exactly as written here in 
 | Term on screen | Meaning | Code | Source | Not |
 |---|---|---|---|---|
 | jornada | a day worked | `r.time.daysWorked` | | día de trabajo |
-| jornada normal | the hours of a normal workday: 40 h over the days worked a week, between 7.3 and 9 h | `r.extra.workday` | ET art. 34.3 | |
+| jornada normal | the hours of a normal workday: 40 h over the days worked a week (at most 5.5), between 7.3 and 9 h. Said only where it helps and always rounded, in whole hours, with its explanation: «las legales son 40 h, en 5,5 días de unas 7 h»; never «7,3 h» | `r.extra.workday` | ET art. 34.3 | jornada laboral (with decimals) |
 | jornadas de más | whole days worked beyond those due once rest days, holidays and vacation are taken | `r.extra.days`, `r.extraDays` | ET art. 37.1 | días de más, jornadas extra |
 | horas extra | hours beyond the normal workday on days worked anyway; per week `r.extra.overtimePerWeek`, the one quantity on the card of «¿Es legal?», in the claim and in the lever | `r.extra.overtime` | ET art. 35 (horas extraordinarias) | horas de exceso, «por encima de 40 h» as a count of horas extra |
-| horas de más | all the time beyond the legal limits, in hours: the jornadas de más plus the horas extra; used only where both are added (the weekly-hours chart), always with that explanation at hand | `r.extra.hours` | | horas extra (for the total) |
+| horas de más | all the time beyond the legal limits, in hours: the jornadas de más plus the horas extra; used only for the bar of the weekly-hours chart; its text says the two kinds apart, one line each: «Horas extra: unas N h a la semana, las que pasan de esas 7 h al día» and «Jornadas de más: N días a la semana por encima de los 5,5 que corresponden», never summed in one sentence. Hours and days are said in whole or half units (`fHalf`) | `r.extra.hours` | | horas extra (for the total) |
 | sin pagar | the part of the jornadas de más or horas extra that the pay above the minimum does not cover | `unpaidTime(r)` | | |
 | libranzas | days off, not counting the weekly rest owed: a libranza and a vacation day are the same mark, «libre», on the calendar (the vacation owed comes from the offer's terms, not from day marks) | `terms.daysOff`, `r.time.daysOffMonth`, day kind `off` | ET art. 37.1 (descanso semanal) | días libres (may stay as an explanation: «días libres, sin contar vacaciones») |
 | descanso semanal | the legal weekly rest (day and a half) | `LAW.weeklyRest` | ET art. 37.1 | |

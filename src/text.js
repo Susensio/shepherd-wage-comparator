@@ -2,12 +2,12 @@
 
 import {
   capitalize,
-  f1,
   fCount,
   fDays,
   fDaysSpoken,
   fE,
   fEntered,
+  fHalf,
   fN,
   fTyped,
   isWorthCounting,
@@ -401,7 +401,7 @@ export function claimText(o, r) {
     );
     const paid = x.daysValue - x.daysUnpaid;
     add(
-      `Cada una, una jornada normal de ${f1(x.workday)} h al salario mínimo (${fE(x.dayValue, 2)}${r.min.overnight > 0.5 ? ', con el plus de pernocta' : ''}); lo que pasa de ahí va en las horas extra. Valen ${fE(x.daysValue)} brutos.${
+      `Cada una, una jornada normal de unas ${fN(x.workday)} h al salario mínimo (${fE(x.dayValue, 2)}${r.min.overnight > 0.5 ? ', con el plus de pernocta' : ''}); lo que pasa de ahí va en las horas extra. Valen ${fE(x.daysValue)} brutos.${
         isWorthCounting(x.daysUnpaid)
           ? ` ${isWorthCounting(paid) ? `Lo que se paga por encima del mínimo${cash > 0 ? ', contando lo cobrado en negro,' : ''} cubre ${fE(paid)}; s` : 'S'}in pagar: ${fE(x.daysUnpaid)} brutos, unos ${fNet(x.daysUnpaid)} netos.`
           : ' Lo que se paga por encima del mínimo las cubre.'
@@ -412,7 +412,7 @@ export function claimText(o, r) {
   if (x.overtime >= 0.5) {
     add('', 'HORAS EXTRA (ESTIMACIÓN)');
     add(
-      `Jornadas de ${fTyped(o.terms.hoursPerDay)} h: ${f1(Math.max(0, num(o.terms.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (${LAW.weeklyHours} h semanales; ${citeOf('et', '34').label}), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
+      `Jornadas de ${fTyped(o.terms.hoursPerDay)} h: ${fHalf(Math.max(0, num(o.terms.hoursPerDay) - x.workday))} h de más cada día sobre la jornada normal (${LAW.weeklyHours} h semanales; ${citeOf('et', '34').label}), en ${fCount(r.time.daysWorked)} días trabajados: ${fN(x.overtime)} h, unas ${fN(x.overtimePerWeek)} a la semana.`,
     );
     add(
       `Al salario mínimo por hora (${fE(r.min.hourly, 2)}), valen ${fE(x.overtimeValue)} brutos.${isWorthCounting(x.overtimeUnpaid) ? ` Sin pagar: ${fE(x.overtimeUnpaid)} brutos, unos ${fNet(x.overtimeUnpaid)} netos.` : ' Lo que se paga por encima del mínimo las cubre.'} Las horas extra se pagan al menos como una hora normal o se compensan con descanso (${citeOf('et', '35').label}).`,

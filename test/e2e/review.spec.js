@@ -123,6 +123,15 @@ test.describe('overtime says one quantity', () => {
     const card = page.locator('[data-fold=law-hours] > summary');
     await expect(card).toContainText('Horas extra');
     await expect(card).toContainText(new RegExp(`${week}\\s*h\\s*/sem`));
+    // Plain figures: the legal week against the hours worked, no «7,3 h», one kind of extra hours per sentence
+    await card.click();
+    const detail = page.locator('[data-fold=law-hours]');
+    await expect(card).toContainText('legales a la semana');
+    await expect(detail).toContainText(
+      /Se trabajan unas [\d,]+ h a la semana; las legales son 40 h, en [\d,]+ días de unas \d+ h\./,
+    );
+    await expect(detail).not.toContainText(/\d,[1-4]\d* h/);
+    await expect(detail).not.toContainText('Las horas de más son');
     const claim = await page.evaluate(() => app.claimText(app.active(), app.calcOffer(app.active())));
     expect(claim).toContain(`unas ${week} a la semana`);
     const lever = await page.evaluate(async () => {

@@ -1,10 +1,10 @@
 /** «¿Es legal?»: the verdict, what you are owed, the extra days and hours, and each right with its source. */
 
 import { html, nothing } from 'lit-html';
-import { capitalize, f1, fCount, fDate, fDays, fE, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
+import { capitalize, fCount, fDate, fDays, fE, fHalf, fN, fTyped, isWorthCounting, joinAnd } from '../format.js';
 import { citeOf, LAW } from '../law.js';
 import { dayRounder } from '../ledger.js';
-import { claimDeadlines, hoursWeek } from '../model/time.js';
+import { claimDeadlines, hoursWeek, WORK_DAYS_WEEK } from '../model/time.js';
 import { LAW_SHORT, LAW_SOURCE, rightsOf } from '../rights.js';
 import { unpaidTime } from '../text.js';
 import { inUnit, UNITS } from '../units.js';
@@ -162,12 +162,12 @@ function extraDaysBar(r) {
 /** A working week: the normal hours and those above 40; the marker shows how far they are paid. */
 function hoursBar(r) {
   const x = r.extra;
-  const { days, hoursPerDay, total, normal, restDays, beyond } = hoursWeek(x);
+  const { days, hoursPerDay, total, normal, restDays, beyond, workday } = hoursWeek(x);
   const paidBeyond = x.overtimeValue > 0 ? beyond * Math.max(0, 1 - x.overtimeUnpaid / x.overtimeValue) : 0;
   const paidRestDays = x.daysValue > 0 ? restDays * Math.max(0, 1 - x.daysUnpaid / x.daysValue) : restDays;
-  const hours = (h) => `${f1(h)} h`;
+  const hours = (h) => `${fHalf(h)} h`;
   return html`<div class="br">
-    <div class="br-l">Una semana: ${f1(days)} días de ${fTyped(hoursPerDay)} h, <b>${hours(total)}</b></div>
+    <div class="br-l">Una semana: ${fHalf(days)} días de ${fTyped(hoursPerDay)} h, <b>${hours(total)}</b></div>
     <div class="br-mw">${segmentBar(
       [
         ['w', normal, 'normales'],
@@ -178,7 +178,9 @@ function hoursBar(r) {
       13,
       restDays + beyond > 0.05 ? ((normal + paidRestDays + paidBeyond) / total) * 100 : null,
     )}${restDays + beyond > 0.05 ? marker(((normal + paidRestDays + paidBeyond) / total) * 100, 'pagado', true) : nothing}</div>
-    ${restDays > 0.05 ? html`<p class="hint">Las horas de más son las ${f1(beyond)} h extra y las ${f1(restDays)} h de las jornadas de más.</p>` : nothing}
+    <p class="hint">Se trabajan unas ${fHalf(total)} h a la semana; las legales son ${LAW.weeklyHours} h, en ${fHalf(Math.min(days, WORK_DAYS_WEEK))} días de unas ${Math.round(workday)} h.</p>
+    ${beyond >= 0.5 ? html`<p class="hint">Horas extra: unas ${fN(beyond)} h a la semana, las que pasan de esas ${Math.round(workday)} h al día.</p>` : nothing}
+    ${restDays > 0.05 ? html`<p class="hint">Jornadas de más: ${fHalf(days - WORK_DAYS_WEEK)} ${fHalf(days - WORK_DAYS_WEEK) === '1' ? 'día' : 'días'} a la semana por encima de los ${fHalf(WORK_DAYS_WEEK)} que corresponden.</p>` : nothing}
   </div>`;
 }
 
@@ -227,7 +229,7 @@ function extraTimeCards(r) {
       html`<details class="owed warn" data-fold="law-hours"><summary>${figureCard(
         html`${fN(x.overtimePerWeek)}<small> h</small><small class="u">/sem</small>`,
         'Horas extra',
-        html`Por encima de la jornada normal (${f1(x.workday)} h) · ${payMark(status)}`,
+        html`Más de las ${LAW.weeklyHours} h legales a la semana · ${payMark(status)}`,
         'Estimado',
       )}</summary>${hoursBar(r)}</details>`,
     );

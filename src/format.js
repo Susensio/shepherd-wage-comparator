@@ -33,6 +33,12 @@ const formatter = (minDigits, maxDigits = minDigits, grouping = true) =>
 /** «1.234», «7,5». */
 export const fN = (x, decimals = 0) => formatter(decimals).format(x);
 
+/** Hours or days to the nearest half: «7», «7,5». Never «7,3». */
+export const fHalf = (x) => {
+  const half = Math.round(x * 2) / 2;
+  return fN(half, Number.isInteger(half) ? 0 : 1);
+};
+
 /** Decimals of a euro figure: the ones asked for or, otherwise, two below 10 € (3,40 €) and none above. */
 export const euroDecimals = (x, decimals) =>
   decimals !== undefined ? decimals : Math.abs(x) > 0.004 && Math.abs(x) < 9.995 ? 2 : 0;
