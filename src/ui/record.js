@@ -27,7 +27,7 @@ import {
   standingOf,
 } from '../model/accounts.js';
 import { claimSteps, STEP_IDS } from '../model/claim.js';
-import { lawFromRecord, vacationTest } from '../model/compliance.js';
+import { lawFromRecord } from '../model/compliance.js';
 import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
 import {
@@ -102,6 +102,7 @@ import {
  * @property {import('../model/settle.js').Paid | undefined} paid «Sí, todo» or «No se cobró nada» was said
  * @property {ReturnType<typeof cobradoOf>} cobrado what was cobrado, as every view reads it
  * @property {boolean} approx a cobro was told as approximate, so Cobrado and Falta are
+ * @property {boolean} noContract the job has no contract: its figures say no «netos»
  * @property {boolean} noPay the job began with no pay told: what was cobrado has nothing agreed to be compared with
  * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
  * @property {boolean} recording «No todo» was answered: the cobros are being recorded
@@ -148,12 +149,6 @@ export function setUpRecord(given) {
   Object.assign(callbacks, given);
   const sheet = sheetElements();
   sheet.form.addEventListener('submit', savePayment);
-}
-
-/** The vacation test of a job without a contract, where it falls short; null otherwise. */
-function vacationShort(record, settled, r) {
-  const test = vacationTest(record, settled, r);
-  return test && !test.covered ? test : null;
 }
 
 /**
@@ -204,8 +199,6 @@ function claimContext(o, r, settled, standing, today) {
     canShare: typeof navigator.share === 'function',
     // Money agreed en negro, or no contract at all: the page says that it is salary too
     cash: Boolean(r.noContract) || (r.cash?.total ?? 0) >= 1,
-    // Without a contract: the vacation as a right only where what was paid falls short of the minimum plus it
-    vacationRight: vacationShort(record, settled, r),
     guest: !ACCOUNT_CONFIG.url || accountState.status() === 'guest',
     summary: owed ? employerSummaryText(base) : '',
     request: owed ? paymentRequestText(base) : '',
@@ -331,6 +324,7 @@ export function recordContext(o, r) {
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
     paid: record.paid,
     cobrado: cobradoOf(o, r, phase, standing),
+    noContract: Boolean(r.noContract),
     noPay: !payKnown(o.terms),
     approx: !record.paid && record.payments.some((p) => p.approx),
     bare: isBare(o, phase, ui.recording[o.id]),

@@ -615,50 +615,69 @@ describe('the law, from the record: facts only', () => {
     assert.equal(x.overnight.applicable, calc(none, ctx).min.overnight > 0);
   });
 
-  describe('the vacation of a job without a contract is an economic test', () => {
-    const vacationOf = (terms, record = emptyRecord()) => {
+  describe('the minimum of a job without a contract, with the vacation share inside', () => {
+    const minimumOf = (terms, record = emptyRecord()) => {
       const o = offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'n', contract: 'none', payAmount: 0, ...terms });
       const fact = lawFromRecord(o, record, settledOf(o, record), calc(o, ctx), record.payments).facts.find(
-        (f) => f.id === 'vacation',
+        (f) => f.id === 'minimum',
       );
       return fact && 'covered' in fact ? fact : undefined;
     };
     const SHORT = { start: '2026-04-20', duration: 7, durationUnit: 'days', hoursPerDay: 8, vacation: 'paidAtEnd' };
     const LONG = { start: '2026-01-30', duration: 44, durationUnit: 'days', hoursPerDay: 8, vacation: 'paidAtEnd' };
 
-    test('per jornada, covered: the minimum and the vacation share are inside the cash', () => {
-      const x = vacationOf({ ...SHORT, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
+    test('per jornada, covered: the minimum is the casual figure plus the vacation share, in net', () => {
+      const x = minimumOf({ ...SHORT, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
       assert.ok(x?.perJornada && x.covered && x.shortfall === 0);
-      assert.ok(x.paid >= x.required && x.required > 0);
+      assert.ok(x.paid >= x.minimum && x.minimum > 0);
+      assert.equal(Math.round(x.minimum / x.days), 57);
     });
-    test('per jornada, short: the shortfall is what the minimum plus the vacation exceed the cash by', () => {
-      const x = vacationOf({ ...SHORT, cashAmount: 50, cashUnit: 'day', daysOff: 0 });
+    test('per jornada, short: the shortfall is what the minimum exceeds the cash by', () => {
+      const x = minimumOf({ ...SHORT, cashAmount: 50, cashUnit: 'day', daysOff: 0 });
       assert.ok(x?.perJornada && !x.covered);
-      assert.ok(Math.abs(x.shortfall - (x.required - x.paid)) <= 0.01 && x.shortfall > 0);
+      assert.ok(Math.abs(x.shortfall - (x.minimum - x.paid)) <= 0.01 && x.shortfall > 0);
     });
     test('fijo (more than four weeks), covered and short', () => {
-      const covered = vacationOf({ ...LONG, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
+      const covered = minimumOf({ ...LONG, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
       assert.ok(covered && !covered.perJornada && covered.covered);
-      const short = vacationOf({ ...LONG, cashAmount: 30, cashUnit: 'day', daysOff: 0 });
+      const short = minimumOf({ ...LONG, cashAmount: 30, cashUnit: 'day', daysOff: 0 });
       assert.ok(short && !short.perJornada && !short.covered && short.shortfall > 0);
     });
-    test('a record saying nothing was paid leaves the whole minimum plus the vacation short', () => {
-      const x = vacationOf(
+    test('a record saying nothing was paid leaves the whole minimum short', () => {
+      const x = minimumOf(
         { ...SHORT, cashAmount: 60, cashUnit: 'day', daysOff: 0 },
         { ...emptyRecord(), paid: 'none' },
       );
-      assert.ok(x && !x.covered && x.paid === 0 && x.shortfall === x.required);
+      assert.ok(x && !x.covered && x.paid === 0 && x.shortfall === x.minimum);
     });
-    test('the vacation is the share of 30 days of the daily minimum wage for the days of the job', () => {
-      const x = vacationOf({ ...SHORT, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
-      const wage = calc(offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'w', contract: 'none', ...SHORT }), ctx).wage;
-      const net = calc(offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'w', contract: 'none', ...SHORT }), ctx).netFactor;
-      const salary = 7 * wage.casual * net;
-      const vacation = ((30 * 7) / 365) * (wage.annual / 420) * net;
-      assert.ok(x && Math.abs(x.required - (salary + vacation)) < 0.02);
+    test('the minimum is the casual figure plus the share of 30 days of the daily minimum wage for the days of the job', () => {
+      const x = minimumOf({ ...SHORT, cashAmount: 60, cashUnit: 'day', daysOff: 0 });
+      const figures = calc(offerOf({ ...OFFER.terms, ...OFFER.mine, id: 'w', contract: 'none', ...SHORT }), ctx);
+      const salary = 7 * figures.wage.casual * figures.netFactor;
+      const vacation = ((30 * 7) / 365) * (figures.wage.annual / 420) * figures.netFactor;
+      assert.ok(x && Math.abs(x.minimum - (salary + vacation)) < 0.02);
+      assert.ok(Math.abs(x.gross.salary + x.gross.vacation - (salary + vacation) / figures.netFactor) < 0.02);
+    });
+    test('it enters Corresponde as the salary minimum, so a shortfall shows in Falta', () => {
+      const o = offerOf({
+        ...OFFER.terms,
+        ...OFFER.mine,
+        id: 'n',
+        contract: 'none',
+        payAmount: 0,
+        ...SHORT,
+        cashAmount: 50,
+        cashUnit: 'day',
+        daysOff: 0,
+      });
+      const settled = settledOf(o, emptyRecord());
+      const r = calc(o, ctx);
+      assert.ok(Math.abs(settled.totals.items.salary.minimum - r.min.salary) < 0.02);
+      assert.equal(settled.totals.items.vacation.minimum, 0);
+      assert.ok(settled.totals.owed > 0);
     });
     test('with a contract there is no such fact', () => {
-      assert.equal(vacationOf({ contract: 'temporary', payAmount: 1500 }), undefined);
+      assert.equal(minimumOf({ contract: 'temporary', payAmount: 1500 }), undefined);
     });
   });
 

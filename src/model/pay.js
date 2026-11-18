@@ -42,7 +42,7 @@ function monthlyPayOf(terms, time) {
 
 /**
  * The legal minimum, counted by months (what the paperwork shows): salary (the casual-worker daily minimum for short
- * temporary contracts), overnight bonus and the vacation you do not take.
+ * temporary contracts; without a contract it holds the vacation share too), overnight bonus and the vacation you do not take.
  * @param {object} terms the offer's terms
  * @param {object} ctx `{wage}`: the minimum wage of the offer's year
  * @param {ReturnType<import('./time.js').schedule>} time
@@ -58,12 +58,22 @@ export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vac
   // «El salario mínimo» as the agreed pay is always the monthly one with the extra pays prorated, casual or not
   const monthly = (wage.annual / 12) * partTime;
   const agreed = monthly * months;
-  const salary = casual ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours) : agreed;
+  const salaryBase = casual ? wage.casual * daysWorked * Math.min(1, hoursPerDay / LAW.workdayHours) : agreed;
   // «Included» vacation is carved out of the pay agreed (`payroll`), so its minimum stays a day at the minimum wage
   const vacationDay = realPay ? vacationDayOf(terms, time, wage, gross) : (wage.annual / LAW.smiDaysPerYear) * partTime;
-  // Without a contract the vacation is a right of the job, said once as such (`vacationRight`), not a debt of the money
-  const vacationRight = vacationDays * vacationDay;
-  const vacation = terms.vacation !== 'taken' && terms.contract !== 'none' ? vacationRight : 0;
+  const vacationValue = vacationDays * vacationDay;
+  const vacation = terms.vacation !== 'taken' && terms.contract !== 'none' ? vacationValue : 0;
+  // Without a contract the vacation is inside the minimum (owner, 18 November 2026): per jornada the share of the daily
+  // minimum wage for the days of the job (RD SMI art. 4.1 ¶2), as a fijo its days at the daily value (ET 38)
+  const vacationShare =
+    terms.contract !== 'none'
+      ? 0
+      : casual
+        ? ((LAW.vacationDaysPerYear * natDays) / (DAYS_PER_MONTH * 12)) *
+          (wage.annual / LAW.smiDaysPerYear) *
+          Math.min(1, hoursPerDay / LAW.workdayHours)
+        : vacationValue;
+  const salary = salaryBase + vacationShare;
   // Owed only where an agreement known for the province gives it; elsewhere a night stay is just a fact of the offer
   const stay = terms.overnight === 'yes';
   const agreement = stay ? overnightOf(terms.province) : null;
@@ -77,8 +87,8 @@ export function legalMinimum(terms, { wage }, time, { gross, realPay = terms.vac
     agreed,
     overnight,
     vacation,
-    /** What the vacation accrued comes to, owed or not: without a contract it is only a right, said in the texts. */
-    vacationRight,
+    /** Without a contract, the vacation's value inside `salary`; 0 otherwise. */
+    vacationShare,
     /** One day of vacation: the real daily pay, or the minimum wage's if higher. */
     vacationDay,
     total: salary + overnight + vacation,

@@ -5,7 +5,7 @@ import { fAbout, fDate, fDaysSpoken, fE, fN, joinAnd } from '../format.js';
 import { LAW } from '../law.js';
 import { fSumE } from '../ledger.js';
 import { parseDate } from '../offer.js';
-import { noContractVacation } from '../rights.js';
+import { noContractHow, noContractMinimum } from '../rights.js';
 import { monthName, monthShort } from '../text.js';
 import { calendarView } from './calendar.js';
 import { claimView, lapsedLine, underwayTalk } from './claim.js';
@@ -143,13 +143,14 @@ const SHORT_LINE = {
 const minimumLine = (m) => {
   if (!m) return nothing;
   const per = m.unit === 'total' ? ' en total' : `/${m.unit}`;
+  const netos = m.noContract ? '' : ' netos';
   if (!m.exceeds)
-    return html`<p class="hint">${m.short.map((x) => SHORT_LINE[x.key](`${fN(x.amount, 2)} €${per} netos`)).join('. ')}.</p>`;
-  return html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €${per} netos` : `${per} netos`}; pactado: ${fN(m.agreed, 2)} €${per}.</p>`;
+    return html`<p class="hint">${m.short.map((x) => SHORT_LINE[x.key](`${fN(x.amount, 2)} €${per}${netos}`)).join('. ')}.</p>`;
+  return html`<p class="hint">El mínimo exigible supera lo pactado: ${m.components.map((x) => `${LABEL[x.key]} ${fN(x.amount, 2)} €`).join(' + ')}${m.components.length > 1 ? ` = ${fN(m.total, 2)} €${per}${netos}` : `${per}${netos}`}; pactado: ${fN(m.agreed, 2)} €${per}.</p>`;
 };
 
-/** Said once, next to the title of Registro and Cuentas: every amount on them is net. */
-const NET = html` <span class="net">en neto</span>`;
+/** Said once, next to the title of Registro and Cuentas: every amount on them is net; not on a job without a contract, where there is nothing to deduct. */
+const net = (c) => (c.noContract ? nothing : html` <span class="net">en neto</span>`);
 
 /** The three figures of the job, in net: Corresponde, Cobrado (of it, in hand) and Falta; `withoutFalta` where the headline above already says it. */
 function tiles(c, { withoutFalta = false } = {}) {
@@ -234,7 +235,7 @@ const daysRow = (c) =>
 function registro(c, questions) {
   const { today } = c;
   const notStarted = Boolean(c.cards?.start);
-  return html`${notStarted ? questions : nothing}<h2 class="mode">Hasta hoy${NET}<small>Lo que va del trabajo.</small></h2>
+  return html`${notStarted ? questions : nothing}<h2 class="mode">Hasta hoy${net(c)}<small>Lo que va del trabajo.</small></h2>
     <div class="block">
       <div class="bh"><h3>Hasta hoy, ${fWhen(today, today)}</h3></div>
       ${tiles(c)}
@@ -399,10 +400,14 @@ function lawBlock(c) {
   const mark = (kind, title, text) =>
     html`<div><span class=${`m ${kind}`}>${{ ok: '✔', bad: '✘', warn: '?' }[kind]}</span><span><b>${title}</b><small>${text}</small></span></div>`;
   const facts = law.facts.map((f) =>
-    f.id === 'vacation'
-      ? mark(f.covered ? 'ok' : 'warn', 'Vacaciones', noContractVacation(f))
+    f.id === 'minimum'
+      ? mark(f.covered ? 'ok' : 'bad', 'Salario mínimo', noContractMinimum(f))
       : mark('bad', ...(f.id === 'cash' ? FACT_TEXT.cash(f.amount) : FACT_TEXT.noContract)),
   );
+  const minimumFact = law.facts.find((f) => f.id === 'minimum');
+  const howMinimum = minimumFact
+    ? html`<details class="plg" data-fold="minimum-how"><summary>Cómo se calcula</summary><p class="hint">${noContractHow(minimumFact)}</p></details>`
+    : nothing;
   const range = (f) =>
     `${fWhen(f.from, c.today)}–${fWhen(f.to, c.today)}: ${
       f.off < f.due
@@ -490,7 +495,7 @@ function lawBlock(c) {
   ].filter(Boolean);
   return html`<div class="block"><div class="bh"><h2>¿Se cumplió la ley?</h2></div>
     ${closedMonths ? html`<p class="hint">Según el registro, sobre ${law.months.closed} de ${law.months.total} ${law.months.total === 1 ? 'mes cerrado' : 'meses cerrados'}.</p>` : nothing}
-    <div class="lawcheck">${facts}${closedMonths ? html`${rest}${days}${festivos}` : nothing}${payrollRows}</div>
+    <div class="lawcheck">${facts}${howMinimum}${closedMonths ? html`${rest}${days}${festivos}` : nothing}${payrollRows}</div>
     ${!closedMonths ? html`<p class="hint">Cierra los meses para comprobar el descanso semanal y las jornadas.</p>` : nothing}
     ${!c.complete && later.length ? html`<p class="hint">Con todos los cobros apuntados y los meses cerrados se comprueba también ${joinAnd(later)}.</p>` : nothing}
   </div>`;
@@ -504,7 +509,7 @@ function lawBlock(c) {
  */
 function cuentas(c, questions) {
   const unanswered = !c.payments.length && !c.paid && (!c.recording || c.ask?.type === 'paidNone');
-  return html`<h2 class="mode small">Cuentas${NET}</h2>
+  return html`<h2 class="mode small">Cuentas${net(c)}</h2>
     ${result(c)}
     ${questions}
     ${unanswered ? paidQuestion(c) : nothing}

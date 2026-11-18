@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { calc } from '../../src/model/calc.js';
 import { DEF_CFG } from '../../src/offer.js';
-import { failuresOf, overnightHint, rightsOf } from '../../src/rights.js';
+import { failuresOf, noContractHow, noContractMinimum, overnightHint, rightsOf } from '../../src/rights.js';
 import { legalLine, unpaidTime } from '../../src/text.js';
 import { offerOf } from './flat-offer.js';
 
@@ -139,4 +139,50 @@ test('the hint under the night stay speaks by province', () => {
   );
   assert.equal(overnightHint({ province: 'Z' }), '', 'no agreement known: no hint');
   assert.equal(overnightHint({ province: '' }), '');
+});
+
+// Without a contract the minimum is one plain figure, the vacation share inside it and never named
+const said = (t) => noContractMinimum(t).replaceAll('\u00a0', ' ');
+const how = (t) => noContractHow(t).replaceAll('\u00a0', ' ');
+const minimumFact = (changes) => ({
+  perJornada: true,
+  basis: 'cobros',
+  covered: true,
+  paid: 420,
+  minimum: 400,
+  shortfall: 0,
+  days: 7,
+  gross: { salary: 404.74, vacation: 23.42, overnight: 0 },
+  ...changes,
+});
+
+test('no-contract minimum, per jornada: «Mínimo por día trabajado», covered or short, no brutos, netos or vacaciones', () => {
+  const covered = said(minimumFact({}));
+  assert.equal(covered, 'Mínimo por día trabajado: unos 57 €. Se cobraron 60 € al día: cubre el mínimo.');
+  const short = said(minimumFact({ covered: false, paid: 350, shortfall: 50 }));
+  assert.equal(
+    short,
+    'Mínimo por día trabajado: unos 57 €. Se cobraron 50 € al día: faltan unos 7 € al día, 50 € en total.',
+  );
+  assert.doesNotMatch(`${covered}${short}`, /bruto|neto|vacacion/i);
+});
+
+test('no-contract minimum, fijo: «Mínimo del trabajo», in total; nothing paid; only agreed', () => {
+  const fijo = minimumFact({ perJornada: false, minimum: 2130.5, paid: 2640, days: 44 });
+  assert.equal(said(fijo), 'Mínimo del trabajo: unos 2.131 €. Se cobraron 2.640 €: cubre el mínimo.');
+  assert.match(
+    said(minimumFact({ basis: 'none', paid: 0, covered: false, shortfall: 400 })),
+    /No se cobró nada: faltan unos 57 € al día, 400 € en total\.$/,
+  );
+  assert.match(said(minimumFact({ basis: 'agreed' })), /Se pactaron 60 € al día/);
+});
+
+test('the fold «Cómo se calcula» gives the law’s gross figures and the net that is compared', () => {
+  const text = how(minimumFact({}));
+  assert.match(
+    text,
+    /57,82 € brutos por jornada \(Real Decreto del salario mínimo, art\. 4\.1\) \+ 3,35 € de la parte de vacaciones \(art\. 4\.1, segundo párrafo\) = 61,17 € brutos/,
+  );
+  assert.match(text, /unos 57 € en mano\. Lo cobrado en negro se compara con eso\.$/);
+  assert.match(how(minimumFact({ perJornada: false })), /Estatuto, art\. 38/);
 });

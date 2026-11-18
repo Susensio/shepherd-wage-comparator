@@ -787,7 +787,7 @@ test('vacation taken but the job ends before the days: the days accrued and not 
 });
 
 // Without a contract the vacation follows the same rule in the record as on the ficha (ET 38.1)
-test('without a contract, the record owes no vacation whatever the old answer: it is a right, not a debt', () => {
+test('without a contract, the record has no vacation item whatever the old answer: its share is inside the salary minimum', () => {
   for (const vacation of ['included', 'taken', 'paidAtEnd', '']) {
     const offer = offerWith({
       contract: 'none',
@@ -801,7 +801,7 @@ test('without a contract, the record owes no vacation whatever the old answer: i
     assert.equal(x.totals.items.vacation.due, 0, `${vacation}: nothing due`);
     assert.equal(x.totals.items.vacation.owed, 0);
     assert.equal(r.debt.vacation, 0);
-    assert.ok(r.min.vacationRight > 0);
+    assert.ok(r.min.vacationShare > 0);
   }
 });
 

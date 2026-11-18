@@ -9,50 +9,48 @@
 
 import { holidaysOf, holidayWorkOf, LAW } from '../law.js';
 import { cents, sum } from '../ledger.js';
-import { DAYS_PER_MONTH } from '../offer.js';
 import { marksOf } from './record.js';
 import { ITEMS } from './settle.js';
 
 /**
- * Without a contract, whether what was paid covers the legal minimum plus the vacation (owner, 18 November 2026): an
- * economic test, the same whatever the job's length. Null where it does not apply. Amounts in net. The vacation is the
- * share of the 30 legal days of the daily minimum wage for the calendar days of the job (per jornada, RD SMI art. 4.1
- * ¶2), or the days of ET 38 at the daily value `calc` uses (fijo). Paid: the cobros once the record is complete, nothing
- * if the shepherd said nothing was paid, otherwise the cash agreed (as gross, like the minimum).
+ * Without a contract, the job's minimum (the salary minimum with the vacation share inside, ADR-0037 amendment) against
+ * what was paid; null where the job has a contract. Amounts in net, as the shepherd gets them. Paid: the cobros once the
+ * record is complete, nothing if the shepherd said nothing was paid, otherwise the cash agreed (`basis`). `gross`: the
+ * minimum as the law states it, over the job, for the fold that explains it.
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ noContract?: boolean, wage: { annual: number }, time: { vacationDays: number, natDays: number, daysWorked: number }, min: { casual: boolean, vacationRight: number }, netFactor: number }} r
+ * @param {{ noContract?: boolean, min: { casual: boolean, salary: number, vacationShare: number }, netFactor: number }} r
  */
-export function vacationTest(record, settled, r) {
-  if (!r.noContract || !(r.time.vacationDays > 0)) return null;
+export function minimumTest(record, settled, r) {
+  if (!r.noContract) return null;
   const { items } = settled.totals;
-  const jobDays = sum(settled.rows.map((row) => row.days));
   const worked = sum(settled.rows.map((row) => row.worked));
-  const perJornada = r.min.casual;
-  const vacation = perJornada
-    ? (LAW.vacationDaysPerYear * jobDays * (r.wage.annual / LAW.smiDaysPerYear)) / (DAYS_PER_MONTH * 12)
-    : r.time.natDays > 0
-      ? (r.min.vacationRight * jobDays) / r.time.natDays
-      : 0;
-  const required = items.salary.minimum + items.overnight.minimum + vacation;
+  const required = items.salary.minimum + items.overnight.minimum;
+  if (!(required > 0)) return null;
+  const vacation = r.min.salary > 0 ? (items.salary.minimum * r.min.vacationShare) / r.min.salary : 0;
   const counted = record.paid === undefined && record.complete && (record.payments?.length ?? 0) > 0;
+  const basis = record.paid === 'none' ? 'none' : counted || record.paid ? 'cobros' : 'agreed';
   const paid =
-    record.paid === 'none'
+    basis === 'none'
       ? 0
       : counted
         ? settled.totals.received + settled.totals.unassigned
         : settled.totals.agreedCashGross;
   const net = (gross) => cents(gross * r.netFactor);
   return {
-    perJornada,
+    perJornada: r.min.casual,
+    basis,
     covered: paid >= required,
     paid: net(paid),
-    required: net(required),
+    minimum: net(required),
     shortfall: net(Math.max(0, required - paid)),
-    /** The same, gross, as the law states them: the minimum and the vacation share apart. */
-    gross: { paid: cents(paid), minimum: cents(required - vacation), vacation: cents(vacation) },
     /** Days worked, to say the figures per day in a job measured per jornada. */
     days: worked,
+    gross: {
+      salary: cents(items.salary.minimum - vacation),
+      vacation: cents(vacation),
+      overnight: items.overnight.minimum,
+    },
   };
 }
 
@@ -60,7 +58,7 @@ export function vacationTest(record, settled, r) {
  * @param {{ terms: object }} offer
  * @param {import('./settle.js').OfferRecord} record
  * @param {ReturnType<typeof import('./settle.js').settle>} settled
- * @param {{ noContract?: boolean, wage: { annual: number }, cash?: { total: number }, extra: { due: number }, time: { vacationDays: number, natDays: number, daysWorked: number, daysOffUnknown?: boolean }, min: { casual: boolean, overnight: number, vacationRight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
+ * @param {{ noContract?: boolean, wage: { annual: number }, cash?: { total: number }, extra: { due: number }, time: { daysOffUnknown?: boolean }, min: { casual: boolean, salary: number, vacationShare: number, overnight: number, overnightAgreement: { pct: number } | null }, netFactor: number, pay: { irpfPct: number } }} r the offer's figures
  * @param {import('./settle.js').Payment[]} payments
  */
 export function lawFromRecord(offer, record, settled, r, payments) {
@@ -138,11 +136,10 @@ export function lawFromRecord(offer, record, settled, r, payments) {
   const floor = cents(minimumGross * Math.max(0, r.netFactor - r.pay.irpfPct));
   // Facts of the terms, known before any month is closed: no contract means no alta in Social Security, and cash
   // agreed is pay off the payslip (the whole pay, without a contract, so it is said once)
-  const vacation = vacationTest(record, settled, r);
+  const minimumNoContract = minimumTest(record, settled, r);
   const facts = [
     ...(r.noContract ? [{ id: /** @type {const} */ ('noContract') }] : []),
-    // the vacation is an economic test of what was paid, never a debt of the accounts
-    ...(vacation ? [{ id: /** @type {const} */ ('vacation'), ...vacation }] : []),
+    ...(minimumNoContract ? [{ id: /** @type {const} */ ('minimum'), ...minimumNoContract }] : []),
     ...(!r.noContract && (r.cash?.total ?? 0) >= 1
       ? [{ id: /** @type {const} */ ('cash'), amount: settled.totals.agreedCash }]
       : []),

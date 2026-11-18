@@ -165,10 +165,20 @@ test.describe('Cuentas and Registro', () => {
     const block = page.locator('#result .block', { hasText: '¿Se cumplió la ley?' });
     const fact = (title) => block.locator('.lawcheck > div').filter({ has: page.locator('b', { hasText: title }) });
     await expect(fact(/^Sin contrato$/).locator('.m')).toHaveText('✘');
-    // The cash agreed covers the minimum and the vacation: one calm line, no warning
-    await expect(fact(/^Vacaciones$/)).toHaveCount(1);
-    await expect(fact(/^Vacaciones$/)).toContainText('cubre el mínimo y la parte de vacaciones: ');
-    await expect(fact(/^Vacaciones$/).locator('.m')).toHaveText('✔');
+    // The cash agreed covers the minimum, the vacation share inside it: one plain line, no warning, no vacation row
+    const minimum = fact(/^Salario mínimo$/);
+    await expect(minimum).toHaveCount(1);
+    await expect(minimum).toContainText('Mínimo del trabajo: unos');
+    await expect(minimum).toContainText('cubre el mínimo');
+    await expect(minimum).not.toContainText(/brutos|netos|vacaciones/);
+    await expect(minimum.locator('.m')).toHaveText('✔');
+    await expect(fact(/^Vacaciones$/)).toHaveCount(0);
+    // The breakdown is a detail, in a closed fold
+    const how = block.locator('details[data-fold="minimum-how"]');
+    await expect(how).not.toHaveAttribute('open', '');
+    await how.locator('summary').click();
+    await expect(how).toContainText('de las vacaciones (Estatuto, art. 38)');
+    await expect(how).toContainText('Lo cobrado en negro se compara con eso.');
     // Nothing that cannot be judged: no row for the minimum or the bonus, one line saying when they will be
     await expect(block).not.toContainText('Se comprobará cuando');
     await expect(block.locator('.lawcheck > div', { hasText: 'Salario mínimo en nómina' })).toHaveCount(0);
@@ -180,20 +190,24 @@ test.describe('Cuentas and Registro', () => {
     await expect(block.locator('.lawcheck > div', { hasText: 'Parte en negro' }).locator('.m')).toHaveText('✘');
   });
 
-  test('Vía legal says the vacation of a job without a contract where what was paid falls short, as a right and not a debt', async ({
+  test('without a contract a shortfall is Falta, said once in «¿Se cumplió la ley?» per day worked; Vía legal has no vacation block', async ({
     page,
   }) => {
     await loadOffers(page, sample, SIN_CONTRATO_D);
-    const section = page.locator('#legalPage .block', { has: page.getByRole('heading', { name: 'Vacaciones' }) });
     await page.evaluate(async () => {
       const { offers } = await import('./src/offers.js');
       offers.setPaid(app.active(), 'none');
       app.select(app.active().id);
     });
+    await openAccounts(page);
+    const row = page.locator('#result .lawcheck > div', { hasText: 'Salario mínimo' });
+    await expect(row).toContainText('No se cobró nada: faltan unos');
+    await expect(row.locator('.m')).toHaveText('✘');
+    // Nothing to deduct without a contract: no «en neto» tag, no «netos» in the figures said
+    await expect(page.locator('#result h2.mode .net')).toHaveCount(0);
+    await expect(page.locator('#result .block.result')).not.toContainText('netos');
     await openLegalPage(page);
-    await expect(section).toContainText('Lo cobrado no llega al mínimo más la parte de vacaciones: faltan unos');
-    await expect(section).toContainText('(Estatuto, art. 38)');
-    await expect(section).toContainText('no una deuda');
+    await expect(page.locator('#legalPage').getByRole('heading', { name: 'Vacaciones' })).toHaveCount(0);
   });
 
   test('«Balance del trabajo» does not repeat the tiles; the days contributed say they include the vacation', async ({

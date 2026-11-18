@@ -402,6 +402,8 @@ export function minimumNote(offer, settled, r) {
     .filter((x) => x.amount > 0 && !(x.key === 'vacation' && r.noContract));
   if (total <= agreed && !short.length) return null;
   return {
+    /** No contract: the figures are said plain, with no «netos». */
+    noContract: Boolean(r.noContract),
     /** The unit the pay was agreed in: per day, per month or in total. */
     unit: inTotal ? 'total' : perDay ? 'día' : 'mes',
     components,

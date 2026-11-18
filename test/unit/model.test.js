@@ -191,19 +191,18 @@ test('IRPF in 2026, with the minimum-wage deduction', () => {
   near(Math.max(0, ded.max - (20048.45 - ded.from) * ded.taper), 0, 0.01, 'the deduction ends at 20,048.45 €');
 });
 
-test('without a contract: paid the minimum, nothing is owed, and the vacation is a right, not a debt', () => {
-  const minimum = figures({ contract: 'none', payAmount: 0, cashAmount: 0, duration: 1 }).debt.minNetNoContract;
+test('without a contract: paid the minimum, nothing is owed, and the vacation share is inside it', () => {
+  const week = { contract: 'none', payAmount: 0, duration: 7, durationUnit: 'days' };
+  const minimum = figures({ ...week, cashAmount: 0 }).debt.minNetNoContract;
   const r = figures({
-    contract: 'none',
-    payAmount: 0,
+    ...week,
     cashAmount: minimum,
     cashUnit: 'total',
-    duration: 1,
     vacation: 'included',
   });
   assert.ok(r.debt.salary < 1, 'no salary owed');
   assert.equal(r.debt.vacation, 0, 'no vacation owed');
-  assert.ok(r.min.vacationRight > 1, 'the right is told, with its amount');
+  assert.ok(r.min.vacationShare > 1, 'the share is inside the minimum, with its amount');
 });
 
 test('sleeping out: the 25 % overnight bonus is owed', () => {
@@ -404,13 +403,20 @@ test('without a contract and up to four weeks (28 days), each day worked has its
   for (const duration of [7, LAW.noContractPerJornadaDays]) {
     const r = figures({ ...NO_CONTRACT, duration });
     assert.equal(r.min.casual, true, `${duration} days`);
-    near(r.min.salary, wage.casual * r.time.daysWorked, 0.01, `${duration} days: per jornada worked`);
+    near(
+      r.min.salary - r.min.vacationShare,
+      wage.casual * r.time.daysWorked,
+      0.01,
+      `${duration} days: per jornada worked, the vacation share on top`,
+    );
     assert.equal(r.pay.rates.workerPct, ssOf('none').workerPct);
     assert.equal(r.employer.severance, 0);
-    assert.equal(r.min.vacation, 0, 'the vacation is a right, not counted');
+    assert.equal(r.min.vacation, 0, 'the vacation is inside the salary minimum, not a line of its own');
   }
   // a week every day: about 405 € gross, as a casual temporary's
-  near(figures({ ...NO_CONTRACT, duration: 7, daysOff: '' }).min.salary, wage.casual * 7, 0.01, 'seven days');
+  const week = figures({ ...NO_CONTRACT, duration: 7, daysOff: '' });
+  near(week.min.salary, wage.casual * 7 + week.min.vacationShare, 0.01, 'seven days');
+  near(week.min.vacationShare / 7, 3.35, 0.01, 'the vacation share per day, about 3,35 € in 2026');
   const temporary = figures({ ...NO_CONTRACT, duration: 60, contract: 'temporary', payAmount: 1000, cashAmount: '' });
   assert.equal(temporary.min.casual, true);
   assert.ok(temporary.employer.severance > 0);
@@ -432,7 +438,7 @@ test('without a contract and over four weeks, the job is measured as a fixed one
   const r = figures({ ...NO_CONTRACT, duration: LAW.noContractPerJornadaDays + 1 });
   assert.equal(r.min.casual, false);
   near(
-    r.min.salary,
+    r.min.salary - r.min.vacationShare,
     ((wage.annual * r.time.months) / 12) * Math.min(1, (r.time.workFrac * 7 * 8) / 40),
     0.01,
     'the monthly minimum',
@@ -492,7 +498,7 @@ test('a vacation day owed or paid is worth the real daily pay, cash included, or
     'no contract: the cash day, as the gross that brings it net',
   );
   assert.ok(
-    none.min.vacationRight > none.time.vacationDays * smiDay,
+    none.min.vacationShare > none.time.vacationDays * smiDay,
     'the right is worth above a day at the minimum wage',
   );
   // never below the minimum wage's day
@@ -533,7 +539,7 @@ test('without a contract, the vacation is never asked: no debt, no days off, wha
     assert.equal(r.min.vacation, 0);
     assert.equal(r.time.vacationTaken, 0, `${vacation}: no day off`);
     assert.equal(r.earnings.parts.vacationPay, 0);
-    assert.ok(r.min.vacationRight > 100, 'the right is told with an amount');
+    assert.ok(r.min.vacationShare > 100, 'the right is told with an amount');
   }
   assert.equal(none('taken').time.daysWorked, none('').time.daysWorked);
 });

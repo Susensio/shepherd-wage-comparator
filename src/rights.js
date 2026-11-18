@@ -24,21 +24,39 @@ export const noContractRule = (r) =>
     : `Sin contrato más de cuatro semanas: se mide como un trabajo fijo (Estatuto, arts. 8.2 y 15.4)`;
 
 /**
- * The vacation of a job without a contract, said in «¿Se cumplió la ley?» and Vía legal as an economic test (owner, 18
- * November 2026): one calm line where what was paid covers the minimum plus the vacation, the shortfall where not.
- * Per jornada the figures are per day worked, as a fijo's are in total.
- * @param {{ perJornada: boolean, covered: boolean, paid: number, required: number, shortfall: number, days: number, gross: { paid: number, minimum: number, vacation: number } }} t `vacationTest` in `model/compliance.js`
+ * The minimum of a job without a contract against what was paid, in «¿Se cumplió la ley?» (owner, 18 November 2026): one
+ * plain figure per day worked (per jornada) or in total (fijo), the vacation share inside it and unmentioned, no
+ * «brutos» or «netos». `minimum` first, then how it stands against what was paid.
+ * @param {{ perJornada: boolean, basis: string, covered: boolean, paid: number, minimum: number, shortfall: number, days: number }} t `minimumTest` in `model/compliance.js`
  */
-export function noContractVacation(t) {
-  if (!t.covered) {
-    const cite = t.perJornada ? 'Real Decreto del salario mínimo, art. 4.1' : citeOf('et', '38').label;
-    return `Lo cobrado no llega al mínimo más la parte de vacaciones: faltan unos ${fE(t.shortfall, 0)} (${cite}).`;
-  }
+export function noContractMinimum(t) {
   const perDay = t.perJornada && t.days > 0;
-  const each = (x, digits) => (perDay ? `${fE(x / t.days, digits)}` : fE(x, digits));
+  const each = (x) => fE(perDay ? x / t.days : x, 0);
   const per = perDay ? ' al día' : '';
-  const { gross } = t;
-  return `Lo cobrado (unos ${each(gross.paid, 0)} brutos${per}, ${each(t.paid, 0)} netos) cubre el mínimo y la parte de vacaciones: ${each(gross.minimum + gross.vacation, 2)} brutos${per} (${each(gross.minimum, 2)} + ${each(gross.vacation, 2)}).`;
+  const minimum = perDay
+    ? `Mínimo por día trabajado: unos ${each(t.minimum)}.`
+    : `Mínimo del trabajo: unos ${each(t.minimum)}.`;
+  if (t.basis === 'none')
+    return `${minimum} No se cobró nada: faltan unos ${each(t.shortfall)}${per}${perDay ? `, ${fE(t.shortfall, 0)} en total` : ''}.`;
+  const verb = t.basis === 'agreed' ? 'Se pactaron' : 'Se cobraron';
+  if (t.covered) return `${minimum} ${verb} ${each(t.paid)}${per}: cubre el mínimo.`;
+  return `${minimum} ${verb} ${each(t.paid)}${per}: faltan unos ${each(t.shortfall)}${per}${perDay ? `, ${fE(t.shortfall, 0)} en total` : ''}.`;
+}
+
+/**
+ * How that minimum comes about, for the closed fold «Cómo se calcula»: the law's gross figures and the net it leaves.
+ * @param {{ perJornada: boolean, minimum: number, days: number, gross: { salary: number, vacation: number, overnight: number } }} t `minimumTest`
+ */
+export function noContractHow(t) {
+  const { salary, vacation, overnight } = t.gross;
+  const perDay = t.perJornada && t.days > 0;
+  const each = (x) => fE(perDay ? x / t.days : x, 2);
+  const total = each(salary + vacation + overnight);
+  const bonus = overnight > 0 ? ` + ${each(overnight)} del plus de pernocta` : '';
+  const parts = perDay
+    ? `${each(salary)} brutos por jornada (Real Decreto del salario mínimo, art. 4.1) + ${each(vacation)} de la parte de vacaciones (art. 4.1, segundo párrafo)${bonus} = ${total} brutos`
+    : `${each(salary)} brutos de salario mínimo, en proporción a los días del trabajo + ${each(vacation)} de las vacaciones (${citeOf('et', '38').label})${bonus} = ${total} brutos`;
+  return `${parts}; quitando lo que se descontaría con contrato (Seguridad Social e IRPF), unos ${fE(perDay ? t.minimum / t.days : t.minimum, 0)} en mano. Lo cobrado en negro se compara con eso.`;
 }
 
 /** Where the law says each right, to link it. */
@@ -110,7 +128,7 @@ export function rightsOf(o, r, unit = 'month') {
       'salary',
       !isWorthCounting(r.debt.salary),
       'Salario mínimo',
-      `Se pagan ${money.figure(r.cash.total)} en negro ${per}; con contrato, el mínimo serían unos ${money.figure(r.debt.minNetNoContract)} netos${r.min.overnight > 0 ? ', con el plus de pernocta' : ''}.`,
+      `Se pagan ${money.figure(r.cash.total)} ${per}; el mínimo son unos ${money.figure(r.debt.minNetNoContract)}${r.min.overnight > 0 ? ', con el plus de pernocta' : ''}.`,
     );
   } else {
     add(

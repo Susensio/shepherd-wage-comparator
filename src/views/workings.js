@@ -105,10 +105,12 @@ function minimumSection(o, r, net) {
   const bonusShown = min.overnight > 0.5 ? shownEuros(min.overnight) : 0;
   const shortOf = (...taken) => Math.max(0, shownDiff(min.salary, ...taken) + bonusShown);
   const fullDay = r.time.hoursUnknown ? `. ${HOURS_UNKNOWN_FULL_DAY}` : '';
+  // Without a contract the vacation share is inside the minimum, and the row says so
+  const vacationIn = min.vacationShare > 0.5 ? ` + ${fE(min.vacationShare, 2)} de la parte de vacaciones` : '';
   const minimum = row('Salario mínimo', fE(min.salary), {
     sub: min.casual
-      ? `${r.noContract ? `${noContractRule(r)}. ` : ''}${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${fullDay}`
-      : `Salario mínimo ${r.year} de ${fE(r.wage.annual / 12)} al mes (${fE(r.wage.annual)} al año) × ${fN(r.time.months, 1)} ${r.time.months === 1 ? 'mes' : 'meses'}${r.noContract ? `. ${noContractRule(r)}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
+      ? `${r.noContract ? `${noContractRule(r)}. ` : ''}${fE(r.wage.casual, 2)} por jornada × ${fN(r.time.daysWorked)} días${vacationIn}${fullDay}`
+      : `Salario mínimo ${r.year} de ${fE(r.wage.annual / 12)} al mes (${fE(r.wage.annual)} al año) × ${fN(r.time.months, 1)} ${r.time.months === 1 ? 'mes' : 'meses'}${vacationIn}${r.noContract ? `. ${noContractRule(r)}` : ''}${fullDay}${wageYearNote(r) ? `. ${wageYearNote(r)}` : ''}`,
   });
   const bonus =
     min.overnight > 0.5 && row(`+ Plus de pernocta (${fN(min.overnightAgreement?.pct ?? 0)} %)`, fE(min.overnight));

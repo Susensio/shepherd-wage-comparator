@@ -75,8 +75,10 @@ describe('what is still owed, in net, equals Falta on the screen', () => {
         assert.equal(sum(whole.map((m) => m.total)), Math.round(c.standing.falta), o.mine.name);
         for (const m of whole) assert.equal(sum(m.items.map((x) => x.amount)), m.total, `${o.mine.name} ${m.month}`);
         const text = employerSummaryText(c);
-        assert.ok(text.includes(`Falta: ${fE(Math.round(c.standing.falta), 0)} netos.`), o.mine.name);
-        assert.ok(text.includes(`Corresponde: ${fE(c.standing.corresponde, 0)} netos.`), o.mine.name);
+        // (a job without a contract has nothing to deduct: its figures say no «netos»)
+        const netos = c.r.noContract ? '' : ' netos';
+        assert.ok(text.includes(`Falta: ${fE(Math.round(c.standing.falta), 0)}${netos}.`), o.mine.name);
+        assert.ok(text.includes(`Corresponde: ${fE(c.standing.corresponde, 0)}${netos}.`), o.mine.name);
       }
     });
   }

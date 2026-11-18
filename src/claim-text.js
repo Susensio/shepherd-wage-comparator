@@ -126,14 +126,16 @@ export function employerSummaryText({ o, r, settled, standing, record, parties, 
   out.push('');
   // Whole euros, as the tiles show them; the months are spread so they add up to the Falta shown
   const whole = (x) => fE(x, 0);
+  // Without a contract nothing is deducted: no «netos»
+  const netos = r.noContract ? '' : ' netos';
   const falta = Math.round(standing.falta);
-  out.push(`Corresponde${until ? ` hasta el ${fIso(until)}` : ''}: ${whole(standing.corresponde)} netos.`);
+  out.push(`Corresponde${until ? ` hasta el ${fIso(until)}` : ''}: ${whole(standing.corresponde)}${netos}.`);
   const payments = record.payments ?? [];
   if (payments.length) {
-    out.push(`Cobrado: ${whole(standing.cobrado)} netos.`, ...cobrosLines(payments));
-  } else if (record.paid === 'asAgreed') out.push(`Cobrado: lo pactado, ${whole(standing.cobrado)} netos.`);
+    out.push(`Cobrado: ${whole(standing.cobrado)}${netos}.`, ...cobrosLines(payments));
+  } else if (record.paid === 'asAgreed') out.push(`Cobrado: lo pactado, ${whole(standing.cobrado)}${netos}.`);
   else out.push('Cobrado: nada hasta ahora.');
-  out.push('', `Falta: ${whole(falta)} netos.`);
+  out.push('', `Falta: ${whole(falta)}${netos}.`);
   for (const m of owedNet(settled, falta, r.netFactor, 1, standing.counted))
     out.push(`· ${capitalize(monthName(m.month))}: ${whole(m.total)}`);
   if (standing.unclosed.length)
