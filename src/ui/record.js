@@ -583,16 +583,6 @@ export const recordActions = {
     offers.clearExpectation(active());
     callbacks.paint();
   },
-  /** «¿Empezó el trabajo?»: yes, as the offer says. */
-  confirmStart() {
-    const o = active();
-    offers.confirmStart(o, o.terms.start);
-    callbacks.paint();
-  },
-  startOther() {
-    ui.startOther[active().id] = true;
-    callbacks.paint();
-  },
   startOtherCancel() {
     delete ui.startOther[active().id];
     callbacks.paint();
@@ -605,13 +595,6 @@ export const recordActions = {
     offers.patchTerms(o, { start: date });
     delete ui.startOther[o.id];
     offers.confirmStart(o, date);
-    callbacks.paint();
-  },
-  /** It was not taken: the offer stays an offer. */
-  notTaken() {
-    const o = active();
-    offers.patchTerms(o, { offerOnly: true });
-    offers.save();
     callbacks.paint();
   },
   /** «¿Cómo acabó?»: a way, then its date; «Al final pactado» needs none. */
@@ -879,4 +862,15 @@ export function forgetRecordUi(offerId) {
 /** «Acabó antes» from the menu of an offer: asks how it ended on its ficha. */
 export function askHowItEnded(offerId) {
   ui.end[offerId] = { how: null };
+}
+
+/** «Empezó otro día» from the menu of an offer: asks the date on its ficha. */
+export function askStartDate(offerId) {
+  ui.startOther[offerId] = true;
+}
+
+/** «No se cogió: solo oferta» from the menu: the job stays an offer. */
+export function markNotTaken(o) {
+  offers.patchTerms(o, { offerOnly: true });
+  offers.save();
 }

@@ -24,17 +24,13 @@ export const END_TEXT = {
   quit: 'lo dejó el pastor o la pastora',
 };
 
-/** @param {Cards['start']} start */
+/** «Empezó otro día», from the menu of the offer: the date it really started. @param {Cards['start']} start */
 function startCard(start, today) {
   if (!start) return nothing;
-  return html`<div class="tcard-q" role="group" aria-label="¿Empezó el trabajo?">
-    <h3>¿Empezó el trabajo el ${fIso(start.date)}?</h3>
-    ${
-      start.other
-        ? html`<label class="fld">Otra fecha<input type="date" id="startOther" .value=${start.date} max=${today} /></label>
-          <div class="actions"><button type="button" class="pri sm" data-action="saveStart">Guardar</button><button type="button" class="sm" data-action="startOtherCancel">Cancelar</button></div>`
-        : html`<div class="actions"><button type="button" class="pri sm" data-action="confirmStart">Sí</button><button type="button" class="sm" data-action="startOther">Otra fecha</button><button type="button" class="sm" data-action="notTaken">No se cogió: solo oferta</button></div>`
-    }
+  return html`<div class="tcard-q" role="group" aria-label="¿Qué día empezó?">
+    <h3>¿Qué día empezó?</h3>
+    <label class="fld">Fecha<input type="date" id="startOther" .value=${start.date} max=${today} /></label>
+    <div class="actions"><button type="button" class="pri sm" data-action="saveStart">Guardar</button><button type="button" class="sm" data-action="startOtherCancel">Cancelar</button></div>
   </div>`;
 }
 

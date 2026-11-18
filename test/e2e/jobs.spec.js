@@ -236,10 +236,6 @@ test.describe('the Registro page', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page
-      .getByRole('group', { name: '¿Empezó el trabajo?' })
-      .getByRole('button', { name: 'Sí', exact: true })
-      .click();
     await expect(page.locator('#registroPage')).toBeHidden();
     // The ficha keeps «Hasta hoy» and the way in; the days are in the page
     await expect(page.locator('#result .registro-link')).toContainText('Días');

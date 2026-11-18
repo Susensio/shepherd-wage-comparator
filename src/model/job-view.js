@@ -11,7 +11,7 @@ import { hasFacts, jobStart, phaseOf } from './phase.js';
  * What the page has open for one job: the answers it is waiting on.
  * @typedef {object} Pending
  * @property {{ how: string | null, error?: string } | undefined} asked «¿Cómo acabó?» opened by hand
- * @property {boolean | undefined} startOther «¿Empezó el trabajo?» asked for another date
+ * @property {boolean | undefined} startOther «Empezó otro día», from the menu: the date asked
  * @property {boolean | undefined} recording «No todo» answered to «¿Se cobró este trabajo?»: the record is being made
  * @property {boolean | undefined} endLater «¿Cómo acabó?» put off for this session
  * @property {{ no: boolean, error?: string } | undefined} recall the answer to «¿Se llamó para la campaña?», if «No»
@@ -37,12 +37,8 @@ export function recordPhase(o, today) {
  */
 export const isBare = (o, phase, recording) => phase === 'finished' && !hasFacts(o.mine.record) && !recording;
 
-/** Under way with nothing recorded and no answer to «¿Empezó el trabajo?»: the job is not known to have started. */
-export const unconfirmedStart = (o, phase) =>
-  phase === 'underway' && !o.mine.record.started && !hasFacts(o.mine.record);
-
-/** What the phase pill says: «Por empezar» until the start is confirmed, else the phase. */
-export const pillPhase = (o, phase) => (unconfirmedStart(o, phase) ? 'toStart' : phase);
+/** What the phase pill says: a job is taken as started on its date (the menu has «Empezó otro día»). */
+export const pillPhase = (o, phase) => phase;
 
 /** The first day of the season after the one worked, for a fijo discontinuo: its start a year on. */
 export function nextSeasonStart(o) {
@@ -68,7 +64,7 @@ export function recallOf(o, today, answer) {
 }
 
 /**
- * The questions at the turns of a job. «¿Empezó?» only for a job under way with nothing recorded and no answer yet;
+ * The questions at the turns of a job. The start date only when asked from the menu («Empezó otro día»);
  * «¿Cómo acabó?» for a finished job with no answer, or when asked from «Acabó antes».
  * @param {any} o
  * @param {'underway' | 'finished'} phase
@@ -79,10 +75,8 @@ export function recallOf(o, today, answer) {
 export function cardsOf(o, phase, settled, today, pending) {
   const record = o.mine.record;
   const { asked } = pending;
-  const start =
-    phase === 'underway' && !record.started && !hasFacts(record) && !asked
-      ? { date: o.terms.start, other: Boolean(pending.startOther) }
-      : null;
+  // A job started on its date: the date is asked only once «Empezó otro día» was chosen in the menu
+  const start = pending.startOther && !asked ? { date: o.terms.start, other: true } : null;
   // On sick leave the contract is suspended: how it ended is not asked until the leave is closed
   const onLeave = Boolean(record.sick && !record.sick.to);
   // A finished job with nothing recorded is not asked how it ended: that is for one with a record to close
@@ -198,23 +192,22 @@ export function cardOf(o, r, settledOf, today) {
     pill: pillPhase(o, phase),
     cobrado: cobradoOf(o, r, recordPhaseNow, s),
     // A job not yet confirmed as started has nothing to record
-    status:
-      unconfirmedStart(o, phase) || !payKnown(o.terms)
-        ? null
-        : jobStatus({
-            phase: recordPhaseNow,
-            hasPayments: s.hasPayments,
-            owed: s.falta,
-            unclosed: s.unclosed.length,
-            money: moneyState({ falta: s.falta, record: o.mine.record, today }),
-            window: s.firstDeadline !== null,
-            approx: !o.mine.record.paid && o.mine.record.payments.some((p) => p.approx),
-            claim: {
-              by: s.deadlines
-                .filter((d) => !d.lapsed)
-                .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
-              lapsed: s.lapsedAll,
-            },
-          }),
+    status: !payKnown(o.terms)
+      ? null
+      : jobStatus({
+          phase: recordPhaseNow,
+          hasPayments: s.hasPayments,
+          owed: s.falta,
+          unclosed: s.unclosed.length,
+          money: moneyState({ falta: s.falta, record: o.mine.record, today }),
+          window: s.firstDeadline !== null,
+          approx: !o.mine.record.paid && o.mine.record.payments.some((p) => p.approx),
+          claim: {
+            by: s.deadlines
+              .filter((d) => !d.lapsed)
+              .reduce((a, d) => (!a || d.deadline < a ? d.deadline : a), /** @type {string | null} */ (null)),
+            lapsed: s.lapsedAll,
+          },
+        }),
   };
 }

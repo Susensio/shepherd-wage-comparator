@@ -50,7 +50,15 @@ import {
 import { setUpOfferMenu } from './ui/offer-menu.js';
 import { hidePastJob, pastJobActions, savePastJob, showPastJob } from './ui/past-job.js';
 import { changePlace } from './ui/place-field.js';
-import { askHowItEnded, claimCopyOf, onClaimInput, recordActions, showDossier } from './ui/record.js';
+import {
+  askHowItEnded,
+  askStartDate,
+  claimCopyOf,
+  markNotTaken,
+  onClaimInput,
+  recordActions,
+  showDossier,
+} from './ui/record.js';
 import { paintBackup } from './ui/settings-page.js';
 import { OTHERS_PREFIX } from './views/compare.js';
 import { fillForm, fillVacation, form, paintEnd } from './views/form.js';
@@ -233,6 +241,14 @@ function runMenuAction(action, id, msg) {
   if (action === 'endedEarly') {
     askHowItEnded(id);
     return openOffer(id);
+  }
+  if (action === 'startedOther') {
+    askStartDate(id);
+    return openOffer(id);
+  }
+  if (action === 'notTaken') {
+    markNotTaken(o);
+    return show();
   }
   if (action === 'copyCard')
     return copyText(cardText(o, calcOffer(o)), msg, {

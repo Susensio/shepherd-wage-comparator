@@ -492,10 +492,6 @@ test.describe('talking to the ganadero while the job goes on, and done steps', (
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page
-      .getByRole('group', { name: '¿Empezó el trabajo?' })
-      .getByRole('button', { name: 'Sí', exact: true })
-      .click();
     // With no cobro said there is nothing to talk about yet
     await expect(page.locator('details.step[data-step=talk]')).toHaveCount(0);
     await addPayments(page, [{ date: '2026-07-05', amount: 400, via: 'payroll' }]);

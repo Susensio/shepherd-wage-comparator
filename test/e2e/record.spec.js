@@ -35,19 +35,7 @@ test.describe('under way: Registro', () => {
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    // Until the start is confirmed the pill does not say the job is under way
-    await expect(page.locator('#fichaPhase')).toHaveText('Por empezar');
-    // Nothing is known yet: the question leads, before the figures
-    expect(
-      await page
-        .locator('#result > :not(.conditions)')
-        .first()
-        .evaluate((e) => e.matches('.tcard-q')),
-    ).toBe(true);
-    await page
-      .getByRole('group', { name: '¿Empezó el trabajo?' })
-      .getByRole('button', { name: 'Sí', exact: true })
-      .click();
+    // A job is taken as started on its date: nothing to confirm
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     await expect(page.locator('#result h2.mode')).toContainText('Hasta hoy');
     await expect(page.locator('.conditions')).toBeVisible(); // every mode starts with the agreed conditions
@@ -1167,13 +1155,6 @@ test.describe('the cards', () => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await at(page, '2026-08-12');
     await page.evaluate(() => app.showTab('offers'));
-    // Not known to have started until the question is answered
-    await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('Por empezar');
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      offers.confirmStart(app.active(), app.active().terms.start);
-      app.showTab('offers');
-    });
     await expect(card(page, 'Puerto A, otra cuenta').locator('.phase')).toHaveText('En curso');
     await at(page, '2026-05-01');
     await reselect(page);

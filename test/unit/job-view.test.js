@@ -16,7 +16,6 @@ import {
   pillPhase,
   recallOf,
   recordPhase,
-  unconfirmedStart,
 } from '../../src/model/job-view.js';
 import { addPayment, setPaid } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
@@ -56,22 +55,22 @@ describe('the phase of a record, and the pill', () => {
     assert.equal(recordPhase(jobOf({ hoursPerDay: '', payAmount: '', vacation: '' }), TODAY), 'underway');
   });
 
-  test('«Por empezar» until the start is confirmed or something is recorded', () => {
+  test('a job is taken as started on its date: the pill is its phase, never «Por empezar»', () => {
     const o = jobOf();
-    assert.equal(unconfirmedStart(o, 'underway'), true);
-    assert.equal(pillPhase(o, 'underway'), 'toStart');
-    assert.equal(pillPhase(o, 'finished'), 'finished');
-    o.mine.record.started = { date: '2026-06-01' };
     assert.equal(pillPhase(o, 'underway'), 'underway');
+    assert.equal(pillPhase(o, 'finished'), 'finished');
   });
 });
 
 describe('the questions at the turns of a job', () => {
-  test('«¿Empezó?» only under way with nothing recorded and no other question open', () => {
+  test('the start date is asked only once «Empezó otro día» was chosen in the menu', () => {
     const o = jobOf();
     const settled = settledOf(o);
-    assert.deepEqual(cardsOf(o, 'underway', settled, TODAY, {}).start, { date: '2026-06-01', other: false });
-    assert.equal(cardsOf(o, 'underway', settled, TODAY, { startOther: true }).start.other, true);
+    assert.equal(cardsOf(o, 'underway', settled, TODAY, {}), null);
+    assert.deepEqual(cardsOf(o, 'underway', settled, TODAY, { startOther: true }).start, {
+      date: '2026-06-01',
+      other: true,
+    });
     assert.equal(cardsOf(o, 'underway', settled, TODAY, { asked: { how: null } }).start, null);
   });
 
@@ -166,11 +165,10 @@ describe('the card of a job', () => {
     assert.equal(asked, 0);
   });
 
-  test('a job not confirmed as started has a pill and no status', () => {
+  test('a job under way is taken as started on its date: its phase as pill, no «Por empezar»', () => {
     const card = cardFor(jobOf());
     assert.equal(card.phase, 'underway');
-    assert.equal(card.pill, 'toStart');
-    assert.equal(card.status, null);
+    assert.equal(card.pill, 'underway');
   });
 
   test('a confirmed job under way has a status', () => {

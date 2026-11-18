@@ -503,7 +503,6 @@ export function leversOf(r) {
 /** The phases of a worked offer, as the pill says them. */
 export const PHASE_TEXT = {
   undecided: 'Por decidir',
-  toStart: 'Por empezar',
   underway: 'En curso',
   finished: 'Acabada',
 };

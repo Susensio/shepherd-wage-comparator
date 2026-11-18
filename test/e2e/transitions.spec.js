@@ -6,26 +6,26 @@ const PUERTO_A_OTRA = 1; // 21 June to 30 September 2026
 const SOLO_OFERTA = 0;
 const record = (page) => page.evaluate(() => app.active().mine.record);
 
-test.describe('«¿Empezó el trabajo?»', () => {
+test.describe('the start of a job', () => {
   test.use({ today: '2026-08-12' });
+  const menu = async (page, item) => {
+    await page.locator('#fichaMenu').click();
+    await page.locator(`#offerMenu [data-menu=${item}]`).click();
+  };
 
-  test('asked once a job under way has nothing recorded; «Sí» keeps the offer’s date and it is not asked again', async ({
+  test('a job under way is taken as started on its date: nothing is asked, the pill says En curso', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    const card = page.getByRole('group', { name: '¿Empezó el trabajo?' });
-    await expect(card.locator('h3')).toHaveText('¿Empezó el trabajo el 21 jun 2026?');
-    await card.getByRole('button', { name: 'Sí', exact: true }).click();
-    await expect(card).toHaveCount(0);
-    expect((await record(page)).started).toEqual({ date: '2026-06-21' });
-    await page.evaluate(() => app.select(app.active().id));
-    await expect(card).toHaveCount(0);
+    await expect(page.getByRole('group', { name: /Empezó|empezó/ })).toHaveCount(0);
+    await expect(page.locator('#fichaPhase')).toHaveText('En curso');
+    await expect(page.locator('#result h2.mode')).toContainText('Hasta hoy');
   });
 
-  test('«Otra fecha» moves the start and keeps the answer', async ({ page }) => {
+  test('«Empezó otro día» in the menu asks the date, moves the start and keeps the answer', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    const card = page.getByRole('group', { name: '¿Empezó el trabajo?' });
-    await card.getByRole('button', { name: 'Otra fecha' }).click();
+    await menu(page, 'startedOther');
+    const card = page.getByRole('group', { name: '¿Qué día empezó?' });
     await card.locator('#startOther').fill('2026-06-25');
     await card.getByRole('button', { name: 'Guardar' }).click();
     await expect(card).toHaveCount(0);
@@ -33,24 +33,27 @@ test.describe('«¿Empezó el trabajo?»', () => {
     expect((await record(page)).started).toEqual({ date: '2026-06-25' });
   });
 
-  test('«No se cogió» leaves it as an offer only: no phase, no record', async ({ page }) => {
+  test('«Empezó otro día» can be cancelled', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.getByRole('button', { name: 'No se cogió: solo oferta' }).click();
-    expect(await page.evaluate(() => app.active().terms.offerOnly)).toBe(true);
-    await expect(page.locator('#fichaPhase')).toBeHidden();
-    await expect(page.getByRole('group', { name: '¿Empezó el trabajo?' })).toHaveCount(0);
+    await menu(page, 'startedOther');
+    const card = page.getByRole('group', { name: '¿Qué día empezó?' });
+    await card.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(card).toHaveCount(0);
+    expect(await page.evaluate(() => app.active().terms.start)).toBe('2026-06-21');
   });
 
-  test('not asked of an offer only, nor once a cobro is recorded', async ({ page }) => {
-    await loadOffers(page, sample, SOLO_OFERTA);
-    await expect(page.getByRole('group', { name: '¿Empezó el trabajo?' })).toHaveCount(0);
+  test('«No se cogió: solo oferta» in the menu leaves it as an offer only: no phase, no record', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page.evaluate(async () => {
-      const { offers } = await import('./src/offers.js');
-      offers.addPayment(app.active(), { date: '2026-07-05', amount: 100, via: 'payroll' });
-      app.select(app.active().id);
-    });
-    await expect(page.getByRole('group', { name: '¿Empezó el trabajo?' })).toHaveCount(0);
+    await menu(page, 'notTaken');
+    expect(await page.evaluate(() => app.active().terms.offerOnly)).toBe(true);
+    await expect(page.locator('#fichaPhase')).toBeHidden();
+  });
+
+  test('the menu has neither for an offer only', async ({ page }) => {
+    await loadOffers(page, sample, SOLO_OFERTA);
+    await page.locator('#fichaMenu').click();
+    await expect(page.locator('#offerMenu [data-menu=startedOther]')).toBeHidden();
+    await expect(page.locator('#offerMenu [data-menu=notTaken]')).toBeHidden();
   });
 });
 
@@ -111,10 +114,6 @@ test.describe('«Acabó antes» in the «⋯» menu', () => {
 
   test('asks how, without «Al final pactado», and the job becomes Acabada', async ({ page }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
-    await page
-      .getByRole('group', { name: '¿Empezó el trabajo?' })
-      .getByRole('button', { name: 'Sí', exact: true })
-      .click();
     await expect(page.locator('#fichaPhase')).toHaveText('En curso');
     await page.locator('#fichaMenu').click();
     await page.locator('#offerMenu [data-menu=endedEarly]').click();

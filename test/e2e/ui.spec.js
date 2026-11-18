@@ -301,22 +301,15 @@ test('opening a card in «¿Es legal?» does not shrink its title while it anima
   expect(new Set(heights).size, `summary heights: ${heights.join(', ')}`).toBe(1);
 });
 
-test('«Solo oferta» is always shown: ticked and locked without a start date', async ({ page }) => {
+test('without a start date the step says it counts as only an offer, and there is no box to tick', async ({ page }) => {
   await startOffer(page, 'offer');
-  const box = page.locator('#f [name=offerOnly]');
+  await expect(page.locator('#f [name=offerOnly]')).toHaveCount(0);
   await page.fill('#start', '');
   await page.locator('#start').dispatchEvent('input');
-  await expect(box).toBeVisible();
-  await expect(box).toBeChecked();
-  await expect(box).toBeDisabled();
   await expect(page.locator('#offerOnlyHint')).toContainText('cuenta como solo oferta');
   await page.fill('#start', '2026-06-01');
   await page.locator('#start').dispatchEvent('input');
-  await expect(box).toBeEnabled();
-  await expect(box).not.toBeChecked();
   await expect(page.locator('#offerOnlyHint')).toBeEmpty();
-  await box.check();
-  expect(await page.evaluate(() => app.active().terms.offerOnly)).toBe(true);
 });
 
 test('the chart over time shows only worked offers', async ({ loaded: page }) => {
@@ -342,7 +335,7 @@ test('«Quitar» empties the start date, and hides itself', async ({ page }) => 
   await expect(page.locator('#start')).toHaveValue('');
   await expect(page.locator('#end')).toHaveValue('');
   await expect(clear).toBeHidden();
-  await expect(page.locator('#f [name=offerOnly]')).toBeChecked();
+  await expect(page.locator('#offerOnlyHint')).toContainText('cuenta como solo oferta');
 });
 
 test('Comparar shows the offers that were only offers apart, and can hide them', async ({ loaded: page }) => {

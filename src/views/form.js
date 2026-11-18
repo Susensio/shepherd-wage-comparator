@@ -312,12 +312,8 @@ function yearHint(o, r) {
 export function paintForm(o, r, offers, places) {
   const cfg = r.cfg;
   const appeared = applyShow(o, r);
-  // Without a start date an offer is never counted as worked (`workedOffers`): the box says so instead of hiding it
-  const offerOnly = /** @type {HTMLInputElement} */ ($('#f [name=offerOnly]'));
-  const noDate = !o.terms.start;
-  offerOnly.disabled = noDate;
-  offerOnly.checked = noDate || !!o.terms.offerOnly;
-  text('#offerOnlyHint', noDate ? `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.` : '');
+  // Without a start date an offer is never counted as worked (`workedOffers`): it says so
+  text('#offerOnlyHint', o.terms.start ? '' : `Sin fecha: cuenta como solo oferta, de ${actualYear(o.terms)}.`);
   text('#vacationHint', vacationHint(o, r));
   paintPlace(o, places);
   const lines = missing(o.terms).map((id) => REQUIRED_LINE[id] ?? id);
