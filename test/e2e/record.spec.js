@@ -359,7 +359,7 @@ test.describe('finished: Cuentas', () => {
     await expect(page.getByRole('group', { name: '¿Se espera algún pago más?' })).toBeVisible();
   });
 
-  test('a temporary contract owes severance at its end: in Corresponde and Falta, and no «Todo cobrado» until it is paid', async ({
+  test('a temporary contract owes severance at its end: in Corresponde and Falta, and no «Saldado» until it is paid', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
@@ -402,27 +402,27 @@ test.describe('finished: Cuentas', () => {
     expect(severance).toBeGreaterThan(50);
     expect(amount(await tile(page, 'Falta').textContent())).toBeCloseTo(severance, 0);
     await expect(page.locator('#result')).toContainText('Indemnización');
-    await expect(page.locator('.block.result .tag .lbl')).not.toHaveText('Todo cobrado');
+    await expect(page.locator('.block.result .tag .lbl')).not.toHaveText('Saldado');
   });
 
-  test('more cobrado than corresponds: Falta 0 €, one neutral line, nothing «de más», and nothing to claim', async ({
+  test('more cobrado than corresponds: «Saldado» with «Cobrado de más», Falta 0 €, the explanation, and nothing to claim', async ({
     page,
   }) => {
     await loadOffers(page, sample, PUERTO_A_OTRA);
     await addPayments(page, [{ date: '2026-07-05', amount: 50000, via: 'payroll' }]);
     await expect(tile(page, 'Falta')).toHaveText(/^0\s€$/);
-    // Calm: a green «Todo cobrado», no yellow «Debe», no red tile, no prompt for cash, no «no es firme»
+    // Calm: a green «Saldado», no yellow «Debe», no red tile, no prompt for cash, no «no es firme»
     await expect(page.locator('.block.result .tag')).toHaveClass(/saldadas/);
-    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Todo cobrado');
-    await expect(page.locator('.block.result .tag .big')).toHaveText('✔');
+    await expect(page.locator('.block.result .tag .lbl')).toHaveText('Saldado');
+    await expect(page.locator('.block.result .tag .big')).toHaveCount(0); // no giant tick, no figure
+    await expect(page.locator('.block.result .tag .sub')).toContainText(/^Cobrado de más: [\d.]+\s€$/);
     await expect(page.locator('.sofar .f')).toHaveClass(/ok/);
     await expect(page.locator('#result')).not.toContainText('Sin cobros en mano apuntados');
     await expect(page.locator('#result')).not.toContainText('no es firme');
     await expect(page.locator('#result')).toContainText(
       'más de lo que corresponde: puede ser un plus que no se pactó (transporte, dietas) o una retención menor que la calculada.',
     );
-    for (const gone of ['de más:', 'Cobrado de más', 'pagado de más'])
-      await expect(page.locator('#result')).not.toContainText(gone);
+    for (const gone of ['pagado de más']) await expect(page.locator('#result')).not.toContainText(gone);
     await expect(page.locator('.block.result .tag .sub')).not.toContainText('debe');
     await expect(page.locator('#result h2', { hasText: 'Pedir lo que falta' })).toHaveCount(0);
     await expect(page.locator('#result h2.mode small')).toHaveText('Cuentas saldadas');

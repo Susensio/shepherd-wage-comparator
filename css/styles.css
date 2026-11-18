@@ -5124,8 +5124,14 @@ body.reviewing .ficha > .back {
   color: var(--ink);
   border: 1px solid color-mix(in srgb, var(--c-pay) 35%, var(--surface));
 }
-.tag.saldadas .big {
+.tag.saldadas .lbl {
+  font-size: 22px;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--c-pay);
+}
+.tag.saldadas .sub {
+  font-size: 14px;
 }
 .sofar .f.ok b {
   color: var(--c-pay);
