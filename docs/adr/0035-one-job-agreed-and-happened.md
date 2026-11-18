@@ -67,3 +67,5 @@ Weighed and discarded:
 17 November 2026: the question «¿Falta algún cobro por apuntar?» and «Todo cobrado» on the card, noted above, were replaced by ADR-0036 («¿Se espera algún pago más?»; cards Por confirmar, Esperando cobro, Debe el ganadero, Saldado) in saved format 9.
 
 17 November 2026, owner: «El salario mínimo» as the agreed pay is the monthly minimum with its extra pays prorated (as people say «cobrar el SMI»), for every contract; a short temporary is still judged against the per-jornada minimum. «Se libran, cobrando» is offered on every contract but self-employed.
+
+18 November 2026, owner: a job without a contract is not asked about vacation and none enters its accounts; the right is named once, in «¿Se cumplió la ley?» and Vía legal (ADR-0037). A job is taken as started on its date; «¿Cómo acabó?» defaults to the agreed end; the contract is asked first; 8 h a day are prefilled.

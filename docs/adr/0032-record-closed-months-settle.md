@@ -55,3 +55,5 @@ Weighed and discarded:
 - One `jobEnd(offer, record)` in `model/phase.js` decides the end for both the phase and `settle`: an end stated in the record, or a day worked after the offer's end, extends the job; the extension days count as worked unless marked otherwise.
 
 17 November 2026: ADR-0036 replaces closing the record. `record.complete` now means «no more payment is expected», one answer to «¿Se espera algún pago más?»; closing a month stays the only lock.
+
+18 November 2026, owner: closing months stays (it makes a real record of the days off), but costs one action: «Días: como lo pactado» lists the past months with their counts, and «Cerrar los meses» closes them all as shown. A month is still never closed without its days on screen.
