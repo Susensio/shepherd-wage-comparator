@@ -162,7 +162,7 @@ function extraDaysBar(r) {
 /** A working week: the normal hours and those above 40; the marker shows how far they are paid. */
 function hoursBar(r) {
   const x = r.extra;
-  const { days, hoursPerDay, total, normal, restDays, beyond, workday } = hoursWeek(x);
+  const { days, hoursPerDay, total, normal, restDays, beyond } = hoursWeek(x);
   const paidBeyond = x.overtimeValue > 0 ? beyond * Math.max(0, 1 - x.overtimeUnpaid / x.overtimeValue) : 0;
   const paidRestDays = x.daysValue > 0 ? restDays * Math.max(0, 1 - x.daysUnpaid / x.daysValue) : restDays;
   const hours = (h) => `${fHalf(h)} h`;
@@ -178,8 +178,8 @@ function hoursBar(r) {
       13,
       restDays + beyond > 0.05 ? ((normal + paidRestDays + paidBeyond) / total) * 100 : null,
     )}${restDays + beyond > 0.05 ? marker(((normal + paidRestDays + paidBeyond) / total) * 100, 'pagado', true) : nothing}</div>
-    <p class="hint">Se trabajan unas ${fHalf(total)} h a la semana; las legales son ${LAW.weeklyHours} h, en ${fHalf(Math.min(days, WORK_DAYS_WEEK))} días de unas ${Math.round(workday)} h.</p>
-    ${beyond >= 0.5 ? html`<p class="hint">Horas extra: unas ${fN(beyond)} h a la semana, las que pasan de esas ${Math.round(workday)} h al día.</p>` : nothing}
+    <p class="hint">Se trabajan unas ${fHalf(total)} h a la semana; las legales son ${LAW.weeklyHours} h.</p>
+    ${beyond >= 0.5 ? html`<p class="hint">Horas extra: unas ${fN(beyond)} h a la semana.</p>` : nothing}
     ${restDays > 0.05 ? html`<p class="hint">Jornadas de más: ${fHalf(days - WORK_DAYS_WEEK)} ${fHalf(days - WORK_DAYS_WEEK) === '1' ? 'día' : 'días'} a la semana por encima de los ${fHalf(WORK_DAYS_WEEK)} que corresponden.</p>` : nothing}
   </div>`;
 }

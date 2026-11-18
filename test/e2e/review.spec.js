@@ -127,9 +127,7 @@ test.describe('overtime says one quantity', () => {
     await card.click();
     const detail = page.locator('[data-fold=law-hours]');
     await expect(card).toContainText('legales a la semana');
-    await expect(detail).toContainText(
-      /Se trabajan unas [\d,]+ h a la semana; las legales son 40 h, en [\d,]+ días de unas \d+ h\./,
-    );
+    await expect(detail).toContainText(/Se trabajan unas [\d,]+ h a la semana; las legales son 40 h\./);
     await expect(detail).not.toContainText(/\d,[1-4]\d* h/);
     await expect(detail).not.toContainText('Las horas de más son');
     const claim = await page.evaluate(() => app.claimText(app.active(), app.calcOffer(app.active())));
