@@ -6,7 +6,7 @@
 import { spreadTo, sum } from '../ledger.js';
 import { spanOf } from './accounts.js';
 import { marksOf } from './record.js';
-import { ITEMS } from './settle.js';
+import { ITEMS, netOfRow } from './settle.js';
 
 /**
  * @param {object} c
@@ -23,12 +23,12 @@ export function dossierOf({ o, netFactor, settled, standing, record }) {
   const dueTotal = Math.round(standing.corresponde);
   const owedTotal = Math.round(standing.falta);
   const due = spreadTo(
-    rows.map((row) => row.due * netFactor),
+    rows.map((row) => netOfRow(row, 'due', netFactor)),
     dueTotal,
     1,
   );
   const owed = spreadTo(
-    rows.map((row) => row.owed * netFactor),
+    rows.map((row) => netOfRow(row, 'owed', netFactor)),
     owedTotal,
     1,
   );

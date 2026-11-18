@@ -6,7 +6,7 @@
 import { cents, spreadTo, sum } from '../ledger.js';
 import { daysBetween, monthSpan } from './days.js';
 import { countsOf, defaultMarks, marksOf } from './record.js';
-import { ITEMS, settle } from './settle.js';
+import { ITEMS, netOfItem, netOfRow, settle } from './settle.js';
 
 /**
  * The lines of a ledger, in net. The cash agreed (`cashGross`, as it counts inside the dues) is taken out of the items,
@@ -21,9 +21,9 @@ import { ITEMS, settle } from './settle.js';
 export function linesOf(grossItems, cash, cashGross, netFactor) {
   let left = cashGross;
   const lines = grossItems.map((x) => {
-    const take = Math.min(left, x.due);
+    const take = x.item === 'severance' ? 0 : Math.min(left, x.due); // the cash is part of the pay, not of the severance
     left = cents(left - take);
-    return { key: x.item, due: cents((x.due - take) * netFactor) + 0, byMinimum: Boolean(x.byMinimum) };
+    return { key: x.item, due: netOfItem(x.item, x.due - take, netFactor), byMinimum: Boolean(x.byMinimum) };
   });
   const taken = cents(cashGross - left);
   const shown = cashGross > 0 ? cents((cash * taken) / cashGross) : 0;
@@ -155,7 +155,6 @@ export function monthAccounts(offer, record, key, today, settled, r) {
  */
 export function standingOf(settled, today, phase, payments, netFactor, paid) {
   const { rows, totals } = settled;
-  const net = (gross) => cents(gross * netFactor) + 0; // + 0: no -0
   const finished = phase === 'finished';
   const ended = finished ? rows : rows.filter((row) => row.to < today);
   // What counts: the months that have ended and the month in progress up to today (`settle` has counted it so far)
@@ -195,16 +194,18 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
           ? sum(rows.map((row) => row.items.severance.shortfall))
           : 0
         : sum(counted.map((row) => row.items[item].shortfall));
-  const shortfall = sum(ITEMS.map(shortOf));
+  const shortNet = sum(ITEMS.map((item) => netOfItem(item, shortOf(item), netFactor)));
   const cobrado =
     paid === 'asAgreed'
-      ? Math.max(0, cents(corresponde - net(shortfall)))
+      ? Math.max(0, cents(corresponde - shortNet))
       : paid === 'none'
         ? 0
         : sum(payments.map((p) => p.amount));
   const falta = Math.max(0, cents(corresponde - cobrado));
   // What the law adds to the agreed pay, item by item in whole euros that add up to the net total
-  const shortItems = ITEMS.map((item) => ({ key: item, amount: net(shortOf(item)) })).filter((x) => x.amount > 0);
+  const shortItems = ITEMS.map((item) => ({ key: item, amount: netOfItem(item, shortOf(item), netFactor) })).filter(
+    (x) => x.amount > 0,
+  );
   const shortWhole = spreadTo(
     shortItems.map((x) => x.amount),
     Math.round(sum(shortItems.map((x) => x.amount))),
@@ -218,7 +219,7 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
         .filter((row) => row.owed > 0 && row.deadline)
         .map((row) => ({
           month: row.month,
-          owed: net(row.owed),
+          owed: netOfRow(row, 'owed', netFactor),
           deadline: /** @type {string} */ (row.deadline),
           lapsed: row.lapsed,
           daysLeft: daysBetween(today, /** @type {string} */ (row.deadline)),
@@ -239,7 +240,7 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
     counted: counted.map((row) => row.month),
     corresponde,
     /** What the offer agreed, net: Corresponde without what only the law adds (the minimum, a severance the offer does not mention). */
-    agreed: Math.max(0, cents(corresponde - net(shortfall))),
+    agreed: Math.max(0, cents(corresponde - shortNet)),
     /** What the law adds to the pay agreed, per item (`salary`, `overnight`, `vacation`, `severance`), in whole euros adding up to the net total. */
     legalItems: shortItems.map((x, i) => ({ key: x.key, amount: shortWhole[i] })),
     cobrado,
@@ -257,8 +258,8 @@ export function standingOf(settled, today, phase, payments, netFactor, paid) {
     months: ended.map((row) => ({
       month: row.month,
       closed: row.closed,
-      due: net(row.due),
-      owed: claimable ? net(row.owed) : 0,
+      due: netOfRow(row, 'due', netFactor),
+      owed: claimable ? netOfRow(row, 'owed', netFactor) : 0,
       deadline: claimable ? row.deadline : null,
       lapsed: row.lapsed,
       daysLeft: claimable && row.deadline ? daysBetween(today, row.deadline) : null,

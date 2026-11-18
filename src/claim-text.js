@@ -9,7 +9,7 @@ import { capitalize, fDate, fE, joinAnd } from './format.js';
 import { fSumE, spreadTo } from './ledger.js';
 import { spanOf } from './model/accounts.js';
 import { countsOf, defaultMarks, marksOf } from './model/record.js';
-import { ITEMS } from './model/settle.js';
+import { ITEMS, netOfRow } from './model/settle.js';
 import { isoOf, parseDate } from './offer.js';
 import { ITEM_TEXT, monthName, monthYear, summaries } from './text.js';
 
@@ -55,7 +55,7 @@ export const defaultPayBy = (today) => daysAfter(today, 15);
 export function owedNet(settled, falta, netFactor, unit = 0.01, counted) {
   const rows = settled.rows.filter((row) => row.owed > 0 && (!counted || counted.includes(row.month)));
   const months = spreadTo(
-    rows.map((row) => row.owed * netFactor),
+    rows.map((row) => netOfRow(row, 'owed', netFactor)),
     falta,
     unit,
   );

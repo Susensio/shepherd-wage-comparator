@@ -30,6 +30,24 @@ import { claimDeadline } from './time.js';
 /** The items of a month, in the order a payment covers them: by convention, a payment names no item. `severance` (ET 49.1.c) is due at the real end, the last row. */
 export const ITEMS = /** @type {const} */ (['salary', 'overnight', 'vacation', 'severance']);
 
+/**
+ * A gross amount of an item in net. The severance is neither taxed nor contributed on up to its legal amount (LGSS
+ * 147.2.c, LIRPF 7.e): it is the same net and gross.
+ * @param {typeof ITEMS[number]} item
+ * @param {number} gross
+ * @param {number} netFactor
+ */
+export const netOfItem = (item, gross, netFactor) => cents(gross * (item === 'severance' ? 1 : netFactor)) + 0; // + 0: no -0
+
+/**
+ * What a month of `settle` has in a field (`due`, `owed`, `shortfall`…), in net: its items through `netOfItem`.
+ * @param {{ items: Record<typeof ITEMS[number], Record<string, number>> }} row
+ * @param {string} field
+ * @param {number} netFactor
+ */
+export const netOfRow = (row, field, netFactor) =>
+  sum(ITEMS.map((item) => netOfItem(item, row.items[item][field], netFactor)));
+
 const zeroItem = () => ({
   agreed: 0,
   minimum: 0,
@@ -394,10 +412,12 @@ export function settle(offer, record, today, r) {
         x.received = x.agreed;
         x.declared = cents(x.agreed * Math.min(1, payrollShare));
       } else {
-        x.received = Math.min(pool, x.due);
-        pool = cents(pool - x.received);
-        x.declared = Math.min(declaredPool, x.due);
-        declaredPool = cents(declaredPool - x.declared);
+        // The pool is gross-equivalent; the severance is paid net as it is, so it takes its due in net from the pool
+        const k = item === 'severance' ? r.netFactor : 1;
+        x.received = Math.min(pool * k, x.due);
+        pool = cents(pool - x.received / k);
+        x.declared = Math.min(declaredPool * k, x.due);
+        declaredPool = cents(declaredPool - x.declared / k);
       }
       x.owed = cents(x.due - x.received);
       x.belowMinimumOnPayroll = cents(Math.max(0, x.minimum - x.declared));

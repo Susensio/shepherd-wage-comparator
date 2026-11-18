@@ -737,8 +737,14 @@ test('severance is covered by what is paid after the pay, and stays in Correspon
   const standing = standingOf(unpaid, '2026-04-15', 'finished', [pay(salaryOnly)], r.netFactor);
   assert.ok(standing.falta > 0);
   assert.ok(standing.lines.some((line) => line.key === 'severance' && line.due > 0));
-  const all = settleOf(offer, { payments: [pay(done.totals.due)] });
+  // the severance is neither taxed nor contributed on: paid net as it is, the salary through the net factor
+  const severance = done.totals.items.severance.due;
+  const everything = { ...pay(salaryOnly), amount: salaryOnly * r.netFactor + severance };
+  const all = settleOf(offer, { payments: [everything] });
   assert.equal(all.totals.owed, 0);
+  const line = standing.lines.find((x) => x.key === 'severance');
+  near(line?.due ?? 0, severance, 'net severance = gross severance', 0.01);
+  near(standing.falta, severance, 'only the severance is missing, in full', 0.02);
   // under way the contract has not ended: nothing for it yet
   const underway = standingOf(settleOf(offer, {}, '2026-02-10'), '2026-02-10', 'underway', [], r.netFactor);
   assert.ok(!underway.lines.some((line) => line.key === 'severance' && line.due > 0));

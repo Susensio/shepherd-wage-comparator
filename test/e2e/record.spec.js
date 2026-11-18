@@ -414,7 +414,7 @@ test.describe('finished: Cuentas', () => {
       const pay = x.totals.due - x.totals.items.severance.due;
       offers.addPayment(o, { date: '2026-11-01', amount: Math.round(pay * net * 100) / 100, via: 'payroll' });
       app.select(o.id);
-      return Math.round(x.totals.items.severance.due * net);
+      return Math.round(x.totals.items.severance.due); // the severance is the same net and gross
     });
     expect(severance).toBeGreaterThan(50);
     expect(amount(await tile(page, 'Falta').textContent())).toBeCloseTo(severance, 0);
