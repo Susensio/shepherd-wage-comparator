@@ -41,7 +41,7 @@ const referenceFold = (head, sections) =>
  * @param {import('../ui/record.js').RecordContext | null} record what happened, for a job under way or finished; its block takes the place of the headline
  */
 export function fichaView(o, r, places, record = null) {
-  const { head, analysis, sections } = resultParts(o, r);
+  const { head, analysis, sections } = resultParts(o, r, { cobrado: record?.cobrado });
   const lines = summaries(o, r, places);
   const lacking = missingBySteps(o.terms);
   const keys = Object.keys(lacking);

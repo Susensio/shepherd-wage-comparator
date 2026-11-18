@@ -21,31 +21,33 @@ const startsLater = (o) => !!o.terms.start && o.terms.start > todayISO();
 const groupOf = (o) => (!o.terms.start || startsLater(o) ? UNDECIDED : o.terms.start.slice(0, 4));
 
 /**
- * What each year came to, as one sum: per job the cobros of that year where they are known (a total told as approximate
- * marks the sum «≈»), else what was agreed split by days (always «≈»). Each contract is split by days between the years it
- * touches; offers of solo oferta, not yet started, incomplete or without a duration are left out.
- * @param {{ o: any, r: any }[]} items
+ * What each year came to, as one sum, from the one reading of «Cobrado» (`cobradoOf`): per job the cobros of that year
+ * where they are known (a total told as approximate marks the sum «≈»), «Lo pactado» and the agreed money of a job finished
+ * and not yet said split by days (always «≈»), and nothing for a job still under way with no cobro. Each contract is split
+ * by days between the years it touches; offers of solo oferta, not yet started, incomplete or without a duration are left out.
+ * @param {{ o: any, r: any, record?: ReturnType<typeof import('../model/job-view.js').cardOf> }[]} items
  * @returns {Record<string, { sum: number, approx: boolean, jobs: number }>}
  */
 function yearTotals(items) {
   const worked = new Set(workedOffers(items.map((x) => x.o)));
   /** @type {Record<string, { sum: number, approx: boolean, jobs: number }>} */
   const years = {};
-  for (const { o, r } of items) {
+  for (const { o, record } of items) {
     if (!worked.has(o) || startsLater(o) || !isComplete(o.terms) || o.terms.durationUnit === 'unknown') continue;
-    const { payments = [], paid } = o.mine.record;
+    const cobrado = record?.cobrado;
+    if (!cobrado) continue;
     for (const [year, share] of Object.entries(yearShares(o.terms))) {
       years[year] ??= { sum: 0, approx: false, jobs: 0 };
       const total = years[year];
       total.jobs++;
-      if (payments.length) {
-        const here = payments.filter((p) => p.date.startsWith(year));
+      if (cobrado.basis === 'cobros') {
+        // the cobros dated in the year
+        const here = o.mine.record.payments.filter((p) => p.date.startsWith(year));
         total.sum += here.reduce((t, p) => t + p.amount, 0);
         total.approx ||= here.some((p) => p.approx);
-      } else if (paid === 'none') {
-        // nothing was received
-      } else {
-        total.sum += r.earnings.received * share;
+      } else if (cobrado.amount > 0) {
+        // what was agreed, or answered as agreed, split by days
+        total.sum += cobrado.amount * share;
         total.approx = true;
       }
     }

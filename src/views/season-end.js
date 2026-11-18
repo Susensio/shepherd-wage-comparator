@@ -131,8 +131,13 @@ function simulator(o, r, months) {
     <p class="hint">Es una estimación para comparar con las nóminas: la real puede llevar bonificaciones, otros redondeos u otra base de cotización.</p></details>`;
 }
 
-/** «Final de campaña». */
-export function seasonEndSection(o, r) {
+/**
+ * «Final de campaña».
+ * @param {any} o
+ * @param {any} r
+ * @param {ReturnType<typeof import('../model/job-view.js').cobradoOf>} [cobrado] what was cobrado of a job under way or finished: where it is known, the headline figure is that and not the pay simulated
+ */
+export function seasonEndSection(o, r, cobrado) {
   const end = endOf(o.terms);
   if (!isWorked(o) || r.time.noDuration || !end || r.selfEmployed) return nothing;
   const months = monthlyPayslips(o.terms, r);
@@ -151,17 +156,21 @@ export function seasonEndSection(o, r) {
   ]
     .filter(Boolean)
     .join(' · ');
+  const real = cobrado && cobrado.basis !== 'unknown';
+  const dates = `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`;
   return html`<section class="season-end" id="secSeason" aria-label="Final de campaña"><h3 class="q">Final de campaña</h3>
-    <div class="received">${figureCard(fE(total), 'En nómina y en negro', `del ${fDate(parseDate(o.terms.start))} al ${fDate(end)}`, '')}${
-      cash > 0.5 && payroll > 0.5
+    <div class="received">${real ? figureCard(`${cobrado.approx ? '≈ ' : ''}${fE(cobrado.amount)}`, 'Cobrado', dates, '') : figureCard(fE(total), 'En nómina y en negro', dates, '')}${
+      !real && cash > 0.5 && payroll > 0.5
         ? html`<div class="rc-bar" aria-hidden="true"><i style="flex:${1 - cashShare}"></i><i class="b" style="flex:${cashShare}"></i></div>`
         : nothing
     }<div class="rc-legend">${
-      !r.noContract
-        ? html`<span><i class="sw" style="background:var(--c-pay)"></i>En nómina</span><b>${fE(payroll)}</b>`
-        : nothing
+      real
+        ? nothing
+        : !r.noContract
+          ? html`<span><i class="sw" style="background:var(--c-pay)"></i>En nómina</span><b>${fE(payroll)}</b>`
+          : nothing
     }${
-      cash > 0.5
+      !real && cash > 0.5
         ? html`<span><i class="sw" style="background:var(--c-cash)"></i>En negro${payroll > 0.5 ? html` <small>${fN(cashShare * 100)}\u00a0%</small>` : nothing}</span><b>${fE(cash)}</b>`
         : nothing
     }</div><p class="hint">${capitalize(facts)}.</p></div>

@@ -179,3 +179,25 @@ test.describe('the dossier', () => {
     });
   }
 });
+
+test.describe('the dossier of a job answered «Lo pactado»', () => {
+  test.use({ today: '2026-11-12' });
+
+  test('says everything agreed was cobrado, not that no cobro was noted', async ({
+    page,
+  }) => {
+    await loadOffers(page, sample, PUERTO_A_OTRA);
+    await page.evaluate(async () => {
+      const { offers } = await import('./src/offers.js');
+      offers.setPaid(app.active(), 'asAgreed');
+      app.select(app.active().id);
+    });
+    await page.locator('#fichaMenu').click();
+    await page.locator('#offerMenu [data-menu=dossier]').click();
+    const doc = page.locator('#dossier .dossier-doc');
+    await expect(doc.locator('section', { has: page.getByRole('heading', { name: 'Cobros' }) })).toContainText(
+      'Se cobró todo lo pactado.',
+    );
+    await expect(doc).not.toContainText('No hay cobros apuntados');
+  });
+});

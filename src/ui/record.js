@@ -32,6 +32,7 @@ import { monthSpan } from '../model/days.js';
 import { dossierOf } from '../model/dossier.js';
 import {
   cardsOf,
+  cobradoOf,
   isBare,
   lastDayOf,
   monthFlags,
@@ -98,6 +99,7 @@ import {
  * @property {ReturnType<typeof claimContext> | null} claim once the job is over: the ladder and its texts
  * @property {ReturnType<typeof talkContext> | null} talk under way with something unpaid: the summary to talk to the ganadero
  * @property {import('../model/settle.js').Paid | undefined} paid «Sí, todo» or «No se cobró nada» was said
+ * @property {ReturnType<typeof cobradoOf>} cobrado what was cobrado, as every view reads it
  * @property {boolean} approx a cobro was told as approximate, so Cobrado and Falta are
  * @property {boolean} noPay the job began with no pay told: what was cobrado has nothing agreed to be compared with
  * @property {boolean} bare a job finished with nothing recorded and no answer to «¿Se cobró este trabajo?»: its ficha leads with the analysis
@@ -319,6 +321,7 @@ export function recordContext(o, r) {
     claim: phase === 'finished' ? claimContext(o, r, settled, standing, today) : null,
     talk: phase === 'underway' ? talkContext(o, r, settled, standing, today) : null,
     paid: record.paid,
+    cobrado: cobradoOf(o, r, phase, standing),
     noPay: !payKnown(o.terms),
     approx: !record.paid && record.payments.some((p) => p.approx),
     bare: isBare(o, phase, ui.recording[o.id]),

@@ -158,13 +158,31 @@ export const paymentsNewestFirst = (payments) =>
     .map((x) => x.p);
 
 /**
+ * What was cobrado of a job, as everything that shows it reads it (Cuentas, the list's year sums, «Final de campaña», the
+ * Expediente): `basis` is how it is known (`cobros`, `asAgreed`, `none`) or `unknown`, and then it is the agreed money for a
+ * finished job (`approx`) and nothing for one still under way, which has not been paid yet.
+ * @param {any} o
+ * @param {any} r its figures
+ * @param {'underway' | 'finished' | null} phase
+ * @param {{ cobrado: number } | null} standing from `standingOf`, null when not computed (nothing recorded)
+ * @returns {{ basis: 'cobros' | 'asAgreed' | 'none' | 'unknown', amount: number, approx: boolean }}
+ */
+export function cobradoOf(o, r, phase, standing) {
+  const { paid, payments } = o.mine.record;
+  const basis = paid ?? (payments.length ? 'cobros' : 'unknown');
+  if (basis === 'unknown' || !standing)
+    return { basis: 'unknown', amount: phase === 'finished' ? r.earnings.received : 0, approx: true };
+  return { basis, amount: standing.cobrado, approx: basis === 'cobros' && payments.some((p) => p.approx) };
+}
+
+/**
  * What a card says of a job under way or finished: its phase and pill, and its status (`jobStatus`). Null phase for an
  * offer only offered.
  * @param {any} o
  * @param {any} r its figures
  * @param {() => ReturnType<typeof import('./settle.js').settle>} settledOf the settled months, asked for only when the job has a record
  * @param {string} today
- * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, status: ReturnType<typeof jobStatus> }}
+ * @returns {{ phase: 'undecided' | 'underway' | 'finished' | null, pill?: string, status: ReturnType<typeof jobStatus>, cobrado?: ReturnType<typeof cobradoOf> }}
  */
 export function cardOf(o, r, settledOf, today) {
   const phase = phaseOf(o, today, o.mine.record);
@@ -173,11 +191,12 @@ export function cardOf(o, r, settledOf, today) {
   const recordPhaseNow = /** @type {'underway' | 'finished'} */ (phase);
   // Old jobs nobody recorded are calm and cost nothing to draw
   if (recordPhaseNow === 'finished' && !hasFacts(o.mine.record))
-    return { phase, pill: pillPhase(o, phase), status: jobStatus(BARE) };
+    return { phase, pill: pillPhase(o, phase), status: jobStatus(BARE), cobrado: cobradoOf(o, r, 'finished', null) };
   const s = standingOf(settledOf(), today, recordPhaseNow, o.mine.record.payments, r.netFactor, o.mine.record.paid);
   return {
     phase,
     pill: pillPhase(o, phase),
+    cobrado: cobradoOf(o, r, recordPhaseNow, s),
     // A job not yet confirmed as started has nothing to record
     status:
       unconfirmedStart(o, phase) || !payKnown(o.terms)

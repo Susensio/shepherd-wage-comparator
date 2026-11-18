@@ -6,6 +6,7 @@ import { calc } from '../../src/model/calc.js';
 import {
   cardOf,
   cardsOf,
+  cobradoOf,
   isBare,
   monthFlags,
   monthOnCalendar,
@@ -17,7 +18,7 @@ import {
   recordPhase,
   unconfirmedStart,
 } from '../../src/model/job-view.js';
-import { addPayment } from '../../src/model/record.js';
+import { addPayment, setPaid } from '../../src/model/record.js';
 import { settle } from '../../src/model/settle.js';
 import { DEF_CFG, emptyRecord } from '../../src/offer.js';
 import { offerOf } from './flat-offer.js';
@@ -201,5 +202,49 @@ describe('the card of a job', () => {
     addPayment(o.mine.record, { date: '2026-07-05', amount: 100000, via: 'payroll' });
     for (const row of settledOf(o, '2026-11-17').rows) o.mine.record.months[row.month] = { closed: true, days: {} };
     assert.deepEqual(cardFor(o, '2026-11-17').status, { tone: 'green', text: 'Saldado' });
+  });
+});
+
+describe('cobradoOf: the one reading of «Cobrado»', () => {
+  const cardWith = (changes, today) => {
+    const o = offerOf({ ...BASE, ...changes });
+    changes.setup?.(o);
+    const r = calc(o, ctx);
+    return { o, card: cardOf(o, r, () => settle(o, o.mine.record, today, r), today), r };
+  };
+
+  test('cobros: what arrived, as the Cuentas tile has it', () => {
+    const o = offerOf(BASE);
+    addPayment(o.mine.record, { date: '2026-08-01', amount: 700, via: 'payroll' });
+    const r = calc(o, ctx);
+    const card = cardOf(o, r, () => settle(o, o.mine.record, '2026-10-01', r), '2026-10-01');
+    assert.deepEqual(card.cobrado, { basis: 'cobros', amount: 700, approx: false });
+  });
+
+  test('«Lo pactado» and «Nada» are known; «Lo pactado» is what the terms agreed, net', () => {
+    const o = offerOf(BASE);
+    setPaid(o.mine.record, 'asAgreed');
+    const r = calc(o, ctx);
+    const card = cardOf(o, r, () => settle(o, o.mine.record, '2026-10-01', r), '2026-10-01');
+    assert.equal(card.cobrado?.basis, 'asAgreed');
+    assert.ok((card.cobrado?.amount ?? 0) > 1000);
+    const none = offerOf(BASE);
+    setPaid(none.mine.record, 'none');
+    const card2 = cardOf(none, r, () => settle(none, none.mine.record, '2026-10-01', r), '2026-10-01');
+    assert.deepEqual(card2.cobrado, { basis: 'none', amount: 0, approx: false });
+  });
+
+  test('unknown: the agreed money, «≈», for a finished job; nothing for one still under way', () => {
+    const finished = cardWith({}, '2026-10-01');
+    assert.equal(finished.card.cobrado?.basis, 'unknown');
+    assert.equal(finished.card.cobrado?.amount, finished.r.earnings.received);
+    assert.equal(finished.card.cobrado?.approx, true);
+    const underway = cardWith({}, '2026-07-15');
+    assert.equal(underway.card.cobrado?.amount, 0);
+  });
+
+  test('a function of the record alone: without a standing it is unknown', () => {
+    const o = offerOf(BASE);
+    assert.equal(cobradoOf(o, calc(o, ctx), 'underway', null).amount, 0);
   });
 });

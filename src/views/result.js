@@ -217,7 +217,7 @@ function breakdown(o, r, unit) {
  * shepherd's offer): nothing to complete, negotiate or copy. `sections` are the parts of `analysis` one by one, for a
  * ficha that arranges them itself (a job finished).
  */
-export function resultParts(o, r, { readOnly = false } = {}) {
+export function resultParts(o, r, { readOnly = false, cobrado = undefined } = {}) {
   const shortfall = missing(o.terms);
   if (shortfall.length)
     return {
@@ -257,7 +257,7 @@ export function resultParts(o, r, { readOnly = false } = {}) {
     breakdown: breakdownView,
     legal: legalSection(o, r, money),
     negotiation: readOnly ? nothing : negotiationSection(o, r, money),
-    seasonEnd: readOnly ? nothing : seasonEndSection(o, r),
+    seasonEnd: readOnly ? nothing : seasonEndSection(o, r, cobrado),
     workings: html`<details class="plg" data-fold="workings"><summary>Cómo se calcula</summary><div class="doc">${workings(o, r)}</div></details>`,
   };
   const analysis = html`${sections.breakdown}
